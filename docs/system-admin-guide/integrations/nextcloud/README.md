@@ -44,7 +44,7 @@ features and prompt fixes for any potential bugs.
   - If you installed Nextcloud via the [community](https://hub.docker.com/_/nextcloud) docker image, we advise you to
     pin it to the `stable` tag.
   - Nextcloud company advises the use of there [all-in-one](https://hub.docker.com/r/nextcloud/all-in-one) docker image.
-- If you want to use the feature of [automatically managed project folders](#5-automatically-managed-project-folders)
+- If you want to use the feature of [automatically managed project folders](#4-automatically-managed-project-folders)
   you need to install the officially minimal supported version `14.0.9` of
   the [Group folders](https://apps.nextcloud.com/apps/groupfolders) app in Nextcloud.
 
@@ -81,13 +81,9 @@ Click on the **Save** button.
 > [!TIP]
 > If the OpenProject host cannot be added, you may check the [Troubleshooting](#troubleshooting) section at the bottom of this page.
 
-Please note, when you use the **Terms of Service** app on the Nextcloud side, all terms also need to be accepted for the OpenProject user that gets created during the setup. This is set to happen automatically during the initial set-up. If you see an error message indicating otherwise or the integration does not behave as expected, please refer to the [Troubleshooting](#troubleshooting) section at the bottom of this page.
+## 2. Create a Nextcloud file storage in your OpenProject instance
 
-The next part of the setup will require you to enter OpenProject OAuth values here, but before we do that, you will need to generate them in OpenProject. To do so, navigate to your OpenProject instance in a new browser tab.
-
-### 2. Create a Nextcloud file storage in your OpenProject instance
-
-Navigate to your administration settings page by clicking on *your avatar in the top right corner → Administration*. From the side menu on the left, click on **Files -> External file storages**.
+Navigate to your OpenProject administration settings page by clicking on *your avatar in the top right corner → Administration*. From the side menu on the left, click on **Files -> External file storages**.
 
 Click on **+ Storage** to add a new file storage.
 
@@ -103,44 +99,25 @@ Next, enter the **Host URL** of your Nextcloud instance. This is simply the addr
 
 ![Adding a new storage via OpenProject Administration settings](openproject_system_guide_nextcloud_integration_setup_step_2.png)
 
-Click on **Save and continue setup**. Your new storage is now created, but before you can use it, you will need to exchange OAUth IDs and secrets between your Nextcloud and OpenProject instances. You will do this in the next step.
+After deciding for an authentication method (more details in the next step), click on **Save and continue setup**. Your new storage is now created, but before you can use it, you will need to configure the chosen authentication method.
 
-### 3. Enter OpenProject OAuth values in Nextcloud settings
+### 3. Configure Authentication method
 
-At this point, you will see a page titled **OpenProject OAuth application details**.
+The next part of the setup will be different depending on the way that you choose authentication between OpenProject and Nextcloud to happen.
 
-Note that OpenProject has automatically generated an OAuth **client ID** and a **client secret**. These values are needed to permit Nextcloud to connect to OpenProject.
+**Two-way OAuth 2.0 authorization code flow:** This way of authentication works with all deployments of OpenProject and Nextcloud. Requests between the two applications will act with the target application acting as OAuth 2.0 authorization server. For the users this means, that they will usually have to confirm a separate OAuth consent screen for both directions of communication.
 
-> [!IMPORTANT]
-> These generated values are not accessible again after you close the window. Please do not navigate away from this page before copying them over to Nextcloud, as instructed below. Treat these values with care, as you would an important password. Please do not reveal them to anyone else.
+**Single-Sign-On through OpenID Connect Identity Provider:** In this authentication mode, users will not have to confirm additional consent screens, providing a better user experience. Requests between OpenProject and Nextcloud are authenticated with access tokens obtained from a common Identity Provider. This works only if users authenticate to OpenProject and Nextcloud through the same OpenID Connect Identity Provider and specific configuration needs to be done at the identity provider. This advanced feature is available to all installations under the Corporate plan.
 
-![OpenProject generates OAuth values to copy over to Nextcloud](openproject_system_guide_nextcloud_integration_setup_step_3.png)
 
-Go back to the browser tab where you were configuring the **OpenProject Integration** app. (We recommend you have two browser tabs open: the current one with OpenProject and the former one with Nextcloud).
+Instructions for both authentication methods can be found on the following pages:
 
-Copy the two generated values (client ID and secret) from the OpenProject tab to the respective fields in Nextcloud, namely **OpenProject OAuth client ID** and **OpenProject OAuth client secret**.
+* [Setup Two-way OAuth 2.0 authorization code flow](./two-way-oauth2/)
+* [Setup Single-Sign-On through OpenID Connect Identity Provider](./oidc-sso/)
 
-![OAuth values generated by OpenProject are entered into Nextcloud app configuration](openproject_system_guide_nextcloud_integration_setup_step_4.png)
+After finishing the corresponding setup steps, continue with the following steps on this page.
 
-Once you have copied the values, click on **Save** to proceed to the next step.
-
-### 4. Enter Nextcloud OAuth values in OpenProject
-
-In the page that appears, you will see new OAuth values that are once again generated automatically, but this time by Nextcloud.
-
-OpenProject will need these values to be able to connect to your Nextcloud instance.
-
-Much like in the previous step, you will need to copy these two generated values (**Nextcloud OAuth client ID** and **Nextcloud OAuth client secret**) and paste them into OpenProject.
-
-![Nextcloud also generates OAuth values that need to be copied to OpenProject](openproject_system_guide_nextcloud_integration_setup_step_5.png)
-
-Navigate back to your OpenProject tab and click on the **Done, continue** button on the screen you previously left it at. You will now see a screen where you will be able to enter the Nextcloud values.
-
-![OpenProject_NC_OAuth_values](openproject_system_guide_nextcloud_integration_setup_step_6.png)
-
-Once you have entered the client ID and client secrets on this page, click on **Save and continue**.
-
-### 5. Automatically managed project folders
+### 4. Automatically managed project folders
 
 As a last step, you will be asked if you want to use automatically managed folders. If you choose this option, OpenProject will automatically create project folders in Nextcloud and manage permissions such that all project members always have the necessary access privileges. Unless you already have a particular folder structure in place, we recommend choosing this option.
 
@@ -154,6 +131,8 @@ In case you want to use this functionality you will be requested to enter a pass
 
 > [!IMPORTANT]
 > You will need to install the [Group folder](https://apps.nextcloud.com/apps/groupfolders) app in Nextcloud in order to have OpenProject automatically managed your Nextcloud folders. Each storage can only have one group folder with the same name.
+
+Please note, when you use the **Terms of Service** app on the Nextcloud side, all terms also need to be accepted for the OpenProject user that gets created during the setup. This is set to happen automatically during the initial set-up. If you see an error message indicating otherwise or the integration does not behave as expected, please refer to the [Troubleshooting](#troubleshooting) section at the bottom of this page.
 
 At this point, you can click on **Done, complete setup** in both applications and your instance configuration will be completed.
 
@@ -172,13 +151,13 @@ Additional settings on this page also allow you, as an administrator, to define 
 - **Enable navigation link** displays a link to the OpenProject instance in the Nextcloud header
 - **Enable unified search for tickets** allows users to search for OpenProject work packages via the universal search bar in Nextcloud
 
-### 6. Add your new Nextcloud file storage to a project
+### 5. Add your new Nextcloud file storage to a project
 
 Now that the integration is set up, the next step is to make the Nextcloud file storage you just created available to individual projects. This can be either done by you directly in the system administration under **Enabled in projects** tab of a specific file storage, or on a project level under **Project settings**.
 
 To add a Nextcloud to a specific project on a project level, navigate to any existing project in your OpenProject instance and click on **Project settings** -> **Files** and follow the instructions in the [Project settings user guide](../../../user-guide/projects/project-settings/files/).
 
-To add a Nextcloud storage to one or multiple projects on an instance level, click on a file storage under *Administration -> Files -> External file storages* and select **Enabled in projects** tab. If the file storage setup was not completed properly, you will see a respective message. 
+To add a Nextcloud storage to one or multiple projects on an instance level, click on a file storage under *Administration -> Files -> External file storages* and select **Enabled in projects** tab. If the file storage setup was not completed properly, you will see a respective message.
 
 ![Storage setup incomplete message in OpenProject file storages administration](openproject_system_guide_nextcloud_integration_setup_incomplete_message.png)
 
@@ -190,7 +169,7 @@ You can you use the search bar to select either one or multiple projects and hav
 
 ![Select projects to activate Nextcloud storage in in OpenProject administration](openproject_system_guide_nextcloud_setup_activate_in_projects.png)
 
-You can always edit project folders or remove file storage from projects by selecting the respective option. 
+You can always edit project folders or remove file storage from projects by selecting the respective option.
 
 ![Remove Nextcloud file storage from a project in OpenProject administration](openproject_system_guide_nextcloud_edit_remove_in_projects.png)
 
@@ -251,10 +230,10 @@ Attention: Please do not confuse the CA for the Nextcloud server's certificate w
 
 #### Error message "Sign terms of services"
 
-**Terms of services** is an app on the Nextcloud side of integration that makes it mandatory for users to accept terms of services before Nextcloud can be used. In order for the integration to work properly the OpenProject user also needs to accept all terms that are set up. It should be accepted automatically during the set up process. However, it is possible that in certain situations it does not happen automatically. 
+**Terms of services** is an app on the Nextcloud side of integration that makes it mandatory for users to accept terms of services before Nextcloud can be used. In order for the integration to work properly the OpenProject user also needs to accept all terms that are set up. It should be accepted automatically during the set up process. However, it is possible that in certain situations it does not happen automatically.
 
 
-To fix this please log into Nextcloud, proceed to Administration and select OpenProject. This will trigger an automatic background check and suggest that *Terms of services* be signed. 
+To fix this please log into Nextcloud, proceed to Administration and select OpenProject. This will trigger an automatic background check and suggest that *Terms of services* be signed.
 ![Fix a Terms of services error in Nextcloud](openproject_system_guide_tos_fix.png)
 
 #### While setting up Project folders
@@ -328,9 +307,9 @@ On OpenProject inside the storage administration (*Administration → File stora
   ```shell
   curl -H 'OCS-APIRequest:true' -H 'Accept:application/json' https://nextcloud.example.com/ocs/v2.php/cloud/capabilities
   ```
-  
+
   If Nextcloud is setup correctly the response should look similar to the following. Pay special attention to current Nextcloud version, which in this example here is "24.0.6". At the time of writing this documentation the minimum version of Nextcloud is 22.
-  
+
   ```json
   {"ocs":{"meta":{"status":"ok","statuscode":200,"message":"OK"},"data":{"version":{"major":24,"minor":0,"micro":6,"string":"24.0.6","edition":"","extendedSupport":false},"capabilities":{"bruteforce":{"delay":0},"metadataAvailable":{"size":["\/image\\\/.*\/"]},"theming":{"name":"Nextcloud","url":"https:\/\/nextcloud.com","slogan":"a safe home for all your data","color":"#0082c9","color-text":"#ffffff","color-element":"#0082c9","color-element-bright":"#0082c9","color-element-dark":"#0082c9","logo":"https:\/\/nextcloud.example.com\/nextcloud\/core\/img\/logo\/logo.svg?v=0","background":"https:\/\/nextcloud.example.com\/nextcloud\/core\/img\/background.png?v=0","background-plain":false,"background-default":true,"logoheader":"https:\/\/nextcloud.example.com\/nextcloud\/core\/img\/logo\/logo.svg?v=0","favicon":"https:\/\/nextcloud.example.com\/nextcloud\/core\/img\/logo\/logo.svg?v=0"}}}}}
   ```
@@ -359,9 +338,9 @@ If Nextcloud setup correctly the response should look like the following
 {"user_id":"","authorization_header":foo}
 ```
 
-If not, first verify that the app **OpenProject Integration** is installed.  
+If not, first verify that the app **OpenProject Integration** is installed.
 
-If that is the case verify that the mod_rewrite is activated on the Nextcloud server.  
+If that is the case verify that the mod_rewrite is activated on the Nextcloud server.
 To activate mod_rewrite the following commands can be used on the Nextcloud server:
 
 ```shell
@@ -374,8 +353,8 @@ If that also not work please check the [instructions for setting up pretty URLs 
 #### Files are not encrypted when using Nextcloud server-side encryption
 
 > [!NOTE]
-> If your Nextcloud server uses server-side encryption, the GroupFolder encryption needs to be manually enabled. 
-> This is relevant for automatically managed project folders, as the GroupFolder app is used in these cases. 
+> If your Nextcloud server uses server-side encryption, the GroupFolder encryption needs to be manually enabled.
+> This is relevant for automatically managed project folders, as the GroupFolder app is used in these cases.
 To enable encryption for GroupFolders, run the following command on your Nextcloud server:
 
 ```shell
