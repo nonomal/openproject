@@ -154,3 +154,14 @@ In OpenProject configure the storage to "Use first access token obtained by iden
 TODO: How do we configure this scenario?
 
 This wraps up the configuration of this authentication method using Nextcloud Hub. For details on the next step continue with the [general setup instructions](../#4-automatically-managed-project-folders).
+
+## 3. Migrating from Two-way OAuth 2.0 authentication
+
+It is possible to migrate an existing storage to use SSO authentication. You can follow the steps outlined above for your specific setup, all of the relevant options
+in OpenProject and Nextcloud are also accessible from the views to edit your storage.
+
+Please note that all the [prerequisites](#1-prerequisites) mentioned above still apply, this means if your users don't already authenticate to OpenProject and Nextcloud through the same
+identity provider, you will have to migrate them to a common identity provider first.
+
+If you want to go back to Two-way OAuth 2.0 authentication, this is possible as well, but will require you to reconfigure the integration, so your users will have to
+reapprove the corresponding consent screens.
