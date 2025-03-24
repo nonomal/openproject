@@ -1,14 +1,14 @@
 ---
 sidebar_navigation:
   title: Setup Two-way OAuth 2.0 authentication
-  priority: 600
+  priority: 800
 description: Set up Two-way OAuth 2.0 authentication as the authentication method for your Nextcloud storage
 keywords: Nextcloud file storage integration
 ---
 
 # Setup Two-way OAuth 2.0 authentication
 
-This authentication mode will use access tokens provided by an OAuth application of either side of the integration between OpenProject and Nextcloud to authenticate requests performed in the name of users.
+This authentication mode will use access tokens provided by an OAuth application on either side of the integration between OpenProject and Nextcloud to authenticate requests performed in the name of users.
 
 You will have to perform configuration in OpenProject and in Nextcloud.
 
@@ -33,15 +33,15 @@ Once you have copied the values, click on **Save** to proceed to the next step.
 
 ## 2. Enter Nextcloud OAuth values in OpenProject
 
-In the page that appears, you will see new OAuth values that are once again generated automatically, but this time by Nextcloud.
+On the page that appears, you will see new OAuth values that are once again generated automatically, but this time by Nextcloud.
 
-OpenProject will need these values to be able to connect to your Nextcloud instance.
+OpenProject will need these values to be able to connect with your Nextcloud instance.
 
 Much like in the previous step, you will need to copy these two generated values (**Nextcloud OAuth client ID** and **Nextcloud OAuth client secret**) and paste them into OpenProject.
 
 ![Nextcloud also generates OAuth values that need to be copied to OpenProject](two_way_oauth2_setup_step_3.png)
 
-Navigate back to your OpenProject tab and click on the **Done, continue** button on the screen you previously left it at. You will now see a screen where you will be able to enter the Nextcloud values.
+Navigate back to your OpenProject tab and click the **Done, continue** button on the screen you previously left it at. You will now see a screen where you will be able to enter the Nextcloud values.
 
 ![OpenProject_NC_OAuth_values](two_way_oauth2_setup_step_4.png)
 

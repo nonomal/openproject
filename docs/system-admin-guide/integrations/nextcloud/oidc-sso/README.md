@@ -1,7 +1,7 @@
 ---
 sidebar_navigation:
   title: Setup Single-Sign-On through OpenID Connect Identity Provider
-  priority: 600
+  priority: 900
 description: Set up Single-Sign-On through OpenID Connect Identity Provider as the authentication method for your Nextcloud storage
 keywords: Nextcloud file storage integration
 ---
@@ -20,7 +20,7 @@ To use SSO authentication between OpenProject and Nextcloud, a few prerequisites
 2. The identity provider needs to hand out compatible access tokens
 3. The identity provider needs to allow long-term access (e.g. through the `offline_access` scope)
 
-Those requirements are explained in more detail below.
+These requirements are explained in more detail below.
 
 ### User authentication
 
@@ -32,14 +32,14 @@ Additionally the user account has to be created in both systems already at the t
 
 ### Token compatibility
 
-The identity provider will need to hand out JWT encoded access tokens that can be validated according to the rules of [RFC 9068](https://www.rfc-editor.org/rfc/rfc9068). Such tokens indicate at which application they are allowed to be used (the so-called Token _Audience_) and can be validated by an application mostly without performing additional web requests to the identity provider.
+The identity provider will need to hand out JWT encoded access tokens that can be validated according to the rules of [RFC 9068](https://www.rfc-editor.org/rfc/rfc9068). Such tokens indicate which application they are allowed to be used  in (the so-called Token _Audience_) and can be validated by an application mostly without performing additional web requests to the identity provider.
 
 It must be possible for OpenProject to obtain an access token that includes the Nexcloud client in the audience and vice versa, to allow making requests between the two applications. This has to be supported in one of two ways by the identity provider:
 
 1. It allows to perform _OAuth 2.0 Token Exchange_ according to [RFC 8693](https://www.rfc-editor.org/rfc/rfc8693)
 2. Alternatively, it provides tokens with the necessary audience during initial SSO authentication of the user
 
-Token exchange is generally the more secure option, since it allows fine-grained control by the identity provider which application can obtain tokens to make requests to other applications. It's usually harder to use leaked access tokens of this kind for privilege escalation. However, depending on the provider, the latter option may be easier to set-up.
+Token exchange is generally the more secure option, since it allows stricter control by the identity provider which application can obtain tokens to make requests to other applications. It's usually harder to use leaked access tokens of this kind for privilege escalation. However, depending on the provider, the latter option may be easier to set-up.
 
 ### Long-term access
 
@@ -56,18 +56,18 @@ Other identity providers might work as well, but we only have limited capabiliti
 
 ### Keycloak
 
-Keycloak can provide tokens via Token Exchange, as well as immediately after signing in the user. Using Token Exchange is preferred, but requires to enable two preview features in the Keycloak deployment:
+Keycloak can provide tokens via Token Exchange, as well as immediately after user sign in. Using Token Exchange is preferred, but requires to enable two preview features in the Keycloak deployment:
 
 * `token-exchange`
 * `admin-fine-grained-authz`
 
-If you prefer to not enable preview features on your production deployment, it's also possible to use wide-access tokens.
+If you prefer not to enable preview features on your production deployment, it's also possible to use wide-access tokens.
 
 #### ... using Token Exchange
 
 ##### Configuring Keycloak
 
-First make sure that you enabled both required features in Keycloak: `token-exchange` and `admin-fine-grained-authz`. You can [follow the Keycloak docs on how to do that](https://www.keycloak.org/server/features). Once they are enabled you can confirm them from the "Server Info" tab in your Keycloak installation:
+First make sure that you enabled both required features in Keycloak: `token-exchange` and `admin-fine-grained-authz`. You can [follow the Keycloak documentation on how to do that](https://www.keycloak.org/server/features). Once they are enabled you can confirm them from the "Server Info" tab in your Keycloak installation:
 
 ![The Keycloak UI that shows enabled features](keycloak_features.png)
 
