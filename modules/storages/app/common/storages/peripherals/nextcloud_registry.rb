@@ -85,6 +85,11 @@ module Storages
         register(:managed_folder_identifier, ManagedFolderIdentifier::Nextcloud)
       end
 
+      namespace("services") do
+        register(:folder_create, ::Storages::NextcloudManagedFolderCreateService)
+        register(:folder_permissions, ::Storages::NextcloudManagedFolderPermissionsService)
+      end
+
       namespace("validators") do
         register(:connection, ConnectionValidators::NextcloudValidator)
       end

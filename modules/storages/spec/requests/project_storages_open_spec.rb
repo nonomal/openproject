@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,184 +32,257 @@ require "spec_helper"
 require_module_spec_helper
 
 RSpec.describe "projects/:project_id/project_storages/:id/open" do
-  let(:expected_redirect_path) do
-    API::V3::Utilities::PathHelper::ApiV3Path.project_storage_open(project_storage.id)
-  end
-  let(:project_storage) { create(:project_storage, project:, storage:) }
-  let(:route) { "projects/#{project.identifier}/project_storages/#{project_storage.id}/open" }
-  let(:expected_redirect_url) do
-    "#{Setting.protocol}://#{Setting.host_name}#{expected_redirect_path}"
+  subject(:request) do
+    get path, {}, { "HTTP_ACCEPT" => "text/html" }
   end
 
-  shared_let(:project) { create(:project) }
-  shared_let(:storage) { create(:nextcloud_storage_configured) }
+  current_user { create(:user, member_with_permissions: { project => permissions }) }
+  let(:permissions) { %i[view_file_links read_files] }
+  let(:project_storage) { create(:project_storage, storage:, project_folder_id: "123", project_folder_mode:) }
+  let(:project) { project_storage.project }
+  let(:storage) { create(:nextcloud_storage_configured) }
+  let(:project_folder_mode) { "automatic" }
+  let(:authorization_state) { :connected }
+  let(:path) { "projects/#{project.identifier}/project_storages/#{project_storage.id}/open" }
+  let(:auth_method_selector) do
+    instance_double(
+      Storages::Peripherals::StorageInteraction::AuthenticationMethodSelector,
+      storage_oauth?: authentication_method != :sso,
+      sso?: authentication_method == :sso,
+      authentication_method:
+    )
+  end
+  let(:authentication_method) { :storage_oauth }
+  let(:folder_create_service) { class_double(Storages::NextcloudManagedFolderCreateService) }
+  let(:folder_permissions_service) { class_double(Storages::NextcloudManagedFolderPermissionsService) }
+  let(:file_info_result) { ServiceResult.success }
 
-  context "when user is logged in" do
-    current_user { create(:user, member_with_permissions: { project => permissions }) }
+  before do
+    Storages::Peripherals::Registry.stub("nextcloud.queries.file_info", ->(_) { file_info_result })
+    Storages::Peripherals::Registry.stub("nextcloud.services.folder_create", folder_create_service)
+    Storages::Peripherals::Registry.stub("nextcloud.services.folder_permissions", folder_permissions_service)
+    allow(Storages::Peripherals::StorageInteraction::Authentication).to receive(:authorization_state)
+      .and_return(authorization_state)
+    allow(Storages::Peripherals::StorageInteraction::AuthenticationMethodSelector).to receive(:new)
+      .and_return(auth_method_selector)
+  end
 
-    context "when user has permissions" do
+  it "redirects to the project folder in the storage" do
+    request
+    expect(last_response).to have_http_status(:found)
+    expect(last_response.headers["Location"]).to eq("#{storage.host}index.php/f/123?openfile=1")
+  end
+
+  context "when the user has no access to file links configured" do
+    let(:permissions) { %i[] }
+
+    it "prevents access" do
+      request
+      expect(last_response).to have_http_status(:forbidden)
+    end
+  end
+
+  context "when the user has no access to files configured" do
+    let(:permissions) { %i[view_file_links] }
+
+    it "redirects to the storage's file root" do
+      request
+      expect(last_response).to have_http_status(:found)
+      expect(last_response.headers["Location"]).to eq("#{storage.host}index.php/apps/files")
+    end
+  end
+
+  context "when the project folder is inactive" do
+    let(:project_folder_mode) { "inactive" }
+
+    it "redirects to the storage's file root" do
+      request
+      expect(last_response).to have_http_status(:found)
+      expect(last_response.headers["Location"]).to eq("#{storage.host}index.php/apps/files")
+    end
+  end
+
+  context "when an error occurs in determining the target location" do
+    before do
+      Storages::Peripherals::Registry.stub("nextcloud.queries.open_file_link", ->(_) do
+        ServiceResult.failure(
+          errors: Storages::StorageError.new(code: 400, log_message: "Request made outside opening hours.")
+        )
+      end)
+    end
+
+    it "renders an error message", :aggregate_failures do
+      request
+      expect(last_response).to have_http_status(:found)
+      expect(last_response.headers["Location"]).to eq("http://test.host/projects/#{project.id}")
+
+      flash = Sessions::UserSession.last.data.dig("flash", "flashes")
+      expect(flash["error"]).to eq("400 | Request made outside opening hours.")
+    end
+  end
+
+  context "when the user has no remote identity yet" do
+    let(:authorization_state) { :not_connected }
+
+    context "and the user authenticates through OAuth 2.0 at the storage" do
+      it "ensures creation of a remote identity" do
+        request
+        destination = CGI.escape("http://test.host/#{path}")
+        expect(last_response).to have_http_status(:found)
+        expect(last_response.headers["Location"]).to eq(
+          "http://test.host/oauth_clients/#{storage.oauth_client.client_id}/ensure_connection?" \
+          "destination_url=#{destination}&storage_id=#{storage.id}"
+        )
+      end
+    end
+
+    context "and the user authenticates through a common SSO IDP" do
+      let(:authentication_method) { :sso }
+
+      it "redirects to the project folder in the storage" do
+        request
+        expect(last_response).to have_http_status(:found)
+        expect(last_response.headers["Location"]).to eq("#{storage.host}index.php/f/123?openfile=1")
+      end
+    end
+  end
+
+  context "when we can't determine the user's remote identity" do
+    let(:authorization_state) { :error }
+
+    context "and the user authenticates through OAuth 2.0 at the storage" do
+      it "renders an error message", :aggregate_failures do
+        request
+
+        expect(last_response).to have_http_status(:found)
+        expect(last_response.headers["Location"]).to eq("http://test.host/projects/#{project.id}")
+        flash = Sessions::UserSession.last.data.dig("flash", "flashes")
+        expect(flash["error"]).to be_present
+      end
+    end
+
+    context "and the user authenticates through a common SSO IDP" do
+      let(:authentication_method) { :sso }
+
+      it "redirects to the project folder in the storage (the check is never performed)" do
+        request
+        expect(last_response).to have_http_status(:found)
+        expect(last_response.headers["Location"]).to eq("#{storage.host}index.php/f/123?openfile=1")
+      end
+    end
+  end
+
+  context "when project folders are not managed automatically" do
+    let(:project_folder_mode) { "manual" }
+
+    it "redirects to the project folder in the storage" do
+      request
+      expect(last_response).to have_http_status(:found)
+      expect(last_response.headers["Location"]).to eq("#{storage.host}index.php/f/123?openfile=1")
+    end
+  end
+
+  context "when the project folder has not been created yet" do
+    let(:project_storage) { create(:project_storage, storage:, project_folder_id: "", project_folder_mode:) }
+
+    before do
+      allow(folder_create_service).to receive(:call) do
+        project_storage.update!(project_folder_id: "456")
+        ServiceResult.success
+      end
+    end
+
+    it "creates the project folder in the storage" do
+      request
+      expect(folder_create_service).to have_received(:call)
+    end
+
+    it "redirects to the project folder in the storage" do
+      request
+      expect(last_response).to have_http_status(:found)
+      expect(last_response.headers["Location"]).to eq("#{storage.host}index.php/f/456?openfile=1")
+    end
+
+    context "and when creation of the folder fails" do
+      before do
+        allow(folder_create_service).to receive(:call).and_return(
+          ServiceResult.failure(errors: instance_double(ActiveModel::Errors, full_messages: ["Nope, sorry!"]))
+        )
+      end
+
+      it "renders an error message", :aggregate_failures do
+        request
+        expect(last_response).to have_http_status(:found)
+        expect(last_response.headers["Location"]).to eq("http://test.host/projects/#{project.id}")
+
+        flash = Sessions::UserSession.last.data.dig("flash", "flashes")
+        expect(flash["error"]).to eq(["Nope, sorry!"])
+      end
+    end
+
+    context "and when project folders are not managed automatically" do
+      let(:project_folder_mode) { "manual" }
+
+      it "does not try to create the folder" do
+        request
+        expect(folder_create_service).not_to have_received(:call)
+      end
+
+      it "redirects to the storage's file root" do
+        request
+        expect(last_response).to have_http_status(:found)
+        expect(last_response.headers["Location"]).to eq("#{storage.host}index.php/apps/files")
+      end
+    end
+  end
+
+  context "when the user has no permission to access the project folder in the storage" do
+    let(:file_info_result) { ServiceResult.failure(errors: instance_double(Storages::StorageError, code: :forbidden)) }
+
+    before do
+      allow(folder_permissions_service).to receive(:call).and_return(ServiceResult.success)
+    end
+
+    it "updates the user's permissions on the remote folder" do
+      request
+      expect(folder_permissions_service).to have_received(:call)
+    end
+
+    it "redirects to the project folder in the storage" do
+      request
+      expect(last_response).to have_http_status(:found)
+      expect(last_response.headers["Location"]).to eq("#{storage.host}index.php/f/123?openfile=1")
+    end
+
+    context "and when project folders are not managed automatically" do
+      let(:project_folder_mode) { "manual" }
+
+      it "does not try to update the permissions" do
+        request
+        expect(folder_permissions_service).not_to have_received(:call)
+      end
+
+      it "redirects to the project folder in the storage (leaving final authorization to the storage)" do
+        request
+        expect(last_response).to have_http_status(:found)
+        expect(last_response.headers["Location"]).to eq("#{storage.host}index.php/f/123?openfile=1")
+      end
+    end
+
+    context "and when the user should not have permissions to read the folder" do
       let(:permissions) { %i[view_file_links] }
 
-      context "when project_folder is automatic" do
-        let(:project_storage) { create(:project_storage, :as_automatically_managed, project:, storage:) }
-
-        context "when project_folder_id has been set by background job already" do
-          before { project_storage.update_attribute(:project_folder_id, "123") }
-
-          context "when user is able to read project_folder" do
-            before do
-              Storages::Peripherals::Registry.stub(
-                "nextcloud.queries.file_info", ->(_) { ServiceResult.success }
-              )
-            end
-
-            context "html" do
-              it "redirects to api_v3_projects_storage_open_url" do
-                get route, {}, { "HTTP_ACCEPT" => "text/html" }
-
-                expect(last_response).to have_http_status(:found)
-                expect(last_response.headers["Location"]).to eq(expected_redirect_url)
-              end
-            end
-
-            context "turbo_stream" do
-              it "renders an appropirate turbo_stream" do
-                get route, {}, { "HTTP_ACCEPT" => "text/vnd.turbo-stream.html" }
-
-                expect(last_response).to have_http_status(:ok)
-                expect(last_response.body).to be_html_eql("<turbo-stream action=\"update\" target=\"open-project-storage-modal-body-component\">\n    <template>\n        \n  <div class=\"blankslate-container\">\n    <div data-view-component=\"true\" class=\"FeedbackMessage blankslate\">\n      <svg aria-hidden=\"true\" height=\"24\" viewBox=\"0 0 24 24\" version=\"1.1\" width=\"24\" data-view-component=\"true\" class=\"octicon octicon-check-circle blankslate-icon color-fg-success\">\n    <path d=\"M17.28 9.28a.75.75 0 0 0-1.06-1.06l-5.97 5.97-2.47-2.47a.75.75 0 0 0-1.06 1.06l3 3a.75.75 0 0 0 1.06 0l6.5-6.5Z\"></path><path d=\"M12 1c6.075 0 11 4.925 11 11s-4.925 11-11 11S1 18.075 1 12 5.925 1 12 1ZM2.5 12a9.5 9.5 0 0 0 9.5 9.5 9.5 9.5 0 0 0 9.5-9.5A9.5 9.5 0 0 0 12 2.5 9.5 9.5 0 0 0 2.5 12Z\"></path>\n</svg>\n\n      <h2 data-view-component=\"true\" class=\"blankslate-heading\">Integration setup completed</h2>\n      <p id=\"waiting_subtitle\" data-view-component=\"true\">You are being redirected</p>\n\n</div>  </div>\n\n\n\n    </template>\n</turbo-stream>\n\n") # rubocop:disable Layout/LineLength
-              end
-            end
-          end
-
-          context "when user is not able to read project_folder" do
-            let(:code) { :forbidden }
-
-            before do
-              Storages::Peripherals::Registry.stub(
-                "nextcloud.queries.file_info",
-                ->(_) { ServiceResult.failure(result: code, errors: Storages::StorageError.new(code:)) }
-              )
-            end
-
-            context "html" do
-              context "when error code is unauthorized" do
-                let(:code) { :unauthorized }
-
-                context "when user authenticates at storage via SSO" do
-                  shared_let(:storage) { create(:nextcloud_storage, :oidc_sso_enabled) }
-                  let(:provider) { create(:oidc_provider) }
-
-                  current_user do
-                    create(:user, identity_url: "#{provider.slug}:cheese", member_with_permissions: { project => permissions })
-                  end
-
-                  it "redirects to the storage directly" do
-                    get route, {}, { "HTTP_ACCEPT" => "text/html" }
-
-                    expect(last_response).to have_http_status(:found)
-                    expect(last_response.headers["Location"])
-                      .to eq("#{storage.host}index.php/f/123?openfile=1")
-                  end
-                end
-
-                context "when user authenticates at storage via oauth2" do
-                  it "redirects to ensure_connection url with current request url as a destination_url" do
-                    get route, {}, { "HTTP_ACCEPT" => "text/html" }
-
-                    expect(last_response).to have_http_status(:found)
-                    expect(last_response.headers["Location"])
-                      .to eq("http://#{Setting.host_name}/oauth_clients/#{storage.oauth_client.client_id}/ensure_connection?" \
-                             "destination_url=http%3A%2F%2F#{CGI.escape(Setting.host_name)}%2Fprojects%2F#{project.identifier}" \
-                             "%2Fproject_storages%2F#{project_storage.id}%2Fopen&storage_id=#{storage.id}")
-                  end
-                end
-              end
-
-              context "when error code is forbidden" do
-                it "redirects to project overview page with modal flash set up" do
-                  get route, {}, { "HTTP_ACCEPT" => "text/html" }
-
-                  expect(last_response).to have_http_status(:found)
-                  expect(last_response.headers["Location"]).to eq("http://#{Setting.host_name}/projects/#{project.identifier}")
-                  expect(last_request.session["flash"]["flashes"])
-                    .to eq({
-                             "op_modal" => {
-                               component: "Storages::OpenProjectStorageModalComponent",
-                               parameters: { project_storage_open_url: "/projects/#{project.identifier}/project_storages/#{project_storage.id}/open",
-                                             redirect_url: expected_redirect_path,
-                                             state: :waiting }
-                             }
-                           })
-                end
-              end
-            end
-
-            context "turbo_stream" do
-              it "responds with 204 no content" do
-                get route, {}, { "HTTP_ACCEPT" => "text/vnd.turbo-stream.html" }
-
-                expect(last_response).to have_http_status(:no_content)
-                expect(last_response.body).to eq ("")
-              end
-            end
-          end
-        end
-
-        context "when project_folder_id has not been set by background job yet" do
-          context "html" do
-            it "redirects to project overview page with modal flash set up" do
-              get route, {}, { "HTTP_ACCEPT" => "text/html" }
-
-              expect(last_response).to have_http_status(:found)
-              expect(last_response.headers["Location"]).to eq("http://#{Setting.host_name}/projects/#{project.identifier}")
-              expect(last_request.session["flash"]["flashes"])
-                .to eq({
-                         "op_modal" => {
-                           component: "Storages::OpenProjectStorageModalComponent",
-                           parameters: { project_storage_open_url: "/projects/#{project.identifier}/project_storages/#{project_storage.id}/open",
-                                         redirect_url: expected_redirect_path,
-                                         state: :waiting }
-                         }
-                       })
-            end
-          end
-
-          context "turbo_stream" do
-            it "responds with 204 no content" do
-              get route, {}, { "HTTP_ACCEPT" => "text/vnd.turbo-stream.html" }
-
-              expect(last_response).to have_http_status(:no_content)
-              expect(last_response.body).to eq ("")
-            end
-          end
-        end
+      # TODO: or should we avoid doing that?
+      it "tries updating the user's permissions on the remote folder (ineffectively)" do
+        request
+        expect(folder_permissions_service).to have_received(:call)
       end
 
-      context "when project_folder is not automatic" do
-        it "redirects to storage_open_url" do
-          get route, {}, { "HTTP_ACCEPT" => "text/html" }
-
-          expect(last_response).to have_http_status(:found)
-          expect(last_response.headers["Location"]).to eq (expected_redirect_url)
-        end
+      it "redirects to the storage's file root" do
+        request
+        expect(last_response).to have_http_status(:found)
+        expect(last_response.headers["Location"]).to eq("#{storage.host}index.php/apps/files")
       end
-    end
-
-    context "when user has no permissions" do
-      let(:permissions) { %i[] }
-
-      it "responds with 403" do
-        get route, {}, { "HTTP_ACCEPT" => "text/html" }
-        expect(last_response).to have_http_status(:forbidden)
-      end
-    end
-  end
-
-  context "when user is not logged in" do
-    it "responds with 401" do
-      get route
-      expect(last_response).to have_http_status(:unauthorized)
     end
   end
 end

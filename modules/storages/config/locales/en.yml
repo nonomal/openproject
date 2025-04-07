@@ -80,6 +80,8 @@ en:
   project_storages:
     edit_project_folder:
       label: Edit project folder
+    open:
+      remote_identity_error: An unexpected error occured while connecting to the storage.
     project_folder_mode:
       automatic: Automatically managed
       inactive: No specific folder

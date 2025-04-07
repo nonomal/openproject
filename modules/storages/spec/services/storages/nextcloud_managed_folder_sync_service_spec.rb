@@ -32,20 +32,13 @@ require "spec_helper"
 require_module_spec_helper
 
 module Storages
-  RSpec.describe NextcloudManagedFolderSyncService, :webmock do
-    subject(:service) { described_class }
-
-    describe ".call" do
-      it "requires a NextcloudStorage to be passed" do
-        method = described_class.method(:call)
-
-        expect(method.parameters).to contain_exactly(%i[req storage])
-        expect { service.call(OneDriveStorage.new) }
-          .to raise_error(ArgumentError, "Expected Storages::NextcloudStorage but got Storages::OneDriveStorage")
-      end
-    end
-
+  # Note: NextcloudManagedFolderSyncService and OneDriveManagedFolderSyncService were previously separate classes
+  # and thus had separate specs. The classes were merged first, so that original specs could confirm correct behaviour
+  # of the newly merged ManagedFolderSyncService.
+  RSpec.describe ManagedFolderSyncService, :webmock do
     describe "#call" do
+      subject(:service) { described_class.new(storage) }
+
       shared_let(:oidc_provider) { create(:oidc_provider) }
 
       shared_let(:admin) { create(:admin) }
@@ -238,12 +231,12 @@ module Storages
       end
 
       it "applies changes to all project storages linked to the passed storage" do
-        expect { service.call(storage) }.to change(LastProjectFolder, :count).by(2)
+        expect { service.call }.to change(LastProjectFolder, :count).by(2)
         expect(set_permissions).to have_received(:call).exactly(5).times
       end
 
       it "updates the project storage with the remote folder id" do
-        expect { service.call(storage) }.to change { project_storage.reload.project_folder_id }
+        expect { service.call }.to change { project_storage.reload.project_folder_id }
                                               .from(nil).to("normal_project_id")
       end
 
@@ -264,7 +257,7 @@ module Storages
         before { ProjectStorage.where.not(id: renamed_storage.id).delete_all }
 
         it "requests to rename the folder to the new managed folder name" do
-          service.call(storage)
+          service.call
           expect(rename_file).to have_received(:call)
                                    .with(storage:,
                                          auth_strategy:,
@@ -273,7 +266,7 @@ module Storages
         end
 
         it "does not change the project_folder_id after the rename" do
-          expect { service.call(storage) }.not_to change { renamed_storage.reload.project_folder_id }
+          expect { service.call }.not_to change { renamed_storage.reload.project_folder_id }
         end
       end
 
@@ -287,14 +280,14 @@ module Storages
         it "allows sets permissions to all signed-in users" do
           input_data = build_project_folder_permission_input[1] # The permissions for the public project
 
-          service.call(storage)
+          service.call
           expect(set_permissions).to have_received(:call).with(storage:, auth_strategy:, input_data:).once
         end
       end
 
       context "when creating a folder for a project that with trailing slashes in its name" do
         it "replaces the offending characters" do
-          service.call(storage)
+          service.call
 
           expect(create_folder).to have_received(:call)
                                      .with(storage:, auth_strategy:, parent_location: Peripherals::ParentFolder.new("/"),
@@ -302,14 +295,14 @@ module Storages
         end
 
         it "adds a new entry on historical data" do
-          expect { service.call(storage) }.to change { LastProjectFolder.where(project_storage:).count }.by(1)
+          expect { service.call }.to change { LastProjectFolder.where(project_storage:).count }.by(1)
         end
       end
 
       context "with an archived project" do
         it "hides the project folder" do
           input_data = build_project_folder_permission_input[0]
-          service.call(storage)
+          service.call
 
           expect(set_permissions).to have_received(:call).with(storage:, auth_strategy:, input_data:).once
         end
@@ -328,21 +321,21 @@ module Storages
 
           it "logs an error" do
             allow(Rails.logger).to receive(:error).and_call_original
-            service.call(storage)
+            service.call
             expect(Rails.logger)
               .to have_received(:error).with(error_code: :unauthorized, message: "TESTING",
                                              folder: "OpenProject", data: "error body")
           end
 
           it "adds to the services errors" do
-            result = service.call(storage)
+            result = service.call
 
             expect(result.errors.size).to eq(1)
             expect(result.errors[:base]).to contain_exactly(I18n.t("#{error_prefix}.unauthorized"))
           end
 
           it "interrupts the flow" do
-            service.call(storage)
+            service.call
             [group_users, add_user, create_folder, remove_user, rename_file, set_permissions].each do |command|
               expect(command).not_to have_received(:call)
             end
@@ -357,7 +350,7 @@ module Storages
 
           it "logs an error" do
             allow(Rails.logger).to receive(:error).and_call_original
-            service.call(storage)
+            service.call
 
             expect(Rails.logger).to have_received(:error)
                                       .with(error_code: :error,
@@ -368,14 +361,14 @@ module Storages
           end
 
           it "adds to the services errors" do
-            result = service.call(storage)
+            result = service.call
 
             expect(result.errors.size).to eq(1)
             expect(result.errors[:base]).to contain_exactly(I18n.t("#{error_prefix}.error"))
           end
 
           it "interrupts the flow" do
-            service.call(storage)
+            service.call
             expect(set_permissions).to have_received(:call).once
 
             [group_users, add_user, create_folder, remove_user, rename_file].each do |command|
@@ -394,7 +387,7 @@ module Storages
 
           it "logs an error" do
             allow(Rails.logger).to receive(:error).and_call_original
-            service.call(storage)
+            service.call
 
             expect(Rails.logger).to have_received(:error)
                                       .with(error_code: :conflict, message: "TESTING",
@@ -402,7 +395,7 @@ module Storages
           end
 
           it "adds to the services errors" do
-            result = service.call(storage)
+            result = service.call
 
             expect(result.errors.size).to eq(1)
             expect(result.errors[:create_folder])
@@ -413,7 +406,7 @@ module Storages
           it "interrupts the flow" do
             commands = [file_path_to_id_map, set_permissions, group_users, add_user, create_folder, remove_user,
                         rename_file]
-            service.call(storage)
+            service.call
             expect(commands).to all(have_received(:call).at_least(:once))
           end
         end

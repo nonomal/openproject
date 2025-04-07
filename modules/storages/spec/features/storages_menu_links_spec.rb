@@ -78,9 +78,9 @@ RSpec.describe "Storage links in project menu" do
       it "has links to all enabled storages" do
         visit(project_path(id: project.id))
 
-        expect(page).to have_link(storage_configured_linked1.name, href: ensure_connection_path(project_storage1))
-        expect(page).to have_link(storage_configured_linked2.name, href: ensure_connection_path(project_storage2))
-        expect(page).to have_link(storage_configured_linked3.name, href: ensure_connection_path(project_storage3))
+        expect(page).to have_link(storage_configured_linked1.name, href: project_storage1.open_project_storage_url)
+        expect(page).to have_link(storage_configured_linked2.name, href: project_storage2.open_project_storage_url)
+        expect(page).to have_link(storage_configured_linked3.name, href: project_storage3.open_project_storage_url)
         expect(page).to have_no_link(storage_configured_unlinked.name)
         expect(page).to have_no_link(storage_unconfigured_linked.name)
       end
@@ -93,9 +93,9 @@ RSpec.describe "Storage links in project menu" do
         it "has all links prefixed" do
           visit(project_path(id: project.id))
 
-          expect(page).to have_link(storage_configured_linked1.name, href: ensure_connection_path(project_storage1))
-          expect(page).to have_link(storage_configured_linked2.name, href: ensure_connection_path(project_storage2))
-          expect(page).to have_link(storage_configured_linked3.name, href: ensure_connection_path(project_storage3))
+          expect(page).to have_link(storage_configured_linked1.name, href: project_storage1.open_project_storage_url)
+          expect(page).to have_link(storage_configured_linked2.name, href: project_storage2.open_project_storage_url)
+          expect(page).to have_link(storage_configured_linked3.name, href: project_storage3.open_project_storage_url)
           expect(page).to have_no_link(storage_configured_unlinked.name)
           expect(page).to have_no_link(storage_unconfigured_linked.name)
         end
@@ -122,9 +122,9 @@ RSpec.describe "Storage links in project menu" do
       it "has links to enabled storages apart from automatically managed" do
         visit(project_path(id: project.id))
 
-        expect(page).to have_no_link(storage_configured_linked1.name, href: ensure_connection_path(project_storage1))
-        expect(page).to have_link(storage_configured_linked2.name, href: ensure_connection_path(project_storage2))
-        expect(page).to have_link(storage_configured_linked3.name, href: ensure_connection_path(project_storage3))
+        expect(page).to have_link(storage_configured_linked2.name, href: project_storage2.open_project_storage_url)
+        expect(page).to have_link(storage_configured_linked3.name, href: project_storage3.open_project_storage_url)
+        expect(page).to have_no_link(storage_configured_linked1.name, href: project_storage1.open_project_storage_url)
         expect(page).to have_no_link(storage_configured_unlinked.name)
         expect(page).to have_no_link(storage_unconfigured_linked.name)
       end

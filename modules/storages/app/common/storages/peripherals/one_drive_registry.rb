@@ -76,6 +76,11 @@ module Storages
         register(:managed_folder_identifier, ManagedFolderIdentifier::OneDrive)
       end
 
+      namespace("services") do
+        register(:folder_create, ::Storages::OneDriveManagedFolderCreateService)
+        register(:folder_permissions, ::Storages::OneDriveManagedFolderPermissionsService)
+      end
+
       namespace("validators") do
         register(:connection, ConnectionValidators::OneDriveValidator)
       end

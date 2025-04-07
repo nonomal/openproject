@@ -33,7 +33,10 @@ require_module_spec_helper
 
 RSpec::Matchers.define_negated_matcher :not_change, :change
 
-RSpec.describe Storages::OneDriveManagedFolderSyncService, :webmock do
+# Note: NextcloudManagedFolderSyncService and OneDriveManagedFolderSyncService were previously separate classes
+# and thus had separate specs. The classes were merged first, so that original specs could confirm correct behaviour
+# of the newly merged ManagedFolderSyncService.
+RSpec.describe Storages::ManagedFolderSyncService, :webmock do
   shared_let(:admin) { create(:admin) }
   shared_let(:storage) do
     # Automatically Managed Project Folder Drive
@@ -127,16 +130,6 @@ RSpec.describe Storages::OneDriveManagedFolderSyncService, :webmock do
   end
 
   subject(:service) { described_class.new(storage) }
-
-  it "responds to .call" do
-    method = described_class.method(:call)
-
-    expect(method.parameters).to contain_exactly(%i[req storage])
-  end
-
-  it "return if the storage is not automatically managed" do
-    expect(described_class.call(storage)).to be_falsey
-  end
 
   describe "#call" do
     before { storage.update(automatically_managed: true) }

@@ -29,38 +29,54 @@
 #++
 
 module Storages
-  class AutomaticallyManagedStorageSyncJob < ApplicationJob
-    include GoodJob::ActiveJobExtensions::Concurrency
-    extend ::DebounceableJob
+  class ManagedFolderSyncService < BaseService
+    using Peripherals::ServiceResultRefinements
 
-    queue_with_priority :above_normal
-
-    good_job_control_concurrency_with(
-      total_limit: 2,
-      enqueue_limit: 1,
-      perform_limit: 1,
-      key: -> { "StorageSyncJob-#{arguments.last.short_provider_type}-#{arguments.last.id}" }
-    )
-
-    retry_on GoodJob::ActiveJobExtensions::Concurrency::ConcurrencyExceededError, wait: 5, attempts: 10
-
-    retry_on Errors::IntegrationJobError, attempts: 5 do |job, error|
-      if job.executions >= 5
-        OpenProject::Notifications.send(
-          OpenProject::Events::STORAGE_TURNED_UNHEALTHY, storage: job.arguments.last, reason: error.message
-        )
+    class << self
+      def call(storage)
+        new(storage).call
       end
     end
 
-    def self.key(storage) = "sync-#{storage}-#{storage.id}"
+    def initialize(storage)
+      super()
+      @storage = storage
+    end
 
-    def perform(storage)
-      return unless storage.configured? && storage.automatic_management_enabled?
+    def call
+      with_tagged_logger([self.class.name, "storage-#{@storage.id}"]) do
+        info "Starting AMPF Sync for Storage #{@storage.id}"
+        prepare_remote_folders.on_failure { return epilogue }
+        apply_permissions_to_folders
+        epilogue
+      end
+    end
 
-      sync_result = ManagedFolderSyncService.call(storage)
+    private
 
-      sync_result.on_failure { raise Errors::IntegrationJobError, sync_result.errors.full_messages.join(", ") }
-      sync_result.on_success { OpenProject::Notifications.send(OpenProject::Events::STORAGE_TURNED_HEALTHY, storage:) }
+    def epilogue
+      info "Synchronization process for Storage #{@storage.id} has ended. #{@result.errors.count} errors found."
+      @result
+    end
+
+    def prepare_remote_folders
+      folder_create_service.call(storage: @storage).tap do |subresult|
+        @result.merge!(subresult)
+      end
+    end
+
+    def apply_permissions_to_folders
+      folder_permissions_service.call(storage: @storage).tap do |subresult|
+        @result.merge!(subresult)
+      end
+    end
+
+    def folder_create_service
+      Peripherals::Registry.resolve("#{@storage}.services.folder_create")
+    end
+
+    def folder_permissions_service
+      Peripherals::Registry.resolve("#{@storage}.services.folder_permissions")
     end
   end
 end

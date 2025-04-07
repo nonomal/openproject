@@ -97,7 +97,7 @@ module Storages
 
     def open_with_connection_ensured
       return unless storage.configured?
-      return open_project_storage_url if storage.authenticate_via_idp?
+      return open_project_storage_url if storage.authenticate_via_idp? # TODO: use auth method selector
 
       OpenProject::StaticRouting::StaticRouter.new.url_helpers.oauth_clients_ensure_connection_path(
         oauth_client_id: storage.oauth_client.client_id,
@@ -106,16 +106,11 @@ module Storages
       )
     end
 
-    private
-
     def open_project_storage_url
-      OpenProject::StaticRouting::StaticRouter
-        .new
-        .url_helpers.open_project_storage_url(host: Setting.host_name,
-                                              protocol: "https",
-                                              project_id: project.identifier,
-                                              id:)
+      OpenProject::StaticRouting::StaticRouter.new.url_helpers.open_project_storage_url(project_id: project.identifier, id:)
     end
+
+    private
 
     def managed_folder_identifier
       @managed_folder_identifier ||=

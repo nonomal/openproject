@@ -243,7 +243,7 @@ module OpenProject::Storages
             icon = storage.provider_type_nextcloud? ? "op-mark-nextcloud" : "file-directory"
             menu.push(
               :"storage_#{storage.id}",
-              prj_storage.open_with_connection_ensured,
+              prj_storage.open_project_storage_url,
               caption: storage.name,
               before: :members,
               icon:,
