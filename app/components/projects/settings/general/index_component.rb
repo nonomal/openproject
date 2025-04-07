@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-#-- copyright
+# -- copyright
 # OpenProject is an open source project management software.
-# Copyright (C) the OpenProject GmbH
+# Copyright (C) 2010-2024 the OpenProject GmbH
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License version 3.
@@ -26,41 +26,18 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 # See COPYRIGHT and LICENSE files for more details.
-#++
+# ++
 
-class Projects::Settings::GeneralController < Projects::SettingsController
-  include OpTurbo::DialogStreamHelper
+module Projects
+  module Settings
+    module General
+      class IndexComponent < ApplicationComponent
+        include ApplicationHelper
+        include OpPrimer::ComponentHelpers
+        include OpTurbo::Streamable
 
-  menu_item :settings_general
-
-  def toggle_public_dialog
-    respond_with_dialog Projects::Settings::TogglePublicDialogComponent.new(@project)
-  end
-
-  def toggle_public
-    call = Projects::UpdateService
-      .new(model: @project, user: current_user)
-      .call(public: !@project.public?)
-
-    call.on_failure do
-      flash[:error] = call.message
-    end
-
-    redirect_to action: :show, status: :see_other
-  end
-
-  def update
-    call = Projects::UpdateService
-      .new(model: @project, user: current_user)
-      .call(permitted_params.project)
-
-    @project = call.result
-
-    if call.success?
-      flash[:notice] = I18n.t(:notice_successful_update)
-      redirect_to project_settings_general_path(@project)
-    else
-      render action: :show, status: :unprocessable_entity
+        options :project
+      end
     end
   end
 end

@@ -27,40 +27,14 @@
 #
 # See COPYRIGHT and LICENSE files for more details.
 #++
+RSpec.shared_context "with rendered form" do
+  include ViewComponent::TestHelpers
 
-class Projects::Settings::GeneralController < Projects::SettingsController
-  include OpTurbo::DialogStreamHelper
-
-  menu_item :settings_general
-
-  def toggle_public_dialog
-    respond_with_dialog Projects::Settings::TogglePublicDialogComponent.new(@project)
-  end
-
-  def toggle_public
-    call = Projects::UpdateService
-      .new(model: @project, user: current_user)
-      .call(public: !@project.public?)
-
-    call.on_failure do
-      flash[:error] = call.message
-    end
-
-    redirect_to action: :show, status: :see_other
-  end
-
-  def update
-    call = Projects::UpdateService
-      .new(model: @project, user: current_user)
-      .call(permitted_params.project)
-
-    @project = call.result
-
-    if call.success?
-      flash[:notice] = I18n.t(:notice_successful_update)
-      redirect_to project_settings_general_path(@project)
-    else
-      render action: :show, status: :unprocessable_entity
+  before do
+    render_in_view_context(model, described_class) do |model, described_class|
+      primer_form_with(url: "/foo", model:) do |f|
+        render(described_class.new(f))
+      end
     end
   end
 end

@@ -27,40 +27,29 @@
 #
 # See COPYRIGHT and LICENSE files for more details.
 #++
+#
+require "spec_helper"
 
-class Projects::Settings::GeneralController < Projects::SettingsController
-  include OpTurbo::DialogStreamHelper
+RSpec.describe Projects::Settings::StatusForm, type: :forms do
+  include_context "with rendered form"
 
-  menu_item :settings_general
+  let(:model) { build_stubbed(:project, status_explanation: "example status info") }
 
-  def toggle_public_dialog
-    respond_with_dialog Projects::Settings::TogglePublicDialogComponent.new(@project)
+  it "renders status field" do
+    expect(page).to have_element "opce-autocompleter", "data-input-name": "\"project[status_code]\""
+    expect(page).to have_element "opce-autocompleter", "data-qa-field-name": "status" do |elem|
+      expect(elem["data-items"]).to have_json_size(7)
+      expect(elem["data-items"]).to include_json(%{{"name":"Not set","classes":"project-status--name -not-set"}})
+      expect(elem["data-items"]).to include_json(
+        %{{"id":"on_track","name":"On track","classes":"project-status--name -on-track"}}
+      ).including(:id)
+    end
   end
 
-  def toggle_public
-    call = Projects::UpdateService
-      .new(model: @project, user: current_user)
-      .call(public: !@project.public?)
-
-    call.on_failure do
-      flash[:error] = call.message
-    end
-
-    redirect_to action: :show, status: :see_other
-  end
-
-  def update
-    call = Projects::UpdateService
-      .new(model: @project, user: current_user)
-      .call(permitted_params.project)
-
-    @project = call.result
-
-    if call.success?
-      flash[:notice] = I18n.t(:notice_successful_update)
-      redirect_to project_settings_general_path(@project)
-    else
-      render action: :show, status: :unprocessable_entity
-    end
+  it "renders status description field" do
+    expect(page).to have_field "Project status description", with: "example status info", visible: :hidden
+    expect(page).to have_element "opce-ckeditor-augmented-textarea",
+                                 "data-textarea-selector": "\"#project_status_explanation\""
+    expect(page).to have_element "opce-ckeditor-augmented-textarea", "data-qa-field-name": "statusExplanation"
   end
 end

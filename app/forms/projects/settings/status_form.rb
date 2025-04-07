@@ -27,40 +27,42 @@
 #
 # See COPYRIGHT and LICENSE files for more details.
 #++
+module Projects
+  module Settings
+    class StatusForm < ApplicationForm
+      include ProjectStatusHelper
 
-class Projects::Settings::GeneralController < Projects::SettingsController
-  include OpTurbo::DialogStreamHelper
+      form do |f|
+        f.autocompleter(
+          name: :status_code,
+          label: attribute_name(:status_code),
+          include_blank: true,
+          autocomplete_options: {
+            decorated: true,
+            clearable: false,
+            focusDirectly: false,
+            data: { qa_field_name: "status" }
+          }
+        ) do |select|
+          [nil, *Project.status_codes.keys].map do |status_code|
+            select.option(
+              label: project_status_name(status_code),
+              value: status_code,
+              classes: "project-status--name #{project_status_css_class(status_code)}",
+              selected: model.status_code == status_code
+            )
+          end
+        end
 
-  menu_item :settings_general
-
-  def toggle_public_dialog
-    respond_with_dialog Projects::Settings::TogglePublicDialogComponent.new(@project)
-  end
-
-  def toggle_public
-    call = Projects::UpdateService
-      .new(model: @project, user: current_user)
-      .call(public: !@project.public?)
-
-    call.on_failure do
-      flash[:error] = call.message
-    end
-
-    redirect_to action: :show, status: :see_other
-  end
-
-  def update
-    call = Projects::UpdateService
-      .new(model: @project, user: current_user)
-      .call(permitted_params.project)
-
-    @project = call.result
-
-    if call.success?
-      flash[:notice] = I18n.t(:notice_successful_update)
-      redirect_to project_settings_general_path(@project)
-    else
-      render action: :show, status: :unprocessable_entity
+        f.rich_text_area(
+          name: :status_explanation,
+          label: attribute_name(:status_explanation),
+          rich_text_options: {
+            showAttachments: false,
+            data: { qa_field_name: "statusExplanation" }
+          }
+        )
+      end
     end
   end
 end

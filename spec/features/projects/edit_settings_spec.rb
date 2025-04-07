@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,8 +31,8 @@
 require "spec_helper"
 
 RSpec.describe "Projects", "editing settings", :js do
-  let(:name_field) { FormFields::InputFormField.new :name }
-  let(:parent_field) { FormFields::SelectFormField.new :parent }
+  include_context "ng-select-autocomplete helpers"
+
   let(:permissions) { %i(edit_project view_project_attributes edit_project_attributes) }
 
   current_user do
@@ -38,7 +40,7 @@ RSpec.describe "Projects", "editing settings", :js do
   end
 
   shared_let(:project) do
-    create(:project, name: "Foo project", identifier: "foo-project")
+    create(:project, :with_status, name: "Foo project", identifier: "foo-project")
   end
 
   it "hides the field whose functionality is presented otherwise" do
@@ -78,34 +80,123 @@ RSpec.describe "Projects", "editing settings", :js do
     end
   end
 
-  context "with a user not allowed to see the parent project" do
-    include_context "ng-select-autocomplete helpers"
+  describe "editing basic details" do
+    before do
+      Pages::Projects::Settings::General.new(project).visit!
+    end
 
-    let(:parent_project) { create(:project) }
-    let(:parent_field) { FormFields::SelectFormField.new "parent" }
+    it "updates the basic details" do
+      within_section "Basic details" do
+        fill_in "Name", with: "Bar project"
+        fill_in_rich_text "Description", with: "a long and verbose project description."
+
+        click_on "Update details"
+      end
+
+      expect_and_dismiss_flash type: :success, message: "Successful update."
+
+      within_section "Basic details" do
+        expect(page).to have_field "Name", with: "Bar project"
+        expect(page).to have_selector :rich_text, "Description", text: "a long and verbose project description."
+      end
+    end
+
+    it "displays validation error on invalid input" do
+      within_section "Basic details" do
+        fill_in "Name", with: ""
+        click_on "Update details"
+
+        expect(page).to have_field "Name", with: "", validation_error: "Name can't be blank."
+
+        fill_in "Name", with: "A" * 256
+        click_on "Update details"
+
+        expect(page).to have_field "Name", with: "A" * 256, validation_error: "Name is too long (maximum is 255 characters)."
+      end
+    end
+  end
+
+  describe "editing project status" do
+    let(:status_field) { FormFields::SelectFormField.new :status }
+
+    before do
+      Pages::Projects::Settings::General.new(project).visit!
+    end
+
+    it "updates the project status and description" do
+      within_section "Project status" do
+        status_field.select_option "At risk"
+        fill_in_rich_text "Project status description", with: "Light-years behind 🥺"
+
+        click_on "Update status"
+      end
+
+      expect_and_dismiss_flash type: :success, message: "Successful update."
+
+      within_section "Project status" do
+        status_field.expect_selected "AT RISK"
+        expect(page).to have_selector :rich_text, "Project status description", text: "Light-years behind 🥺"
+      end
+    end
+
+    it "unsets the project status" do
+      within_section "Project status" do
+        status_field.select_option "Not set"
+
+        click_on "Update status"
+      end
+
+      expect_and_dismiss_flash type: :success, message: "Successful update."
+
+      within_section "Project status" do
+        status_field.expect_selected "NOT SET"
+      end
+    end
+  end
+
+  describe "editing project relations" do
+    let(:parent_field) { FormFields::SelectFormField.new :parent }
+    let(:parent_project) { create(:project, name: "New parent project") }
 
     before do
       project.update_attribute(:parent, parent_project)
     end
 
-    it "can update the project without destroying the relation to the parent" do
-      visit project_settings_general_path(project.id)
+    context "with a user allowed to see parent project" do
+      current_user { create(:user, member_with_permissions: { project => permissions, parent_project => permissions }) }
 
-      fill_in "Name", with: "New project name"
+      it "updates the parent project" do
+        Pages::Projects::Settings::General.new(project).visit!
 
-      parent_field.expect_selected I18n.t(:"api_v3.undisclosed.parent")
+        within_section "Project relations" do
+          parent_field.expect_selected "New parent project"
+          click_on "Update parent project"
+        end
 
-      click_on "Save"
+        expect_and_dismiss_flash type: :success, message: "Successful update."
 
-      expect(page).to have_content "Successful update."
+        within_section "Project relations" do
+          parent_field.expect_selected "New parent project"
+        end
+      end
+    end
 
-      project.reload
+    context "with a user not allowed to see the parent project" do
+      it "can update the project without destroying the relation to the parent" do
+        pending "need to be able to override autocompleter model"
 
-      expect(project.name)
-        .to eql "New project name"
+        Pages::Projects::Settings::General.new(project).visit!
 
-      expect(project.parent)
-        .to eql parent_project
+        within_section "Project relations" do
+          parent_field.expect_selected I18n.t(:"api_v3.undisclosed.parent")
+          click_on "Update parent project"
+        end
+
+        expect_and_dismiss_flash type: :success, message: "Successful update."
+
+        project.reload
+        expect(project.parent).to eq parent_project
+      end
     end
   end
 end
