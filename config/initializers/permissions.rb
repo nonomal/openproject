@@ -206,7 +206,7 @@ Rails.application.reloader.to_prepare do
 
       map.permission :copy_projects,
                      {
-                       projects: %i[copy]
+                       projects: %i[copy_form copy]
                      },
                      permissible_on: :project,
                      require: :member,

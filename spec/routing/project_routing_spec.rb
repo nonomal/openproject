@@ -65,6 +65,22 @@ RSpec.describe ProjectsController do
     end
   end
 
+  describe "copy_form" do
+    it do
+      expect(get("projects/123/copy")).to route_to(
+        controller: "projects", action: "copy_form", id: "123"
+      )
+    end
+  end
+
+  describe "copy" do
+    it do
+      expect(post("projects/123/copy")).to route_to(
+        controller: "projects", action: "copy", id: "123"
+      )
+    end
+  end
+
   describe "destroy_info" do
     it do
       expect(get("/projects/123/destroy_info")).to route_to(
@@ -117,12 +133,6 @@ RSpec.describe ProjectsController do
     it do
       expect(delete("projects/123/archive")).to route_to(
         controller: "projects/archive", action: "destroy", project_id: "123"
-      )
-    end
-
-    it do
-      expect(get("projects/123/copy")).to route_to(
-        controller: "projects", action: "copy", id: "123"
       )
     end
   end

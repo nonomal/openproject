@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -198,13 +200,13 @@ RSpec.describe ProjectsController do
     end
   end
 
-  describe "#copy" do
+  describe "#copy_form" do
     let(:project) { create(:project, identifier: "blog") }
 
-    it "renders 'copy'" do
-      get "copy", params: { id: project.id }
+    it "renders 'copy_form'" do
+      get "copy_form", params: { id: project.id }
       expect(response).to be_successful
-      expect(response).to render_template "copy"
+      expect(response).to render_template "copy_form"
     end
 
     context "as non authorized user" do
@@ -215,8 +217,57 @@ RSpec.describe ProjectsController do
       end
 
       it "shows an error" do
-        get "copy", params: { id: project.id }
+        get "copy_form", params: { id: project.id }
         expect(response).to have_http_status :forbidden
+      end
+    end
+  end
+
+  describe "#copy" do
+    let(:project) { create(:project, identifier: "blog") }
+
+    before do
+      copy_service = instance_double(Projects::EnqueueCopyService, call: service_result)
+
+      allow(Projects::EnqueueCopyService)
+       .to receive(:new)
+             .with(user: admin, model: project)
+             .and_return(copy_service)
+    end
+
+    context "when service call succeeds" do
+      let(:job) { CopyProjectJob.new }
+      let(:service_result) { ServiceResult.success(result: job) }
+
+      it "redirects to job status" do
+        post :copy, params: {
+          id: project.id,
+          project: { name: "Copied project" },
+          copy_options: { dependencies: [], send_notifications: false }
+        }
+
+        expect(response).to redirect_to job_status_path(job.job_id)
+      end
+    end
+
+    context "when service call fails" do
+      let(:service_result) { ServiceResult.failure(result: project) }
+
+      before do
+        project.name = ""
+      end
+
+      it "renders copy_form template with errors" do
+        post :copy, params: {
+          id: project.id,
+          project: { name: "" },
+          copy_options: { dependencies: [], send_notifications: false }
+        }
+
+        expect(response).not_to be_successful
+        expect(response).to have_http_status :unprocessable_entity
+        expect(assigns(:target_project)).not_to be_valid
+        expect(response).to render_template "copy_form"
       end
     end
   end

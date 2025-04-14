@@ -1,6 +1,8 @@
-#-- copyright
+# frozen_string_literal: true
+
+# -- copyright
 # OpenProject is an open source project management software.
-# Copyright (C) the OpenProject GmbH
+# Copyright (C) 2010-2024 the OpenProject GmbH
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License version 3.
@@ -24,14 +26,14 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 # See COPYRIGHT and LICENSE files for more details.
-#++
+# ++
 
-require "spec_helper"
-require "support/permission_specs"
+module Projects
+  class CopyFormComponent < ApplicationComponent
+    include ApplicationHelper
+    include OpPrimer::ComponentHelpers
+    include OpTurbo::Streamable
 
-RSpec.describe ProjectsController, "copy_projects permission", type: :controller do
-  include PermissionSpecs
-
-  check_permission_required_for("projects#copy_form", :copy_projects)
-  check_permission_required_for("projects#copy", :copy_projects)
+    options :source_project, :target_project, :copy_options
+  end
 end

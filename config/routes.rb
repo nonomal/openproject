@@ -298,7 +298,8 @@ Rails.application.routes.draw do
     member do
       get "settings", to: redirect("projects/%{id}/settings/general/")
 
-      get :copy
+      get :copy, to: "projects#copy_form"
+      post :copy
 
       patch :types
 

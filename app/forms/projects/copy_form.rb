@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -26,12 +28,17 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-require "spec_helper"
-require "support/permission_specs"
+module Projects
+  class CopyForm < ApplicationForm
+    form do |f|
+      f.fields_for(:copy_options, @copy_options, nested: false) do |builder|
+        CopyOptionsForm.new(builder)
+      end
+    end
 
-RSpec.describe ProjectsController, "copy_projects permission", type: :controller do
-  include PermissionSpecs
-
-  check_permission_required_for("projects#copy_form", :copy_projects)
-  check_permission_required_for("projects#copy", :copy_projects)
+    def initialize(copy_options:)
+      super()
+      @copy_options = copy_options
+    end
+  end
 end
