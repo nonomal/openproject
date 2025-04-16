@@ -59,6 +59,10 @@ module Projects
                  count_source: ->(source, _) { source.work_packages.joins(:file_links).count("file_links.id") } }]
     end
 
+    def initialize(contract_options: {}, **)
+      super(contract_options: contract_options.reverse_merge(validate_model: true), **)
+    end
+
     protected
 
     ##
@@ -100,10 +104,6 @@ module Projects
 
     def copy_activated_custom_fields(call)
       call.result.project_custom_field_ids = source.project_custom_field_ids
-    end
-
-    def contract_options
-      { copy_source: source, validate_model: true }
     end
 
     def retain_attributes(source, target)
