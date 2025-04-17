@@ -32,19 +32,15 @@ require "spec_helper"
 require_module_spec_helper
 
 module Storages
-  # Note: NextcloudManagedFolderSyncService and OneDriveManagedFolderSyncService were previously separate classes
-  # and thus had separate specs. The classes were merged first, so that original specs could confirm correct behaviour
-  # of the newly merged ManagedFolderSyncService.
-  RSpec.describe ManagedFolderSyncService, :webmock do
+  RSpec.describe NextcloudManagedFolderCreateService, :webmock do
     describe "#call" do
-      subject(:service) { described_class.new(storage) }
+      subject(:service) { described_class.new(storage:) }
 
       shared_let(:oidc_provider) { create(:oidc_provider) }
 
       shared_let(:admin) { create(:admin) }
       shared_let(:multiple_projects_user) { create(:user) }
       shared_let(:single_project_user) { create(:user) }
-      shared_let(:non_signed_on_user) { create(:user) }
       shared_let(:oidc_user) do
         identity_url = "#{oidc_provider.slug}:qweqweqweqwe"
         create(:user, identity_url:)
@@ -114,12 +110,9 @@ module Storages
       end
 
       let(:file_path_to_id_map) { class_double(Peripherals::StorageInteraction::Nextcloud::FilePathToIdMapQuery) }
-      let(:group_users) { class_double(Peripherals::StorageInteraction::Nextcloud::GroupUsersQuery) }
       let(:rename_file) { class_double(Peripherals::StorageInteraction::Nextcloud::RenameFileCommand) }
       let(:set_permissions) { class_double(Peripherals::StorageInteraction::Nextcloud::SetPermissionsCommand) }
       let(:create_folder) { class_double(Peripherals::StorageInteraction::Nextcloud::CreateFolderCommand) }
-      let(:add_user) { class_double(Peripherals::StorageInteraction::Nextcloud::AddUserToGroupCommand) }
-      let(:remove_user) { class_double(Peripherals::StorageInteraction::Nextcloud::RemoveUserFromGroupCommand) }
       let(:auth_strategy) { Peripherals::StorageInteraction::AuthenticationStrategies::Strategy.new(:basic_auth) }
 
       let(:root_folder_id) { "root_folder_id" }
@@ -133,10 +126,6 @@ module Storages
             "/OpenProject/Another Name for this Project" => StorageFileId.new(renamed_storage.project_folder_id)
           }
         )
-      end
-
-      let(:group_users_result) do
-        ServiceResult.success(result: %w[OpenProject admin multiple_projects_user cookiemonster])
       end
 
       let(:root_permissions_result) { ServiceResult.success }
@@ -157,18 +146,12 @@ module Storages
                         location: renamed_storage.managed_project_folder_path)
       end
 
-      let(:remove_user_result) { ServiceResult.success }
-      let(:add_user_result) { ServiceResult.success }
-
       let(:parent_location) { Peripherals::ParentFolder.new("/") }
       let(:create_folder_result) { build_create_folder_result }
 
       before do
         Peripherals::Registry.stub("nextcloud.queries.file_path_to_id_map", file_path_to_id_map)
-        Peripherals::Registry.stub("nextcloud.queries.group_users", group_users)
-        Peripherals::Registry.stub("nextcloud.commands.add_user_to_group", add_user)
         Peripherals::Registry.stub("nextcloud.commands.create_folder", create_folder)
-        Peripherals::Registry.stub("nextcloud.commands.remove_user_from_group", remove_user)
         Peripherals::Registry.stub("nextcloud.commands.rename_file", rename_file)
         Peripherals::Registry.stub("nextcloud.commands.set_permissions", set_permissions)
         Peripherals::Registry.stub("nextcloud.authentication.userless", -> { auth_strategy })
@@ -201,38 +184,10 @@ module Storages
           allow(set_permissions).to receive(:call).with(storage:, auth_strategy:, input_data:)
                                                   .and_return(ServiceResult.success)
         end
-
-        # No AuthStrategy on GroupUsers
-        allow(group_users).to receive(:call).with(storage:,
-                                                  auth_strategy:,
-                                                  group: storage.group)
-                                            .and_return(group_users_result)
-        # Updating the group users
-        allow(add_user).to receive(:call).with(storage:,
-                                               auth_strategy:,
-                                               user: "oidc_user",
-                                               group: storage.group)
-                                         .and_return(add_user_result)
-        allow(add_user).to receive(:call).with(storage:,
-                                               auth_strategy:,
-                                               user: "oidc_admin",
-                                               group: storage.group)
-                                         .and_return(add_user_result)
-        allow(add_user).to receive(:call).with(storage:,
-                                               auth_strategy:,
-                                               user: "single_project_user",
-                                               group: storage.group)
-                                         .and_return(add_user_result)
-        allow(remove_user).to receive(:call).with(storage:,
-                                                  auth_strategy:,
-                                                  user: "cookiemonster",
-                                                  group: storage.group)
-                                            .and_return(remove_user_result)
       end
 
-      it "applies changes to all project storages linked to the passed storage" do
-        expect { service.call }.to change(LastProjectFolder, :count).by(2)
-        expect(set_permissions).to have_received(:call).exactly(5).times
+      it "is a success" do
+        expect(service.call).to be_success
       end
 
       it "updates the project storage with the remote folder id" do
@@ -256,6 +211,10 @@ module Storages
 
         before { ProjectStorage.where.not(id: renamed_storage.id).delete_all }
 
+        it "is a success" do
+          expect(service.call).to be_success
+        end
+
         it "requests to rename the folder to the new managed folder name" do
           service.call
           expect(rename_file).to have_received(:call)
@@ -270,21 +229,6 @@ module Storages
         end
       end
 
-      context "with a public project" do
-        let(:file_path_to_id_map_result) do
-          ServiceResult.success(result: { "/OpenProject" => StorageFileId.new(root_folder_id) })
-        end
-
-        before { ProjectStorage.where.not(id: public_storage.id).delete_all }
-
-        it "allows sets permissions to all signed-in users" do
-          input_data = build_project_folder_permission_input[1] # The permissions for the public project
-
-          service.call
-          expect(set_permissions).to have_received(:call).with(storage:, auth_strategy:, input_data:).once
-        end
-      end
-
       context "when creating a folder for a project that with trailing slashes in its name" do
         it "replaces the offending characters" do
           service.call
@@ -294,12 +238,20 @@ module Storages
                                            folder_name: "/OpenProject/[Sample] Project Name | Ehüu ||| (#{project.id})/").once
         end
 
+        it "is a success" do
+          expect(service.call).to be_success
+        end
+
         it "adds a new entry on historical data" do
           expect { service.call }.to change { LastProjectFolder.where(project_storage:).count }.by(1)
         end
       end
 
       context "with an archived project" do
+        it "is a success" do
+          expect(service.call).to be_success
+        end
+
         it "hides the project folder" do
           input_data = build_project_folder_permission_input[0]
           service.call
@@ -327,6 +279,10 @@ module Storages
                                              folder: "OpenProject", data: "error body")
           end
 
+          it "is a failure" do
+            expect(service.call).to be_failure
+          end
+
           it "adds to the services errors" do
             result = service.call
 
@@ -336,7 +292,7 @@ module Storages
 
           it "interrupts the flow" do
             service.call
-            [group_users, add_user, create_folder, remove_user, rename_file, set_permissions].each do |command|
+            [create_folder, rename_file, set_permissions].each do |command|
               expect(command).not_to have_received(:call)
             end
           end
@@ -360,6 +316,10 @@ module Storages
                                             root_folder_id: "root_folder_id")
           end
 
+          it "is a failure" do
+            expect(service.call).to be_failure
+          end
+
           it "adds to the services errors" do
             result = service.call
 
@@ -371,7 +331,7 @@ module Storages
             service.call
             expect(set_permissions).to have_received(:call).once
 
-            [group_users, add_user, create_folder, remove_user, rename_file].each do |command|
+            [create_folder, rename_file].each do |command|
               expect(command).not_to have_received(:call)
             end
           end
@@ -394,6 +354,11 @@ module Storages
                                             folder_name: project_storage.managed_project_folder_path, data: "error body")
           end
 
+          it "is a success" do
+            # TODO: why is this a success? Bug or intention?
+            expect(service.call).to be_success
+          end
+
           it "adds to the services errors" do
             result = service.call
 
@@ -403,11 +368,54 @@ module Storages
                                          folder_name: project_storage.managed_project_folder_path, parent_location: "/"))
           end
 
-          it "interrupts the flow" do
-            commands = [file_path_to_id_map, set_permissions, group_users, add_user, create_folder, remove_user,
-                        rename_file]
+          it "does not interrupt the flow" do
+            commands = [file_path_to_id_map, set_permissions, create_folder, rename_file]
             service.call
             expect(commands).to all(have_received(:call).at_least(:once))
+          end
+        end
+      end
+
+      context "when passing a project storage scope" do
+        subject(:service) { described_class.new(storage:, project_storages_scope:) }
+        let(:project_storages_scope) { ProjectStorage.where(id: project_storage.id) }
+
+        it "creates the remote folder for the project storage inside the scope" do
+          service.call
+
+          expect(create_folder).to have_received(:call).with(storage:, auth_strategy:, parent_location:,
+                                                             folder_name: project_storage.managed_project_folder_path)
+        end
+
+        it "creates no remote folder for the public storage outside the scope" do
+          service.call
+
+          expect(create_folder).not_to have_received(:call).with(storage:, auth_strategy:, parent_location:,
+                                                                 folder_name: public_storage.managed_project_folder_path)
+        end
+
+        it "does not hide remote folders (full list of storages not known)" do
+          service.call
+
+          # We expect that the only call is made to ensure root folder permissions, but no other calls (to hide folders) are made.
+          # Using a positive expectation avoids wrongly succeeding specs, once method signatures change.
+          expect(set_permissions).to have_received(:call).once
+          expect(set_permissions).to have_received(:call).with(
+            storage:,
+            auth_strategy:,
+            input_data: having_attributes(file_id: root_folder_id)
+          )
+        end
+
+        context "when project storage within scope is non-automatically managed" do
+          before do
+            project_storage.update!(project_folder_mode: "manual")
+          end
+
+          it "creates no remote folders" do
+            service.call
+
+            expect(create_folder).not_to have_received(:call)
           end
         end
       end

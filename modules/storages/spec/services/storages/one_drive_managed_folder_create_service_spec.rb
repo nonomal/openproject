@@ -33,10 +33,7 @@ require_module_spec_helper
 
 RSpec::Matchers.define_negated_matcher :not_change, :change
 
-# Note: NextcloudManagedFolderSyncService and OneDriveManagedFolderSyncService were previously separate classes
-# and thus had separate specs. The classes were merged first, so that original specs could confirm correct behaviour
-# of the newly merged ManagedFolderSyncService.
-RSpec.describe Storages::ManagedFolderSyncService, :webmock do
+RSpec.describe Storages::OneDriveManagedFolderCreateService, :webmock do
   shared_let(:admin) { create(:admin) }
   shared_let(:storage) do
     # Automatically Managed Project Folder Drive
@@ -129,19 +126,16 @@ RSpec.describe Storages::ManagedFolderSyncService, :webmock do
     end
   end
 
-  subject(:service) { described_class.new(storage) }
+  subject(:service) { described_class.new(storage:) }
 
   describe "#call" do
     before { storage.update(automatically_managed: true) }
     after { delete_created_folders }
 
     describe "Remote Folder Creation", vcr: "one_drive/sync_service_create_folder" do
-      let(:clazz) { Storages::Peripherals::StorageInteraction::OneDrive::SetPermissionsCommand }
       let(:single_project_user_origin_user_id) { single_project_user_remote_identity.origin_user_id }
       let(:multiple_project_user_origin_user_id) { multiple_project_user_remote_identity.origin_user_id }
       let(:admin_origin_user_id) { admin_remote_identity.origin_user_id }
-
-      before { allow(clazz).to receive(:call).and_call_original }
 
       it "updates the project folder id for all active automatically managed projects" do
         expect { service.call }.to change { disallowed_chars_project_storage.reload.project_folder_id }
@@ -150,70 +144,6 @@ RSpec.describe Storages::ManagedFolderSyncService, :webmock do
                                      .and(change { public_project_storage.reload.project_folder_id }.from(nil).to(String))
                                      .and(not_change { inactive_project_storage.reload.project_folder_id })
                                      .and(not_change { unmanaged_project_storage.reload.project_folder_id })
-      end
-
-      it "sets persmissions for folders exactly 3 times" do
-        service.call
-
-        expect(clazz).to have_received(:call).with(
-          auth_strategy: an_instance_of(Storages::Peripherals::StorageInteraction::AuthenticationStrategies::Strategy),
-          input_data: an_instance_of(Storages::Peripherals::StorageInteraction::Inputs::SetPermissions),
-          storage: an_instance_of(Storages::OneDriveStorage)
-        ).exactly(3).times
-      end
-
-      it "sets permissions for project's (private with 3 members) folder according to member's roles" do
-        service.call
-
-        expect(clazz).to have_received(:call).with(
-          auth_strategy: an_instance_of(Storages::Peripherals::StorageInteraction::AuthenticationStrategies::Strategy),
-          input_data: having_attributes(
-            file_id: project_storage.project_folder_id,
-            user_permissions:
-              [{ user_id: admin_origin_user_id, permissions: [:write_files] },
-               { user_id: single_project_user_origin_user_id, permissions: [:write_files] },
-               { user_id: multiple_project_user_origin_user_id, permissions: [:write_files] }]
-          ),
-          storage: an_instance_of(Storages::OneDriveStorage)
-        ).once
-      end
-
-      it "sets permissions for project's (private with 1 members) folder according to member's roles" do
-        service.call
-
-        expect(clazz).to have_received(:call).with(
-          auth_strategy: an_instance_of(Storages::Peripherals::StorageInteraction::AuthenticationStrategies::Strategy),
-          input_data: having_attributes(
-            file_id: disallowed_chars_project_storage.project_folder_id,
-            user_permissions:
-              [
-                # admin(not a member of the project) receives write access as expected
-                { user_id: admin_origin_user_id, permissions: [:write_files] },
-                { user_id: multiple_project_user_origin_user_id, permissions: [:write_files] }
-              ]
-          ),
-          storage: an_instance_of(Storages::OneDriveStorage)
-        ).once
-      end
-
-      it "sets permissions for project's (public with 0 members) folder appropriately" do
-        service.call
-
-        expect(clazz).to have_received(:call).with(
-          auth_strategy: an_instance_of(Storages::Peripherals::StorageInteraction::AuthenticationStrategies::Strategy),
-          input_data: having_attributes(
-            file_id: public_project_storage.project_folder_id,
-            user_permissions:
-              [
-                # admin gets write access
-                { user_id: admin_origin_user_id, permissions: [:write_files] },
-                # other non members get read access
-                { user_id: single_project_user_origin_user_id, permissions: [:read_files] },
-                { user_id: multiple_project_user_origin_user_id, permissions: [:read_files] }
-              ]
-          ),
-          storage: an_instance_of(Storages::OneDriveStorage)
-        ).once
       end
 
       it "adds a record to the LastProjectFolder for each new folder" do
@@ -279,40 +209,6 @@ RSpec.describe Storages::ManagedFolderSyncService, :webmock do
       expect(result).to be_success
       expect(result.errors).to be_empty
       expect(permissions_for(inactive_project_storage)).to be_empty
-    end
-
-    it "adds already logged in users to the project folder", vcr: "one_drive/sync_service_set_permissions" do
-      original_folder = create_folder_for(inactive_project_storage)
-      inactive_project_storage.update(project_folder_id: original_folder.result.id)
-
-      service.call
-
-      expect(permissions_for(project_storage))
-        .to eq({ write: %w[248aeb72-b231-4e71-a466-67fa7df2a285
-                           2ff33b8f-2843-40c1-9a17-d786bca17fba
-                           33db2c84-275d-46af-afb0-c26eb786b194] })
-
-      expect(permissions_for(disallowed_chars_project_storage))
-        .to include({ write: %w[248aeb72-b231-4e71-a466-67fa7df2a285 33db2c84-275d-46af-afb0-c26eb786b194] })
-
-      expect(permissions_for(inactive_project_storage)).to be_empty
-    end
-
-    it "if the project is public allows any logged in user to read the files",
-       vcr: "one_drive/sync_service_public_project" do
-      service.call
-
-      expect(permissions_for(public_project_storage))
-        .to eq({ read: %w[248aeb72-b231-4e71-a466-67fa7df2a285 2ff33b8f-2843-40c1-9a17-d786bca17fba],
-                 write: ["33db2c84-275d-46af-afb0-c26eb786b194"] })
-    end
-
-    it "ensures that admins have full access to all folders", vcr: "one_drive/sync_service_admin_access" do
-      service.call
-
-      [project_storage, disallowed_chars_project_storage, public_project_storage].each do |ps|
-        expect(permissions_for(ps)[:write]).to include("33db2c84-275d-46af-afb0-c26eb786b194")
-      end
     end
 
     describe "error handling" do
@@ -403,19 +299,6 @@ RSpec.describe Storages::ManagedFolderSyncService, :webmock do
                                            data: /nameAlreadyExists/)
         ensure
           delete_folder(already_existing_folder.result.id)
-        end
-      end
-
-      context "when setting permission fails" do
-        it "logs the occurrence", vcr: "one_drive/sync_service_fail_add_user" do
-          single_project_user_remote_identity.update(origin_user_id: "my_name_is_mud")
-
-          service.call
-          expect(Rails.logger)
-            .to have_received(:error)
-                  .with(error_code: :bad_request,
-                        message: nil,
-                        data: /noResolvedUsers/).twice
         end
       end
     end

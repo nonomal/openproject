@@ -71,8 +71,8 @@ module Storages
         .where.not(project_folder_id: nil)
         .order(:project_folder_id)
         .find_each do |project_storage|
-        set_folder_permissions(remote_admins, project_storage)
-      end
+          set_folder_permissions(remote_admins, project_storage)
+        end
 
       info "Updating user access on automatically managed project folders"
       add_remove_users_to_group(@storage.group, @storage.username)
@@ -144,12 +144,12 @@ module Storages
     # rubocop:enable Metrics/AbcSize
 
     def project_remote_identities(project_storage)
-      project_remote_identities = remote_identities.where.not(id: admin_remote_identities).order(:id)
+      user_remote_identities = remote_identities.where.not(id: admin_remote_identities).order(:id)
 
       if project_storage.project.public? && ProjectRole.non_member.permissions.intersect?(FILE_PERMISSIONS)
-        project_remote_identities
+        user_remote_identities
       else
-        project_remote_identities.where(user: project_storage.project.users)
+        user_remote_identities.where(user: project_storage.project.users)
       end
     end
 
