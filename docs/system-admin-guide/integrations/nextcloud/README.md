@@ -43,7 +43,7 @@ features and prompt fixes for any potential bugs.
     latest `stable` version.
   - If you installed Nextcloud via the [community](https://hub.docker.com/_/nextcloud) docker image, we advise you to
     pin it to the `stable` tag.
-  - Nextcloud company advises the use of there [all-in-one](https://hub.docker.com/r/nextcloud/all-in-one) docker image.
+  - Nextcloud company advises the use of their [all-in-one](https://hub.docker.com/r/nextcloud/all-in-one) docker image.
 - If you want to use the feature of [automatically managed project folders](#4-automatically-managed-project-folders)
   you need to install the officially minimal supported version `14.0.9` of
   the [Group folders](https://apps.nextcloud.com/apps/groupfolders) app in Nextcloud.
