@@ -21,6 +21,8 @@ import HoverCardTriggerController from './controllers/hover-card-trigger.control
 import ScrollIntoViewController from './controllers/scroll-into-view.controller';
 import CkeditorFocusController from './controllers/ckeditor-focus.controller';
 
+import AutoSubmit from '@stimulus-components/auto-submit';
+
 declare global {
   interface Window {
     Stimulus:Application;
@@ -55,3 +57,5 @@ instance.register('keep-scroll-position', KeepScrollPositionController);
 instance.register('pattern-input', PatternInputController);
 instance.register('scroll-into-view', ScrollIntoViewController);
 instance.register('ckeditor-focus', CkeditorFocusController);
+
+instance.register('auto-submit', AutoSubmit);
