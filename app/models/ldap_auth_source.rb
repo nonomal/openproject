@@ -62,8 +62,9 @@ class LdapAuthSource < ApplicationRecord
   validate :validate_filter_string
   validate :validate_tls_certificate_string, if: -> { tls_certificate_string.present? }
 
+  normalizes :attr_login, :attr_firstname, :attr_lastname, :attr_mail, :attr_admin, with: -> { it.strip }
+
   after_initialize :set_default_port
-  before_validation :strip_ldap_attributes
 
   # Try to authenticate a user not yet registered against available sources
   def self.authenticate(login, password)
@@ -270,12 +271,6 @@ class LdapAuthSource < ApplicationRecord
     return if User.by_login(login).exists?
 
     User.new(login:, ldap_auth_source_id: id)
-  end
-
-  def strip_ldap_attributes
-    %i[attr_login attr_firstname attr_lastname attr_mail attr_admin].each do |attr|
-      self[attr] = self[attr].strip unless self[attr].nil?
-    end
   end
 
   def initialize_ldap_con(ldap_user, ldap_password)

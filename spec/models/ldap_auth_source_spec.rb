@@ -35,12 +35,34 @@ RSpec.describe LdapAuthSource do
     expect(a.save).to be true
   end
 
-  it "strips ldap attributes" do
-    a = described_class.new(name: "My LDAP", host: "ldap.example.net", port: 389,
-                            base_dn: "dc=example,dc=net", attr_login: "sAMAccountName",
-                            attr_firstname: "givenName ")
-    expect(a.save).to be true
-    expect(a.reload.attr_firstname).to eq "givenName"
+  describe "#attr_login" do
+    it "normalizes preceding and trailing whitespace" do
+      expect(subject).to normalize(:attr_login).from(" uid ").to("uid")
+    end
+  end
+
+  describe "#attr_firstname" do
+    it "normalizes preceding and trailing whitespace" do
+      expect(subject).to normalize(:attr_firstname).from(" givenName ").to("givenName")
+    end
+  end
+
+  describe "#attr_lastname" do
+    it "normalizes preceding and trailing whitespace" do
+      expect(subject).to normalize(:attr_lastname).from(" sn ").to("sn")
+    end
+  end
+
+  describe "#attr_mail" do
+    it "normalizes preceding and trailing whitespace" do
+      expect(subject).to normalize(:attr_mail).from(" some@example.org ").to("some@example.org")
+    end
+  end
+
+  describe "#attr_admin" do
+    it "normalizes preceding and trailing whitespace" do
+      expect(subject).to normalize(:attr_admin).from(" admin ").to("admin")
+    end
   end
 
   describe "verify_peer" do
