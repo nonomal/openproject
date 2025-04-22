@@ -29,7 +29,6 @@
 class DesignColor < ApplicationRecord
   include ::Colors::HexColor
 
-  before_validation :normalize_hexcode
   after_commit -> do
     # CustomStyle.current.updated_at determines the cache key for inline_css
     # in which the CSS color variables will be overwritten. That is why we need
@@ -45,6 +44,8 @@ class DesignColor < ApplicationRecord
   validates :variable, uniqueness: true
   validates :hexcode, :variable, presence: true
   validates :hexcode, format: { with: /\A#[0-9A-F]{6}\z/, unless: lambda { |e| e.hexcode.blank? } }
+
+  normalizes :hexcode, with: ->(hexcode) { normalize_hexcode(hexcode) }
 
   class << self
     def setables

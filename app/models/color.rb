@@ -35,11 +35,10 @@ class Color < ApplicationRecord
            class_name: "Type",
            dependent: :nullify
 
-  after_initialize :normalize_hexcode
-  before_validation :normalize_hexcode
-
   validates :name, :hexcode, presence: true
 
   validates :name, length: { maximum: 255, unless: lambda { |e| e.name.blank? } }
   validates :hexcode, format: { with: /\A#[0-9A-F]{6}\z/, unless: lambda { |e| e.hexcode.blank? } }
+
+  normalizes :hexcode, with: ->(hexcode) { normalize_hexcode(hexcode) }
 end

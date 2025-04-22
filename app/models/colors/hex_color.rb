@@ -1,5 +1,7 @@
 module Colors
   module HexColor
+    extend ActiveSupport::Concern
+
     ##
     # Get the fill style for this color.
     # If the color is light, use a dark font.
@@ -74,20 +76,17 @@ module Colors
       "#%<r>02x%<g>02x%<b>02x" % { r:, g:, b: }
     end
 
-    # rubocop:disable Metrics/AbcSize
-    def normalize_hexcode
-      return unless hexcode.present? && hexcode_changed?
+    class_methods do
+      def normalize_hexcode(hexcode)
+        hexcode = hexcode.strip.upcase
+        hexcode = "##{hexcode}" unless hexcode.starts_with? "#"
 
-      self.hexcode = hexcode.strip.upcase
+        if hexcode.length == 4 # =~ /#.../
+          hexcode.gsub!(/([^#])/, '\1\1')
+        end
 
-      unless hexcode.starts_with? "#"
-        self.hexcode = "##{hexcode}"
-      end
-
-      if hexcode.size == 4 # =~ /#.../
-        self.hexcode = hexcode.gsub(/([^#])/, '\1\1')
+        hexcode
       end
     end
-    # rubocop:enable Metrics/AbcSize
   end
 end
