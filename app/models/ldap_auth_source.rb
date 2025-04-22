@@ -54,7 +54,7 @@ class LdapAuthSource < ApplicationRecord
   validates :tls_mode, inclusion: { in: tls_modes.keys }
 
   validates :host, :port, :attr_login, presence: true
-  validates :name, :host, length: { maximum: 60, allow_nil: true }
+  validates :host, length: { maximum: 60, allow_nil: true }
   validates :account, :account_password, :base_dn, length: { maximum: 255, allow_nil: true }
   validates :attr_login, :attr_firstname, :attr_lastname, :attr_mail, :attr_admin, length: { maximum: 30, allow_nil: true }
   validates :port, numericality: { only_integer: true }
