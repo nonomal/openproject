@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -33,6 +35,31 @@ RSpec.describe LdapAuthSource do
     a = described_class.new(name: "My LDAP", host: "ldap.example.net", port: 389, base_dn: "dc=example,dc=net",
                             attr_login: "sAMAccountName")
     expect(a.save).to be true
+  end
+
+  context "validations" do
+    subject { build(:ldap_auth_source) }
+
+    it { is_expected.to validate_inclusion_of(:tls_mode).in_array(['plain_ldap', 'simple_tls', 'start_tls']) }
+
+    it { is_expected.to validate_presence_of(:host) }
+    it { is_expected.to validate_presence_of(:port) }
+    it { is_expected.to validate_presence_of(:attr_login) }
+
+    it { is_expected.to validate_length_of(:name).is_at_most(60).allow_nil }
+    it { is_expected.to validate_length_of(:host).is_at_most(60).allow_nil }
+
+    it { is_expected.to validate_length_of(:account).is_at_most(255).allow_nil }
+    it { is_expected.to validate_length_of(:account_password).is_at_most(255).allow_nil }
+    it { is_expected.to validate_length_of(:base_dn).is_at_most(255).allow_nil }
+
+    it { is_expected.to validate_length_of(:attr_login).is_at_most(30).allow_nil }
+    it { is_expected.to validate_length_of(:attr_firstname).is_at_most(30).allow_nil }
+    it { is_expected.to validate_length_of(:attr_lastname).is_at_most(30).allow_nil }
+    it { is_expected.to validate_length_of(:attr_mail).is_at_most(30).allow_nil }
+    it { is_expected.to validate_length_of(:attr_admin).is_at_most(30).allow_nil }
+
+    it { is_expected.to validate_numericality_of(:port).only_integer }
   end
 
   describe "#attr_login" do
@@ -279,13 +306,13 @@ RSpec.describe LdapAuthSource do
           expect(admin).to be_a User
           expect(admin.firstname).to eq "LDAP"
           expect(admin.lastname).to eq "Adminuser"
-          expect(admin.admin).to eq true
+          expect(admin.admin).to be true
 
           user = ldap.find_user("bb459")
           expect(user).to be_a User
           expect(user.firstname).to eq "Belle"
           expect(user.lastname).to eq "Baldwin"
-          expect(user.admin).to eq false
+          expect(user.admin).to be false
         end
 
         context "with an existing user and different attributes" do
