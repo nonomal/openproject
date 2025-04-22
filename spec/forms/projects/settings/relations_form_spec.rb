@@ -33,10 +33,56 @@ require "spec_helper"
 RSpec.describe Projects::Settings::RelationsForm, type: :forms do
   include_context "with rendered form"
 
-  let(:model) { build_stubbed(:project) }
+  let(:model) { build_stubbed(:project, parent:) }
+  let(:parent) { nil }
 
   it "renders field" do
     expect(page).to have_element "opce-project-autocompleter", "data-input-name": "\"project[parent_id]\""
-    expect(page).to have_element "opce-project-autocompleter", "data-qa-field-name": "parent"
+  end
+
+  context "without parent" do
+    it "renders field with model" do
+      expect(page).to have_element "opce-project-autocompleter", "data-qa-field-name": "parent" do |element|
+        expect(element["data-model"]).to be_json_eql(nil.to_json)
+      end
+    end
+  end
+
+  context "with parent" do
+    let(:parent) { build_stubbed(:project, public:, name: "New Project") }
+    let(:public) { false }
+
+    context "when the parent is not visible to the user" do
+      it "renders field with model" do
+        expect(page).to have_element "opce-project-autocompleter", "data-qa-field-name": "parent" do |element|
+          expect(element["data-model"]).to be_json_eql(
+            %{{"name": "Undisclosed - The selected parent is invisible because of lacking permissions."}}
+          )
+        end
+      end
+    end
+
+    context "when the parent is visible to the user (e.g. public)" do
+      let(:public) { true }
+
+      it "renders field with model" do
+        expect(page).to have_element "opce-project-autocompleter", "data-qa-field-name": "parent" do |element|
+          expect(element["data-model"]).to be_json_eql(%{{"name": "New Project"}})
+        end
+      end
+    end
+
+    context "when the user is an admin" do
+      before do
+        allow(User).to receive(:current).and_return(build_stubbed(:admin))
+        render_form
+      end
+
+      it "renders field with model" do
+        expect(page).to have_element "opce-project-autocompleter", "data-qa-field-name": "parent" do |element|
+          expect(element["data-model"]).to be_json_eql(%{{"name": "New Project"}})
+        end
+      end
+    end
   end
 end

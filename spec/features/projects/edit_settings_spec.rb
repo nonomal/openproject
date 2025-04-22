@@ -183,8 +183,6 @@ RSpec.describe "Projects", "editing settings", :js do
 
     context "with a user not allowed to see the parent project" do
       it "can update the project without destroying the relation to the parent" do
-        pending "need to be able to override autocompleter model"
-
         Pages::Projects::Settings::General.new(project).visit!
 
         within_section "Project relations" do

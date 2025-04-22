@@ -30,11 +30,14 @@
 module Projects
   module Settings
     class RelationsForm < ApplicationForm
+      delegate :parent, to: :model
+
       form do |f|
         f.project_autocompleter(
           name: :parent_id,
           label: attribute_name(:parent_id),
           autocomplete_options: {
+            model: project_autocompleter_model,
             focusDirectly: false,
             dropdownPosition: "bottom",
             url: ::API::V3::Utilities::PathHelper::ApiV3Path.projects_available_parents + "?of=#{model.id}",
@@ -42,6 +45,15 @@ module Projects
             data: { qa_field_name: "parent" }
           }
         )
+      end
+
+      private
+
+      def project_autocompleter_model
+        return nil unless parent
+        return { id: parent.id, name: I18n.t(:"api_v3.undisclosed.parent") } unless parent.visible? || User.current.admin?
+
+        { id: parent.id, name: parent.name }
       end
     end
   end

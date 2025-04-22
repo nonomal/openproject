@@ -30,11 +30,15 @@
 RSpec.shared_context "with rendered form" do
   include ViewComponent::TestHelpers
 
-  before do
+  def render_form
     render_in_view_context(model, described_class) do |model, described_class|
       primer_form_with(url: "/foo", model:) do |f|
         render(described_class.new(f))
       end
     end
+  end
+
+  before do
+    render_form
   end
 end
