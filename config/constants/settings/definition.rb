@@ -979,7 +979,8 @@ module Settings
         default: nil
       },
       self_registration: {
-        default: 2
+        default: 2,
+        format: :integer
       },
       sendmail_arguments: {
         description: "Arguments to call sendmail with in case it is configured as outgoing email setup",

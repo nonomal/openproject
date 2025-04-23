@@ -1,0 +1,84 @@
+<%#-- copyright
+OpenProject is an open source project management software.
+Copyright (C) the OpenProject GmbH
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License version 3.
+
+OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+Copyright (C) 2006-2013 Jean-Philippe Lang
+Copyright (C) 2010-2013 the ChiliProject Team
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+See COPYRIGHT and LICENSE files for more details.
+
+++#%>
+
+<%=
+  admin_settings_primer_form_with(scope: :settings,
+                                  url: admin_settings_authentication_path(tab: params[:tab]),
+                                  data: { turbo_method: :patch },
+                                  method: :patch) do |f|
+    render_inline_settings_form(f) do |form|
+      form.check_box(
+        name: :login_required,
+        caption: I18n.t(:setting_login_required_caption),
+        )
+
+      form.select_list(
+        name: :self_registration,
+        input_width: :medium,
+        label: I18n.t(:setting_self_registration),
+        include_blank: false
+      ) do |select|
+        Setting::SelfRegistration::VALUES.each do |key, value|
+          label = key == :disabled ? I18n.t(:label_disabled) : I18n.t("label_registration_#{key}")
+          select.option(
+            value:,
+            label:,
+            selected: Setting.self_registration == value
+          )
+        end
+      end
+
+      if Setting::SelfRegistration.unsupervised_registration?
+        form.html_content do
+          render Primer::Alpha::Banner.new(
+            scheme: :warning,
+            icon: :alert,
+            my: 2
+          ) do
+            I18n.t(:setting_self_registration_warning)
+          end
+        end
+      end
+
+      form.text_field(
+        type: :number,
+        min: 0,
+        max: 100,
+        input_width: :small,
+        trailing_visual: { text: { text: I18n.t("datetime.units.day.other") } },
+        name: :invitation_expiration_days,
+        caption: I18n.t(:setting_invitation_expiration_days_caption),
+      )
+
+      form.multi_language_text_select(name: :registration_footer)
+
+      form.submit
+    end
+  end
+%>

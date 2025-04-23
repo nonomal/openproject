@@ -1,11 +1,11 @@
 <%= render(FormControl.new(input: @input)) do %>
   <%= content_tag(:div, hidden: true) do %>
-    <%= builder.text_area(@input.name, **@input.input_arguments) %>
+    <%= builder.text_area(@input.name, **@input.input_arguments, id: @text_area_id) %>
   <% end %>
   <%= angular_component_tag "opce-ckeditor-augmented-textarea",
                             inputs: @rich_text_options.reverse_merge(
                               {
-                                textareaSelector: "##{builder.field_id(@input.name)}",
+                                textareaSelector: "##{@text_area_id}",
                                 macros: false,
                                 turboMode: true
                               }

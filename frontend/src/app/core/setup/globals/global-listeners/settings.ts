@@ -32,9 +32,10 @@ export function listenToSettingChanges() {
     const id:string = self.attr('id') || '';
     const settingName = id.replace('lang-for-', '');
     const newLang = self.val() as string;
-    const textArea = jQuery(`#settings-${settingName}`);
+    const textAreaId = `#settings-${settingName}`;
+    const textArea = jQuery(textAreaId);
     /* eslint-disable-next-line @typescript-eslint/no-unsafe-assignment */
-    const editor = textArea.siblings('opce-ckeditor-augmented-textarea').data('editor');
+    const editor = jQuery(`opce-ckeditor-augmented-textarea[data-textarea-selector='"${textAreaId}"'`).data('editor');
 
     return {
       id, settingName, newLang, textArea, editor,

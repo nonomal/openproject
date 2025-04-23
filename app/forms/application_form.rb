@@ -31,7 +31,7 @@
 class ApplicationForm < Primer::Forms::Base
   def self.settings_form
     form do |f|
-      f = SettingsFormDecorator.new(f)
+      f = Settings::FormDecorator.new(f)
       yield f
     end
   end

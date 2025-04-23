@@ -183,3 +183,5 @@ ical_docs:
   href: https://www.openproject.org/docs/user-guide/calendar/#subscribe-to-a-calendar
 integrations:
   href: https://www.openproject.org/docs/system-admin-guide/integrations/
+disable_password_login:
+  href: https://www.openproject.org/docs/installation-and-operations/configuration/#disable-password-login

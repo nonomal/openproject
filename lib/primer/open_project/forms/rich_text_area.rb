@@ -13,6 +13,7 @@ module Primer
           super()
           @input = input
           @rich_text_options = rich_text_options
+          @text_area_id = rich_text_options[:text_area_id] || SecureRandom.alphanumeric(16)
         end
       end
     end

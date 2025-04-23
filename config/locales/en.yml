@@ -3852,6 +3852,7 @@ en:
     This defines what is considered a "day" when displaying duration in days and hours
     (for example, if a day is 8 hours, 32 hours would be 4 days).
   setting_invitation_expiration_days: "Activation email expires after"
+  setting_invitation_expiration_days_caption: "Number of days after which the activation email expires."
   setting_work_package_done_ratio: "Progress calculation mode"
   setting_work_package_done_ratio_field: "Work-based"
   setting_work_package_done_ratio_field_caption_html: >-
@@ -3871,6 +3872,9 @@ en:
   setting_journal_aggregation_time_minutes: "User actions aggregated within"
   setting_log_requesting_user: "Log user login, name, and mail address for all requests"
   setting_login_required: "Authentication required"
+  setting_login_required_caption: "When checked, all requests to the application have to be authenticated."
+  setting_lost_password: "Enable password reset"
+  setting_lost_password_caption: "When checked, allow users to reset their own passwords."
   setting_mail_from: "Emission email address"
   setting_mail_handler_api_key: "API key"
   setting_mail_handler_body_delimiters: "Truncate emails after one of these lines"
@@ -3896,6 +3900,7 @@ en:
   setting_project_gantt_query_text: "You can modify the query that is used to display Gantt chart from the project overview page."
   setting_security_badge_displayed: "Display security badge"
   setting_registration_footer: "Registration footer"
+  setting_registration_footer_caption: "This text is displayed in the footer of the registration page. Use the HTML editor to format the text for each selected language."
   setting_repositories_automatic_managed_vendor: "Automatic repository vendor type"
   setting_repositories_encodings: "Repositories encodings"
   setting_repository_storage_cache_minutes: "Repository disk size cache"
@@ -3939,6 +3944,8 @@ en:
 
   settings:
     authentication:
+      login_and_sso: "Login and SSO"
+      registration: "Registration"
       single_sign_on: "Single Sign-On"
       omniauth_direct_login_hint_html: >
         If this option is active, login requests will redirect to the configured omniauth provider.
