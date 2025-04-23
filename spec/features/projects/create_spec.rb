@@ -76,7 +76,11 @@ RSpec.describe "Projects", "creation",
 
   context "with a multi-select list custom field" do
     shared_let(:list_custom_field) do
-      create(:list_project_custom_field, name: "List CF", multi_value: true, project_custom_field_section:)
+      create(:list_project_custom_field,
+             name: "List CF",
+             is_required: true,
+             multi_value: true,
+             project_custom_field_section:)
     end
     let(:list_field) { FormFields::SelectFormField.new list_custom_field }
 
@@ -85,7 +89,11 @@ RSpec.describe "Projects", "creation",
 
       fill_in "Name", with: "Foo bar"
 
-      list_field.select_option "A", "B"
+      expect(page).to have_combo_box "List CF" # , required: true
+
+      select_combo_box_option "A", from: "List CF"
+
+      # list_field.select_option "A", "B"
 
       click_on "Create"
 
@@ -117,6 +125,7 @@ RSpec.describe "Projects", "creation",
     shared_let(:version_custom_field) do
       create(:version_project_custom_field,
              name: "Version CF",
+             is_required: true,
              multi_value: true,
              project_custom_field_section:)
     end
@@ -127,6 +136,10 @@ RSpec.describe "Projects", "creation",
       projects_page.navigate_to_new_project_page_from_toolbar_items
 
       fill_in "Name", with: "Foo bar"
+
+      expect(page).to have_combo_box "Version CF" # , required: true
+
+      expect(page).to have_combo_box "Version CF", options: [/Ringbo 1.0/, /Ringbo 2.0/]
 
       # expect the versions are grouped by the project name
       version_field.expect_option(versions.first.name, grouping: project.name)
@@ -177,17 +190,12 @@ RSpec.describe "Projects", "creation",
                                            project_custom_field_section:)
       end
 
-      it "separates optional and required custom fields for new" do
+      it "renders required custom fields for new" do
         visit new_project_path
 
-        expect(page).to have_content "Required Foo"
-        expect(page).to have_content "Required User"
-
-        within(".op-fieldset") do
-          expect(page).to have_text "Optional Foo"
-          expect(page).to have_no_text "Required Foo"
-          expect(page).to have_no_text "Required User"
-        end
+        expect(page).to have_field "Required Foo" # , required: true
+        expect(page).to have_field "Required User" # , required: true
+        expect(page).to have_no_field "Optional Foo"
       end
     end
 
@@ -199,8 +207,7 @@ RSpec.describe "Projects", "creation",
       it "requires the required custom field" do
         click_on "Create"
 
-        expect(page).to have_content "Required Foo can't be blank"
-        expect(page).to have_no_content "Optional Foo can't be blank"
+        expect(page).to have_field "Required Foo", validation_error: "can't be blank."
       end
     end
 
@@ -218,9 +225,6 @@ RSpec.describe "Projects", "creation",
       end
 
       it "enables custom fields with provided values for this project" do
-        fill_in "Optional Foo", with: "Optional value"
-        fill_in "Unused Foo", with: ""
-
         click_on "Create"
 
         expect(page).to have_current_path /\/projects\/foo-bar\/?/
@@ -229,7 +233,7 @@ RSpec.describe "Projects", "creation",
 
         # unused custom field should not be activated
         expect(project.project_custom_field_ids).to contain_exactly(
-          optional_custom_field.id, required_custom_field.id
+          required_custom_field.id
         )
       end
 
