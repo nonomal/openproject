@@ -29,6 +29,8 @@
 require "spec_helper"
 
 RSpec.describe ProjectsController do
+  include Turbo::TestAssertions
+
   shared_let(:admin) { create(:admin) }
   let(:non_member) { create(:non_member) }
 
@@ -39,10 +41,31 @@ RSpec.describe ProjectsController do
   end
 
   describe "#new" do
-    it "renders 'new'" do
-      get "new"
-      expect(response).to be_successful
-      expect(response).to render_template "new"
+    context "without a template" do
+      it "renders 'new'" do
+        get :new
+        expect(response).to be_successful
+        expect(response).to render_template "new"
+      end
+    end
+
+    context "with a template" do
+      let(:template) { create(:template_project) }
+
+      it "renders 'new'" do
+        get :new, params: { template_id: template.id }
+        expect(response).to be_successful
+        expect(assigns(:template)).to eq template
+        expect(response).to render_template "new"
+      end
+
+      it "renders 'update' turbo stream" do
+        get :new, params: { template_id: template.id }, format: :turbo_stream
+        expect(response).to be_successful
+        expect(assigns(:template)).to eq template
+        assert_turbo_stream action: "update", target: "projects-new-component"
+        assert_select "turbo-stream[action='push_state'][url$='#{new_project_path(template_id: template.id)}']"
+      end
     end
 
     context "by non-admin user with add_project permission" do
@@ -56,6 +79,43 @@ RSpec.describe ProjectsController do
       it "accepts get" do
         get :new
         expect(response).to be_successful
+        expect(response).to render_template "new"
+      end
+    end
+  end
+
+  describe "#create" do
+    before do
+      creation_service = instance_double(Projects::CreateService, call: service_result)
+
+      allow(Projects::CreateService)
+        .to receive(:new)
+              .with(user: admin)
+              .and_return(creation_service)
+    end
+
+    context "when service call succeeds" do
+      let(:project) { build_stubbed(:project) }
+      let(:service_result) { ServiceResult.success(result: project) }
+
+      it "redirects to project show" do
+        post :create, params: { project: { name: "New Project" } }
+
+        expect(response).to redirect_to project_path(project)
+        expect(flash[:notice]).to be_present
+      end
+    end
+
+    context "when service call fails" do
+      let(:project) { Project.new }
+      let(:service_result) { ServiceResult.failure(result: project) }
+
+      it "renders new template with errors" do
+        post :create, params: { project: { name: "" } }
+
+        expect(response).not_to be_successful
+        expect(response).to have_http_status :unprocessable_entity
+        expect(assigns(:project)).not_to be_valid
         expect(response).to render_template "new"
       end
     end

@@ -32,7 +32,6 @@ require "spec_helper"
 
 RSpec.describe "Projects", "creation",
                :js do
-  shared_let(:name_field) { FormFields::InputFormField.new :name }
   shared_let(:project_custom_field_section) { create(:project_custom_field_section, name: "Section A") }
 
   current_user { create(:admin) }
@@ -56,8 +55,8 @@ RSpec.describe "Projects", "creation",
   it "can create a project" do
     projects_page.navigate_to_new_project_page_from_toolbar_items
 
-    name_field.set_value "Foo bar"
-    click_button "Save"
+    fill_in "Name", with: "Foo bar"
+    click_on "Create"
 
     expect(page).to have_current_path /\/projects\/foo-bar\/?/
     expect(page).to have_content "Foo bar"
@@ -66,8 +65,8 @@ RSpec.describe "Projects", "creation",
   it "does not create a project with an already existing identifier" do
     projects_page.navigate_to_new_project_page_from_toolbar_items
 
-    name_field.set_value "Foo project"
-    click_on "Save"
+    fill_in "Name", with: "Foo project"
+    click_on "Create"
 
     expect(page).to have_current_path /\/projects\/foo-project-1\/?/
 
@@ -84,13 +83,11 @@ RSpec.describe "Projects", "creation",
     it "can create a project" do
       projects_page.navigate_to_new_project_page_from_toolbar_items
 
-      name_field.set_value "Foo bar"
-
-      find(".op-fieldset--toggle", text: "ADVANCED SETTINGS").click
+      fill_in "Name", with: "Foo bar"
 
       list_field.select_option "A", "B"
 
-      click_button "Save"
+      click_on "Create"
 
       expect(page).to have_current_path /\/projects\/foo-bar\/?/
       expect(page).to have_content "Foo bar"
@@ -129,9 +126,7 @@ RSpec.describe "Projects", "creation",
     it "can create a project" do
       projects_page.navigate_to_new_project_page_from_toolbar_items
 
-      name_field.set_value "Foo bar"
-
-      find(".op-fieldset--toggle", text: "ADVANCED SETTINGS").click
+      fill_in "Name", with: "Foo bar"
 
       # expect the versions are grouped by the project name
       version_field.expect_option(versions.first.name, grouping: project.name)
@@ -139,7 +134,7 @@ RSpec.describe "Projects", "creation",
 
       version_field.select_option(versions.first.name, versions.last.name)
 
-      click_button "Save"
+      click_on "Create"
 
       expect(page).to have_current_path /\/projects\/foo-bar\/?/
       expect(page).to have_content "Foo bar"
@@ -154,8 +149,6 @@ RSpec.describe "Projects", "creation",
 
   it "hides the active field and the identifier" do
     visit new_project_path
-
-    find(".op-fieldset--toggle", text: "ADVANCED SETTINGS").click
 
     expect(page).to have_no_content "Active"
     expect(page).to have_no_content "Identifier"
@@ -190,8 +183,6 @@ RSpec.describe "Projects", "creation",
         expect(page).to have_content "Required Foo"
         expect(page).to have_content "Required User"
 
-        click_on "Advanced settings"
-
         within(".op-fieldset") do
           expect(page).to have_text "Optional Foo"
           expect(page).to have_no_text "Required Foo"
@@ -206,7 +197,7 @@ RSpec.describe "Projects", "creation",
       end
 
       it "requires the required custom field" do
-        click_on "Save"
+        click_on "Create"
 
         expect(page).to have_content "Required Foo can't be blank"
         expect(page).to have_no_content "Optional Foo can't be blank"
@@ -224,15 +215,13 @@ RSpec.describe "Projects", "creation",
         visit new_project_path
         fill_in "Name", with: "Foo bar"
         fill_in "Required Foo", with: "Required value"
-
-        click_on "Advanced settings"
       end
 
       it "enables custom fields with provided values for this project" do
         fill_in "Optional Foo", with: "Optional value"
         fill_in "Unused Foo", with: ""
 
-        click_on "Save"
+        click_on "Create"
 
         expect(page).to have_current_path /\/projects\/foo-bar\/?/
 
@@ -254,7 +243,7 @@ RSpec.describe "Projects", "creation",
 
         it "enables custom fields with default values if not set to blank explicitly" do
           # don't touch the default value
-          click_on "Save"
+          click_on "Create"
 
           expect(page).to have_current_path /\/projects\/foo-bar\/?/
 
@@ -273,7 +262,7 @@ RSpec.describe "Projects", "creation",
           field = FormFields::InputFormField.new(custom_field_with_default_value)
           field.set_value("")
 
-          click_on "Save"
+          click_on "Create"
 
           expect(page).to have_current_path /\/projects\/foo-bar\/?/
 
@@ -288,7 +277,7 @@ RSpec.describe "Projects", "creation",
         it "does enable custom fields with default values if overwritten with a new value" do
           fill_in "Foo with default value", with: "foo"
 
-          click_on "Save"
+          click_on "Create"
 
           expect(page).to have_current_path /\/projects\/foo-bar\/?/
 
@@ -326,7 +315,7 @@ RSpec.describe "Projects", "creation",
 
         it "only enables boolean custom fields with default values if untouched" do
           # do not touch any of the boolean fields
-          click_on "Save"
+          click_on "Create"
 
           expect(page).to have_current_path /\/projects\/foo-bar\/?/
 
@@ -345,7 +334,7 @@ RSpec.describe "Projects", "creation",
         it "enables boolean custom fields without default values if set to true explicitly" do
           check "Boolean with no default"
 
-          click_on "Save"
+          click_on "Create"
 
           expect(page).to have_current_path /\/projects\/foo-bar\/?/
 
@@ -364,7 +353,7 @@ RSpec.describe "Projects", "creation",
         it "enables boolean custom fields with default values if set to false explicitly" do
           uncheck "Boolean with default true"
 
-          click_on "Save"
+          click_on "Create"
 
           expect(page).to have_current_path /\/projects\/foo-bar\/?/
 
@@ -393,7 +382,7 @@ RSpec.describe "Projects", "creation",
 
             fill_in "Text for Admins only", with: "foo"
 
-            click_on "Save"
+            click_on "Create"
 
             expect(page).to have_current_path /\/projects\/foo-bar\/?/
 
@@ -413,7 +402,7 @@ RSpec.describe "Projects", "creation",
           it "does not show invisible fields in the form and thus not activates the invisible field" do
             expect(page).to have_no_content "Text for Admins only"
 
-            click_on "Save"
+            click_on "Create"
 
             expect(page).to have_current_path /\/projects\/foo-bar\/?/
 

@@ -27,40 +27,18 @@
 #
 # See COPYRIGHT and LICENSE files for more details.
 #++
-module Projects
-  module Settings
-    class RelationsForm < ApplicationForm
-      delegate :parent, to: :model
 
-      form do |f|
-        f.project_autocompleter(
-          name: :parent_id,
-          label: attribute_name(:parent_id),
-          autocomplete_options: {
-            model: project_autocompleter_model,
-            focusDirectly: false,
-            dropdownPosition: "bottom",
-            url: project_autocompleter_url,
-            filters: [],
-            data: { qa_field_name: "parent" }
-          }
-        )
-      end
+require "rails_helper"
 
-      private
+RSpec.describe Projects::NewComponent, type: :component do
+  let(:project) { build_stubbed(:project) }
 
-      def project_autocompleter_model
-        return nil unless parent
-        return { id: parent.id, name: I18n.t(:"api_v3.undisclosed.parent") } unless parent.visible? || User.current.admin?
+  def render_component(**params)
+    render_inline(described_class.new(project:, **params))
+    page
+  end
 
-        { id: parent.id, name: parent.name }
-      end
-
-      def project_autocompleter_url
-        url_str = ::API::V3::Utilities::PathHelper::ApiV3Path.projects_available_parents
-        url_str << "?of=#{model.id}" unless model.new_record?
-        url_str
-      end
-    end
+  it "renders a form" do
+    expect(render_component).to have_css "form"
   end
 end

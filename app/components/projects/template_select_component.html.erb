@@ -26,20 +26,30 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 See COPYRIGHT and LICENSE files for more details.
 
 ++#%>
-<% html_title t("label_project_new") %>
+
 <%=
-  render(Primer::OpenProject::PageHeader.new) do |header|
-    header.with_title { t(:label_project_new) }
-    header.with_breadcrumbs([{ href: home_path, text: organization_name }, t(:label_project_new)])
+  component_wrapper do
+    admin_settings_primer_form_with(
+      action: :new,
+      method: :get,
+      data: {
+        turbo_frame: "projects-new-component",
+        controller: "auto-submit",
+        auto_submit_delay_value: 0
+      }
+    ) do |f|
+      render(
+        Primer::Box.new(
+          border: true, border_radius: 2, bg: :inset, my: 3, p: 3,
+          data: {
+            controller: "highlight-when-value-selected",
+            highlight_when_value_selected_highlight_class: Primer::Classify.(bg: :accent)[:class],
+            highlight_when_value_selected_target: "content"
+          }
+        )
+      ) do
+        render Projects::TemplateAutocompleter.new(f, template:)
+      end
+    end
   end
-%>
-
-<%= render Projects::TemplateSelectComponent.new(template: @template) %>
-
-<%=
-  render Projects::NewComponent.new(
-    project: @project,
-    template: @template,
-    copy_options: @copy_options
-  )
 %>

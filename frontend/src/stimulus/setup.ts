@@ -20,6 +20,7 @@ import PatternInputController from './controllers/pattern-input.controller';
 import HoverCardTriggerController from './controllers/hover-card-trigger.controller';
 import ScrollIntoViewController from './controllers/scroll-into-view.controller';
 import CkeditorFocusController from './controllers/ckeditor-focus.controller';
+import HighlightWhenValueSelectedController from './controllers/highlight-when-value-selected.controller';
 
 import AutoSubmit from '@stimulus-components/auto-submit';
 
@@ -57,5 +58,6 @@ instance.register('keep-scroll-position', KeepScrollPositionController);
 instance.register('pattern-input', PatternInputController);
 instance.register('scroll-into-view', ScrollIntoViewController);
 instance.register('ckeditor-focus', CkeditorFocusController);
+instance.register('highlight-when-value-selected', HighlightWhenValueSelectedController);
 
 instance.register('auto-submit', AutoSubmit);

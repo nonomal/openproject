@@ -26,20 +26,33 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 See COPYRIGHT and LICENSE files for more details.
 
 ++#%>
-<% html_title t("label_project_new") %>
+
 <%=
-  render(Primer::OpenProject::PageHeader.new) do |header|
-    header.with_title { t(:label_project_new) }
-    header.with_breadcrumbs([{ href: home_path, text: organization_name }, t(:label_project_new)])
+  component_wrapper(tag: "turbo-frame", refresh: :morph, autoscroll: true, data: { turbo_action: :replace, autoscroll_block: :start, autoscroll_behavior: :smooth }) do
+    admin_settings_primer_form_with(model: project) do |f|
+      flex_layout do |container|
+        container.with_row(mb: 3) do
+          render(
+            Primer::Forms::FormList.new(
+              Projects::Settings::NameForm.new(f),
+              Projects::Settings::RelationsForm.new(f),
+              Projects::Settings::CustomFieldsForm.new(f)
+            )
+          )
+        end
+
+        if template
+          container.with_row(mb: 3) do
+            render(Primer::Box.new(border: true, border_radius: 2, bg: :inset, p: 3)) do
+              render(Projects::TemplateForm.new(f, template:, copy_options:))
+            end
+          end
+        end
+
+        container.with_row(mb: 3) do
+          render Projects::SubmitOrCancel.new(f)
+        end
+      end
+    end
   end
-%>
-
-<%= render Projects::TemplateSelectComponent.new(template: @template) %>
-
-<%=
-  render Projects::NewComponent.new(
-    project: @project,
-    template: @template,
-    copy_options: @copy_options
-  )
 %>
