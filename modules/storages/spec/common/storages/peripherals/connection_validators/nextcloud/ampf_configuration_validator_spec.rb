@@ -116,7 +116,7 @@ module Storages
               results = validator.call
 
               expect(results[:group_folder_contents]).to be_a_warning
-              expect(results[:group_folder_contents].message).to eq(i18n_message(:unexpected_content))
+              expect(results[:group_folder_contents].message).to eq(i18n_message("nextcloud.unexpected_content"))
             end
           end
 

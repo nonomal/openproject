@@ -37,7 +37,7 @@ RSpec.describe WorkPackages::DatePicker::DialogContentComponent, type: :componen
 
   subject(:dialog_content) do
     with_controller_class(WorkPackages::DatePickerController) do
-      with_request_url("/work_packages/:work_package_id/datepicker_dialog_content") do
+      with_request_url("/work_packages/:work_package_id/date_picker") do
         render_inline(described_class.new(work_package:, schedule_manually:))
       end
     end

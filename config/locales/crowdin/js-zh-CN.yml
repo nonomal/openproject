@@ -971,7 +971,7 @@ zh-CN:
         percentageDone: "完成百分比"
         priority: "优先级"
         projectName: "项目"
-        remainingWork: "剩余工作"
+        remainingWork: "剩余工时"
         remainingWorkAlternative: "剩余小时数"
         responsible: "责任人"
         startDate: "开始日期"
@@ -983,7 +983,7 @@ zh-CN:
         updatedAt: "更新时间"
         versionName: "版本"
         version: "版本"
-        work: "工作"
+        work: "工时"
         workAlternative: "估算工时"
         remainingTime: "剩余的工作"
       default_queries:

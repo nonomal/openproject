@@ -289,7 +289,7 @@ de:
   global_search:
     placeholder: "Suche in %{app_title}"
     overwritten_tabs:
-      all: "All"
+      all: "Alle"
       messages: "Forum"
       wiki_pages: "Wiki"
   groups:
@@ -343,6 +343,18 @@ de:
         heading: "Diese Projektliste löschen?"
         text: "Diese Aktion löscht keine Projekte, die in der Liste enthalten sind. Sind Sie sicher, dass Sie diese Projektliste löschen möchten?"
     settings:
+      public_warning: >
+        This project is public. Anyone who has access to this instance will be able to view and interact with this project depending on their role and associated permissions. Sub-projects are not affected and have their own settings.
+      public_confirmation:
+        checkbox: "I understand that this will make the previously private content public"
+        title: "Make this project public?"
+        description: >
+          Anyone who has access to this instance will be able to view and interact with this project depending on their role and authentication settings. Sub-projects are not affected and have their own settings.
+      private_confirmation:
+        checkbox: "I understand that this will make the previously public content private."
+        title: "Make this project private?"
+        description: >
+          The project will only be visible to project members depending on their role and associated permissions. Sub-projects are not affected and have their own settings.
       change_identifier: Kennung ändern
       actions:
         label_enable_all: "Alles aktivieren"
@@ -740,9 +752,9 @@ de:
       follows_description: "Das verknüpfte Arbeitspaket muss beendet sein bevor dieses Arbeitspaket starten kann"
       label_child_singular: "Untergeordnetes Arbeitspaket"
       label_child_plural: "Untergeordnete Arbeitspakete"
-      new_child: "Neues Unter-Arbeitspaket"
+      new_child: "Neues Kind"
       new_child_text: "Erstellt ein zugehöriges Arbeitspaket als Unterelement des aktuellen (übergeordneten) Arbeitspakets"
-      child: "Unteraufgabe"
+      child: "Kind"
       child_description: "Macht das zugehörige Arbeitspaket zu einem Unterelement des aktuellen (übergeordneten) Arbeitspakets"
       label_closest: "Am nächsten"
       label_blocks_singular: "Blockiert"
@@ -950,7 +962,7 @@ de:
         column_names: "Spalten"
         relations_to_type_column: "Beziehungen zu %{type}"
         relations_of_type_column: "Beziehungen der Art: %{type}"
-        child_work_packages: "Unter-Arbeitspakete"
+        child_work_packages: "Kinder"
         group_by: "Gruppiere Ergebnisse nach"
         sort_by: "Ergebnisse sortieren nach"
         filters: "Filter"
@@ -1029,7 +1041,7 @@ de:
         consented_at: "Eingewilligt am"
       user_preference:
         comments_sorting: "Kommentare anzeigen"
-        dismissed_enterprise_banners: "Hidden enterprise banners"
+        dismissed_enterprise_banners: "Ausgeblendete Unternehmensbanner"
         impaired: "Für die barrierefreie Nutzung optimierte Oberfläche"
         auto_hide_popups: "Benachrichtigungen erfolgreicher Aktionen automatisch ausblenden"
         warn_on_leaving_unsaved: "Beim Verlassen einer Arbeitspaket-Seite mit ungespeichertem Text warnen"
@@ -1797,7 +1809,8 @@ de:
     text:
       failed: 'Das Projekt "%{source_project_name}" konnte nicht nach "%{target_project_name}" kopiert werden.'
       succeeded: 'Das Projekt "%{source_project_name}" wurde nach "%{target_project_name}" kopiert.'
-  create_new_page: "Wiki-Seite"
+  create_wiki_page: "Create new wiki page"
+  create_wiki_page_button: "Wiki page"
   date:
     abbr_day_names:
       - "So"
@@ -1952,25 +1965,25 @@ de:
     features:
       baseline_comparison: Baseline Comparisons
       board_view: Advanced Boards
-      conditional_highlighting: Conditional Highlighting
-      comments_with_restricted_visibility: Comments With Restricted Visibility
+      conditional_highlighting: Bedingte Hervorhebung
+      comments_with_restricted_visibility: Kommentare mit eingeschränkter Sichtbarkeit
       custom_actions: Benutzerdefinierte Aktionen
-      custom_field_hierarchies: Custom fields of type hierarchy
-      customize_life_cycle: Customize Life Cycle
+      custom_field_hierarchies: Selbstdefinierte Felder vom Typ Hierarchie
+      customize_life_cycle: Projektlebenszyklus anpassen
       date_alerts: Date Alerts
-      define_custom_style: Custom theme and logo
-      edit_attribute_groups: Edit Attribute Groups
-      gantt_pdf_export: Gantt PDF Export
+      define_custom_style: Selbstdefiniertes Thema und Logo
+      edit_attribute_groups: Attributgruppen bearbeiten
+      gantt_pdf_export: Gantt-PDF-Export
       grid_widget_wp_graph: Grid Widget Work Package Graph
-      ldap_groups: LDAP users and group sync
-      one_drive_sharepoint_file_storage: OneDrive/SharePoint File Storage
-      placeholder_users: Placeholder Users
-      project_list_sharing: Project List Sharing
-      readonly_work_packages: Readonly Work Packages
+      ldap_groups: LDAP-Benutzer- und Gruppensynchronisation
+      one_drive_sharepoint_file_storage: OneDrive/SharePoint-Dateispeicherung
+      placeholder_users: Platzhalter-Benutzer
+      project_list_sharing: Projektlistenfreigabe
+      readonly_work_packages: Schreibgeschützte Arbeitspakete
       sso_auth_providers: Single sign-on
       team_planner_view: Team Planner View
       two_factor_authentication: 2FA-Authentifizierung
-      virus_scanning: Antivirus Scanning
+      virus_scanning: Antivirus-Überprüfung
       work_package_query_relation_columns: Work Package Query Relation Columns
       work_package_sharing: Share work packages with external users
       work_package_subject_generation: Work Package Subject Generation
@@ -1978,11 +1991,10 @@ de:
       title: "Enterprise Add-on"
       plan_title: "Enterprise %{plan} add-on"
       plan_name: "%{plan} enterprise plan"
-      plan_text_html: "Available only through the %{plan_name}."
-      link_title: "Weitere Informationen"
-      hide_banner: "Hide this banner"
+      plan_text_html: "Nur über den %{plan_name} verfügbar."
+      hide_banner: "Dieses Banner ausblenden"
       baseline_comparison:
-        description: Highlight changes made to this list since any point in the past.
+        description: An dieser Liste vorgenommene Änderungen seit einem beliebigen Zeitpunkt in der Vergangenheit hervorheben.
       work_package_subject_generation:
         description: "Create automatically generated subjects using referenced attributes and text."
       customize_life_cycle:
@@ -1996,7 +2008,7 @@ de:
         features:
           groups: "Neue Attributgruppen hinzufügen"
           rename: "Attributgruppen umbenennen"
-          related: "Add a table of related work packages"
+          related: "Tabelle mit zugehörigen Arbeitspaketen hinzufügen"
       readonly_work_packages:
         description: "Mark work packages as read-only for specific statuses."
       custom_field_hierarchies:
@@ -2006,8 +2018,8 @@ de:
       work_package_sharing:
         description: "Share work packages with users who are not members of the project."
       define_custom_style:
-        title: "Custom color theme and logo"
-        more_info: "Note: the used logo will be publicly accessible."
+        title: "Selbstdefiniertes Farbthema und Logo"
+        more_info: "Hinweis: Das verwendete Logo wird öffentlich zugänglich sein."
         description: Customize your OpenProject installation with your own logo and colors.
       custom_actions:
         title: "Benutzerdefinierte Aktionen"
@@ -2015,12 +2027,12 @@ de:
       virus_scanning:
         description: "Ensure uploaded files in OpenProject are scanned for viruses before being accessible by other users."
       placeholder_users:
-        title: Placeholder users
+        title: Platzhalter-Benutzer
         description: >
           Placeholder users are a way to assign work packages to users who are not part of your project. They can be useful in a range of scenarios; for example, if you need to track tasks for a resource that is not yet named or available, or if you don’t want to give that person access to OpenProject but still want to track tasks assigned to them.
       comments_with_restricted_visibility:
-        title: "For your eyes only"
-        description: "Restricted-visibilty comments allow an internal team to communicate amongst themselves privately. These are only visible to certain project roles and will never be visible publicly. Available only through the enterprise professional plan."
+        title: "Nur für Sie"
+        description: "Restricted-visibilty comments allow an internal team to communicate amongst themselves privately. These are only visible to certain project roles and will never be visible publicly."
   enumeration_activities: "Aktivitäten für Zeiterfassung"
   enumeration_work_package_priorities: "Arbeitspaket-Prioritäten"
   enumeration_reported_project_statuses: "Gemeldeter Projekt-Status"
@@ -2249,7 +2261,6 @@ de:
       community: "OpenProject Community"
       upsale:
         title: "Auf Enterprise edition upgraden"
-        more_info: "Weitere Informationen"
     links:
       upgrade_enterprise_edition: "Auf Enterprise edition upgraden"
       postgres_migration: "Migration Ihrer Installation zu PostgreSQL"
@@ -2726,6 +2737,7 @@ de:
   label_modules: "Module"
   label_months_from: "Monate ab"
   label_more: "Mehr"
+  label_more_information: "Weitere Informationen"
   label_more_than_ago: "vor mehr als (Tage)"
   label_move_column_left: "Spalte nach links"
   label_move_column_right: "Spalte nach rechts"
@@ -3736,6 +3748,8 @@ de:
   setting_repository_truncate_at: "Maximale Anzahl Dateien im Projektarchiv-Browser angezeigt"
   setting_rest_api_enabled: "REST-Schnittstelle aktivieren"
   setting_self_registration: "Selbstregistrierung"
+  setting_self_registration_warning: >
+    The user will be able to activate their own accounts. Please note that this will give them access to all public projects and their content. Please make sure that no sensitive or private data is exposed in public projects.
   setting_session_ttl: "Session-Ablaufzeit nach Inaktivität"
   setting_session_ttl_hint: "Wert kleiner 5 wirkt wie ausgeschaltet"
   setting_session_ttl_enabled: "Session läuft ab"
@@ -3867,7 +3881,7 @@ de:
       not_allowed_text: "Sie haben nicht die notwendigen Rechte, um diese Seite zu sehen."
       activities:
         enable_comments_with_restricted_visibility: "Kommentare mit eingeschränkter Sichtbarkeit aktivieren"
-        helper_text: "Restricted comments allow an internal team to communicate amongst themselves privately. These are only visible to select roles that have the necessary permissions and will not be visible publicly. %{link}"
+        helper_text: "Restricted comments allow an internal team to communicate amongst themselves privately. These are only visible to selected roles that have the necessary permissions and will not be visible publicly. %{link}"
   text_formatting:
     markdown: "Markdown"
     plain: "Reiner Text"

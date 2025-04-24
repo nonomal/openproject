@@ -144,12 +144,6 @@ module Saml
       redirect_to action: :index unless EnterpriseToken.allows_to?(:sso_auth_providers)
     end
 
-    def default_breadcrumb; end
-
-    def show_local_breadcrumb
-      false
-    end
-
     def update_provider_metadata_call
       Saml::Providers::UpdateService
         .new(model: @provider, user: User.current)

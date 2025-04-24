@@ -63,7 +63,7 @@ OpenProject::Static::Homescreen.manage :blocks do |blocks|
       if: Proc.new { User.current.admin? }
     },
     {
-      partial: "upsale",
+      partial: "upsell",
       if: Proc.new { !EnterpriseToken.hide_banners? }
     }
   )

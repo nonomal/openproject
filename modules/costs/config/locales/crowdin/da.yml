@@ -50,12 +50,14 @@ da:
         project: Prjoekt
         user: Bruger
         work_package: Arbejdspakke
+        subject: Subject
         hours: Timer
         comments: Kommentér
         activity: Aktivivtet
         spent_on: Dato
         start_time: Start time
         end_time: Finish time
+        time: Time
     models:
       time_entry:
         one: "Time entry"
@@ -150,12 +152,28 @@ da:
   label_cost: "Cost"
   label_costs: "Omkostninger"
   label_mandatory_fields: "Mandatory fields"
+  label_my_time_tracking: "My time tracking"
+  label_no_time: "No time tracked"
+  label_next_day: "Next day"
+  label_next_week: "Næste uge"
+  label_next_month: "Next month"
+  label_previous_day: "Previous day"
+  label_previous_week: "Foregående uge"
+  label_previous_month: "Previous month"
+  label_specific_day: "Day %{day}"
+  label_specific_week: "Calendar week %{week}"
+  label_specific_month: "Month %{month}"
+  label_list: "Liste"
+  label_month: "Month"
+  label_day: "Day"
+  label_today_capitalized: "Today"
   placeholder_activity_select_work_package_first: Work package selection is required first
   notice_something_wrong: "Noget gik galt. Forsøg venligst igen."
   notice_successful_restore: "Gendannet."
   notice_successful_lock: "Locked successfully."
   notice_cost_logged_successfully: "Unit cost logged successfully."
   notice_different_time_zones: "This user has a different time zone (%{tz}). Time will be logged using their time zone."
+  notice_time_entry_update_failed: "Failed to update time entry. Errors: %{errors}"
   permission_edit_cost_entries: "Redigér reserverede enhedsomkostninger"
   permission_edit_own_cost_entries: "Redigér egne reserverede enhedsomkostninger"
   permission_edit_hourly_rates: "Redigér timesatser"
@@ -181,6 +199,10 @@ da:
   text_reassign_time_and_cost_entries: "Gentildel indberettede timer og omkostninger til denne arbejdspakke:"
   text_warning_hidden_elements: "Visse angivelser kan været blevet ekskluderet fra sammenlægning."
   week: "uge"
+  total_times:
+    week: "Week Total: %{hours}"
+    month: "Month Total: %{hours}"
+    day: "Day Total: %{hours}"
   api_v3:
     errors:
       validation:

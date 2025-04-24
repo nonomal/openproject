@@ -44,15 +44,15 @@ RSpec.describe API::V3::Activities::ActivitiesByWorkPackageAPI do # rubocop:disa
     let(:admin) { create(:admin) }
     let(:role) { create(:project_role, permissions:) }
     let(:permissions) do
-      %i(view_work_packages add_work_package_notes view_comments_with_restricted_visibility)
+      %i(view_work_packages add_work_package_comments view_internal_comments)
     end
 
     before do
       allow(User).to receive(:current).and_return(current_user)
     end
 
-    describe "GET /api/v3/work_packages/:id/activities", with_flag: { comments_with_restricted_visibility: true } do
-      context "when activities do not include restricted journals" do
+    describe "GET /api/v3/work_packages/:id/activities", with_flag: { internal_comments: true } do
+      context "when activities do not include internal journals" do
         before do
           get api_v3_paths.work_package_activities work_package.id
         end
@@ -70,38 +70,38 @@ RSpec.describe API::V3::Activities::ActivitiesByWorkPackageAPI do # rubocop:disa
         end
       end
 
-      context "when activities include restricted journals" do
-        let!(:restricted_note) do
+      context "when activities include internal journals" do
+        let!(:internal_note) do
           create(:work_package_journal,
                  journable: work_package,
                  user: admin,
-                 notes: "Restricted comment",
-                 restricted: true,
+                 notes: "Internal comment",
+                 internal: true,
                  version: 2)
         end
 
         before do
-          project.enabled_comments_with_restricted_visibility = true
+          project.enabled_internal_comments = true
           project.save!
         end
 
         context "and user has the permission to see it" do
-          it "includes restricted activities" do
+          it "includes internal activities" do
             get api_v3_paths.work_package_activities work_package.id
-            expect(last_response.body).to include("Restricted comment")
+            expect(last_response.body).to include("Internal comment")
           end
         end
 
         context "and user does not have the permission to see it" do
           before do
             role.role_permissions
-              .find_by(permission: "view_comments_with_restricted_visibility")
+              .find_by(permission: "view_internal_comments")
               .destroy
           end
 
-          it "does not include restricted activities" do
+          it "does not include internal activities" do
             get api_v3_paths.work_package_activities work_package.id
-            expect(last_response.body).not_to include("Restricted comment")
+            expect(last_response.body).not_to include("Internal comment")
           end
         end
       end

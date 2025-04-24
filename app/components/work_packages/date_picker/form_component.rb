@@ -61,9 +61,11 @@ module WorkPackages
 
       def submit_path
         if work_package.new_record?
-          datepicker_dialog_content_path
+          # create: get json of selected dates
+          date_picker_path
         else
-          work_package_datepicker_dialog_content_path(work_package)
+          # update dates of work package
+          work_package_date_picker_path(work_package)
         end
       end
 
@@ -72,9 +74,9 @@ module WorkPackages
                               .merge(schedule_manually:)
                               .permit!
         if work_package.new_record?
-          new_work_package_datepicker_dialog_content_path("new", dialog_params)
+          new_date_picker_path(dialog_params)
         else
-          work_package_datepicker_dialog_content_path(work_package, dialog_params)
+          work_package_date_picker_path(work_package, dialog_params)
         end
       end
 

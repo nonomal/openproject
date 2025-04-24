@@ -29,7 +29,7 @@ See COPYRIGHT and LICENSE files for more details.
 
 <%= render(Settings::ProjectWorkPackages::HeaderComponent.new(@project, selected: :activities)) %>
 
-<% if EnterpriseToken.allows_to?(:comments_with_restricted_visibility) %>
+<% if EnterpriseToken.allows_to?(:internal_comments) %>
   <%=
     primer_form_with(
       model: @project,
@@ -40,9 +40,5 @@ See COPYRIGHT and LICENSE files for more details.
     <%= render(Projects::Settings::WorkPackages::Activities::Form.new(f)) %>
   <% end %>
 <% else %>
-  <%=
-    render(
-      EnterpriseEdition::BannerComponent.new(:comments_with_restricted_visibility, mb: 3)
-    )
-  %>
+  <%= render(EnterpriseEdition::UpsellPageComponent.new(:internal_comments)) %>
 <% end %>

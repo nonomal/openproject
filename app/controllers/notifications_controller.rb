@@ -31,7 +31,7 @@ class NotificationsController < ApplicationController
 
   before_action :require_login
   before_action :filtered_query, only: :mark_all_read
-  no_authorization_required! :index, :split_view, :update_counter, :mark_all_read, :date_alerts, :share_upsale
+  no_authorization_required! :index, :split_view, :update_counter, :mark_all_read, :date_alerts, :share_upsell
 
   before_action :check_filter, only: %i[index]
 
@@ -65,15 +65,13 @@ class NotificationsController < ApplicationController
     render_notifications_layout
   end
 
-  def share_upsale
+  def share_upsell
     render_notifications_layout
   end
 
   private
 
   def split_view_base_route = notifications_path(request.query_parameters)
-
-  def default_breadcrumb; end
 
   def render_notifications_layout
     # Frontend will handle rendering
@@ -100,7 +98,7 @@ class NotificationsController < ApplicationController
     return if EnterpriseToken.allows_to?(:date_alerts)
 
     if params[:filter] == "reason" && params[:name] == "dateAlert"
-      redirect_to notifications_date_alert_upsale_path
+      redirect_to notifications_date_alert_upsell_path
     end
   end
 end

@@ -130,10 +130,10 @@ RSpec.describe "Attachments virus scanning",
   end
 
   describe "without ee" do
-    it "renders upsale" do
+    it "renders upsell" do
       get "/admin/settings/virus_scanning"
       expect(response.body).to have_text "Virus scanning"
-      expect(response.body).to have_text "Available only through the Corporate enterprise plan."
+      expect(response.body).to have_text "Available starting with the Corporate enterprise plan."
     end
   end
 end

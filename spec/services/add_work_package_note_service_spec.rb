@@ -71,17 +71,17 @@ RSpec.describe AddWorkPackageNoteService, type: :model do
     it "persists the value" do
       expect(subject).to be_success
       expect(work_package).to have_received(:add_journal)
-        .with(user: user, notes: "blubs", restricted: false)
+        .with(user: user, notes: "blubs", internal: false)
       expect(work_package).to have_received(:save_journals)
     end
 
-    context "with restricted note" do
-      subject { instance.call("blubs", send_notifications:, restricted: true) }
+    context "with internal note" do
+      subject { instance.call("blubs", send_notifications:, internal: true) }
 
       it "persists the value" do
         expect(subject).to be_success
         expect(work_package).to have_received(:add_journal)
-          .with(user: user, notes: "blubs", restricted: true)
+          .with(user: user, notes: "blubs", internal: true)
         expect(work_package).to have_received(:save_journals)
       end
     end

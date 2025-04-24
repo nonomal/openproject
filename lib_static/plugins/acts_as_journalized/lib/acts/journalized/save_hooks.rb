@@ -53,7 +53,7 @@ module Acts::Journalized
       base.class_eval do
         after_save :save_journals
 
-        attr_accessor :journal_notes, :journal_user, :journal_restricted, :journal_cause
+        attr_accessor :journal_notes, :journal_user, :journal_internal, :journal_cause
       end
     end
 
@@ -61,7 +61,7 @@ module Acts::Journalized
       with_ensured_journal_attributes do
         create_call = Journals::CreateService
                       .new(self, @journal_user)
-                      .call(notes: @journal_notes, restricted: @journal_restricted, cause: @journal_cause)
+                      .call(notes: @journal_notes, internal: @journal_internal, cause: @journal_cause)
 
         if create_call.success? && create_call.result
           OpenProject::Notifications.send(OpenProject::Events::JOURNAL_CREATED,
@@ -78,11 +78,11 @@ module Acts::Journalized
       save_journals
     end
 
-    def add_journal(user: User.current, notes: "", restricted: false, cause: CauseOfChange::NoCause.new)
+    def add_journal(user: User.current, notes: "", internal: false, cause: CauseOfChange::NoCause.new)
       self.journal_user ||= user
       self.journal_notes ||= notes
       self.journal_cause ||= cause
-      self.journal_restricted ||= restricted
+      self.journal_internal ||= internal
     end
 
     private
@@ -91,14 +91,14 @@ module Acts::Journalized
       self.journal_user ||= User.current
       self.journal_notes ||= ""
       self.journal_cause ||= CauseOfChange::NoCause.new
-      self.journal_restricted ||= false
+      self.journal_internal ||= false
 
       yield
     ensure
       self.journal_user = nil
       self.journal_notes = nil
       self.journal_cause = nil
-      self.journal_restricted = nil
+      self.journal_internal = nil
     end
   end
 end

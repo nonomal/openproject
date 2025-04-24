@@ -27,5 +27,23 @@
 #++
 
 class Projects::Settings::GeneralController < Projects::SettingsController
+  include OpTurbo::DialogStreamHelper
+
   menu_item :settings_general
+
+  def toggle_public_dialog
+    respond_with_dialog Projects::Settings::TogglePublicDialogComponent.new(@project)
+  end
+
+  def toggle_public
+    call = Projects::UpdateService
+      .new(model: @project, user: current_user)
+      .call(public: !@project.public?)
+
+    call.on_failure do
+      flash[:error] = call.message
+    end
+
+    redirect_to action: :show, status: :see_other
+  end
 end

@@ -61,12 +61,6 @@ class CustomFieldsController < ApplicationController
 
   protected
 
-  def default_breadcrumb; end
-
-  def show_local_breadcrumb
-    false
-  end
-
   def validate_enterprise_token
     if params.dig(:custom_field, :field_format) == "hierarchy" && !EnterpriseToken.allows_to?(:custom_field_hierarchies)
       render_403

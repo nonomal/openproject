@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,13 +33,13 @@ module WorkPackage::Journalized
 
   included do
     acts_as_journalized journals_association_extension: proc {
-      def restricted_visible
-        if OpenProject::FeatureDecisions.comments_with_restricted_visibility_active? &&
-            proxy_association.owner.project.enabled_comments_with_restricted_visibility &&
-            User.current.allowed_in_project?(:view_comments_with_restricted_visibility, proxy_association.owner.project)
+      def internal_visible
+        if OpenProject::FeatureDecisions.internal_comments_active? &&
+            proxy_association.owner.project.enabled_internal_comments &&
+            User.current.allowed_in_project?(:view_internal_comments, proxy_association.owner.project)
           all
         else
-          where(restricted: false)
+          where(internal: false)
         end
       end
     }
@@ -47,7 +49,7 @@ module WorkPackage::Journalized
       def self.event_title
         Proc.new do |o|
           title = o.to_s
-          title << " (#{o.status.name})" if o.status.present?
+          title += " (#{o.status.name})" if o.status.present?
 
           title
         end
@@ -64,7 +66,7 @@ module WorkPackage::Journalized
           journal = o.last_journal
           t = "work_package"
 
-          t << if journal && journal.details.empty? && !journal.initial?
+          t += if journal && journal.details.empty? && !journal.initial?
                  "-note"
                else
                  status = Status.find_by(id: o.status_id)

@@ -157,6 +157,7 @@ module Components
             expect(page).to have_text(label)
           end
         end
+        yield modal if block_given?
         modal.save
 
         input = find(".group-edit-in-place--input")

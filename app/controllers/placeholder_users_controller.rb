@@ -155,8 +155,4 @@ class PlaceholderUsersController < ApplicationController
       render_403 message: I18n.t("placeholder_users.right_to_manage_members_missing")
     end
   end
-
-  def show_local_breadcrumb
-    false
-  end
 end

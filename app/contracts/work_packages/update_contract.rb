@@ -74,7 +74,7 @@ module WorkPackages
     end
 
     def allowed_journal_addition?
-      model.changes.empty? && model.journal_notes && allowed_in_work_package?(:add_work_package_notes)
+      model.changes.empty? && model.journal_notes && allowed_in_work_package?(:add_work_package_comments)
     end
 
     def can_move_to_milestone

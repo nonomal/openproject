@@ -98,7 +98,7 @@ class Project < ApplicationRecord
   validates_associated :available_phases, on: :saving_phases
 
   store_attribute :settings, :deactivate_work_package_attachments, :boolean
-  store_attribute :settings, :enabled_comments_with_restricted_visibility, :boolean
+  store_attribute :settings, :enabled_internal_comments, :boolean
 
   acts_as_favorable
 

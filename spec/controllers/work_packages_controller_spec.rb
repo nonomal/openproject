@@ -313,12 +313,12 @@ RSpec.describe WorkPackagesController do
       end
     end
 
-    context "when there are internal comments", with_flag: { comments_with_restricted_visibility: true } do
+    context "when there are internal comments", with_flag: { internal_comments: true } do
       render_views
 
       let(:admin) { create(:admin) }
       let(:project) do
-        create(:project, identifier: "test_project", public: false, enabled_comments_with_restricted_visibility: true)
+        create(:project, identifier: "test_project", public: false, enabled_internal_comments: true)
       end
 
       before do
@@ -327,7 +327,7 @@ RSpec.describe WorkPackagesController do
                journable: work_package,
                user: admin,
                notes: "internal comment",
-               restricted: true,
+               internal: true,
                version: 2)
       end
 

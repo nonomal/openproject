@@ -85,12 +85,6 @@ class AttributeHelpTextsController < ApplicationController
 
   protected
 
-  def default_breadcrumb; end
-
-  def show_local_breadcrumb
-    false
-  end
-
   private
 
   def permitted_params_with_attachments

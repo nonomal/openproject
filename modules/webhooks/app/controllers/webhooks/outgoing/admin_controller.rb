@@ -70,12 +70,6 @@ module Webhooks
           .permit(:name, :description, :url, :secret, :enabled,
                   :project_ids, selected_project_ids: [], events: [])
       end
-
-      def show_local_breadcrumb
-        false
-      end
-
-      def default_breadcrumb; end
     end
   end
 end

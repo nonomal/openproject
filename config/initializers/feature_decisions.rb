@@ -61,6 +61,6 @@ OpenProject::FeatureDecisions.add :work_package_comment_id_url,
                                                "`#comment-<journal-id>` replacing the old " \
                                                "`#activity-<journal-sequence_number>`."
 
-OpenProject::FeatureDecisions.add :comments_with_restricted_visibility,
-                                  description: "Enables submitting comments that are restricted " \
+OpenProject::FeatureDecisions.add :internal_comments,
+                                  description: "Enables submitting comments that are internal" \
                                                "and only a subset of users can see"

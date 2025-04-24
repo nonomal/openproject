@@ -76,7 +76,7 @@ module Storages
         register(:managed_folder_identifier, ManagedFolderIdentifier::OneDrive)
       end
 
-      namespace("validations") do
+      namespace("validators") do
         register(:connection, ConnectionValidators::OneDriveValidator)
       end
 

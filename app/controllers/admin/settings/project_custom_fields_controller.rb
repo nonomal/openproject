@@ -48,10 +48,6 @@ module Admin::Settings
     before_action :find_unlink_project_custom_field_mapping, only: :unlink
     # rubocop:enable Rails/LexicallyScopedActionFilter
 
-    def show_local_breadcrumb
-      false
-    end
-
     def index
       respond_to :html
     end

@@ -136,13 +136,13 @@ ru:
   label_recurring_meeting_no_end_date: "Есть и другие запланированные совещания (%{schedule})."
   label_recurring_meeting_more:
     one: "Есть еще одно запланированное совещание (%{schedule})."
-    few: "There are %{count} more scheduled meetings (%{schedule})."
-    many: "There are %{count} more scheduled meetings (%{schedule})."
+    few: "Есть еще %{count} запланированное совещание (%{schedule})."
+    many: "Есть еще %{count} запланированное совещание (%{schedule})."
     other: "Есть еще %{count} запланированных совещаний (%{schedule})."
   label_recurring_meeting_more_past:
     one: "Есть еще одно прошедшее совещание."
-    few: "There are %{count} more past meetings."
-    many: "There are %{count} more past meetings."
+    few: "Есть еще %{count} прошедшее совещание."
+    many: "Есть еще %{count} прошедшее совещание."
     other: "Есть еще %{count} прошедших совещаний."
   label_recurring_meeting_show_more: "Показать еще"
   label_recurring_meeting_series_create: "Создать серию совещаний"
@@ -279,8 +279,8 @@ ru:
         other: "Каждые %{count} дней"
       x_weekly:
         one: "Каждую неделю"
-        few: "Every %{count} weeks"
-        many: "Every %{count} weeks"
+        few: "Каждые %{count} недели"
+        many: "Каждые %{count} недели"
         other: "Каждые %{count} недели"
       every_weekday: "Каждый %{day_of_the_week}"
       working_days: "Каждый рабочий день"

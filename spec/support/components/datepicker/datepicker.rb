@@ -43,6 +43,7 @@ module Components
     def clear!
       set_field(container.find_field("work_package[start_date]"), "", wait_for_changes_to_be_applied: false)
       set_field(container.find_field("work_package[due_date]"), "", wait_for_changes_to_be_applied: false)
+      wait_for_changes_to_be_applied_after_setting_field
     end
 
     def expect_visible
@@ -229,9 +230,13 @@ module Components
       end
 
       if wait_for_changes_to_be_applied
-        sleep 0.75 # input debounce
-        wait_for_network_idle
+        wait_for_changes_to_be_applied_after_setting_field
       end
+    end
+
+    def wait_for_changes_to_be_applied_after_setting_field
+      sleep 0.75 # input debounce
+      wait_for_network_idle
     end
   end
 end

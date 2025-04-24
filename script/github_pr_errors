@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+# rubocop:disable Rails
 require "rubygems"
 require "bundler"
 Bundler.setup(:default, :development)
@@ -32,6 +33,7 @@ class Options
     display_rerun_info: false,
     display_images: false,
     failed_jobs_logs: [],
+    full_backtrace: false,
     no_cache: false,
     run_id: nil,
     job_id: nil,
@@ -83,10 +85,14 @@ class Options
       options.merge!(parse_url(ARGV.first)) if ARGV.any?
     end
 
-    def parse_args
+    def parse_args # rubocop:disable Metrics/AbcSize
       options = {}
       opt_parser = OptionParser.new do |parser|
         parser.banner = BANNER
+
+        parser.on("-b", "--full-backtrace", "Output full backtrace of test failures") do
+          options[:full_backtrace] = true
+        end
 
         parser.on("-c", "--compact", "Output all failing rspec files on one line") do
           options[:compact] = true
@@ -523,7 +529,7 @@ class Formatter
     return if failures_explanation.nil? || failures_explanation.empty?
 
     warn "Failures explanation:".bold
-    warn failures_explanation
+    warn clean_failures_explanation(failures_explanation)
     warn ""
   end
 
@@ -551,6 +557,21 @@ class Formatter
   end
 
   private
+
+  # Remove test failure backtrace lines that are not useful.
+  # - rspec_retry and retriable lines
+  # - top level lines which are mostyl around blocks executing on each spec
+  # - make the spec file name bold
+  def clean_failures_explanation(failures_explanation)
+    return failures_explanation if Options.full_backtrace
+
+    failures_explanation
+      .split("\n")
+      .reject { |line| line.include?("spec/support/rspec_retry") || line.include?("/usr/local/bundle/gems/retriable") }
+      .reject { |line| line.include?("<top (required)>") && !line.include?("_spec.rb") }
+      .join("\n")
+      .gsub(/[.a-z_\/]+_spec.rb/, &:bold)
+  end
 
   def display_errors_compact(errors)
     puts errors.map { escaped_location(it) }.join(" ")
@@ -760,3 +781,5 @@ when "in_progress"
 when "error"
   formatter.display_errors_from_report(report)
 end
+
+# rubocop:enable Rails

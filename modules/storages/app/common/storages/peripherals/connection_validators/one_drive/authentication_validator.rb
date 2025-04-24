@@ -51,13 +51,13 @@ module Storages
             if OAuthClientToken.for_user_and_client(@user, @storage.oauth_client).exists?
               pass_check(:existing_token)
             else
-              warn_check(:existing_token, message(:oauth_token_missing), halt_validation: true)
+              warn_check(:existing_token, message("one_drive.oauth_token_missing"), halt_validation: true)
             end
           end
 
           def user_bound_request
             Registry["one_drive.queries.user"].call(storage: @storage, auth_strategy:).on_failure do
-              fail_check(:user_bound_request, message("oauth_request_#{it.result}"))
+              fail_check(:user_bound_request, message("one_drive.oauth_request_#{it.result}"))
             end
 
             pass_check(:user_bound_request)

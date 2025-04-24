@@ -33,7 +33,7 @@ require "spec_helper"
 RSpec.describe "Work package activity tab comment editor",
                :js,
                :with_cuprite,
-               with_flag: { comments_with_restricted_visibility: true } do
+               with_flag: { internal_comments: true } do
   let(:project) { create(:project) }
   let(:admin) { create(:admin) }
   let(:work_package) { create(:work_package, project:, author: admin) }
@@ -115,6 +115,75 @@ RSpec.describe "Work package activity tab comment editor",
             expect(editor.input_element.text).to eq("Sample text")
           end
         end
+      end
+    end
+  end
+
+  describe "Attachments" do
+    let(:image_fixture) { UploadedFile.load_from("spec/fixtures/files/image.png") }
+    let(:editor) { Components::WysiwygEditor.new }
+
+    current_user { admin }
+
+    before do
+      wp_page.visit!
+      wp_page.wait_for_activity_tab
+    end
+
+    it "can upload an image to a comment as an inline attachment" do
+      activity_tab.add_comment(text: "Sample text", save: false)
+
+      activity_tab.expect_focus_on_editor
+
+      editor.drag_attachment(image_fixture.path, "An image caption")
+      editor.wait_until_upload_progress_toaster_cleared
+
+      attachment = Attachment.where(author: admin).last
+      expect(attachment.container).to be_nil
+
+      click_on "Submit"
+
+      expect(page).to have_content("An image caption")
+      journal = work_package.reload.journals.last
+      expect(journal.attachments).to contain_exactly(attachment)
+    end
+
+    context "when editing an existing comment" do
+      let(:comment) do
+        create(:work_package_journal,
+               user: admin,
+               notes: notes_with_attachment(existing_attachment),
+               journable: work_package,
+               version: 2).tap do |journal|
+                 journal.attachments << existing_attachment
+                 journal.save(validate: false)
+               end
+      end
+
+      let!(:existing_attachment) { create(:attachment, author: admin, container: nil) }
+
+      it "updates the comment with new attachments" do
+        expect(comment.reload.attachments).to contain_exactly(existing_attachment)
+
+        activity_tab.edit_comment(comment, text: "Some notes", save: false)
+
+        editor.drag_attachment(image_fixture.path, "An image caption")
+        editor.wait_until_upload_progress_toaster_cleared
+
+        click_on "Save"
+
+        expect(page).to have_content("An image caption")
+        newly_attached = Attachment.where(author: admin).last
+        expect(comment.reload.attachments).to contain_exactly(newly_attached)
+        expect(comment.reload.attachments).not_to include(existing_attachment)
+      end
+
+      def notes_with_attachment(attachment)
+        <<~HTML
+          <img class="op-uc-image op-uc-image_inline" src="/api/v3/attachments/#{attachment.id}/content">
+
+          First attachment
+        HTML
       end
     end
   end

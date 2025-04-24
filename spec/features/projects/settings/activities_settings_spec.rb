@@ -36,22 +36,22 @@ RSpec.describe "WorkPackages-Settings-Activities", :js do
 
   current_user { create(:admin) }
 
-  it "enables and disables the settings for the project", with_ee: %i[comments_with_restricted_visibility] do
+  it "enables and disables the settings for the project", with_ee: %i[internal_comments] do
     activities_settings_page.visit!
     expect(page).to have_css("#activities-form")
 
-    expect(page).to have_field(:project_enabled_comments_with_restricted_visibility, checked: false)
+    expect(page).to have_field(:project_enabled_internal_comments, checked: false)
 
-    check("Enable restricted visibility comments")
+    check("Enable internal comments")
     click_link_or_button "Save"
 
     expect_and_dismiss_flash(message: "Successful update.")
-    expect(page).to have_field(:project_enabled_comments_with_restricted_visibility, checked: true)
+    expect(page).to have_field(:project_enabled_internal_comments, checked: true)
 
-    uncheck("Enable restricted visibility comments")
+    uncheck("Enable internal comments")
     click_link_or_button "Save"
 
     expect_and_dismiss_flash(message: "Successful update.")
-    expect(page).to have_field(:project_enabled_comments_with_restricted_visibility, checked: false)
+    expect(page).to have_field(:project_enabled_internal_comments, checked: false)
   end
 end

@@ -163,14 +163,14 @@ class Activities::BaseActivityProvider
   end
 
   def filter_for_visibility(query, user)
-    unless OpenProject::FeatureDecisions.comments_with_restricted_visibility_active?
-      return query.where(journals_table[:restricted].eq(false))
+    unless OpenProject::FeatureDecisions.internal_comments_active?
+      return query.where(journals_table[:internal].eq(false))
     end
 
     query.where(
       projects_table[:id]
-        .in(Project.allowed_to(user, :view_comments_with_restricted_visibility).select(:id).arel)
-        .or(journals_table[:restricted].eq(false))
+        .in(Project.allowed_to(user, :view_internal_comments).select(:id).arel)
+        .or(journals_table[:internal].eq(false))
     )
   end
 

@@ -343,6 +343,18 @@ zh-CN:
         heading: "删除此项目列表？"
         text: "此操作不会删除列表中包含的任何项目。确定要删除此项目列表吗？"
     settings:
+      public_warning: >
+        This project is public. Anyone who has access to this instance will be able to view and interact with this project depending on their role and associated permissions. Sub-projects are not affected and have their own settings.
+      public_confirmation:
+        checkbox: "I understand that this will make the previously private content public"
+        title: "Make this project public?"
+        description: >
+          Anyone who has access to this instance will be able to view and interact with this project depending on their role and authentication settings. Sub-projects are not affected and have their own settings.
+      private_confirmation:
+        checkbox: "I understand that this will make the previously public content private."
+        title: "Make this project private?"
+        description: >
+          The project will only be visible to project members depending on their role and associated permissions. Sub-projects are not affected and have their own settings.
       change_identifier: 更改标识符
       actions:
         label_enable_all: "全部启用"
@@ -552,8 +564,8 @@ zh-CN:
       status_default_text: |-
         新工作包默认状态不能为只读。
       status_excluded_from_totals_text: |-
-        选中此选项可将具有此状态的工作包排除在层次结构中的 "工时"、"
-        剩余工时 "和 "完成百分比 "总数之外。
+        选中此选项可将具有此状态的工作包排除在层次结构中的 "工时"、
+        "剩余工时 "和 "完成百分比 "总数之外。
       status_percent_complete_text: |-
         在<a href="%{href}">基于状态的进度计算模式</a>下，当选择该状态时，工作包的 完成% 会自动设置为该值。
         在基于工作的模式下忽略。
@@ -726,11 +738,11 @@ zh-CN:
       label_relates_to_plural: "关联到"
       relates_description: "在两个工作包之间建立一个可见的链接，不产生额外效果"
       relates_to_description: "在两个工作包之间建立一个可见的链接，不产生额外效果"
-      label_precedes_singular: "继承者(以后)"
-      label_precedes_plural: "继承者(以后)"
+      label_precedes_singular: "后置任务 (FS)"
+      label_precedes_plural: "后置任务 (FS)"
       precedes_description: "相关的工作包必然需要在这个完成后启动"
-      label_follows_singular: "前任(之前)"
-      label_follows_plural: "前任(之前)"
+      label_follows_singular: "前置任务 (SF)"
+      label_follows_plural: "前置任务 (SF)"
       follows_description: "相关工作包必须在本工作包启动前完成"
       label_child_singular: "子节点"
       label_child_plural: "子项"
@@ -1047,8 +1059,8 @@ zh-CN:
         begin_deletion: "开始删除"
         children: "子元素"
         derived_done_ratio: "总完成度%"
-        derived_remaining_hours: "总剩余工作总量"
-        derived_remaining_time: "总剩余工作总量"
+        derived_remaining_hours: "总剩余工时"
+        derived_remaining_time: "总剩余工时"
         done_ratio: "% 完成"
         duration: "持续时间"
         end_insertion: "结束插入"
@@ -1066,8 +1078,8 @@ zh-CN:
         priority: "优先级"
         progress: "% 完成"
         readonly: "只读"
-        remaining_hours: "剩余工作"
-        remaining_time: "剩余工作"
+        remaining_hours: "剩余工时"
+        remaining_time: "剩余工时"
         shared_with_users: "共享对象"
         schedule_manually: "手动计划"
         spent_hours: "已耗工时"
@@ -1567,13 +1579,13 @@ zh-CN:
     default_columns: "默认的列"
     description: "描述"
     derived_due_date: "派生的完成日期"
-    derived_estimated_hours: "总工作量"
+    derived_estimated_hours: "总工时"
     derived_start_date: "派生的开始日期"
     direction: "方向"
     display_sums: "显示汇总"
     due_date: "完成日期"
-    estimated_hours: "工作"
-    estimated_time: "工作"
+    estimated_hours: "工时"
+    estimated_time: "工时"
     email: "Email"
     entity_type: "实体"
     expires_at: "过期于"
@@ -1780,7 +1792,8 @@ zh-CN:
     text:
       failed: '无法将项目"%{source_project_name}"复制到项目"%{target_project_name}"。'
       succeeded: '已复制项目"%{source_project_name}"到"%{target_project_name}"。'
-  create_new_page: "维基页面"
+  create_wiki_page: "创建新的 Wiki 页面"
+  create_wiki_page_button: "Wiki页面"
   date:
     abbr_day_names:
       - "周日"
@@ -1943,7 +1956,6 @@ zh-CN:
       plan_title: "企业 %{plan} 附加组件"
       plan_name: "%{plan} 企业计划"
       plan_text_html: "只能通过%{plan_name}使用。"
-      link_title: "更多信息"
       hide_banner: "隐藏此广告"
       baseline_comparison:
         description: 高亮显示自从过去任意时间点以来对此列表所做的更改。
@@ -1984,7 +1996,7 @@ zh-CN:
           占位符用户是一种将工作包分配给不属于您项目的用户的方法。它们在一系列场景中十分有用；例如，如果您需要跟踪尚未命名或可用资源的任务，或者如果您不想让该人员访问 OpenProject 但仍希望跟踪分配给他们的任务。
       comments_with_restricted_visibility:
         title: "仅您可见"
-        description: "评论可见性限制允许内部团队能够私下沟通。 这些只对某些项目角色可见，并且永远不会公开可见。只能通过企业专业计划提供。"
+        description: "评论可见性限制允许内部团队能够私下沟通。 这些只对某些项目角色可见，并且永远不会公开可见。"
   enumeration_activities: "时间跟踪活动"
   enumeration_work_package_priorities: "工作包优先级"
   enumeration_reported_project_statuses: "报告的项目状态"
@@ -2213,7 +2225,6 @@ zh-CN:
       community: "OpenProject 社区"
       upsale:
         title: "升级到企业版"
-        more_info: "更多信息"
     links:
       upgrade_enterprise_edition: "升级到企业版"
       postgres_migration: "将您的安装迁移到 PostgreSQL"
@@ -2690,6 +2701,7 @@ zh-CN:
   label_modules: "模块"
   label_months_from: "月份从"
   label_more: "更多"
+  label_more_information: "更多信息"
   label_more_than_ago: "更多天前"
   label_move_column_left: "左移列"
   label_move_column_right: "右移列"
@@ -3693,6 +3705,8 @@ zh-CN:
   setting_repository_truncate_at: "存储库浏览器中显示的最多的文件个数"
   setting_rest_api_enabled: "启用 REST Web 服务"
   setting_self_registration: "自助注册"
+  setting_self_registration_warning: >
+    The user will be able to activate their own accounts. Please note that this will give them access to all public projects and their content. Please make sure that no sensitive or private data is exposed in public projects.
   setting_session_ttl: "在处于非活动状态后会话过期时间"
   setting_session_ttl_hint: "当设置的值低于5时，其作用类似于禁用。"
   setting_session_ttl_enabled: "会话过期"

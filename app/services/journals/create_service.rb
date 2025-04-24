@@ -51,9 +51,9 @@ module Journals
       @associations = Association.for(journable)
     end
 
-    def call(notes: "", restricted: false, cause: CauseOfChange::NoCause.new)
+    def call(notes: "", internal: false, cause: CauseOfChange::NoCause.new)
       Journal.transaction do
-        journal = create_journal(notes, restricted, cause)
+        journal = create_journal(notes, internal, cause)
 
         if journal
           reload_journals
@@ -75,18 +75,18 @@ module Journals
     #
     # Instead of removing the predecessor, return it here so that it can be stripped in the journal creating
     # SQL to than be refilled. That way, references to the journal, including ones users have, are kept intact.
-    def aggregatable_predecessor(notes, restricted, cause)
+    def aggregatable_predecessor(notes, internal, cause)
       predecessor = journable.last_journal
 
-      predecessor if aggregatable?(predecessor, notes, restricted, cause)
+      predecessor if aggregatable?(predecessor, notes, internal, cause)
     end
 
-    def create_journal(notes, restricted, cause)
-      predecessor = aggregatable_predecessor(notes, restricted, cause)
+    def create_journal(notes, internal, cause)
+      predecessor = aggregatable_predecessor(notes, internal, cause)
 
       log_journal_creation(predecessor)
 
-      create_sql = create_journal_sql(predecessor, notes, restricted, cause)
+      create_sql = create_journal_sql(predecessor, notes, internal, cause)
 
       # We need to ensure that the result is genuine. Otherwise,
       # calling the service repeatedly for the same journable
@@ -194,8 +194,8 @@ module Journals
     # (`insert_attachable`, `insert_customizable` and `insert_storable`) should actually insert data. It is additionally
     # used as the values returned by the overall SQL statement so that an AR instance can be instantiated with it.
     #
-    def create_journal_sql(predecessor, notes, restricted, cause)
-      journal_modifications = journal_modification_sql(predecessor, notes, restricted, cause)
+    def create_journal_sql(predecessor, notes, internal, cause)
+      journal_modifications = journal_modification_sql(predecessor, notes, internal, cause)
       relation_modifications = relation_modifications_sql(predecessor)
 
       journal_cte_clauses = [journal_modifications]
@@ -207,7 +207,7 @@ module Journals
       SQL
     end
 
-    def journal_modification_sql(predecessor, notes, restricted, cause)
+    def journal_modification_sql(predecessor, notes, internal, cause)
       <<~SQL
         cleanup_predecessor_data AS (
           #{cleanup_predecessor_data(predecessor)}
@@ -224,7 +224,7 @@ module Journals
         ), update_predecessor AS (
           #{update_predecessor_sql(predecessor, notes, cause)}
         ), inserted_journal AS (
-          #{update_or_insert_journal_sql(predecessor, notes, restricted, cause)}
+          #{update_or_insert_journal_sql(predecessor, notes, internal, cause)}
         )
       SQL
     end
@@ -252,11 +252,11 @@ module Journals
                               :data_id)
     end
 
-    def update_or_insert_journal_sql(predecessor, notes, restricted, cause)
+    def update_or_insert_journal_sql(predecessor, notes, internal, cause)
       if predecessor
         update_journal_sql(predecessor, notes, cause)
       else
-        insert_journal_sql(notes, restricted, cause)
+        insert_journal_sql(notes, internal, cause)
       end
     end
 
@@ -288,7 +288,7 @@ module Journals
                cause: cause_sql(cause))
     end
 
-    def insert_journal_sql(notes, restricted, cause)
+    def insert_journal_sql(notes, internal, cause)
       sql = <<~SQL
         INSERT INTO
           journals (
@@ -324,7 +324,7 @@ module Journals
 
       sanitize(sql,
                notes:,
-               restricted:,
+               restricted: internal,
                cause: cause_sql(cause),
                journable_id:,
                journable_type:,
@@ -572,14 +572,14 @@ module Journals
       journable.journals.reload if journable.journals.loaded?
     end
 
-    def aggregatable?(predecessor, notes, restricted, cause)
+    def aggregatable?(predecessor, notes, internal, cause)
       predecessor.present? &&
         aggregation_active? &&
         within_aggregation_time?(predecessor) &&
         same_user?(predecessor) &&
         same_cause?(predecessor, cause) &&
         only_one_note(predecessor, notes) &&
-        same_restriction(predecessor, restricted)
+        same_restriction(predecessor, internal)
     end
 
     def aggregation_active?
@@ -594,8 +594,8 @@ module Journals
       predecessor.notes.empty? || notes.empty?
     end
 
-    def same_restriction(predecessor, restricted)
-      predecessor.restricted == restricted
+    def same_restriction(predecessor, internal)
+      predecessor.internal == internal
     end
 
     def same_user?(predecessor)

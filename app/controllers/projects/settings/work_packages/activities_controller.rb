@@ -32,10 +32,10 @@ class Projects::Settings::WorkPackages::ActivitiesController < Projects::Setting
   menu_item :settings_work_packages
 
   def update
-    enabled = ActiveRecord::Type::Boolean.new.cast(expected_params[:enabled_comments_with_restricted_visibility])
+    enabled = ActiveRecord::Type::Boolean.new.cast(expected_params[:enabled_internal_comments])
     result = Projects::UpdateService
                .new(user: current_user, model: @project, contract_class: Projects::SettingsContract)
-               .call(enabled_comments_with_restricted_visibility: enabled)
+               .call(enabled_internal_comments: enabled)
 
     if result.success?
       flash[:notice] = t("notice_successful_update")
@@ -49,6 +49,6 @@ class Projects::Settings::WorkPackages::ActivitiesController < Projects::Setting
   private
 
   def expected_params
-    params.expect(project: [:enabled_comments_with_restricted_visibility])
+    params.expect(project: [:enabled_internal_comments])
   end
 end

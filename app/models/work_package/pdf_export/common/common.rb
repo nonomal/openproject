@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -83,6 +85,10 @@ module WorkPackage::PDFExport::Common::Common
 
   def make_link_anchor(anchor, caption)
     "<link anchor=\"#{anchor}\">#{caption}</link>"
+  end
+
+  def make_link_href(href, caption)
+    "<link href=\"#{href}\">#{caption}</link>"
   end
 
   def link_target_at_current_y(id)
@@ -295,7 +301,7 @@ module WorkPackage::PDFExport::Common::Common
   end
 
   def make_link_href_cell(href, caption)
-    "<color rgb='#{styles.link_color}'><link href='#{href}'>#{caption}</link></color>"
+    "<color rgb='#{styles.link_color}'>#{make_link_href(href, caption)}</color>"
   end
 
   def get_id_column_cell(work_package, value)
@@ -309,5 +315,18 @@ module WorkPackage::PDFExport::Common::Common
 
   def wp_status_prawn_color(work_package)
     work_package.status.color&.hexcode&.sub("#", "") || "F0F0F0"
+  end
+
+  def add_pdf_table_anchors(prawn_table)
+    # prawn table does not support anchors, so we have to add them manually,
+    # @see `lib/open_project/patches/prawn_table_cell.rb` for cell_id attribute
+    prawn_table.before_rendering_page do |cells|
+      cells.each do |cell|
+        if cell.respond_to?(:cell_id) && cell.cell_id.present?
+          pdf_dest = @pdf.dest_xyz(@pdf.bounds.absolute_left, @pdf.y + cell.y)
+          @pdf.add_dest(cell.cell_id, pdf_dest)
+        end
+      end
+    end
   end
 end

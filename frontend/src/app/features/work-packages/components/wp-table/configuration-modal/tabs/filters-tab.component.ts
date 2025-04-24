@@ -27,8 +27,8 @@ export class WpTableConfigurationFiltersTabComponent implements TabComponent, On
     selectedColumns: this.I18n.t('js.description_selected_columns'),
     multiSelectLabel: this.I18n.t('js.work_packages.label_column_multiselect'),
 
-    upsaleRelationColumns: this.I18n.t('js.modals.upsale_relation_columns'),
-    upsaleRelationColumnsLink: this.I18n.t('js.modals.upsale_relation_columns_link'),
+    upsellRelationColumns: this.I18n.t('js.modals.upsell_relation_columns'),
+    upsellRelationColumnsLink: this.I18n.t('js.modals.upsell_relation_columns_link'),
   };
 
   constructor(

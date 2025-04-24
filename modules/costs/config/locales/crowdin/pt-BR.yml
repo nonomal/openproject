@@ -50,12 +50,14 @@ pt-BR:
         project: Projeto
         user: Usuário
         work_package: Pacote de trabalho
+        subject: Subject
         hours: horas
         comments: Comentário
         activity: Atividade
         spent_on: Data
         start_time: Hora de início
         end_time: Hora Final
+        time: Time
     models:
       time_entry:
         one: "Registro de tempo"
@@ -150,12 +152,28 @@ pt-BR:
   label_cost: "Custo"
   label_costs: "Custos"
   label_mandatory_fields: "Campos obrigatórios"
+  label_my_time_tracking: "My time tracking"
+  label_no_time: "No time tracked"
+  label_next_day: "Next day"
+  label_next_week: "Próxima semana"
+  label_next_month: "Next month"
+  label_previous_day: "Previous day"
+  label_previous_week: "Semana anterior"
+  label_previous_month: "Previous month"
+  label_specific_day: "Day %{day}"
+  label_specific_week: "Calendar week %{week}"
+  label_specific_month: "Month %{month}"
+  label_list: "Lista"
+  label_month: "Month"
+  label_day: "Day"
+  label_today_capitalized: "Today"
   placeholder_activity_select_work_package_first: Primeiro é necessária a seleção do pacote de trabalho
   notice_something_wrong: "Algo deu errado. Por favor, tente novamente."
   notice_successful_restore: "Restauração bem-sucedida."
   notice_successful_lock: "Bloqueado com sucesso."
   notice_cost_logged_successfully: "Custo unitário registrado com sucesso."
   notice_different_time_zones: "Este usuário tem um fuso horário diferente (%{tz}). A hora será registrada usando o fuso horário dele."
+  notice_time_entry_update_failed: "Failed to update time entry. Errors: %{errors}"
   permission_edit_cost_entries: "Editar custos unitários reservados"
   permission_edit_own_cost_entries: "Editar custos unitários próprios reservados"
   permission_edit_hourly_rates: "Editar taxas horárias"
@@ -181,6 +199,10 @@ pt-BR:
   text_reassign_time_and_cost_entries: "Reatribua horas reportadas e custos para este pacote de trabalho:"
   text_warning_hidden_elements: "Algumas entradas podem ter sido excluídas da agregação."
   week: "semana"
+  total_times:
+    week: "Week Total: %{hours}"
+    month: "Month Total: %{hours}"
+    day: "Day Total: %{hours}"
   api_v3:
     errors:
       validation:

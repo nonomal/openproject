@@ -3,7 +3,7 @@ sl:
     attributes:
       saml/provider:
         display_name: Ime
-        identifier: Identifikator
+        identifier: Identifikator 
         secret: Skrivnost
         scope: Področje
         assertion_consumer_service_url: ACS (Assertion consumer service) URL

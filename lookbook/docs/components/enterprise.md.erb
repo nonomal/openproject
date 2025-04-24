@@ -1,4 +1,4 @@
-OpenProject provides multiple ways to render upsale components. This document describes the different components and how to use them.
+OpenProject provides multiple ways to render upsell components. This document describes the different components and how to use them.
 
 # Requirements
 
@@ -13,8 +13,8 @@ To use the banners below, you need to add translations and links.
 
 **Translations**
 
-You need to add translations for the feature and the upsale banner.
-The feature translation is used in the feature list, the upsale translation is used in the upsale banner.
+You need to add translations for the feature and the upsell banner.
+The feature translation is used in the feature list, the upsell translation is used in the upsell banner.
 
 This is the default convention:
 
@@ -25,7 +25,7 @@ en:
     feature:
 	  # ...
       your_feature_name: "Fancy EE feature!"
-    upsale:
+    upsell:
       # ...
       your_feature_name:
         title: "Title of the banner"
@@ -36,7 +36,7 @@ en:
 ```
 
 You can optionally provide a `i18n_scope` parameter to the components below to customize the place to look
-for the upsale translation keys.
+for the upsell translation keys.
 
 **docs/static_links.yml**
 
@@ -46,21 +46,21 @@ file under the `enterprise_features` section.
 
 If none is provided, the link will go to the enterprise landing page.
 
-## Full-page upsale pages
+## Full-page upsell pages
 
 Use when: You have a feature video / image and a full page to fill
 
 ```ruby
-render EnterpriseEdition::UpsalePageComponent.new(
+render EnterpriseEdition::UpsellPageComponent.new(
   :enterprise_feature,
   video: "enterprise/some-video.mp4",
   # or image: "enterprise/some-image.png"
 )
 ```
 
-<%= embed OpenProject::EnterpriseEdition::UpsalePageComponentPreview, :default, panels: %i[] %>
+<%= embed OpenProject::EnterpriseEdition::UpsellPageComponentPreview, :default, panels: %i[] %>
 
-## Inline upsale banners
+## Inline upsell banners
 
 Use when: You want to show content below the banners, e.g. in administrative setting pages.
 
@@ -70,7 +70,7 @@ render EnterpriseEdition::BannerComponent.new(:enterprise_feature)
 
 <%= embed OpenProject::EnterpriseEdition::BannerComponentPreview, :default, panels: %i[] %>
 
-## Dismissible upsale banners
+## Dismissible upsell banners
 
 Use when: You want to show a feature to regular users, but allow them to hide it for good.
 
@@ -79,3 +79,16 @@ render EnterpriseEdition::BannerComponent.new(:enterprise_feature, dismissable: 
 ```
 
 <%= embed OpenProject::EnterpriseEdition::BannerComponentPreview, :dismissable, panels: %i[] %>
+
+
+Use when: You want to show content below the banners, e.g. in administrative setting pages.
+
+## Medium variant banners
+
+Use when: You want to show a feature with some more context, and an image on the right hand side
+
+```ruby
+render EnterpriseEdition::BannerComponent.new(:enterprise_feature, variant: :medium, image: "enterprise/some-image.png")
+```
+
+<%= embed OpenProject::EnterpriseEdition::BannerComponentPreview, :medium, panels: %i[] %>

@@ -344,6 +344,18 @@ es:
         heading: "¿Eliminar esta lista de proyectos?"
         text: "Esta acción no eliminará ningún proyecto que contenga la lista. ¿Seguro que desea eliminar esta lista de proyectos?"
     settings:
+      public_warning: >
+        This project is public. Anyone who has access to this instance will be able to view and interact with this project depending on their role and associated permissions. Sub-projects are not affected and have their own settings.
+      public_confirmation:
+        checkbox: "I understand that this will make the previously private content public"
+        title: "Make this project public?"
+        description: >
+          Anyone who has access to this instance will be able to view and interact with this project depending on their role and authentication settings. Sub-projects are not affected and have their own settings.
+      private_confirmation:
+        checkbox: "I understand that this will make the previously public content private."
+        title: "Make this project private?"
+        description: >
+          The project will only be visible to project members depending on their role and associated permissions. Sub-projects are not affected and have their own settings.
       change_identifier: Cambiar identificador
       actions:
         label_enable_all: "Activar todo"
@@ -1802,7 +1814,8 @@ es:
     text:
       failed: 'No se pudo copiar el proyecto "%{source_project_name}" al proyecto "%{target_project_name}".'
       succeeded: 'Proyecto copiado de "%{source_project_name}" a "%{target_project_name}".'
-  create_new_page: "Página wiki"
+  create_wiki_page: "Create new wiki page"
+  create_wiki_page_button: "Wiki page"
   date:
     abbr_day_names:
       - "Dom"
@@ -1984,7 +1997,6 @@ es:
       plan_title: "Enterprise %{plan} add-on"
       plan_name: "%{plan} enterprise plan"
       plan_text_html: "Available only through the %{plan_name}."
-      link_title: "Más información"
       hide_banner: "Hide this banner"
       baseline_comparison:
         description: Highlight changes made to this list since any point in the past.
@@ -2025,7 +2037,7 @@ es:
           Placeholder users are a way to assign work packages to users who are not part of your project. They can be useful in a range of scenarios; for example, if you need to track tasks for a resource that is not yet named or available, or if you don’t want to give that person access to OpenProject but still want to track tasks assigned to them.
       comments_with_restricted_visibility:
         title: "For your eyes only"
-        description: "Restricted-visibilty comments allow an internal team to communicate amongst themselves privately. These are only visible to certain project roles and will never be visible publicly. Available only through the enterprise professional plan."
+        description: "Restricted-visibilty comments allow an internal team to communicate amongst themselves privately. These are only visible to certain project roles and will never be visible publicly."
   enumeration_activities: "Actividades de seguimiento del tiempo"
   enumeration_work_package_priorities: "Prioridades del paquete de trabajo"
   enumeration_reported_project_statuses: "Estatus del proyecto reportado"
@@ -2254,7 +2266,6 @@ es:
       community: "OpenProject Community"
       upsale:
         title: "Actualizar a Enterprise"
-        more_info: "Más información"
     links:
       upgrade_enterprise_edition: "Actualizar a Enterprise"
       postgres_migration: "Migrando su instalación a PostgreSQL"
@@ -2731,6 +2742,7 @@ es:
   label_modules: "Módulos"
   label_months_from: "meses desde"
   label_more: "Más"
+  label_more_information: "More information"
   label_more_than_ago: "más días atrás"
   label_move_column_left: "Mover columna a la izquierda"
   label_move_column_right: "Mover columna a la derecha"
@@ -3740,6 +3752,8 @@ es:
   setting_repository_truncate_at: "El número máximo de archivos mostrados en el navegador del repositorio"
   setting_rest_api_enabled: "Activar servicio web REST"
   setting_self_registration: "Auto-registro"
+  setting_self_registration_warning: >
+    The user will be able to activate their own accounts. Please note that this will give them access to all public projects and their content. Please make sure that no sensitive or private data is exposed in public projects.
   setting_session_ttl: "Tiempo de expiración de sesión por inactividad"
   setting_session_ttl_hint: "Valor por debajo de 5 peticiones como desactivadas"
   setting_session_ttl_enabled: "La sesión expira"
@@ -3871,7 +3885,7 @@ es:
       not_allowed_text: "No tiene los permisos necesarios para ver esta página."
       activities:
         enable_comments_with_restricted_visibility: "Activar comentarios de visibilidad restringida"
-        helper_text: "Los comentarios restringidos permiten que un equipo interno se comunique entre sí de forma privada. Solo son visibles para determinados roles que tienen los permisos necesarios y no serán visibles públicamente. %{link}"
+        helper_text: "Restricted comments allow an internal team to communicate amongst themselves privately. These are only visible to selected roles that have the necessary permissions and will not be visible publicly. %{link}"
   text_formatting:
     markdown: "Markdown"
     plain: "Texto sin formato"

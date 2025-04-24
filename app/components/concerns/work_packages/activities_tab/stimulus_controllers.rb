@@ -32,7 +32,7 @@ module WorkPackages
   module ActivitiesTab
     module StimulusControllers
       def index_stimulus_controller(suffix = nil) = "work-packages--activities-tab--index#{suffix}"
-      def restricted_comment_stimulus_controller(suffix = nil) = "work-packages--activities-tab--restricted-comment#{suffix}"
+      def internal_comment_stimulus_controller(suffix = nil) = "work-packages--activities-tab--internal-comment#{suffix}"
       def quote_comments_stimulus_controller(suffix = nil) = "work-packages--activities-tab--quote-comment#{suffix}"
 
       def items_index_selector = "##{WorkPackages::ActivitiesTab::IndexComponent.wrapper_key}"

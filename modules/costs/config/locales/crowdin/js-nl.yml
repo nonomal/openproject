@@ -22,6 +22,8 @@
 nl:
   js:
     text_are_you_sure: "Weet u het zeker?"
+    myTimeTracking:
+      noSpecificTime: "No specific time"
     work_packages:
       property_groups:
         costs: "Kosten"

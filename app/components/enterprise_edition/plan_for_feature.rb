@@ -74,11 +74,11 @@ module EnterpriseEdition
     end
 
     def plan_text
-      plan_name = render(Primer::Beta::Text.new(font_weight: :bold, classes: "upsale-colored")) do
-        I18n.t("ee.upsale.plan_name", plan:)
+      plan_name = render(Primer::Beta::Text.new(font_weight: :bold, classes: "upsell-colored")) do
+        I18n.t("ee.upsell.plan_name", plan:)
       end
 
-      I18n.t("ee.upsale.plan_text_html", plan_name:).html_safe
+      I18n.t("ee.upsell.plan_text_html", plan_name:).html_safe
     end
   end
 end

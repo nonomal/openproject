@@ -68,7 +68,6 @@ import { ToastComponent } from './components/toaster/toast.component';
 import { ToastsContainerComponent } from './components/toaster/toasts-container.component';
 import { UploadProgressComponent } from './components/toaster/upload-progress.component';
 import { ResizerComponent } from './components/resizer/resizer.component';
-import { CollapsibleSectionComponent } from './components/collapsible-section/collapsible-section.component';
 import { NoResultsComponent } from './components/no-results/no-results.component';
 import { EditableToolbarTitleComponent } from './components/editable-toolbar-title/editable-toolbar-title.component';
 import { PersistentToggleComponent } from './components/persistent-toggle/persistent-toggle.component';
@@ -200,7 +199,6 @@ export function bootstrapModule(injector:Injector):void {
 
     // Add functionality to rails rendered templates
     CopyToClipboardComponent,
-    CollapsibleSectionComponent,
 
     ResizerComponent,
 

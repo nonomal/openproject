@@ -102,7 +102,7 @@ RSpec.describe Notifications::CreateFromModelService,
     work_package.journals.last
   end
   let(:journal_2_with_internal_comment) do
-    work_package.add_journal(user: admin, notes: "need to know basis", restricted: true)
+    work_package.add_journal(user: admin, notes: "need to know basis", internal: true)
     work_package.save(validate: false)
     work_package.journals.last
   end
@@ -204,16 +204,16 @@ RSpec.describe Notifications::CreateFromModelService,
       it_behaves_like "creates no notification"
     end
 
-    context "when assignee does not have access to restricted journal" do
+    context "when assignee does not have access to internal journal" do
       let(:author) { admin }
       let(:journal) { journal_2_with_internal_comment }
 
       it_behaves_like "creates no notification"
     end
 
-    context "when assignee has access to restricted journal" do
+    context "when assignee has access to internal journal" do
       let(:author) { admin }
-      let(:permissions) { %i[view_work_packages view_comments_with_restricted_visibility] }
+      let(:permissions) { %i[view_work_packages view_internal_comments] }
       let(:journal) { journal_2_with_internal_comment }
 
       it_behaves_like "creates notification" do
@@ -281,16 +281,16 @@ RSpec.describe Notifications::CreateFromModelService,
       it_behaves_like "creates no notification"
     end
 
-    context "when responsible does not have access to restricted journal" do
+    context "when responsible does not have access to internal journal" do
       let(:author) { admin }
       let(:journal) { journal_2_with_internal_comment }
 
       it_behaves_like "creates no notification"
     end
 
-    context "when responsible has access to restricted journal" do
+    context "when responsible has access to internal journal" do
       let(:author) { admin }
-      let(:permissions) { %i[view_work_packages view_comments_with_restricted_visibility] }
+      let(:permissions) { %i[view_work_packages view_internal_comments] }
       let(:journal) { journal_2_with_internal_comment }
 
       it_behaves_like "creates notification" do
@@ -371,16 +371,16 @@ RSpec.describe Notifications::CreateFromModelService,
       it_behaves_like "creates no notification"
     end
 
-    context "when watcher does not have access to restricted journal" do
+    context "when watcher does not have access to internal journal" do
       let(:author) { admin }
       let(:journal) { journal_2_with_internal_comment }
 
       it_behaves_like "creates no notification"
     end
 
-    context "when watcher has access to restricted journal" do
+    context "when watcher has access to internal journal" do
       let(:author) { admin }
-      let(:permissions) { %i[view_work_packages view_comments_with_restricted_visibility] }
+      let(:permissions) { %i[view_work_packages view_internal_comments] }
       let(:journal) { journal_2_with_internal_comment }
 
       it_behaves_like "creates notification" do
@@ -493,16 +493,16 @@ RSpec.describe Notifications::CreateFromModelService,
       it_behaves_like "creates no notification"
     end
 
-    context "when recipient does not have access to restricted journal" do
+    context "when recipient does not have access to internal journal" do
       let(:author) { admin }
       let(:journal) { journal_2_with_internal_comment }
 
       it_behaves_like "creates no notification"
     end
 
-    context "when recipient has access to restricted journal" do
+    context "when recipient has access to internal journal" do
       let(:author) { admin }
-      let(:permissions) { %i[view_work_packages view_comments_with_restricted_visibility] }
+      let(:permissions) { %i[view_work_packages view_internal_comments] }
       let(:journal) { journal_2_with_internal_comment }
 
       it_behaves_like "creates notification" do
@@ -564,16 +564,16 @@ RSpec.describe Notifications::CreateFromModelService,
       it_behaves_like "creates no notification"
     end
 
-    context "when the shared user does not have access to restricted journal" do
+    context "when the shared user does not have access to internal journal" do
       let(:author) { admin }
       let(:journal) { journal_2_with_internal_comment }
 
       it_behaves_like "creates no notification"
     end
 
-    context "when the shared user has access to restricted journal" do
+    context "when the shared user has access to internal journal" do
       let(:author) { admin }
-      let(:permissions) { %i[view_work_packages view_comments_with_restricted_visibility] }
+      let(:permissions) { %i[view_work_packages view_internal_comments] }
       let(:journal) { journal_2_with_internal_comment }
 
       it_behaves_like "creates notification" do
@@ -672,16 +672,16 @@ RSpec.describe Notifications::CreateFromModelService,
       it_behaves_like "creates no notification"
     end
 
-    context "when the user does not have access to restricted journal" do
+    context "when the user does not have access to internal journal" do
       let(:author) { admin }
       let(:journal) { journal_2_with_internal_comment }
 
       it_behaves_like "creates no notification"
     end
 
-    context "when the user has access to restricted journal" do
+    context "when the user has access to internal journal" do
       let(:author) { admin }
-      let(:permissions) { %i[view_work_packages view_comments_with_restricted_visibility] }
+      let(:permissions) { %i[view_work_packages view_internal_comments] }
       let(:journal) { journal_2_with_internal_comment }
 
       it_behaves_like "creates notification" do

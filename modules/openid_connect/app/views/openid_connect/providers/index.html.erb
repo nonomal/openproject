@@ -40,5 +40,5 @@
   end
 %>
 
-<%= render EnterpriseEdition::BannerComponent.new(:sso_auth_providers, i18n_scope: "openid_connect.providers.upsale") %>
+<%= render EnterpriseEdition::BannerComponent.new(:sso_auth_providers, i18n_scope: "openid_connect.providers.upsell") %>
 <%= render ::OpenIDConnect::Providers::TableComponent.new(rows: @providers) %>

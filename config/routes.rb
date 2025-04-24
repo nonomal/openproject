@@ -252,7 +252,10 @@ Rails.application.routes.draw do
   resources :projects, except: %i[show edit create update] do
     scope module: "projects" do
       namespace "settings" do
-        resource :general, only: %i[show], controller: "general"
+        resource :general, only: %i[show], controller: "general" do
+          get :toggle_public_dialog
+          post :toggle_public
+        end
         resource :modules, only: %i[show update]
         resource :project_custom_fields, only: %i[show] do
           member do
@@ -479,7 +482,7 @@ Rails.application.routes.draw do
     delete "design/export_cover" => "custom_styles#export_cover_delete", as: "custom_style_export_cover_delete"
     delete "design/favicon" => "custom_styles#favicon_delete", as: "custom_style_favicon_delete"
     delete "design/touch_icon" => "custom_styles#touch_icon_delete", as: "custom_style_touch_icon_delete"
-    get "design/upsale" => "custom_styles#upsale", as: "custom_style_upsale"
+    get "design/upsell" => "custom_styles#upsell", as: "custom_style_upsell"
     post "design/colors" => "custom_styles#update_colors", as: "update_design_colors"
     post "design/themes" => "custom_styles#update_themes", as: "update_design_themes"
     post "design/export_cover_text_color" => "custom_styles#update_export_cover_text_color",
@@ -658,29 +661,29 @@ Rails.application.routes.draw do
         get :update_streams
         get :update_filter # filter not persisted
         put :update_sorting # sorting is persisted
-        post :sanitize_restricted_mentions
+        post :sanitize_internal_mentions
       end
     end
 
     resources :children_relations, only: %i[new create destroy], controller: "work_package_children_relations"
 
-    resource :progress, only: %i[new edit update], controller: "work_packages/progress"
+    resource :progress, only: %i[edit update], controller: "work_packages/progress"
     collection do
       resource :progress,
-               only: :create,
+               only: %i[create new],
                controller: "work_packages/progress",
                as: :work_package_progress
     end
 
-    resource :datepicker_dialog_content,
-             only: %i[show new edit update],
+    resource :date_picker,
+             only: %i[show edit update],
              controller: "work_packages/date_picker",
-             on: :member,
-             as: "datepicker_dialog_content"
+             as: "date_picker"
     collection do
-      resource :datepicker_dialog_content,
-               only: :create,
-               controller: "work_packages/date_picker"
+      resource :date_picker,
+               only: %i[create new],
+               controller: "work_packages/date_picker",
+               as: "date_picker"
     end
 
     resources :relations_tab, only: %i[index], controller: "work_package_relations_tab"
@@ -707,7 +710,7 @@ Rails.application.routes.draw do
     get "/new" => "work_packages#index", on: :collection, as: "new", state: "new"
     # We do not want to match the work package export routes
     get "(/*state)" => "work_packages#show", on: :member, as: "", constraints: { id: /\d+/, state: /(?!(shares|split_view)).+/ }
-    get "/share_upsale" => "work_packages#share_upsale", on: :collection, as: "share_upsale"
+    get "/share_upsell" => "work_packages#share_upsell", on: :collection, as: "share_upsell"
     get "/edit" => "work_packages#show", on: :member, as: "edit"
   end
 
@@ -865,8 +868,8 @@ Rails.application.routes.draw do
   end
 
   scope :notifications do
-    get "/share_upsale" => "notifications#share_upsale", as: "notifications_share_upsale"
-    get "/date_alerts" => "notifications#date_alerts", as: "notifications_date_alert_upsale"
+    get "/share_upsell" => "notifications#share_upsell", as: "notifications_share_upsell"
+    get "/date_alerts" => "notifications#date_alerts", as: "notifications_date_alert_upsell"
     get "/", to: "notifications#index", as: :notifications_center
   end
 

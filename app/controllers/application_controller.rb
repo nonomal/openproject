@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -189,7 +191,7 @@ class ApplicationController < ActionController::Base
   # Create CSRF issue
   def log_csrf_failure
     message = "CSRF validation error"
-    message << " (No session cookie present)" if openproject_cookie_missing?
+    message += " (No session cookie present)" if openproject_cookie_missing?
 
     op_handle_error message, reference: :csrf_validation_failed
   end
@@ -433,21 +435,6 @@ class ApplicationController < ActionController::Base
   def pick_layout(*args)
     api_request? ? nil : super
   end
-
-  def default_breadcrumb
-    label = "label_#{controller_name.singularize}"
-
-    I18n.t(label + "_plural",
-           default: label.to_sym)
-  end
-
-  helper_method :default_breadcrumb
-
-  def show_local_breadcrumb
-    false
-  end
-
-  helper_method :show_local_breadcrumb
 
   def admin_first_level_menu_entry
     menu_item = admin_menu_item(current_menu_item)

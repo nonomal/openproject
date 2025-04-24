@@ -48,7 +48,7 @@ export class ApiV3Paths {
     } else {
       // that are mentionable on the work package
       filters.add(
-        (this.isRestrictedMentionable() ? 'restricted_mentionable_on_work_package' : 'mentionable_on_work_package'),
+        (this.isInternalMentionable() ? 'internal_mentionable_on_work_package' : 'mentionable_on_work_package'),
         '=',
         [workPackage.id.toString()],
       );
@@ -65,16 +65,16 @@ export class ApiV3Paths {
   }
 
   /**
-   * Check if either adding or editing a comment is restricted, and thus
-   * the mentionable principals are to be restricted
+   * Check if either adding or editing a comment is internal, and thus
+   * the mentionable principals are to be internal
    *
    * @returns {boolean}
    */
-  private isRestrictedMentionable():boolean {
-    const isRestrictedAttributeValue = 'data-work-packages--activities-tab--restricted-comment-is-restricted-value';
-    const addingCommentIsRestricted = document.getElementById('work-packages-activities-tab-add-comment-component')?.getAttribute(isRestrictedAttributeValue) === 'true';
-    const editingCommentIsRestricted = document.querySelector('.work-packages-activities-tab-journals-item-component-edit')?.getAttribute(isRestrictedAttributeValue) === 'true';
+  private isInternalMentionable():boolean {
+    const isInternalAttributeValue = 'data-work-packages--activities-tab--internal-comment-is-internal-value';
+    const addingCommentIsInternal = document.getElementById('work-packages-activities-tab-add-comment-component')?.getAttribute(isInternalAttributeValue) === 'true';
+    const editingCommentIsInternal = document.querySelector('.work-packages-activities-tab-journals-item-component-edit')?.getAttribute(isInternalAttributeValue) === 'true';
 
-    return addingCommentIsRestricted || editingCommentIsRestricted;
+    return addingCommentIsInternal || editingCommentIsInternal;
   }
 }

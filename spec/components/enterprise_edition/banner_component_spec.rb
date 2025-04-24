@@ -39,7 +39,7 @@ RSpec.describe EnterpriseEdition::BannerComponent, type: :component do
   let(:component_test_selector) { "op-enterprise-banner" }
   let(:features) { nil }
   let(:enforce_available_locales) { I18n.config.enforce_available_locales }
-  let(:i18n_upsale) do
+  let(:i18n_upsell) do
     {
       some_enterprise_feature: {
         title:,
@@ -63,7 +63,7 @@ RSpec.describe EnterpriseEdition::BannerComponent, type: :component do
         features: {
           some_enterprise_feature: "Enterprise feature translation"
         },
-        upsale: i18n_upsale
+        upsell: i18n_upsell
       }
     }
   end
@@ -166,7 +166,7 @@ RSpec.describe EnterpriseEdition::BannerComponent, type: :component do
   end
 
   context "without a title, but a description_html" do
-    let(:i18n_upsale) do
+    let(:i18n_upsell) do
       {
         some_enterprise_feature: {
           description_html: description
@@ -179,7 +179,7 @@ RSpec.describe EnterpriseEdition::BannerComponent, type: :component do
   end
 
   context "without a title, but a description" do
-    let(:i18n_upsale) do
+    let(:i18n_upsell) do
       {
         some_enterprise_feature: {
           description:
@@ -192,7 +192,7 @@ RSpec.describe EnterpriseEdition::BannerComponent, type: :component do
   end
 
   context "with a more specific title in the i18n file" do
-    let(:i18n_upsale) do
+    let(:i18n_upsell) do
       {
         some_enterprise_feature: {
           title:,
@@ -209,7 +209,7 @@ RSpec.describe EnterpriseEdition::BannerComponent, type: :component do
       {
         my: {
           custom: {
-            upsale: {
+            upsell: {
               title: "Foo",
               description: "Bar"
             }
@@ -224,13 +224,13 @@ RSpec.describe EnterpriseEdition::BannerComponent, type: :component do
     end
     let(:expected_title) { "Foo" }
     let(:expected_description) { "Bar" }
-    let(:component_args) { { i18n_scope: "my.custom.upsale" } }
+    let(:component_args) { { i18n_scope: "my.custom.upsell" } }
 
     it_behaves_like "renders the component"
   end
 
   context "without a description key in the i18n file" do
-    let(:i18n_upsale) do
+    let(:i18n_upsell) do
       {
         some_enterprise_feature: {}
       }

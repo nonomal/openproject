@@ -38,6 +38,8 @@ RSpec.describe RootSeeder,
 
   before_all do
     week_with_saturday_and_sunday_as_weekend
+    clear_enqueued_jobs
+    clear_performed_jobs
   end
 
   shared_examples "creates BIM demo data" do

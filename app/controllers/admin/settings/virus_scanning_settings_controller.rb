@@ -35,10 +35,6 @@ module Admin::Settings
     before_action :require_ee, except: :show # rubocop:disable Rails/LexicallyScopedActionFilter
     before_action :check_clamav, only: %i[update], if: -> { scan_enabled? }
 
-    def show_local_breadcrumb
-      false
-    end
-
     def av_form
       selected = params.dig(:settings, :antivirus_scan_mode)&.to_sym || :disabled
 

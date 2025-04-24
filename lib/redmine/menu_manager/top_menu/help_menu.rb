@@ -91,8 +91,8 @@ module Redmine::MenuManager::TopMenu::HelpMenu
                   title: I18n.t("top_menu.help_and_support")
     end
     unless EnterpriseToken.hide_banners? && EnterpriseToken.active?
-      result << static_link_item(:upsale,
-                                 href_suffix: "/?utm_source=unknown&utm_medium=op-instance&utm_campaign=ee-upsale-help-menu")
+      result << static_link_item(:upsell,
+                                 href_suffix: "/?utm_source=unknown&utm_medium=op-instance&utm_campaign=ee-upsell-help-menu")
     end
     result << static_link_item(:user_guides)
     result << content_tag(:li, class: "op-menu--item") do

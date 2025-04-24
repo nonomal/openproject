@@ -309,26 +309,13 @@ export default class PreviewController extends DialogPreviewController {
     this.updateFlatpickrCalendar();
   }
 
-  // Ensures that on create forms, there is an "id" for the un-persisted
-  // work package when sending requests to the edit action for previews.
-  ensureValidPathname(formAction:string):string {
-    const wpPath = new URL(formAction);
-
-    if (wpPath.pathname.endsWith('/work_packages/datepicker_dialog_content')) {
-      // Replace /work_packages/date_picker with /work_packages/new/date_picker
-      wpPath.pathname = wpPath.pathname.replace('/work_packages/datepicker_dialog_content', '/work_packages/new/datepicker_dialog_content');
-    }
-
-    return wpPath.toString();
-  }
-
-  ensureValidWpAction(wpPath:string):string {
-    return wpPath.endsWith('/work_packages/new/datepicker_dialog_content') ? 'new' : 'edit';
-  }
-
   afterRendering() {
     this.readCurrentValues();
     this.updateFlatpickrCalendar();
+  }
+
+  ignoreActiveValueWhenMorphing():boolean {
+    return false;
   }
 
   readInitialValues() {

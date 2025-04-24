@@ -342,6 +342,18 @@ id:
         heading: "Delete this project list?"
         text: "This action will not delete any project the list contains. Are you sure you want to delete this project list?"
     settings:
+      public_warning: >
+        This project is public. Anyone who has access to this instance will be able to view and interact with this project depending on their role and associated permissions. Sub-projects are not affected and have their own settings.
+      public_confirmation:
+        checkbox: "I understand that this will make the previously private content public"
+        title: "Make this project public?"
+        description: >
+          Anyone who has access to this instance will be able to view and interact with this project depending on their role and authentication settings. Sub-projects are not affected and have their own settings.
+      private_confirmation:
+        checkbox: "I understand that this will make the previously public content private."
+        title: "Make this project private?"
+        description: >
+          The project will only be visible to project members depending on their role and associated permissions. Sub-projects are not affected and have their own settings.
       change_identifier: Ubah pengenal
       actions:
         label_enable_all: "Enable all"
@@ -1780,7 +1792,8 @@ id:
     text:
       failed: 'Tidak dapat meng-copy Project "%{source_project_name}" ke Project "%{target_project_name}".'
       succeeded: 'Project "%{source_project_name}" ke "%{target_project_name}" telah di-copy.'
-  create_new_page: "Halaman Wiki"
+  create_wiki_page: "Create new wiki page"
+  create_wiki_page_button: "Wiki page"
   date:
     abbr_day_names:
       - "Min"
@@ -1943,7 +1956,6 @@ id:
       plan_title: "Enterprise %{plan} add-on"
       plan_name: "%{plan} enterprise plan"
       plan_text_html: "Available only through the %{plan_name}."
-      link_title: "Informasi lebih lanjut"
       hide_banner: "Hide this banner"
       baseline_comparison:
         description: Highlight changes made to this list since any point in the past.
@@ -1984,7 +1996,7 @@ id:
           Placeholder users are a way to assign work packages to users who are not part of your project. They can be useful in a range of scenarios; for example, if you need to track tasks for a resource that is not yet named or available, or if you don’t want to give that person access to OpenProject but still want to track tasks assigned to them.
       comments_with_restricted_visibility:
         title: "For your eyes only"
-        description: "Restricted-visibilty comments allow an internal team to communicate amongst themselves privately. These are only visible to certain project roles and will never be visible publicly. Available only through the enterprise professional plan."
+        description: "Restricted-visibilty comments allow an internal team to communicate amongst themselves privately. These are only visible to certain project roles and will never be visible publicly."
   enumeration_activities: "Kegiatan pelacakan waktu"
   enumeration_work_package_priorities: "Paket-Penugasan prioritas"
   enumeration_reported_project_statuses: "Status Project yang di-Report"
@@ -2213,7 +2225,6 @@ id:
       community: "OpenProject community"
       upsale:
         title: "Upgrade to Enterprise edition"
-        more_info: "Informasi lebih lanjut"
     links:
       upgrade_enterprise_edition: "Upgrade to Enterprise edition"
       postgres_migration: "Migrasi instalasi anda ke PostgreSQL"
@@ -2690,6 +2701,7 @@ id:
   label_modules: "Modul"
   label_months_from: "dari bulan"
   label_more: "Lanjut"
+  label_more_information: "More information"
   label_more_than_ago: "lusa yang lalu"
   label_move_column_left: "Pindahkan kolom ke kiri"
   label_move_column_right: "Pindahkan kolom ke kanan"
@@ -3695,6 +3707,8 @@ id:
   setting_repository_truncate_at: "Jumlah maksimum file yang ditampilkan dalam browser tempat penyimpanan"
   setting_rest_api_enabled: "Aktifkan REST web service"
   setting_self_registration: "Registrasi mandiri"
+  setting_self_registration_warning: >
+    The user will be able to activate their own accounts. Please note that this will give them access to all public projects and their content. Please make sure that no sensitive or private data is exposed in public projects.
   setting_session_ttl: "Sesi kadaluwarsa ketika tidak aktif"
   setting_session_ttl_hint: "Nilai di bawah 5 akan didisable"
   setting_session_ttl_enabled: "Sesi telah berakhir"
@@ -3826,7 +3840,7 @@ id:
       not_allowed_text: "You do not have the necessary permissions to view this page."
       activities:
         enable_comments_with_restricted_visibility: "Enable restricted visibility comments"
-        helper_text: "Restricted comments allow an internal team to communicate amongst themselves privately. These are only visible to select roles that have the necessary permissions and will not be visible publicly. %{link}"
+        helper_text: "Restricted comments allow an internal team to communicate amongst themselves privately. These are only visible to selected roles that have the necessary permissions and will not be visible publicly. %{link}"
   text_formatting:
     markdown: "Markdown"
     plain: "Plain text"

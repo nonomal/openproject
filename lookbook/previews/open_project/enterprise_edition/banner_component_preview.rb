@@ -38,7 +38,7 @@ module OpenProject
       #   ee:
       #     # Title used unless it is overwritten for the specific feature
       #     title: "Enterprise add-on"
-      #     upsale:
+      #     upsell:
       #       [feature_key]:
       #         # Title used for this feature only. If this is missing, the default feature key is used.
       #         title: "A splendid feature"
@@ -58,7 +58,31 @@ module OpenProject
       def default(dismissable: false)
         render(
           ::EnterpriseEdition::BannerComponent
-            .new(:customize_life_cycle, dismissable:)
+            .new(:customize_life_cycle, dismissable:, show_always: true)
+        )
+      end
+
+      # @display min_height 350px
+      def medium
+        render(
+          ::EnterpriseEdition::BannerComponent
+            .new(:customize_life_cycle,
+                 variant: :medium,
+                 image: "enterprise/internal-comments.png",
+                 show_always: true)
+        )
+      end
+
+      # @display min_height 350px
+      def medium_dismissable
+        render(
+          ::EnterpriseEdition::BannerComponent
+            .new(:customize_life_cycle,
+                 variant: :medium,
+                 dismissable: true,
+                 dismiss_key: nil,
+                 image: "enterprise/internal-comments.png",
+                 show_always: true)
         )
       end
 
@@ -66,7 +90,7 @@ module OpenProject
       def dismissable
         render(
           ::EnterpriseEdition::BannerComponent
-            .new(:customize_life_cycle, dismiss_key: nil, dismissable: true)
+            .new(:customize_life_cycle, dismiss_key: nil, dismissable: true, show_always: true)
         )
       end
     end

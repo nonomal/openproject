@@ -346,6 +346,18 @@ et:
         heading: "Kas kustutada see projektide nimekiri?"
         text: "This action will not delete any project the list contains. Are you sure you want to delete this project list?"
     settings:
+      public_warning: >
+        This project is public. Anyone who has access to this instance will be able to view and interact with this project depending on their role and associated permissions. Sub-projects are not affected and have their own settings.
+      public_confirmation:
+        checkbox: "I understand that this will make the previously private content public"
+        title: "Make this project public?"
+        description: >
+          Anyone who has access to this instance will be able to view and interact with this project depending on their role and authentication settings. Sub-projects are not affected and have their own settings.
+      private_confirmation:
+        checkbox: "I understand that this will make the previously public content private."
+        title: "Make this project private?"
+        description: >
+          The project will only be visible to project members depending on their role and associated permissions. Sub-projects are not affected and have their own settings.
       change_identifier: Muuda identifikaatorit
       actions:
         label_enable_all: "Luba kõik"
@@ -1804,7 +1816,8 @@ et:
     text:
       failed: 'Ei saanud kopeerida andmeid projektist "%{source_project_name}" projekti "%{target_project_name}".'
       succeeded: 'Projekti "%{source_project_name}" andmed kopeeriti projekti "%{target_project_name}".'
-  create_new_page: "Viki leht"
+  create_wiki_page: "Create new wiki page"
+  create_wiki_page_button: "Wiki page"
   date:
     abbr_day_names:
       - "P"
@@ -1986,7 +1999,6 @@ et:
       plan_title: "Enterprise %{plan} add-on"
       plan_name: "%{plan} enterprise plan"
       plan_text_html: "Available only through the %{plan_name}."
-      link_title: "Lisainfo"
       hide_banner: "Hide this banner"
       baseline_comparison:
         description: Highlight changes made to this list since any point in the past.
@@ -2027,7 +2039,7 @@ et:
           Placeholder users are a way to assign work packages to users who are not part of your project. They can be useful in a range of scenarios; for example, if you need to track tasks for a resource that is not yet named or available, or if you don’t want to give that person access to OpenProject but still want to track tasks assigned to them.
       comments_with_restricted_visibility:
         title: "For your eyes only"
-        description: "Restricted-visibilty comments allow an internal team to communicate amongst themselves privately. These are only visible to certain project roles and will never be visible publicly. Available only through the enterprise professional plan."
+        description: "Restricted-visibilty comments allow an internal team to communicate amongst themselves privately. These are only visible to certain project roles and will never be visible publicly."
   enumeration_activities: "Time tracking activities"
   enumeration_work_package_priorities: "Teemade prioriteedid"
   enumeration_reported_project_statuses: "Esitatud projekti olek"
@@ -2256,7 +2268,6 @@ et:
       community: "OpenProject community"
       upsale:
         title: "Upgrade to Enterprise edition"
-        more_info: "Lisainfo"
     links:
       upgrade_enterprise_edition: "Upgrade to Enterprise edition"
       postgres_migration: "Migrating your installation to PostgreSQL"
@@ -2733,6 +2744,7 @@ et:
   label_modules: "Moodulid"
   label_months_from: "kuu kaugusel"
   label_more: "Rohkem"
+  label_more_information: "More information"
   label_more_than_ago: "vanem kui"
   label_move_column_left: "Liiguta veerg vasakule"
   label_move_column_right: "Liiguta veerg paremale"
@@ -3743,6 +3755,8 @@ et:
   setting_repository_truncate_at: "Maximum number of files displayed in the repository browser"
   setting_rest_api_enabled: "Luba REST API kasutamine"
   setting_self_registration: "Omaloodud konto aktiveerimine"
+  setting_self_registration_warning: >
+    The user will be able to activate their own accounts. Please note that this will give them access to all public projects and their content. Please make sure that no sensitive or private data is exposed in public projects.
   setting_session_ttl: "Sessiooni aegumise aeg"
   setting_session_ttl_hint: "Väärtus alla 5-e mõjub nii, nagu sessioon ei aeguks kunagi"
   setting_session_ttl_enabled: "Seansi lõppemine"
@@ -3874,7 +3888,7 @@ et:
       not_allowed_text: "You do not have the necessary permissions to view this page."
       activities:
         enable_comments_with_restricted_visibility: "Enable restricted visibility comments"
-        helper_text: "Restricted comments allow an internal team to communicate amongst themselves privately. These are only visible to select roles that have the necessary permissions and will not be visible publicly. %{link}"
+        helper_text: "Restricted comments allow an internal team to communicate amongst themselves privately. These are only visible to selected roles that have the necessary permissions and will not be visible publicly. %{link}"
   text_formatting:
     markdown: "Markdown"
     plain: "Lihttekst"

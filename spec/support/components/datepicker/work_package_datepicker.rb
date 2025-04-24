@@ -7,9 +7,8 @@ module Components
     include MonthRangeSelection
 
     def clear!
-      super
-
       set_field(duration_field, "", wait_for_changes_to_be_applied: false)
+      super
     end
 
     def expect_banner_text(text, **)

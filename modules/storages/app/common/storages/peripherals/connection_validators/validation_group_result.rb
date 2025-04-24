@@ -32,15 +32,18 @@ module Storages
   module Peripherals
     module ConnectionValidators
       class ValidationGroupResult
-        delegate :[], to: :@results
+        delegate :[], :each_pair, to: :@results
 
         def initialize
           @results = {}
         end
 
         def success? = @results.values.all?(&:success?)
+
         def non_failure? = @results.values.none?(&:failure?)
+
         def failure? = @results.values.any?(&:failure?)
+
         def warning? = @results.values.any?(&:warning?)
 
         def tally
@@ -61,6 +64,10 @@ module Storages
           raise(ArgumentError, "Check #{key} not registered.") unless @results.key?(key)
 
           @results[key] = value
+        end
+
+        def timestamp
+          @results.values.filter_map(&:timestamp).max
         end
       end
     end

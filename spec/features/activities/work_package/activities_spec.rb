@@ -34,11 +34,12 @@ require "support/flash/expectations"
 RSpec.describe "Work package activity", :js, :with_cuprite do
   include Flash::Expectations
 
-  let(:project) { create(:project, enabled_comments_with_restricted_visibility: true) }
+  let(:project) { create(:project, enabled_internal_comments: true) }
   let(:admin) { create(:admin) }
   let(:member_role) do
     create(:project_role,
-           permissions: %i[view_work_packages edit_work_packages add_work_packages work_package_assigned add_work_package_notes])
+           permissions: %i[view_work_packages edit_work_packages add_work_packages work_package_assigned
+                           add_work_package_comments])
   end
   let(:member) do
     create(:user,
@@ -64,7 +65,7 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
 
     let(:viewer_role_with_commenting_permission) do
       create(:project_role,
-             permissions: %i[view_work_packages add_work_package_notes edit_own_work_package_notes])
+             permissions: %i[view_work_packages add_work_package_comments edit_own_work_package_comments])
     end
     let(:viewer_with_commenting_permission) do
       create(:user,
@@ -75,7 +76,7 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
 
     let(:user_role_with_editing_permission) do
       create(:project_role,
-             permissions: %i[view_work_packages add_work_package_notes edit_work_package_notes])
+             permissions: %i[view_work_packages add_work_package_comments edit_work_package_comments])
     end
     let(:user_with_editing_permission) do
       create(:user,
@@ -156,7 +157,7 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
       end
     end
 
-    context "when a user has add_work_package_notes and edit_own_work_package_notes permission" do
+    context "when a user has add_work_package_comments and edit_own_work_package_comments permission" do
       current_user { viewer_with_commenting_permission }
 
       before do
@@ -195,7 +196,7 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
       end
     end
 
-    context "when a user has add_work_package_notes and general edit_work_package_notes permission" do
+    context "when a user has add_work_package_comments and general edit_work_package_comments permission" do
       current_user { user_with_editing_permission }
 
       before do
@@ -235,8 +236,8 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
       end
     end
 
-    context "when a user cannot see comments with restricted visibility",
-            with_flag: { comments_with_restricted_visibility: true } do
+    context "when a user cannot see internal comments",
+            with_flag: { internal_comments: true } do
       current_user { member }
 
       before do
@@ -244,7 +245,7 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
                user: admin,
                notes: "First comment by admin",
                journable: work_package,
-               restricted: true,
+               internal: true,
                version: 2)
       end
 
@@ -256,8 +257,8 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
       end
     end
 
-    context "when a user can see comments with restricted visibility",
-            with_flag: { comments_with_restricted_visibility: true } do
+    context "when a user can see internal comments",
+            with_flag: { internal_comments: true } do
       current_user { admin }
 
       before do
@@ -265,7 +266,7 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
                user: admin,
                notes: "First comment by admin",
                journable: work_package,
-               restricted: true,
+               internal: true,
                version: 2)
       end
 
@@ -419,7 +420,7 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
   end
 
   context "when multiple users are commenting on a workpackage" do
-    context "when the user has permissions to see restricted comments" do
+    context "when the user has permissions to see internal comments" do
       current_user { admin }
       let(:work_package) { create(:work_package, project:, author: admin) }
 
@@ -474,7 +475,7 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
       end
     end
 
-    context "when the user does not have permissions to see restricted comments" do
+    context "when the user does not have permissions to see internal comments" do
       current_user { member }
       let(:work_package) { create(:work_package, project:, author: admin) }
 
@@ -511,13 +512,13 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
         create(:work_package_journal,
                user: admin,
                notes: "Second comment by admin",
-               restricted: true,
+               internal: true,
                journable: work_package,
                version: 3)
         create(:work_package_journal,
                user: admin,
                notes: "Third comment by admin",
-               restricted: true,
+               internal: true,
                journable: work_package,
                version: 4)
 
@@ -604,7 +605,7 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
         # expect all journal entries
         activity_tab.expect_journal_notes(text: "First comment by admin")
         activity_tab.expect_journal_notes(text: "Second comment by admin")
-        activity_tab.expect_journal_changed_attribute(text: "Subject")
+        activity_tab.expect_journal_changed_attribute(text: "A new subject")
 
         activity_tab.filter_journals(:only_comments)
 
@@ -1201,33 +1202,6 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
       it "does not scroll to the bottom as the newest journal entry is on the top" do
         sleep 1 # wait for auto scrolling to finish
         activity_tab.expect_journal_container_at_top
-      end
-    end
-  end
-
-  describe "images in the comment",
-           :js,
-           :selenium,
-           with_settings: { journal_aggregation_time_minutes: 0, show_work_package_attachments: false } do
-    let(:work_package) { create(:work_package, project:, author: admin) }
-    let(:image_fixture) { UploadedFile.load_from("spec/fixtures/files/image.png") }
-    let(:editor) { Components::WysiwygEditor.new }
-
-    context "if work package attachments are deactivated in project" do
-      it "shows the inline image and have it uploaded to the work package" do
-        login_as admin
-
-        wp_page.visit!
-        wp_page.wait_for_activity_tab
-
-        page.find_test_selector("op-open-work-package-journal-form-trigger").click
-        editor.drag_attachment(image_fixture.path, "", scroll: false)
-        editor.wait_until_upload_progress_toaster_cleared
-
-        page.find_test_selector("op-submit-work-package-journal-form").click
-
-        expect(find_test_selector("op-journal-notes-body")).to have_css("img")
-        expect(page).to have_test_selector("op-journal-detail-description", text: "File image.png added as attachment")
       end
     end
   end

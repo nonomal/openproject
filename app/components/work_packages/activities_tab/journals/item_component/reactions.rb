@@ -88,7 +88,7 @@ module WorkPackages
         end
 
         def current_user_can_react?
-          User.current.allowed_in_work_package?(:add_work_package_notes, work_package)
+          User.current.allowed_in_work_package?(:add_work_package_comments, work_package)
         end
 
         def current_user_cannot_react? = !current_user_can_react?

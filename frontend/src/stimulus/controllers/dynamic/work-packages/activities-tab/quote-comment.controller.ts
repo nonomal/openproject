@@ -31,23 +31,23 @@
 import { Controller } from '@hotwired/stimulus';
 
 import type IndexController from './index.controller';
-import type RestrictedCommentController from './restricted-comment.controller';
+import type InternalCommentController from './internal-comment.controller';
 
 type QuoteParams = {
   userId:string;
   userName:string;
   textWrote:string;
   content:string;
-  isRestricted:boolean;
+  isInternal:boolean;
 };
 
 export default class QuoteCommentController extends Controller {
-  static outlets = ['work-packages--activities-tab--index', 'work-packages--activities-tab--restricted-comment'];
+  static outlets = ['work-packages--activities-tab--index', 'work-packages--activities-tab--internal-comment'];
 
   declare readonly workPackagesActivitiesTabIndexOutlet:IndexController;
-  declare readonly workPackagesActivitiesTabRestrictedCommentOutlet:RestrictedCommentController;
+  declare readonly workPackagesActivitiesTabInternalCommentOutlet:InternalCommentController;
 
-  quote({ params: { userId, userName, textWrote, content, isRestricted } }:{ params:QuoteParams }) {
+  quote({ params: { userId, userName, textWrote, content, isInternal } }:{ params:QuoteParams }) {
     const quotedText = this.quotedText(content, userId, userName, textWrote);
 
     if (this.isFormVisible) {
@@ -56,7 +56,7 @@ export default class QuoteCommentController extends Controller {
       this.openEditorWithInitialData(quotedText);
     }
 
-    this.setCommentRestriction(isRestricted);
+    this.setCommentRestriction(isInternal);
   }
 
   private quotedText(rawComment:string, userId:string, userName:string, textWrote:string) {
@@ -80,10 +80,10 @@ export default class QuoteCommentController extends Controller {
     }
   }
 
-  private setCommentRestriction(isRestricted:boolean) {
-    if (isRestricted && !this.workPackagesActivitiesTabRestrictedCommentOutlet.restrictedCheckboxTarget.checked) {
-      this.workPackagesActivitiesTabRestrictedCommentOutlet.restrictedCheckboxTarget.checked = isRestricted;
-      this.workPackagesActivitiesTabRestrictedCommentOutlet.toggleRestriction();
+  private setCommentRestriction(isInternal:boolean) {
+    if (isInternal && !this.workPackagesActivitiesTabInternalCommentOutlet.internalCheckboxTarget.checked) {
+      this.workPackagesActivitiesTabInternalCommentOutlet.internalCheckboxTarget.checked = isInternal;
+      this.workPackagesActivitiesTabInternalCommentOutlet.toggleInternal();
     }
   }
 

@@ -130,12 +130,6 @@ module OpenIDConnect
       @provider = OpenIDConnect::Provider.find(params[:id])
     end
 
-    def default_breadcrumb; end
-
-    def show_local_breadcrumb
-      false
-    end
-
     def successful_save_response
       respond_to do |format|
         format.turbo_stream do

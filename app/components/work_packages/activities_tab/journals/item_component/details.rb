@@ -193,7 +193,7 @@ module WorkPackages
             render(Primer::Beta::Octicon.new(
                      :"dot-fill", # color is set via CSS as requested by UI/UX Team
                      classes: "work-packages-activities-tab-journals-item-component-details--notification-dot-icon",
-                     size: (OpenProject::FeatureDecisions.comments_with_restricted_visibility_active? ? :small : :medium),
+                     size: (OpenProject::FeatureDecisions.internal_comments_active? ? :small : :medium),
                      data: { test_selector: "op-journal-unread-notification", "op-ian-center-update-immediate": true }
                    ))
           end

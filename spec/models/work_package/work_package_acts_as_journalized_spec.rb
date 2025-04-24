@@ -873,95 +873,95 @@ RSpec.describe WorkPackage do
     end
   end
 
-  describe "#journals.restricted_visible" do
+  describe "#journals.internal_visible" do
     let(:work_package) { create(:work_package) }
     let(:admin) { create(:admin) }
     let(:user) { create(:user) }
 
-    let!(:restricted_note) do
+    let!(:internal_note) do
       create(:work_package_journal,
              user: admin,
              notes: "First comment by admin",
              journable: work_package,
-             restricted: true,
+             internal: true,
              version: 2)
     end
 
-    let!(:unrestricted_note) do
+    let!(:public_note) do
       create(:work_package_journal,
              user:,
              notes: "First comment by user",
              journable: work_package,
-             restricted: false,
+             internal: false,
              version: 3)
     end
 
-    subject(:journals) { work_package.journals.restricted_visible }
+    subject(:journals) { work_package.journals.internal_visible }
 
     before do
       login_as user
     end
 
-    context "when comments_with_restricted_visibility is enabled", with_flag: { comments_with_restricted_visibility: true } do
+    context "when internal_comments is enabled", with_flag: { internal_comments: true } do
       context "and setting is enabled for the project" do
         before do
-          work_package.project.enabled_comments_with_restricted_visibility = true
+          work_package.project.enabled_internal_comments = true
           work_package.project.save!
         end
 
-        context "when the user cannot see restricted journals" do
+        context "when the user cannot see internal journals" do
           before do
             mock_permissions_for(user) do |mock|
               mock.allow_in_work_package :view_work_packages, work_package:
             end
           end
 
-          it "does not return the restricted journal" do
-            expect(journals.map(&:id)).not_to include(restricted_note.id)
-            expect(journals.map(&:id)).to include(unrestricted_note.id)
+          it "does not return the internal journal" do
+            expect(journals.map(&:id)).not_to include(internal_note.id)
+            expect(journals.map(&:id)).to include(public_note.id)
           end
         end
 
-        context "when the user can see restricted journals" do
+        context "when the user can see internal journals" do
           before do
             mock_permissions_for(user) do |mock|
-              mock.allow_in_project(:view_comments_with_restricted_visibility, project: work_package.project)
+              mock.allow_in_project(:view_internal_comments, project: work_package.project)
             end
           end
 
           it "returns all journals" do
-            expect(journals.map(&:id)).to include(restricted_note.id, unrestricted_note.id)
+            expect(journals.map(&:id)).to include(internal_note.id, public_note.id)
           end
         end
       end
 
       context "and setting is disabled for the project" do
         before do
-          work_package.project.enabled_comments_with_restricted_visibility = false
+          work_package.project.enabled_internal_comments = false
           work_package.project.save!
 
           mock_permissions_for(user) do |mock|
-            mock.allow_in_project(:view_comments_with_restricted_visibility, project: work_package.project)
+            mock.allow_in_project(:view_internal_comments, project: work_package.project)
           end
         end
 
-        it "does not return the restricted journal" do
-          expect(journals.map(&:id)).not_to include(restricted_note.id)
-          expect(journals.map(&:id)).to include(unrestricted_note.id)
+        it "does not return the internal journal" do
+          expect(journals.map(&:id)).not_to include(internal_note.id)
+          expect(journals.map(&:id)).to include(public_note.id)
         end
       end
     end
 
-    context "when comments_with_restricted_visibility is disabled", with_flag: { comments_with_restricted_visibility: false } do
+    context "when internal_comments is disabled", with_flag: { internal_comments: false } do
       before do
         mock_permissions_for(user) do |mock|
-          mock.allow_in_project(:view_comments_with_restricted_visibility, project: work_package.project)
+          mock.allow_in_project(:view_internal_comments, project: work_package.project)
         end
       end
 
-      it "does not return the restricted journal regardless of permissions" do
-        expect(journals.map(&:id)).not_to include(restricted_note.id)
-        expect(journals.map(&:id)).to include(unrestricted_note.id)
+      it "does not return the internal journal regardless of permissions" do
+        expect(journals.map(&:id)).not_to include(internal_note.id)
+        expect(journals.map(&:id)).to include(public_note.id)
       end
     end
   end

@@ -313,7 +313,7 @@ RSpec.describe "Custom actions", :js, with_ee: %i[custom_actions] do
     within(".custom-actions") do
       # When hovering over the button, the description is displayed
       expect(page)
-        .to have_button("Unassign", title: "Removes the assignee")
+        .to have_button("Unassign", title: "Removes the assignee", wait: 10)
     end
 
     wp_page.click_custom_action("Unassign")

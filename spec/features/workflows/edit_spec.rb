@@ -55,24 +55,28 @@ RSpec.describe "Workflow edit" do
   it "allows adding another workflow" do
     click_button "Edit"
 
-    check "status_#{statuses[1].id}_#{statuses[2].id}_"
+    within "#workflow_form_always" do
+      check "status_#{statuses[1].id}_#{statuses[2].id}_"
+    end
 
     click_button "Save"
 
     expect_flash(message: "Successful update.")
 
-    expect(page)
-      .to have_field "status_#{statuses[0].id}_#{statuses[1].id}_", checked: true
-    expect(page)
-      .to have_field "status_#{statuses[1].id}_#{statuses[2].id}_", checked: true
+    within "#workflow_form_always" do
+      expect(page)
+        .to have_field "status_#{statuses[0].id}_#{statuses[1].id}_", checked: true
+      expect(page)
+        .to have_field "status_#{statuses[1].id}_#{statuses[2].id}_", checked: true
 
-    expect(page)
-      .to have_field "status_#{statuses[0].id}_#{statuses[2].id}_", checked: false
-    expect(page)
-      .to have_field "status_#{statuses[1].id}_#{statuses[0].id}_", checked: false
-    expect(page)
-      .to have_field "status_#{statuses[2].id}_#{statuses[0].id}_", checked: false
-    expect(page)
-      .to have_field "status_#{statuses[2].id}_#{statuses[1].id}_", checked: false
+      expect(page)
+        .to have_field "status_#{statuses[0].id}_#{statuses[2].id}_", checked: false
+      expect(page)
+        .to have_field "status_#{statuses[1].id}_#{statuses[0].id}_", checked: false
+      expect(page)
+        .to have_field "status_#{statuses[2].id}_#{statuses[0].id}_", checked: false
+      expect(page)
+        .to have_field "status_#{statuses[2].id}_#{statuses[1].id}_", checked: false
+    end
   end
 end

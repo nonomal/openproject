@@ -345,6 +345,18 @@ ru:
         heading: "Удалить этот список проектов?"
         text: "Это действие не приведет к удалению ни одного проекта, содержащегося в списке. Вы уверены, что хотите удалить этот список проектов?"
     settings:
+      public_warning: >
+        This project is public. Anyone who has access to this instance will be able to view and interact with this project depending on their role and associated permissions. Sub-projects are not affected and have their own settings.
+      public_confirmation:
+        checkbox: "I understand that this will make the previously private content public"
+        title: "Make this project public?"
+        description: >
+          Anyone who has access to this instance will be able to view and interact with this project depending on their role and authentication settings. Sub-projects are not affected and have their own settings.
+      private_confirmation:
+        checkbox: "I understand that this will make the previously public content private."
+        title: "Make this project private?"
+        description: >
+          The project will only be visible to project members depending on their role and associated permissions. Sub-projects are not affected and have their own settings.
       change_identifier: Изменить идентификатор
       actions:
         label_enable_all: "Включить всё"
@@ -1842,7 +1854,8 @@ ru:
     text:
       failed: 'Не удалось скопировать проект «%{source_project_name}» в проект «%{target_project_name}».'
       succeeded: 'Скопированный проект «%{source_project_name}» в «%{target_project_name}».'
-  create_new_page: "Wiki-страница"
+  create_wiki_page: "Create new wiki page"
+  create_wiki_page_button: "Wiki page"
   date:
     abbr_day_names:
       - "Вс"
@@ -2062,7 +2075,6 @@ ru:
       plan_title: "Дополнение корпоративной версии %{plan}"
       plan_name: "Корпоративная версия %{plan}"
       plan_text_html: "Доступно только в %{plan_name}."
-      link_title: "Дополнительная информация"
       hide_banner: "Скрыть этот баннер"
       baseline_comparison:
         description: Выделите изменения, внесенные в этот список с любого момента в прошлом.
@@ -2332,7 +2344,6 @@ ru:
       community: "OpenProject сообщество"
       upsale:
         title: "Обновитесь до корпоративной версии"
-        more_info: "Больше информации"
     links:
       upgrade_enterprise_edition: "Обновитесь до корпоративной версии"
       postgres_migration: "Перенос вашей установки в PostgreSQL"
@@ -2809,6 +2820,7 @@ ru:
   label_modules: "Модули"
   label_months_from: "месяцев с"
   label_more: "Более"
+  label_more_information: "Дополнительная информация"
   label_more_than_ago: "больше, чем дней назад"
   label_move_column_left: "Переместить столбец влево"
   label_move_column_right: "Переместить столбец вправо"
@@ -3820,6 +3832,8 @@ ru:
   setting_repository_truncate_at: "Максимальное число файлов, отображаемых в браузере репозитория"
   setting_rest_api_enabled: "Включите веб-службы REST"
   setting_self_registration: "Самостоятельная регистрация"
+  setting_self_registration_warning: >
+    The user will be able to activate their own accounts. Please note that this will give them access to all public projects and their content. Please make sure that no sensitive or private data is exposed in public projects.
   setting_session_ttl: "Срок действия сеанса при неактивности"
   setting_session_ttl_hint: "При значении ниже 5-ти отключено"
   setting_session_ttl_enabled: "Сессия истекает"

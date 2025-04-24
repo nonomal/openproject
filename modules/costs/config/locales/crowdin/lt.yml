@@ -50,12 +50,14 @@ lt:
         project: Projektas
         user: Naudotojas
         work_package: Darbų paketas
+        subject: Subject
         hours: Valandų
         comments: Komentaras
         activity: Veikla
         spent_on: Data
         start_time: Pradžios laikas
         end_time: Finish time
+        time: Time
     models:
       time_entry:
         one: "Time entry"
@@ -158,12 +160,28 @@ lt:
   label_cost: "Cost"
   label_costs: "Kaštai"
   label_mandatory_fields: "Mandatory fields"
+  label_my_time_tracking: "My time tracking"
+  label_no_time: "No time tracked"
+  label_next_day: "Next day"
+  label_next_week: "Sekanti savaitė"
+  label_next_month: "Next month"
+  label_previous_day: "Previous day"
+  label_previous_week: "Ankstesnė savaitė"
+  label_previous_month: "Previous month"
+  label_specific_day: "Day %{day}"
+  label_specific_week: "Calendar week %{week}"
+  label_specific_month: "Month %{month}"
+  label_list: "Sąrašas"
+  label_month: "Month"
+  label_day: "Day"
+  label_today_capitalized: "Today"
   placeholder_activity_select_work_package_first: Work package selection is required first
   notice_something_wrong: "Įvyko klaida. Bandykite dar kartą."
   notice_successful_restore: "Sėkmingas atkūrimas."
   notice_successful_lock: "Sėkmingai užrakinta."
   notice_cost_logged_successfully: "Vieneto kaštai į žurnalą įrašyti sėkmingai."
   notice_different_time_zones: "This user has a different time zone (%{tz}). Time will be logged using their time zone."
+  notice_time_entry_update_failed: "Failed to update time entry. Errors: %{errors}"
   permission_edit_cost_entries: "Redaguoti įrašytų vienetų kaštus"
   permission_edit_own_cost_entries: "Redaguoti paties įrašytų vienetų kaštus"
   permission_edit_hourly_rates: "Redaguoti valandinius koeficientus"
@@ -189,6 +207,10 @@ lt:
   text_reassign_time_and_cost_entries: "Iš naujo priskirti praneštas valandas ir kaštus šiam darbų paketui:"
   text_warning_hidden_elements: "Kai kurie įrašai galimai atskirti nuo agregacijos."
   week: "savaitė"
+  total_times:
+    week: "Week Total: %{hours}"
+    month: "Month Total: %{hours}"
+    day: "Day Total: %{hours}"
   api_v3:
     errors:
       validation:

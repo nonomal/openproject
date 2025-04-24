@@ -342,6 +342,18 @@ uk:
         heading: "Видалити цей список проєктів?"
         text: "Ця дія не призведе до видалення жодного проєкту зі списку. Справді видалити цей список проєктів?"
     settings:
+      public_warning: >
+        This project is public. Anyone who has access to this instance will be able to view and interact with this project depending on their role and associated permissions. Sub-projects are not affected and have their own settings.
+      public_confirmation:
+        checkbox: "I understand that this will make the previously private content public"
+        title: "Make this project public?"
+        description: >
+          Anyone who has access to this instance will be able to view and interact with this project depending on their role and authentication settings. Sub-projects are not affected and have their own settings.
+      private_confirmation:
+        checkbox: "I understand that this will make the previously public content private."
+        title: "Make this project private?"
+        description: >
+          The project will only be visible to project members depending on their role and associated permissions. Sub-projects are not affected and have their own settings.
       change_identifier: Ідентифікатор змін
       actions:
         label_enable_all: "Увімкнути все"
@@ -1838,7 +1850,8 @@ uk:
     text:
       failed: 'Не вдалося скопіювати проект "%{source_project_name}" до проекту "%{target_project_name}".'
       succeeded: 'Скопіював проект "%{source_project_name}" до "%{target_project_name}".'
-  create_new_page: "Сторінка Wiki"
+  create_wiki_page: "Create new wiki page"
+  create_wiki_page_button: "Wiki page"
   date:
     abbr_day_names:
       - "Нед"
@@ -2058,7 +2071,6 @@ uk:
       plan_title: "Доповнення версії Enterprise %{plan}"
       plan_name: "Версія Enterprise %{plan}"
       plan_text_html: "Доступно лише у версії %{plan_name}."
-      link_title: "Додаткові відомості"
       hide_banner: "Приховати цей банер"
       baseline_comparison:
         description: Виділяйте зміни, внесені в цей список із будь-якого моменту часу в минулому.
@@ -2099,7 +2111,7 @@ uk:
           Прототипи користувачів допомагають призначати пакети робіт користувачам, які не входять у ваш проєкт. Вони можуть бути корисні в різних сценаріях. Наприклад, якщо потрібно відстежувати завдання для ресурсу, який поки не доступний або не визначений. Або ж ви хочете відстежувати завдання, призначені особі, не надаючи їй доступу до OpenProject.
       comments_with_restricted_visibility:
         title: "Лише для вас"
-        description: "Завдяки коментарям з обмеженою видимістю учасники внутрішньої команди можуть спілкуватися приватно. Ці коментарі бачать лише користувачі з певними ролями в проєкті й ніколи не відображаються для всіх. Функція доступна лише за наявності професійного плану Enterprise."
+        description: "Restricted-visibilty comments allow an internal team to communicate amongst themselves privately. These are only visible to certain project roles and will never be visible publicly."
   enumeration_activities: "Дії щодо відстеження часу"
   enumeration_work_package_priorities: "Пріоритети робочого пакету"
   enumeration_reported_project_statuses: "Повідомлення про статус проекту"
@@ -2328,7 +2340,6 @@ uk:
       community: "Спільнота OpenProject"
       upsale:
         title: "Оновлення до версії Enterprise"
-        more_info: "Більше інформації"
     links:
       upgrade_enterprise_edition: "Оновлення до версії Enterprise"
       postgres_migration: "Міграція інсталяції в PostgreSQL"
@@ -2805,6 +2816,7 @@ uk:
   label_modules: "Модулі"
   label_months_from: "місяців(ця) з"
   label_more: "Більше"
+  label_more_information: "More information"
   label_more_than_ago: "більш ніж днів(я) назад"
   label_move_column_left: "Перемістити стовпець ліворуч"
   label_move_column_right: "Перемістити стовпець праворуч"
@@ -3817,6 +3829,8 @@ uk:
   setting_repository_truncate_at: "Максимальна кількість файлів, відображених у переглядачі сховища"
   setting_rest_api_enabled: "Увімкніть веб-службу REST"
   setting_self_registration: "Самостійна реєстрація"
+  setting_self_registration_warning: >
+    The user will be able to activate their own accounts. Please note that this will give them access to all public projects and their content. Please make sure that no sensitive or private data is exposed in public projects.
   setting_session_ttl: "Сесії час після закінчення неактивність"
   setting_session_ttl_hint: "Значення нижче 5 працює як відключено"
   setting_session_ttl_enabled: "Сеанс закінчився"
@@ -3948,7 +3962,7 @@ uk:
       not_allowed_text: "У вас немає дозволів для перегляду цієї сторінки."
       activities:
         enable_comments_with_restricted_visibility: "Увімкнути коментарі з обмеженою видимістю"
-        helper_text: "Завдяки коментарям з обмеженою видимістю учасники внутрішньої команди можуть спілкуватися приватно. Ці коментарі доступні лише користувачам із певними ролями й необхідними дозволами й ніколи не відображаються для всіх. %{link}"
+        helper_text: "Restricted comments allow an internal team to communicate amongst themselves privately. These are only visible to selected roles that have the necessary permissions and will not be visible publicly. %{link}"
   text_formatting:
     markdown: "Markdown"
     plain: "Простий текст"

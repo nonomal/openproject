@@ -291,7 +291,7 @@ zh-TW:
   global_search:
     placeholder: "在 %{app_title} 搜尋"
     overwritten_tabs:
-      all: "All"
+      all: "全部"
       messages: "討論區"
       wiki_pages: "維基"
   groups:
@@ -345,6 +345,18 @@ zh-TW:
         heading: "刪除此專案清單？"
         text: "此動作不會刪除清單中包含的任何專案。您確定要刪除此專案清單？"
     settings:
+      public_warning: >
+        This project is public. Anyone who has access to this instance will be able to view and interact with this project depending on their role and associated permissions. Sub-projects are not affected and have their own settings.
+      public_confirmation:
+        checkbox: "I understand that this will make the previously private content public"
+        title: "Make this project public?"
+        description: >
+          Anyone who has access to this instance will be able to view and interact with this project depending on their role and authentication settings. Sub-projects are not affected and have their own settings.
+      private_confirmation:
+        checkbox: "I understand that this will make the previously public content private."
+        title: "Make this project private?"
+        description: >
+          The project will only be visible to project members depending on their role and associated permissions. Sub-projects are not affected and have their own settings.
       change_identifier: 變更識別碼
       actions:
         label_enable_all: "全部啟用"
@@ -1782,7 +1794,8 @@ zh-TW:
     text:
       failed: '無法從 “%{source_project_name}” 複製專案到 "%{target_project_name}"'
       succeeded: '複製 "%{source_project_name}" 到 "%{target_project_name}"。'
-  create_new_page: "維基頁面"
+  create_wiki_page: "Create new wiki page"
+  create_wiki_page_button: "Wiki page"
   date:
     abbr_day_names:
       - "日"
@@ -1945,7 +1958,6 @@ zh-TW:
       plan_title: "企業版 %{plan} 外掛"
       plan_name: "%{plan} 企業版計畫"
       plan_text_html: "僅透過 %{plan_name} 提供。"
-      link_title: "更多資訊"
       hide_banner: "隱藏此廣告"
       baseline_comparison:
         description: 突顯自過去任一時間點以來對此清單所做的變更。
@@ -1986,7 +1998,7 @@ zh-TW:
           「佔位使用者」是一種將工作項目分配給不屬於您專案成員的方法。它們在一系列場景中十分有用；例如，如果您需要追蹤尚未命名或可用的資源的任務，或者如果您不想讓該人員存取專案，但仍希望追蹤分配給他們的任務。
       comments_with_restricted_visibility:
         title: "僅供您查看"
-        description: "限制可見留言允許內部團隊進行私密的溝通。這些評論僅對特定的專案角色可見，且永遠不會公開顯示。此功能僅在企業專業版方案中提供。"
+        description: "受限可見的留言可讓內部團隊成員之間進行私人溝通。這些留言僅對特定的專案角色可見，絕對不會對外公開。"
   enumeration_activities: "時間追蹤活動"
   enumeration_work_package_priorities: "工作項目優先等級"
   enumeration_reported_project_statuses: "報告的專案狀態"
@@ -2215,7 +2227,6 @@ zh-TW:
       community: "OpenProject 社群"
       upsale:
         title: "升級到企業版"
-        more_info: "更多資訊"
     links:
       upgrade_enterprise_edition: "升級到企業版"
       postgres_migration: "將您的安裝遷移到 PostgreSQL"
@@ -2692,6 +2703,7 @@ zh-TW:
   label_modules: "模組"
   label_months_from: "從幾個月"
   label_more: "更多"
+  label_more_information: "更多資訊"
   label_more_than_ago: "超過幾天"
   label_move_column_left: "欄位左移"
   label_move_column_right: "欄位右移"
@@ -3698,6 +3710,8 @@ zh-TW:
   setting_repository_truncate_at: "儲存庫瀏覽器中顯示的最大檔案數量"
   setting_rest_api_enabled: "啟用 REST 網路服務"
   setting_self_registration: "自助註冊"
+  setting_self_registration_warning: >
+    The user will be able to activate their own accounts. Please note that this will give them access to all public projects and their content. Please make sure that no sensitive or private data is exposed in public projects.
   setting_session_ttl: "非活躍使用後連線失效時間"
   setting_session_ttl_hint: "低於5個工作同於停用"
   setting_session_ttl_enabled: "連線逾時"
@@ -3829,7 +3843,7 @@ zh-TW:
       not_allowed_text: "您沒有查看此頁面的必要權限。"
       activities:
         enable_comments_with_restricted_visibility: "啟用受限可見留言"
-        helper_text: "限制性留言允許內部團隊進行私密的溝通。這些評論僅對具有必要權限的選定角色可見，且不會公開顯示。%{link}"
+        helper_text: "受限留言可讓內部團隊進行私人溝通。這些留言僅對具備相應權限的指定角色可見，且不會對外公開。%{link}"
   text_formatting:
     markdown: "Markdown"
     plain: "純文字"

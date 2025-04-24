@@ -61,16 +61,16 @@
               render(WorkPackages::ActivitiesTab::Journals::NotesForm.new(f))
             end
 
-            form_container.with_row(flex_layout: true, justify_content: adding_restricted_comment_allowed? ? :space_between : :flex_end) do |form_container_row|
-              if adding_restricted_comment_allowed?
-                form_container_row.with_column(flex_layout: true, align_items: :center) do |restricted_comment_container|
-                  restricted_comment_container.with_column(mr: 2, test_selector: "op-work-package-journal-restricted-comment-checkbox") do
-                    render(WorkPackages::ActivitiesTab::Journals::RestrictedNoteForm.new(f))
+            form_container.with_row(flex_layout: true, justify_content: adding_internal_comment_allowed? ? :space_between : :flex_end) do |form_container_row|
+              if adding_internal_comment_allowed?
+                form_container_row.with_column(flex_layout: true, align_items: :center) do |internal_comment_container|
+                  internal_comment_container.with_column(mr: 2, test_selector: "op-work-package-journal-internal-comment-checkbox") do
+                    render(WorkPackages::ActivitiesTab::Journals::InternalNoteForm.new(f))
                   end
 
-                  restricted_comment_container.with_column(
+                  internal_comment_container.with_column(
                     display: :none,
-                    data: { "work-packages--activities-tab--restricted-comment-target": "learnMoreLink" },
+                    data: { "work-packages--activities-tab--internal-comment-target": "learnMoreLink" },
                     pb: 1
                   ) do
                     render(Primer::Beta::Link.new(href: learn_more_static_link_url, target: "_blank")) do |link|

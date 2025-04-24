@@ -33,7 +33,7 @@ ar:
         label_activity_show_only_changes: "Show changes only"
         label_sort_asc: "Newest at the bottom"
         label_sort_desc: "Newest on top"
-        label_type_to_comment: "Add a comment. Type @ to notify people."
+        label_type_to_comment: "أضف تعليقًا. اكتب @ لإشعار الأشخاص."
         label_submit_comment: "Submit comment"
         label_who: Who?
         changed_on: "changed on"
@@ -346,6 +346,18 @@ ar:
         heading: "Delete this project list?"
         text: "This action will not delete any project the list contains. Are you sure you want to delete this project list?"
     settings:
+      public_warning: >
+        This project is public. Anyone who has access to this instance will be able to view and interact with this project depending on their role and associated permissions. Sub-projects are not affected and have their own settings.
+      public_confirmation:
+        checkbox: "I understand that this will make the previously private content public"
+        title: "Make this project public?"
+        description: >
+          Anyone who has access to this instance will be able to view and interact with this project depending on their role and authentication settings. Sub-projects are not affected and have their own settings.
+      private_confirmation:
+        checkbox: "I understand that this will make the previously public content private."
+        title: "Make this project private?"
+        description: >
+          The project will only be visible to project members depending on their role and associated permissions. Sub-projects are not affected and have their own settings.
       change_identifier: Change identifier
       actions:
         label_enable_all: "Enable all"
@@ -1884,7 +1896,8 @@ ar:
     text:
       failed: 'تعذّر نسخ مشروع "%{source_project_name}" لمشروع "%{target_project_name}".'
       succeeded: 'تمّ نسخ مشروع "%{source_project_name}" إلى "%{target_project_name}".'
-  create_new_page: "صفحة وِيكيبيديا"
+  create_wiki_page: "Create new wiki page"
+  create_wiki_page_button: "Wiki page"
   date:
     abbr_day_names:
       - "الأحد"
@@ -2142,7 +2155,6 @@ ar:
       plan_title: "Enterprise %{plan} add-on"
       plan_name: "%{plan} enterprise plan"
       plan_text_html: "Available only through the %{plan_name}."
-      link_title: "More information"
       hide_banner: "Hide this banner"
       baseline_comparison:
         description: Highlight changes made to this list since any point in the past.
@@ -2183,7 +2195,7 @@ ar:
           Placeholder users are a way to assign work packages to users who are not part of your project. They can be useful in a range of scenarios; for example, if you need to track tasks for a resource that is not yet named or available, or if you don’t want to give that person access to OpenProject but still want to track tasks assigned to them.
       comments_with_restricted_visibility:
         title: "For your eyes only"
-        description: "Restricted-visibilty comments allow an internal team to communicate amongst themselves privately. These are only visible to certain project roles and will never be visible publicly. Available only through the enterprise professional plan."
+        description: "Restricted-visibilty comments allow an internal team to communicate amongst themselves privately. These are only visible to certain project roles and will never be visible publicly."
   enumeration_activities: "Time tracking activities"
   enumeration_work_package_priorities: "أولويات مجموعة العمل"
   enumeration_reported_project_statuses: "حالة للمشروع المبلغ عنه"
@@ -2412,7 +2424,6 @@ ar:
       community: "مجتمع أوبِن بروجِكت"
       upsale:
         title: "Upgrade to Enterprise edition"
-        more_info: "More information"
     links:
       upgrade_enterprise_edition: "Upgrade to Enterprise edition"
       postgres_migration: "Migrating your installation to PostgreSQL"
@@ -2889,6 +2900,7 @@ ar:
   label_modules: "أنماط"
   label_months_from: "أشهر من"
   label_more: "المزيد"
+  label_more_information: "More information"
   label_more_than_ago: "منذ أكثر من أيام"
   label_move_column_left: "انقل العمود لليسار"
   label_move_column_right: "انقل العمود لليمين"
@@ -3905,6 +3917,8 @@ ar:
   setting_repository_truncate_at: "Maximum number of files displayed in the repository browser"
   setting_rest_api_enabled: "تمكين خدمة ويب REST"
   setting_self_registration: "التسجيل الذاتي"
+  setting_self_registration_warning: >
+    The user will be able to activate their own accounts. Please note that this will give them access to all public projects and their content. Please make sure that no sensitive or private data is exposed in public projects.
   setting_session_ttl: "وقت انتهاء الدورة بعد الخمول"
   setting_session_ttl_hint: "قيمة أدناه يعمل 5 مثل ا"
   setting_session_ttl_enabled: "انتهت الجلسة"
@@ -4036,7 +4050,7 @@ ar:
       not_allowed_text: "You do not have the necessary permissions to view this page."
       activities:
         enable_comments_with_restricted_visibility: "Enable restricted visibility comments"
-        helper_text: "Restricted comments allow an internal team to communicate amongst themselves privately. These are only visible to select roles that have the necessary permissions and will not be visible publicly. %{link}"
+        helper_text: "Restricted comments allow an internal team to communicate amongst themselves privately. These are only visible to selected roles that have the necessary permissions and will not be visible publicly. %{link}"
   text_formatting:
     markdown: "Markdown"
     plain: "Plain text"

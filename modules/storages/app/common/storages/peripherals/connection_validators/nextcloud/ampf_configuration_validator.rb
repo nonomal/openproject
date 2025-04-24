@@ -83,7 +83,7 @@ module Storages
             return pass_check(:group_folder_contents) if unexpected_files.empty?
 
             log_extraneous_files(unexpected_files)
-            warn_check(:group_folder_contents, message(:unexpected_content))
+            warn_check(:group_folder_contents, message("nextcloud.unexpected_content"))
           end
 
           def log_extraneous_files(unexpected_files)

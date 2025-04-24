@@ -50,12 +50,14 @@
         project: Prosjekt
         user: Bruker
         work_package: Arbeidspakke
+        subject: Subject
         hours: Timer
         comments: Kommentar
         activity: Aktivitet
         spent_on: Dato
         start_time: Starttid
         end_time: Finish time
+        time: Time
     models:
       time_entry:
         one: "Time entry"
@@ -150,12 +152,28 @@
   label_cost: "Cost"
   label_costs: "Kostnader"
   label_mandatory_fields: "Mandatory fields"
+  label_my_time_tracking: "My time tracking"
+  label_no_time: "No time tracked"
+  label_next_day: "Next day"
+  label_next_week: "Neste uke"
+  label_next_month: "Next month"
+  label_previous_day: "Previous day"
+  label_previous_week: "Forrige uke"
+  label_previous_month: "Previous month"
+  label_specific_day: "Day %{day}"
+  label_specific_week: "Calendar week %{week}"
+  label_specific_month: "Month %{month}"
+  label_list: "Liste"
+  label_month: "Month"
+  label_day: "Day"
+  label_today_capitalized: "Today"
   placeholder_activity_select_work_package_first: Work package selection is required first
   notice_something_wrong: "Noe gikk galt. Prøv på nytt."
   notice_successful_restore: "Vellykket gjenoppretting."
   notice_successful_lock: "Låst vellykket."
   notice_cost_logged_successfully: "Enhetskostnaden er logget."
   notice_different_time_zones: "This user has a different time zone (%{tz}). Time will be logged using their time zone."
+  notice_time_entry_update_failed: "Failed to update time entry. Errors: %{errors}"
   permission_edit_cost_entries: "Rediger bokførte enhetskostnader"
   permission_edit_own_cost_entries: "Rediger egne bokførte enhetskostnader"
   permission_edit_hourly_rates: "Rediger timesatser"
@@ -181,6 +199,10 @@
   text_reassign_time_and_cost_entries: "Overfør rapporterte timer og kostnader til denne arbeidspakken:"
   text_warning_hidden_elements: "Noen oppføringer kan være utelatt fra aggregeringen."
   week: "uke"
+  total_times:
+    week: "Week Total: %{hours}"
+    month: "Month Total: %{hours}"
+    day: "Day Total: %{hours}"
   api_v3:
     errors:
       validation:

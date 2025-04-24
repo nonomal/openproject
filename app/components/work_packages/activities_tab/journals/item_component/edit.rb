@@ -53,7 +53,7 @@ module WorkPackages
 
         def wrapper_data_attributes
           {
-            restricted_comment_stimulus_controller("-is-restricted-value") => journal.restricted?
+            internal_comment_stimulus_controller("-is-internal-value") => journal.internal?
           }
         end
       end

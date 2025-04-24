@@ -241,7 +241,7 @@ module Components
         page.find_test_selector("op-submit-work-package-journal-form").click
       end
 
-      def add_comment(text: nil, save: true, restricted: false)
+      def add_comment(text: nil, save: true, internal: false)
         if page.find_test_selector("op-open-work-package-journal-form-trigger")
           open_new_comment_editor
         else
@@ -251,7 +251,7 @@ module Components
         page.within_test_selector("op-work-package-journal-form-element") do
           get_editor_form_field_element.set_value(text)
 
-          check_restricted_visibility_comment_checkbox if restricted
+          check_internal_comment_checkbox if internal
 
           page.find_test_selector("op-submit-work-package-journal-form").click if save
         end
@@ -306,8 +306,8 @@ module Components
         expect(page).to have_test_selector("op-work-package-journal-form-element")
       end
 
-      def check_restricted_visibility_comment_checkbox
-        expect(page).to have_test_selector("op-work-package-journal-restricted-comment-checkbox")
+      def check_internal_comment_checkbox
+        expect(page).to have_test_selector("op-work-package-journal-internal-comment-checkbox")
         page.check("Restrict visibility")
       end
 

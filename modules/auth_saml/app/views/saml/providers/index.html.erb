@@ -24,5 +24,5 @@
       end %>
 <% end %>
 
-<%= render EnterpriseEdition::BannerComponent.new(:sso_auth_providers, i18n_scope: "saml.providers.upsale")%>
+<%= render EnterpriseEdition::BannerComponent.new(:sso_auth_providers, i18n_scope: "saml.providers.upsell")%>
 <%= render ::Saml::Providers::TableComponent.new(rows: @providers) %>

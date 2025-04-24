@@ -95,7 +95,7 @@ We added a new “Files” tab in the work package details. This way, you will h
 - Changed: Updated placement and design of the create button in the sidebar \[[#40958](https://community.openproject.org/wp/40958)\]
 - Changed: Replace work strips on the team planner calendar with full cards \[[#40962](https://community.openproject.org/wp/40962)\]
 - Changed: Change scrolling behavior of team planner \[[#40981](https://community.openproject.org/wp/40981)\]
-- Changed: Show "Start trial" button in EE upsale templates \[[#40990](https://community.openproject.org/wp/40990)\]
+- Changed: Show "Start trial" button in EE upsell templates \[[#40990](https://community.openproject.org/wp/40990)\]
 - Changed: Add team planner to onboarding tour \[[#41050](https://community.openproject.org/wp/41050)\]
 - Changed: Empty team planner view needs some more love \[[#41073](https://community.openproject.org/wp/41073)\]
 - Changed: The date indicators must update when dragging a card in the planner horizontally \[[#41075](https://community.openproject.org/wp/41075)\]

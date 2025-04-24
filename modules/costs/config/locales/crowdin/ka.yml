@@ -50,12 +50,14 @@ ka:
         project: პროექტი
         user: მომხმარებელი
         work_package: სამუშაო პაკეტი
+        subject: Subject
         hours: საათი
         comments: კომენტარი
         activity: აქტივობა
         spent_on: თარიღი
         start_time: Start time
         end_time: Finish time
+        time: Time
     models:
       time_entry:
         one: "Time entry"
@@ -150,12 +152,28 @@ ka:
   label_cost: "Cost"
   label_costs: "ხარჯები"
   label_mandatory_fields: "Mandatory fields"
+  label_my_time_tracking: "My time tracking"
+  label_no_time: "No time tracked"
+  label_next_day: "Next day"
+  label_next_week: "შემდეგი კვირა"
+  label_next_month: "Next month"
+  label_previous_day: "Previous day"
+  label_previous_week: "წინა კვირა"
+  label_previous_month: "Previous month"
+  label_specific_day: "Day %{day}"
+  label_specific_week: "Calendar week %{week}"
+  label_specific_month: "Month %{month}"
+  label_list: "სია"
+  label_month: "Month"
+  label_day: "Day"
+  label_today_capitalized: "Today"
   placeholder_activity_select_work_package_first: Work package selection is required first
   notice_something_wrong: "მოხდა შეცდომა. სცადეთ თავიდან."
   notice_successful_restore: "Successful restore."
   notice_successful_lock: "Locked successfully."
   notice_cost_logged_successfully: "Unit cost logged successfully."
   notice_different_time_zones: "This user has a different time zone (%{tz}). Time will be logged using their time zone."
+  notice_time_entry_update_failed: "Failed to update time entry. Errors: %{errors}"
   permission_edit_cost_entries: "Edit booked unit costs"
   permission_edit_own_cost_entries: "Edit own booked unit costs"
   permission_edit_hourly_rates: "Edit hourly rates"
@@ -181,6 +199,10 @@ ka:
   text_reassign_time_and_cost_entries: "Reassign reported hours and costs to this work package:"
   text_warning_hidden_elements: "Some entries may have been excluded from the aggregation."
   week: "კვირა"
+  total_times:
+    week: "Week Total: %{hours}"
+    month: "Month Total: %{hours}"
+    day: "Day Total: %{hours}"
   api_v3:
     errors:
       validation:

@@ -199,7 +199,7 @@ class WorkPackages::DatePickerController < ApplicationController
                    "start_date_touched",
                    "due_date_touched",
                    "duration_touched")
-            .transform_values { _1 == "true" }
+            .transform_values { it == "true" }
             .permit!
     else
       {}
@@ -242,7 +242,7 @@ class WorkPackages::DatePickerController < ApplicationController
   end
 
   def allowed_touched_params
-    allowed_params.filter { touched?(_1) }
+    allowed_params.filter { touched?(it) }
   end
 
   def allowed_params
@@ -269,8 +269,16 @@ class WorkPackages::DatePickerController < ApplicationController
       WorkPackages::SetAttributesService
         .new(user: current_user,
              model: @work_package,
-             contract_class: WorkPackages::CreateContract)
+             contract_class:)
         .call(wp_params)
+    end
+  end
+
+  def contract_class
+    if @work_package.new_record?
+      WorkPackages::CreateContract
+    else
+      WorkPackages::UpdateContract
     end
   end
 

@@ -54,6 +54,10 @@ module Storages
           end
         end
 
+        def report_cache_key
+          "#{@storage}_storage_#{@storage.id}_health_status_report"
+        end
+
         private
 
         def validation_groups = self.class.validation_groups

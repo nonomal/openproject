@@ -42,7 +42,7 @@ class WorkPackagesController < ApplicationController
                 :check_allowed_export,
                 :protect_from_unauthorized_export, only: %i[index export_dialog]
 
-  before_action :authorize, only: %i[show_conflict_flash_message share_upsale]
+  before_action :authorize, only: %i[show_conflict_flash_message share_upsell]
   authorization_checked! :index, :show, :export_dialog, :generate_pdf_dialog, :generate_pdf
 
   before_action :load_and_validate_query, only: :index, unless: -> { request.format.html? }
@@ -128,8 +128,8 @@ class WorkPackagesController < ApplicationController
     respond_with_turbo_streams
   end
 
-  def share_upsale
-    render :share_upsale,
+  def share_upsell
+    render :share_upsell,
            locals: { menu_name: project_or_global_menu }
   end
 
@@ -226,7 +226,7 @@ class WorkPackagesController < ApplicationController
 
       work_package
         .journals
-        .restricted_visible
+        .internal_visible
         .changing
         .includes(:user)
         .order(order).to_a

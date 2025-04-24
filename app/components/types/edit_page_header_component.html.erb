@@ -39,7 +39,7 @@ See COPYRIGHT and LICENSE files for more details.
             feature = tab[:enterprise_feature]
 
             if feature && !EnterpriseToken.allows_to?(feature)
-              t.with_icon(icon: :"op-enterprise-addons", classes: "upsale-colored")
+              t.with_icon(icon: :"op-enterprise-addons", classes: "upsell-colored")
             end
             t.with_text { I18n.t(tab[:label]) }
           end

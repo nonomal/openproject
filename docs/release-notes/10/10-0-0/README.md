@@ -185,7 +185,7 @@ OpenProject 10 significantly improves the performance, especially for the work p
 - Fixed: Overview page: click on link opens edit mode, instead of following the link [[#30948](https://community.openproject.org/wp/30948)]
 - Fixed: Custom Action. Exception on OP Edge. "undefined method `iso8601' for "%CURRENT_DATE%":String" [[#30949](https://community.openproject.org/wp/30949)]
 - Fixed: Wrong formatting of scroll bars on overview page in Windows [[#30951](https://community.openproject.org/wp/30951)]
-- Fixed: Boards. EE upsale. Translation missing. [[#30954](https://community.openproject.org/wp/30954)]
+- Fixed: Boards. EE upsell. Translation missing. [[#30954](https://community.openproject.org/wp/30954)]
 - Fixed: Drag and drop in embedded tables does not work (or should be deactivated for now) [[#30967](https://community.openproject.org/wp/30967)]
 - Fixed: Picture slider in for BCF issues even if there is only one picture [[#30969](https://community.openproject.org/wp/30969)]
 - Fixed: Members: Error message overlapping form but not X-icon to remove it [[#30971](https://community.openproject.org/wp/30971)]

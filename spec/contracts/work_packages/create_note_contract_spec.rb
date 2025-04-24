@@ -45,7 +45,7 @@ RSpec.describe WorkPackages::CreateNoteContract do
     wp
   end
   let(:user) { build_stubbed(:user) }
-  let(:permissions) { %i[add_work_package_notes add_comments_with_restricted_visibility] }
+  let(:permissions) { %i[add_work_package_comments add_internal_comments] }
 
   before do
     mock_permissions_for(user) do |mock|
@@ -63,8 +63,8 @@ RSpec.describe WorkPackages::CreateNoteContract do
         work_package.journal_notes = "blubs"
       end
 
-      context "if the user has only the add_work_package_notes permission" do
-        let(:permissions) { %i[add_work_package_notes] }
+      context "if the user has only the add_work_package_comments permission" do
+        let(:permissions) { %i[add_work_package_comments] }
 
         it_behaves_like "contract is valid"
       end
@@ -82,56 +82,56 @@ RSpec.describe WorkPackages::CreateNoteContract do
       end
     end
 
-    describe "journal_restricted" do
+    describe "journal_internal" do
       before do
         # Setting the journal_notes to not trigger a :blank error
         work_package.journal_notes = "blubs"
       end
 
-      context "and journal_restricted is true, and comments_with_restricted_visibility_active? is disabled",
-              with_flag: { comments_with_restricted_visibility_active: false } do
+      context "and journal_internal is true, and internal_comments_active? is disabled",
+              with_flag: { internal_comments_active: false } do
         before do
-          work_package.journal_restricted = true
+          work_package.journal_internal = true
         end
 
-        it_behaves_like "contract is invalid", journal_restricted: :feature_disabled
+        it_behaves_like "contract is invalid", journal_internal: :feature_disabled
       end
 
-      context "and journal_restricted is true, and comments_with_restricted_visibility_active? is enabled",
-              with_flag: { comments_with_restricted_visibility_active: true } do
+      context "and journal_internal is true, and internal_comments_active? is enabled",
+              with_flag: { internal_comments_active: true } do
         before do
-          work_package.journal_restricted = true
-        end
-
-        it_behaves_like "contract is valid"
-      end
-
-      context "and journal_restricted is false, and comments_with_restricted_visibility_active? is disabled",
-              with_flag: { comments_with_restricted_visibility_active: false } do
-        before do
-          work_package.journal_restricted = false
+          work_package.journal_internal = true
         end
 
         it_behaves_like "contract is valid"
       end
 
-      context "with journal_restricted is true, comments_with_restricted_visibility_active? is active but lacking permissions",
-              with_flag: { comments_with_restricted_visibility_active: true } do
-        let(:permissions) { super() - [:add_comments_with_restricted_visibility] }
-
+      context "and journal_internal is false, and internal_comments_active? is disabled",
+              with_flag: { internal_comments_active: false } do
         before do
-          work_package.journal_restricted = true
+          work_package.journal_internal = false
         end
 
-        it_behaves_like "contract is invalid", journal_restricted: :error_unauthorized
+        it_behaves_like "contract is valid"
       end
 
-      context "with journal_restricted is false, comments_with_restricted_visibility_active? is active and lacking permissions",
-              with_flag: { comments_with_restricted_visibility_active: true } do
-        let(:permissions) { super() - [:add_comments_with_restricted_visibility] }
+      context "with journal_internal is true, internal_comments_active? is active but lacking permissions",
+              with_flag: { internal_comments_active: true } do
+        let(:permissions) { super() - [:add_internal_comments] }
 
         before do
-          work_package.journal_restricted = false
+          work_package.journal_internal = true
+        end
+
+        it_behaves_like "contract is invalid", journal_internal: :error_unauthorized
+      end
+
+      context "with journal_internal is false, internal_comments_active? is active and lacking permissions",
+              with_flag: { internal_comments_active: true } do
+        let(:permissions) { super() - [:add_internal_comments] }
+
+        before do
+          work_package.journal_internal = false
         end
 
         it_behaves_like "contract is valid"

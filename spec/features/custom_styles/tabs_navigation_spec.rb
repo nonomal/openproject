@@ -37,9 +37,9 @@ RSpec.describe "Tabs navigation and content switching on the admin/design page" 
       visit custom_style_path(tab: "interface")
     end
 
-    it "redirects to upsale page" do
-      expect(page).to have_enterprise_upsale_page
-      expect(page).to have_text "Available only through the Basic enterprise plan"
+    it "redirects to upsell page" do
+      expect(page).to have_enterprise_upsell_page
+      expect(page).to have_text "Available starting with the Basic enterprise plan"
     end
   end
 

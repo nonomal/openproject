@@ -167,7 +167,7 @@ module WorkPackages
 
       def field_value(name)
         errors = @work_package.errors.where(name)
-        if (user_value = errors.map { |error| error.options[:value] }.find { !_1.nil? })
+        if (user_value = errors.map { |error| error.options[:value] }.find { !it.nil? })
           user_value
         else
           @work_package.public_send(name)
@@ -221,9 +221,9 @@ module WorkPackages
         permitted_params = params.merge(date_mode: "range", focused_field:).permit!
 
         if params[:action] == "new"
-          new_work_package_datepicker_dialog_content_path(permitted_params)
+          new_date_picker_path(permitted_params)
         else
-          work_package_datepicker_dialog_content_path(permitted_params)
+          work_package_date_picker_path(permitted_params)
         end
       end
 

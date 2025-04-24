@@ -102,7 +102,7 @@ RSpec.describe "Projects", "editing settings", :js do
     end
   end
 
-  context "with a length restricted custom field" do
+  context "with a length internal custom field" do
     let!(:required_custom_field) do
       create(:string_project_custom_field,
              name: "Foo",

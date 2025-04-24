@@ -37,21 +37,21 @@ module WorkPackages
       errors.add(:journal_notes, :blank) if model.journal_notes.blank?
     end
 
-    attribute :journal_restricted do
-      next unless model.journal_restricted
+    attribute :journal_internal do
+      next unless model.journal_internal
 
-      unless OpenProject::FeatureDecisions.comments_with_restricted_visibility_active?
-        errors.add(:journal_restricted, :feature_disabled)
+      unless OpenProject::FeatureDecisions.internal_comments_active?
+        errors.add(:journal_internal, :feature_disabled)
       end
-      unless allowed_in_project?(:add_comments_with_restricted_visibility)
-        errors.add(:journal_restricted, :error_unauthorized)
+      unless allowed_in_project?(:add_internal_comments)
+        errors.add(:journal_internal, :error_unauthorized)
       end
     end
 
     private
 
     def adding_notes_allowed?
-      allowed_in_work_package?(:add_work_package_notes) || allowed_in_work_package?(:edit_work_packages)
+      allowed_in_work_package?(:add_work_package_comments) || allowed_in_work_package?(:edit_work_packages)
     end
 
     def allowed_in_work_package?(permission)

@@ -72,7 +72,7 @@ RSpec.describe "Projects", "work packages settings menu", :js do
       end
     end
 
-    context "when the user has access to the activities tab", with_ee: %i[comments_with_restricted_visibility] do
+    context "when the user has access to the activities tab", with_ee: %i[internal_comments] do
       let(:permissions) { %i(edit_project view_work_packages) }
 
       current_user { create(:user, member_with_permissions: { project => permissions }) }
@@ -91,7 +91,7 @@ RSpec.describe "Projects", "work packages settings menu", :js do
 
       it "shows the enterprise banner" do
         work_packages_settings_page.visit!
-        expect(page).to have_test_selector("op-enterprise-banner")
+        expect(page).to have_test_selector("op-enterprise-upsell-page")
       end
     end
 

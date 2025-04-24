@@ -40,13 +40,13 @@ module OpenProject::TeamPlanner
                      dependencies: :work_package_tracking,
                      enterprise_feature: "team_planner_view" do
         permission :view_team_planner,
-                   { "team_planner/team_planner": %i[index show upsale overview],
+                   { "team_planner/team_planner": %i[index show upsell overview],
                      "team_planner/menus": %i[show] },
                    permissible_on: :project,
                    dependencies: %i[view_work_packages],
                    contract_actions: { team_planner: %i[read] }
         permission :manage_team_planner,
-                   { "team_planner/team_planner": %i[index show new create destroy upsale] },
+                   { "team_planner/team_planner": %i[index show new create destroy upsell] },
                    permissible_on: :project,
                    dependencies: %i[view_team_planner
                                     add_work_packages

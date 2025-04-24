@@ -136,8 +136,8 @@ de:
     one: "There is one more scheduled meeting (%{schedule})."
     other: "There are %{count} more scheduled meetings (%{schedule})."
   label_recurring_meeting_more_past:
-    one: "There is one more past meeting."
-    other: "There are %{count} more past meetings."
+    one: "Es gibt eine weitere vergangene Besprechung."
+    other: "Es gibt %{count} weitere vergangene Besprechungen."
   label_recurring_meeting_show_more: "Mehr anzeigen"
   label_recurring_meeting_series_create: "Terminserie erstellen"
   label_recurring_meeting_series_edit: "Terminserie bearbeiten"

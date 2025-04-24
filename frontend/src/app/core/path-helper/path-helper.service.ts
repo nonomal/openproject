@@ -298,7 +298,7 @@ export class PathHelperService {
 
   public workPackageProgressModalPath(workPackageId:string|number) {
     if (workPackageId === 'new') {
-      return `${this.workPackagePath(workPackageId)}/progress/new`;
+      return `${this.workPackagesPath()}/progress/new`;
     }
 
     return `${this.workPackagePath(workPackageId)}/progress/edit`;
@@ -314,10 +314,10 @@ export class PathHelperService {
 
   public workPackageDatepickerDialogContentPath(workPackageId:string|number):string {
     if (workPackageId === 'new') {
-      return `${this.workPackagePath(workPackageId)}/datepicker_dialog_content/new`;
+      return `${this.workPackagesPath()}/date_picker/new`;
     }
 
-    return `${this.workPackagePath(workPackageId)}/datepicker_dialog_content`;
+    return `${this.workPackagePath(workPackageId)}/date_picker`;
   }
 
   // Work Package Bulk paths
@@ -368,5 +368,13 @@ export class PathHelperService {
 
   public timeEntryProjectDialog(projectId:string) {
     return `${this.projectPath(projectId)}/time_entries/dialog`;
+  }
+
+  public timeEntryUpdate(timeEntryId:string) {
+    return `${this.staticBase}/time_entries/${timeEntryId}`;
+  }
+
+  public myTimeTrackingRefresh(date:string, viewMode:string, mode:string) {
+    return `${this.staticBase}/my/time-tracking/refresh?date=${date}&view_mode=${viewMode}&mode=${mode}`;
   }
 }

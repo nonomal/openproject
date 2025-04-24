@@ -50,12 +50,14 @@ el:
         project: Έργο
         user: Χρήστης
         work_package: Εργασία
+        subject: Subject
         hours: Ώρες
         comments: Σχόλιο
         activity: Δραστηριότητα
         spent_on: Ημερομηνία
         start_time: Start time
         end_time: Finish time
+        time: Time
     models:
       time_entry:
         one: "Time entry"
@@ -150,12 +152,28 @@ el:
   label_cost: "Cost"
   label_costs: "Κόστος"
   label_mandatory_fields: "Mandatory fields"
+  label_my_time_tracking: "My time tracking"
+  label_no_time: "No time tracked"
+  label_next_day: "Next day"
+  label_next_week: "Επόμενη εβδομάδα"
+  label_next_month: "Next month"
+  label_previous_day: "Previous day"
+  label_previous_week: "Προηγούμενη εβδομάδα"
+  label_previous_month: "Previous month"
+  label_specific_day: "Day %{day}"
+  label_specific_week: "Calendar week %{week}"
+  label_specific_month: "Month %{month}"
+  label_list: "Προβολή λίστας"
+  label_month: "Month"
+  label_day: "Day"
+  label_today_capitalized: "Today"
   placeholder_activity_select_work_package_first: Work package selection is required first
   notice_something_wrong: "Κάτι πήγε στραβά. Παρακαλούμε προσπαθήστε ξανά."
   notice_successful_restore: "Επιτυχής επαναφορά."
   notice_successful_lock: "Κλειδώθηκε επιτυχώς."
   notice_cost_logged_successfully: "Η μονάδα κόστους καταγράφηκε επιτυχώς."
   notice_different_time_zones: "This user has a different time zone (%{tz}). Time will be logged using their time zone."
+  notice_time_entry_update_failed: "Failed to update time entry. Errors: %{errors}"
   permission_edit_cost_entries: "Επεξεργασία κλεισμένου κόστους μονάδας"
   permission_edit_own_cost_entries: "Επεξεργασία δικού μου κλεισμένου κόστους μονάδας"
   permission_edit_hourly_rates: "Επεξεργασία ωριαίων αμοιβών"
@@ -181,6 +199,10 @@ el:
   text_reassign_time_and_cost_entries: "Επανάθεση αναφερόμενων ωρών και κόστους σε αυτό το πακέτο εργασίας:"
   text_warning_hidden_elements: "Μερικές καταχωρήσεις μπορεί να έχουν εξαιρεθεί από την συνάθροιση."
   week: "εβδομάδα"
+  total_times:
+    week: "Week Total: %{hours}"
+    month: "Month Total: %{hours}"
+    day: "Day Total: %{hours}"
   api_v3:
     errors:
       validation:

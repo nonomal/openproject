@@ -50,12 +50,14 @@ fa:
         project: پروژه
         user: کاربر
         work_package: بسته کاری
+        subject: Subject
         hours: ساعت‌‌‌‌‌‌
         comments: نظر
         activity: فعالیت
         spent_on: تاریخ
         start_time: زمان شروع
         end_time: Finish time
+        time: Time
     models:
       time_entry:
         one: "Time entry"
@@ -150,12 +152,28 @@ fa:
   label_cost: "Cost"
   label_costs: "هزینه ها"
   label_mandatory_fields: "Mandatory fields"
+  label_my_time_tracking: "My time tracking"
+  label_no_time: "No time tracked"
+  label_next_day: "Next day"
+  label_next_week: "Next week"
+  label_next_month: "Next month"
+  label_previous_day: "Previous day"
+  label_previous_week: "Previous week"
+  label_previous_month: "Previous month"
+  label_specific_day: "Day %{day}"
+  label_specific_week: "Calendar week %{week}"
+  label_specific_month: "Month %{month}"
+  label_list: "لیست"
+  label_month: "Month"
+  label_day: "Day"
+  label_today_capitalized: "Today"
   placeholder_activity_select_work_package_first: Work package selection is required first
   notice_something_wrong: "مشکلی پیش آمد. لطفا دوباره تلاش کنید."
   notice_successful_restore: "بازیابی موفق"
   notice_successful_lock: "با موفقیت قفل شد."
   notice_cost_logged_successfully: "هزینه واحد با موفقیت ثبت شد."
   notice_different_time_zones: "This user has a different time zone (%{tz}). Time will be logged using their time zone."
+  notice_time_entry_update_failed: "Failed to update time entry. Errors: %{errors}"
   permission_edit_cost_entries: "ویرایش هزینه‌های واحد رزرو شده"
   permission_edit_own_cost_entries: "ویرایش هزینه‌های واحد رزرو شده خود"
   permission_edit_hourly_rates: "ویرایش نرخ (ضریب پرداختی) ساعتی"
@@ -181,6 +199,10 @@ fa:
   text_reassign_time_and_cost_entries: "تخصیص ساعت‌ها و هزینه‌های گزارش شده به پروژه"
   text_warning_hidden_elements: "Some entries may have been excluded from the aggregation."
   week: "هفته"
+  total_times:
+    week: "Week Total: %{hours}"
+    month: "Month Total: %{hours}"
+    day: "Day Total: %{hours}"
   api_v3:
     errors:
       validation:

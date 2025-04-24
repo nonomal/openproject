@@ -50,12 +50,14 @@ ru:
         project: Проект
         user: Пользователь
         work_package: Пакет работ
+        subject: Тема
         hours: Часы
         comments: Комментарий
         activity: Деятельность
         spent_on: Дата
         start_time: Время начала
         end_time: Время окончания
+        time: Время
     models:
       time_entry:
         one: "Запись о трудозатратах"
@@ -158,12 +160,28 @@ ru:
   label_cost: "Затраты"
   label_costs: "Затраты"
   label_mandatory_fields: "Обязательные поля"
+  label_my_time_tracking: "Моё отслеживание времени"
+  label_no_time: "Нет учтённого времени"
+  label_next_day: "След. день"
+  label_next_week: "На следующей неделе"
+  label_next_month: "Следующий месяц"
+  label_previous_day: "Предыдущий день"
+  label_previous_week: "Предыдущая неделя"
+  label_previous_month: "Предыдущий месяц"
+  label_specific_day: "День %{day}"
+  label_specific_week: "Календарная неделя %{week}"
+  label_specific_month: "Месяц %{month}"
+  label_list: "Список"
+  label_month: "Месяц"
+  label_day: "День"
+  label_today_capitalized: "Сегодня"
   placeholder_activity_select_work_package_first: Сначала необходимо выбрать пакет работ
   notice_something_wrong: "Произошла ошибка. Пожалуйста, попробуйте снова."
   notice_successful_restore: "Успешное восстановление."
   notice_successful_lock: "Успешно заблокировано."
   notice_cost_logged_successfully: "Стоимость единицы успешно зажурналировано "
   notice_different_time_zones: "У этого пользователя другой часовой пояс (%{tz}). Время будет журналироваться с учетом его часового пояса."
+  notice_time_entry_update_failed: "Не удалось обновить запись учёта времени. Ошибки: %{errors}"
   permission_edit_cost_entries: "Править зарегестрированные количественные затраты"
   permission_edit_own_cost_entries: "Править собственные зарегистрированные количественные затраты"
   permission_edit_hourly_rates: "Править почасовые тарифы"
@@ -189,6 +207,10 @@ ru:
   text_reassign_time_and_cost_entries: "Переназначьте сообщенные часы и расходы на этот пакет работ:"
   text_warning_hidden_elements: "Некоторые записи были исключены из агрегирования."
   week: "неделя"
+  total_times:
+    week: "Итог недели: %{hours}"
+    month: "Итог месяца: %{hours}"
+    day: "Итог дня: %{hours}"
   api_v3:
     errors:
       validation:

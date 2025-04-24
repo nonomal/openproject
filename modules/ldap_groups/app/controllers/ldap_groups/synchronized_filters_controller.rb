@@ -77,7 +77,7 @@ module LdapGroups
 
     def check_ee
       unless EnterpriseToken.allows_to?(:ldap_groups)
-        render template: "ldap_groups/synchronized_groups/upsale"
+        render template: "ldap_groups/synchronized_groups/upsell"
         false
       end
     end
@@ -86,12 +86,6 @@ module LdapGroups
       params
         .require(:synchronized_filter)
         .permit(:filter_string, :name, :ldap_auth_source_id, :group_name_attribute, :sync_users, :base_dn)
-    end
-
-    def default_breadcrumb; end
-
-    def show_local_breadcrumb
-      false
     end
   end
 end

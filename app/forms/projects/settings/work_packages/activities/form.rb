@@ -31,10 +31,10 @@ module Projects::Settings::WorkPackages::Activities
   class Form < ApplicationForm
     form do |f|
       f.check_box(
-        name: :enabled_comments_with_restricted_visibility,
-        label: I18n.t("settings.work_packages.activities.enable_comments_with_restricted_visibility"),
+        name: :enabled_internal_comments,
+        label: I18n.t("settings.work_packages.activities.enable_internal_comments"),
         caption: caption_text,
-        checked: model.project.enabled_comments_with_restricted_visibility
+        checked: model.project.enabled_internal_comments
       )
 
       f.submit(

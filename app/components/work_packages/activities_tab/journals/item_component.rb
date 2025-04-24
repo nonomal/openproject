@@ -63,24 +63,24 @@ module WorkPackages
 
         def container_classes
           [].tap do |classes|
-            if journal.restricted?
-              classes << "work-packages-activities-tab-journals-item-component--container__restricted-comment"
+            if journal.internal?
+              classes << "work-packages-activities-tab-journals-item-component--container__internal-comment"
             end
           end
         end
 
         def comment_header_classes
           [].tap do |classes|
-            if journal.restricted?
-              classes << "work-packages-activities-tab-journals-item-component--header__restricted-comment"
+            if journal.internal?
+              classes << "work-packages-activities-tab-journals-item-component--header__internal-comment"
             end
           end
         end
 
         def comment_body_classes
           ["work-packages-activities-tab-journals-item-component--journal-notes-body"].tap do |classes|
-            if journal.restricted?
-              classes << "work-packages-activities-tab-journals-item-component--journal-notes-body__restricted-comment"
+            if journal.internal?
+              classes << "work-packages-activities-tab-journals-item-component--journal-notes-body__internal-comment"
             end
           end
         end
@@ -112,7 +112,7 @@ module WorkPackages
         end
 
         def allowed_to_quote?
-          User.current.allowed_in_project?(:add_work_package_notes, journal.journable.project)
+          User.current.allowed_in_project?(:add_work_package_comments, journal.journable.project)
         end
 
         def copy_url_action_item(menu)
@@ -163,10 +163,10 @@ module WorkPackages
             quote_comments_stimulus_controller("-content-param") => journal.notes,
             quote_comments_stimulus_controller("-user-id-param") => journal.user_id,
             quote_comments_stimulus_controller("-user-name-param") => journal.user.name,
-            quote_comments_stimulus_controller("-is-restricted-param") => journal.restricted?,
+            quote_comments_stimulus_controller("-is-internal-param") => journal.internal?,
             quote_comments_stimulus_controller("-text-wrote-param") => I18n.t(:text_wrote),
             quote_comments_stimulus_controller("-#{index_stimulus_controller}-outlet") => items_index_selector,
-            quote_comments_stimulus_controller("-#{restricted_comment_stimulus_controller}-outlet") => add_comment_selector,
+            quote_comments_stimulus_controller("-#{internal_comment_stimulus_controller}-outlet") => add_comment_selector,
             test_selector: "op-wp-journal-#{journal.id}-quote"
           }
         end

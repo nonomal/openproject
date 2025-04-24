@@ -34,10 +34,7 @@ module Costs
 
     include OpenProject::Plugins::ActsAsOpEngine
 
-    register "costs",
-             author_url: "https://www.openproject.org",
-             bundled: true,
-             settings: { menu_item: :costs_settings } do
+    register "costs", author_url: "https://www.openproject.org", bundled: true, settings: { menu_item: :costs_settings } do
       project_module :costs do
         permission :view_time_entries,
                    {},
@@ -144,6 +141,13 @@ module Costs
            if: ->(*) { User.current.admin? },
            parent: :admin_costs,
            caption: :enumeration_activities
+
+      menu :global_menu,
+           :my_time_tracking,
+           { controller: "/my/time_tracking", action: "index" },
+           after: :my_page,
+           caption: :label_my_time_tracking,
+           icon: :stopwatch
     end
 
     initializer "costs.settings" do

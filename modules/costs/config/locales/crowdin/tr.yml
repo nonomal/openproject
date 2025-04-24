@@ -50,12 +50,14 @@ tr:
         project: Proje
         user: Kullanıcı
         work_package: İş paketi
+        subject: Subject
         hours: Saat
         comments: Yorum
         activity: Etkinlik
         spent_on: Tarih
         start_time: Başlama tarihi
         end_time: Bitiş zamanı
+        time: Time
     models:
       time_entry:
         one: "Zaman girişleri"
@@ -150,12 +152,28 @@ tr:
   label_cost: "Maliyet"
   label_costs: "Maliyetler"
   label_mandatory_fields: "Zorunlu alanlar"
+  label_my_time_tracking: "My time tracking"
+  label_no_time: "No time tracked"
+  label_next_day: "Next day"
+  label_next_week: "Gelecek hafta"
+  label_next_month: "Next month"
+  label_previous_day: "Previous day"
+  label_previous_week: "Geçen Hafta"
+  label_previous_month: "Previous month"
+  label_specific_day: "Day %{day}"
+  label_specific_week: "Calendar week %{week}"
+  label_specific_month: "Month %{month}"
+  label_list: "Liste"
+  label_month: "Month"
+  label_day: "Day"
+  label_today_capitalized: "Today"
   placeholder_activity_select_work_package_first: Öncelikle iş paketi seçimi gereklidir
   notice_something_wrong: "Bir şeyler yanlış gitti. Lütfen tekrar deneyin."
   notice_successful_restore: "Başarılı bir geri yükleme."
   notice_successful_lock: "Başarıyla kilitlendi."
   notice_cost_logged_successfully: "Birim maliyet başarıyla kaydedildi."
   notice_different_time_zones: "Bu kullanıcı farklı bir saat dilimine sahiptir (%{tz}). Zaman, onun zaman dilimi kullanılarak kaydedilecektir."
+  notice_time_entry_update_failed: "Failed to update time entry. Errors: %{errors}"
   permission_edit_cost_entries: "Rezervasyon birimi maliyetlerini düzenle"
   permission_edit_own_cost_entries: "Kendi rezervasyonu birim maliyetlerini düzenleme"
   permission_edit_hourly_rates: "Saatlik oranları düzenleme"
@@ -181,6 +199,10 @@ tr:
   text_reassign_time_and_cost_entries: "Raporlanan saatleri ve maliyetleri bu iş paketine yeniden atayın:"
   text_warning_hidden_elements: "Bazı girdiler toplama işleminden dışlanmış olabilir."
   week: "hafta"
+  total_times:
+    week: "Week Total: %{hours}"
+    month: "Month Total: %{hours}"
+    day: "Day Total: %{hours}"
   api_v3:
     errors:
       validation:
