@@ -155,6 +155,8 @@ enterprise_features:
     href: https://www.openproject.org/docs/system-admin-guide/custom-fields/#hierarchy-custom-field-enterprise-add-on
   internal_comments:
     href: https://www.openproject.org/docs/user-guide/activity/#work-package-activity
+  nextcloud_sso:
+    href: https://www.openproject.org/docs/system-admin-guide/integrations/nextcloud/oidc-sso
 sysadmin_docs:
   saml:
     href: https://www.openproject.org/docs/system-admin-guide/authentication/saml/

@@ -91,6 +91,9 @@ RSpec.describe "Admin Create a new file storage",
 
       aggregate_failures "General information" do
         within_test_selector("storage-general-info-form") do
+          expect(page).to have_enterprise_banner(:corporate)
+          expect(page).to have_selector('option[disabled=disabled][value=oauth2_sso]') # expect SSO option to be disabled
+
           fill_in "Name", with: "My Nextcloud", fill_options: { clear: :backspace }
           click_on "Save and continue"
 
@@ -189,7 +192,7 @@ RSpec.describe "Admin Create a new file storage",
       end
     end
 
-    it "renders a Nextcloud specific multi-step form when using OAuth 2.0 SSO", :webmock do
+    it "renders a Nextcloud specific multi-step form when using OAuth 2.0 SSO", :webmock, with_ee: [:nextcloud_sso] do
       # Same setup as in default case, but without expectations
       visit admin_settings_storages_path
 
@@ -199,6 +202,8 @@ RSpec.describe "Admin Create a new file storage",
       end
 
       within_test_selector("storage-general-info-form") do
+        expect(page).not_to have_enterprise_banner
+
         fill_in "Name", with: "My Nextcloud", fill_options: { clear: :backspace }
 
         mock_server_capabilities_response("https://example.com")

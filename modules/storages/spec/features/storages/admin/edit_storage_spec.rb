@@ -112,6 +112,9 @@ RSpec.describe "Admin Edit File storage",
         # Update a storage - happy path
         find_test_selector("storage-edit-host-button").click
         within_test_selector("storage-general-info-form") do
+          expect(page).to have_enterprise_banner(:corporate)
+          # TODO: expect SSO option to be disabled
+
           fill_in "Name", with: "My Nextcloud"
           click_on "Save and continue"
         end
@@ -288,6 +291,14 @@ RSpec.describe "Admin Edit File storage",
       # Only testing interaction with components not tested
       # in Two-Way OAuth 2.0 case
 
+      aggregate_failures "General information" do
+        find_test_selector("storage-edit-host-button").click
+        within_test_selector("storage-general-info-form") do
+          # We use a previously configured SSO storage, even though our current token does not support it
+          expect(page).to have_enterprise_banner(:corporate)
+        end
+      end
+
       aggregate_failures "Storage Audience" do
         find_test_selector("storage-edit-storage-audience-button").click
         within_test_selector("storage-audience-form") do
@@ -354,6 +365,17 @@ RSpec.describe "Admin Edit File storage",
           "storage-health-notifications-description",
           text: "Health status email notifications for this storage have been turned off for all administrators."
         )
+      end
+    end
+
+    context "and when there is an appropriate enterprise token", with_ee: [:nextcloud_sso] do
+      it "shows no enterprise banner", :webmock do
+        visit edit_admin_settings_storage_path(storage)
+
+        find_test_selector("storage-edit-host-button").click
+        within_test_selector("storage-general-info-form") do
+          expect(page).not_to have_enterprise_banner
+        end
       end
     end
   end

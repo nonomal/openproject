@@ -1202,6 +1202,7 @@ en:
         error_conflict: "Information has been updated by at least one other user in the meantime."
         email: "is not a valid email address."
         empty: "can't be empty."
+        enterprise_plan_required: "requires at least the %{plan_name}."
         even: "must be even."
         exclusion: "is reserved."
         feature_disabled: is not available.
@@ -2058,6 +2059,7 @@ en:
       gantt_pdf_export: Gantt PDF Export
       grid_widget_wp_graph: Grid Widget Work Package Graph
       ldap_groups: LDAP users and group sync
+      nextcloud_sso: Single Sign-On for Nextcloud Storage
       one_drive_sharepoint_file_storage: OneDrive/SharePoint File Storage
       placeholder_users: Placeholder Users
       project_list_sharing: Project List Sharing
@@ -2106,6 +2108,9 @@ en:
       custom_actions:
         title: "Custom actions"
         description: "Custom actions are one-click shortcuts to a set of pre-defined actions that you can make available on certain work packages based on status, role, type or project."
+      nextcloud_sso:
+        title: "Single Sign-On for Nextcloud Storage"
+        description: "Enable seamless and secure authentication for your Nextcloud storage with Single Sign-On. Simplify access management and enhance user convenience."
       virus_scanning:
         description: "Ensure uploaded files in OpenProject are scanned for viruses before being accessible by other users."
       placeholder_users:
