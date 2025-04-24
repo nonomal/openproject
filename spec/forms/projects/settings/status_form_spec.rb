@@ -39,7 +39,9 @@ RSpec.describe Projects::Settings::StatusForm, type: :forms do
     expect(page).to have_element "opce-autocompleter", "data-input-name": "\"project[status_code]\""
     expect(page).to have_element "opce-autocompleter", "data-qa-field-name": "status" do |elem|
       expect(elem["data-items"]).to have_json_size(7)
-      expect(elem["data-items"]).to include_json(%{{"name":"Not set","classes":"project-status--name -not-set"}})
+      expect(elem["data-items"]).to include_json(
+        %{{"id":null,"name":"Not set","classes":"project-status--name -not-set"}}
+      ).including(:id)
       expect(elem["data-items"]).to include_json(
         %{{"id":"on_track","name":"On track","classes":"project-status--name -on-track"}}
       ).including(:id)
