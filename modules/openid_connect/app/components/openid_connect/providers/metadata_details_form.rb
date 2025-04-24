@@ -42,15 +42,13 @@ module OpenIDConnect
           )
         end
 
-        if OpenProject::FeatureDecisions.oidc_token_exchange_active?
-          f.text_field(
-            name: :grant_types_supported,
-            label: I18n.t("activerecord.attributes.openid_connect/provider.grant_types_supported"),
-            disabled: provider.seeded_from_env?,
-            required: false,
-            input_width: :large
-          )
-        end
+        f.text_field(
+          name: :grant_types_supported,
+          label: I18n.t("activerecord.attributes.openid_connect/provider.grant_types_supported"),
+          disabled: provider.seeded_from_env?,
+          required: false,
+          input_width: :large
+        )
 
         f.text_field(
           name: :icon,

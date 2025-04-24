@@ -51,11 +51,6 @@ OpenProject::FeatureDecisions.add :generate_work_package_subjects,
 OpenProject::FeatureDecisions.add :stages_and_gates,
                                   description: "Enables the under construction feature of phases."
 
-OpenProject::FeatureDecisions.add :oidc_token_exchange,
-                                  description: "Enables the under construction OAuth2 token exchange, allowing " \
-                                               "users to interact with storage providers without consenting " \
-                                               "in OAuth screens before first use."
-
 OpenProject::FeatureDecisions.add :work_package_comment_id_url,
                                   description: "Introduced a new WP comment URL identifier structure " \
                                                "`#comment-<journal-id>` replacing the old " \

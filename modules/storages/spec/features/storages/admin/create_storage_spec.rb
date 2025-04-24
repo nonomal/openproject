@@ -189,7 +189,7 @@ RSpec.describe "Admin Create a new file storage",
       end
     end
 
-    it "renders a Nextcloud specific multi-step form when using OAuth 2.0 SSO", :webmock, with_flag: :oidc_token_exchange do
+    it "renders a Nextcloud specific multi-step form when using OAuth 2.0 SSO", :webmock do
       # Same setup as in default case, but without expectations
       visit admin_settings_storages_path
 
