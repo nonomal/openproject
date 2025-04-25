@@ -68,7 +68,7 @@ module Storages
       @project_storages
         .active
         .automatic
-        .where.not(project_folder_id: nil)
+        .with_project_folder
         .order(:project_folder_id)
         .find_each do |project_storage|
           set_folder_permissions(remote_admins, project_storage)

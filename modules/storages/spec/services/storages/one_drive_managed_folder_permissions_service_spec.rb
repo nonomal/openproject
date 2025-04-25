@@ -402,7 +402,7 @@ RSpec.describe Storages::OneDriveManagedFolderPermissionsService, :webmock do
   def delete_created_folders
     storage.project_storages.automatic
            .where(storage:)
-           .where.not(project_folder_id: nil)
+           .with_project_folder
            .find_each { |project_storage| delete_folder(project_storage.project_folder_id) }
   end
 

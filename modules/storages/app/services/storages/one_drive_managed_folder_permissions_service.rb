@@ -62,7 +62,7 @@ module Storages
     def apply_permission_to_folders
       info "Setting permissions to project folders"
       @project_storages.includes(:project)
-                                   .where.not(project_folder_id: nil)
+                                   .with_project_folder
                                    .find_each do |project_storage|
         permissions = admin_remote_identities_scope
                         .pluck(:origin_user_id)

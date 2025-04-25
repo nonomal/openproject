@@ -56,6 +56,7 @@ module Storages
         .active
         .where(storage: Storage.automatic_management_enabled)
     end
+    scope :with_project_folder, -> { where.not(project_folder_id: [nil, ""]) }
 
     def project_folder_mode_possible?(project_folder_mode)
       storage.present? && storage.available_project_folder_modes&.include?(project_folder_mode)
