@@ -107,7 +107,7 @@ The next part of the setup will vary depending on your chosen authentication met
 
 **Two-way OAuth 2.0 authorization code flow:** This way of authentication works with all deployments of OpenProject and Nextcloud. Requests between the two applications will act with the target application acting as OAuth 2.0 authorization server. For the users this means, that they will usually have to confirm a separate OAuth consent screen for both directions of communication.
 
-**Single-Sign-On through OpenID Connect Identity Provider:** This authentication mode improves user experience by eliminating additional consent screens. Requests between OpenProject and Nextcloud are authenticated with access tokens obtained from a common Identity Provider. This requires both applications to use the same OpenID Connect Identity Provider and specific configurations at the provider level. This advanced feature is available for all installations under the Enterprise Corporate plan.```
+**Single-Sign-On through OpenID Connect Identity Provider:** This authentication mode improves user experience by eliminating additional consent screens. Requests between OpenProject and Nextcloud are authenticated with access tokens obtained from a common Identity Provider. This requires both applications to use the same OpenID Connect Identity Provider and specific configurations at the provider level. This advanced feature is available for all installations under the Enterprise Corporate plan.
 
 
 Instructions for both authentication methods can be found on the following pages:

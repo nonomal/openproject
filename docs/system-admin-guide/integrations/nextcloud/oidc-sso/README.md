@@ -63,7 +63,7 @@ Keycloak can provide tokens via Token Exchange, as well as immediately after use
 
 If you prefer not to enable preview features on your production deployment, it's also possible to use wide-access tokens.
 
-#### ... using Token Exchange
+#### Keycloak using Token Exchange
 
 ##### Configuring Keycloak
 
@@ -105,7 +105,7 @@ In Nextcloud we need to configure the OIDC provider that we are using as a commo
 
 This wraps up the configuration of this authentication method using Keycloak and token exchange. For details on the next step continue with the [general setup instructions](../#4-automatically-managed-project-folders).
 
-#### ... using wide-access tokens
+#### Keycloak using wide-access tokens
 
 ##### Configuring Keycloak
 
