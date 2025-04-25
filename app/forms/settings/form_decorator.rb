@@ -104,8 +104,10 @@ module Settings
     # Any options passed to this method will override the default options.
     #
     # @param name [Symbol] The name of the setting
-    # @param values [Array] The values for the radio buttons. Default to the
+    # @param values [Hash|Array] The values for the radio buttons. Default to the
     #   setting's allowed values.
+    #   If a hash is provided, it is assumed it provides a :name (to derive the labels) and a :value key.
+    #   Other keys are used as arguments to the radio_button.
     # @param disabled [Boolean] Force the radio button group to be disabled when
     #  true, will be disabled if the setting is not writable when false (default)
     # @param button_options [Hash] Options for individual radio buttons
@@ -122,15 +124,25 @@ module Settings
         **radio_group_options
       ) do |radio_group|
         values.each do |value|
-          radio_group.radio_button(
-            **button_options.reverse_merge(
-              value:,
-              checked: setting_value(name) == value,
-              autocomplete: "off",
-              label: setting_label(name, value),
-              caption: setting_caption(name, value)
-            )
-          )
+          args =
+            if value.is_a?(Hash)
+              value.reverse_merge(
+                checked: setting_value(name) == value[:value],
+                autocomplete: "off",
+                label: setting_label(name, value[:name]),
+                caption: setting_caption(name, value[:name])
+              )
+            else
+              {
+                value:,
+                checked: setting_value(name) == value,
+                autocomplete: "off",
+                label: setting_label(name, value),
+                caption: setting_caption(name, value)
+              }
+            end
+
+          radio_group.radio_button(**button_options.reverse_merge(args))
         end
       end
     end

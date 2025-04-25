@@ -36,23 +36,14 @@ See COPYRIGHT and LICENSE files for more details.
       form.check_box(
         name: :login_required,
         caption: I18n.t(:setting_login_required_caption),
-        )
+      )
 
-      form.select_list(
+      form.radio_button_group(
         name: :self_registration,
-        input_width: :medium,
         label: I18n.t(:setting_self_registration),
-        include_blank: false
-      ) do |select|
-        Setting::SelfRegistration::VALUES.each do |key, value|
-          label = key == :disabled ? I18n.t(:label_disabled) : I18n.t("label_registration_#{key}")
-          select.option(
-            value:,
-            label:,
-            selected: Setting.self_registration == value
-          )
-        end
-      end
+        caption: I18n.t(:setting_self_registration_caption),
+        values: Setting::SelfRegistration::VALUES.map { |name, value| { name:, value: } }
+      )
 
       if Setting::SelfRegistration.unsupervised_registration?
         form.html_content do
