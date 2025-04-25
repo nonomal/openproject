@@ -32,7 +32,6 @@ import { OpenprojectFieldsModule } from 'core-app/shared/components/fields/openp
 import { DynamicFormsModule } from 'core-app/shared/components/dynamic-forms/dynamic-forms.module';
 import { ReactiveFormsModule } from '@angular/forms';
 import { OpSharedModule } from 'core-app/shared/shared.module';
-import { CopyProjectComponent } from 'core-app/features/projects/components/copy-project/copy-project.component';
 import { NgSelectModule } from '@ng-select/ng-select';
 
 @NgModule({
@@ -47,7 +46,6 @@ import { NgSelectModule } from '@ng-select/ng-select';
     DynamicFormsModule,
   ],
   declarations: [
-    CopyProjectComponent,
   ],
 })
 export class OpenprojectProjectsModule {
