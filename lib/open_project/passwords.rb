@@ -73,6 +73,10 @@ module OpenProject
         Setting.password_active_rules
       end
 
+      def self.active_rule?(rule)
+        Setting.password_active_rules.include?(rule.to_s)
+      end
+
       # Checks whether password adheres to complexity rules.
       # Does not check length.
       def self.password_conforms_to_rules(password)
