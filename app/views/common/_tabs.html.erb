@@ -33,6 +33,6 @@ See COPYRIGHT and LICENSE files for more details.
 <% end %>
 
 <%= content_tag "div",
-                render(partial: selected_tab[:partial], locals: { f: f, tab: selected_tab }),
+                render(partial: selected_tab[:partial], locals: local_assigns.merge(tab: selected_tab)),
                 id: "tab-content-#{selected_tab[:name]}",
                 class: "tab-content" %>

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-#-- copyright
+# -- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
 #
@@ -26,42 +26,44 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 # See COPYRIGHT and LICENSE files for more details.
-#++
+# ++
 
-module TabsHelper
-  # Renders tabs and their content
-  def render_tabs(tabs, form = nil, with_tab_nav: true)
-    if tabs.any?
-      selected = selected_tab(tabs)
-      render partial: "common/tabs", locals: { f: form, tabs:, selected_tab: selected, with_tab_nav: }
-    else
-      content_tag "p", I18n.t(:label_no_data), class: "nodata"
+module Settings
+  class MultiLangForm < ApplicationForm
+    include FormHelper
+
+    attr_reader :name, :current_language
+
+    def initialize(name:, current_language:)
+      super()
+
+      @name = name
+      @current_language = current_language
     end
-  end
 
-  def render_tab_header_nav(header, tabs)
-    header.with_tab_nav(label: nil) do |tab_nav|
-      tabs.each do |tab|
-        tab_nav.with_tab(selected: selected_tab(tabs) == tab, href: tab[:path]) do |t|
-          feature = tab[:enterprise_feature]
-
-          if feature && !EnterpriseToken.allows_to?(feature)
-            t.with_icon(icon: :"op-enterprise-addons", classes: "upsell-colored")
-          end
-          t.with_text { I18n.t(tab[:label]) }
-        end
+    form do |f|
+      # Add hidden languages
+      Redmine::I18n.valid_languages.each do |lang|
+        f.hidden(
+          name: lang,
+          value: Setting.send(name)[lang],
+          id: "lang-for-#{name}-#{lang}"
+        )
       end
-    end
-  end
 
-  def selected_tab(tabs)
-    tabs.detect { |t| t[:name].to_s == params[:tab].to_s } || tabs.first
-  end
-
-  def tabs_for_key(key, params = {})
-    ::OpenProject::Ui::ExtensibleTabs.enabled_tabs(key, params.reverse_merge(current_user:)).map do |tab|
-      path = tab[:path].respond_to?(:call) ? instance_exec(params, &tab[:path]) : tab[:path]
-      tab.dup.merge(path:)
+      # Add WYSIWYG
+      f.rich_text_area(
+        name: current_language,
+        value: setting_value(name)[current_language],
+        label: setting_label(name),
+        disabled: setting_disabled?(name),
+        visually_hide_label: true,
+        rich_text_options: {
+          text_area_id: "settings-#{name}",
+          turboMode: true,
+          showAttachments: false
+        }
+      )
     end
   end
 end
