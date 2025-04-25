@@ -101,7 +101,7 @@ Rails.application.reloader.to_prepare do
                        "projects/settings/general": %i[show toggle_public toggle_public_dialog],
                        "projects/settings/storage": %i[show],
                        "projects/settings/work_packages": %i[show],
-                       "projects/settings/work_packages/activities": %i[show update],
+                       "projects/settings/work_packages/internal_comments": %i[show update],
                        "projects/templated": %i[create destroy],
                        "projects/identifier": %i[show update]
                      },

@@ -283,7 +283,7 @@ Rails.application.routes.draw do
         get :categories, to: redirect("projects/%{project_id}/settings/work_packages/categories")
         resource :work_packages, only: %i[show]
         namespace :work_packages do
-          resource :activities, only: %i[show update]
+          resource :internal_comments, only: %i[show update]
           resource :types, only: %i[show update]
           resource :custom_fields, only: %i[show update]
           resource :categories, only: %i[show update]

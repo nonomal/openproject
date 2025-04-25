@@ -72,19 +72,19 @@ RSpec.describe "Projects", "work packages settings menu", :js do
       end
     end
 
-    context "when the user has access to the activities tab", with_ee: %i[internal_comments] do
+    context "when the user has access to the internal comments tab", with_ee: %i[internal_comments] do
       let(:permissions) { %i(edit_project view_work_packages) }
 
       current_user { create(:user, member_with_permissions: { project => permissions }) }
 
       it "displays the custom fields tab" do
         work_packages_settings_page.visit!
-        expect(page).to have_css(".tabnav-tab", text: "Activity")
-        expect(page).to have_css("#activities-form")
+        expect(page).to have_css(".tabnav-tab", text: "Internal Comments")
+        expect(page).to have_css("#internal-comments-form")
       end
     end
 
-    context "when the user has access to activities tab but not to enterprise" do
+    context "when the user has access to internal comments tab but not to enterprise" do
       let(:permissions) { %i(edit_project view_work_packages) }
 
       current_user { create(:user, member_with_permissions: { project => permissions }) }

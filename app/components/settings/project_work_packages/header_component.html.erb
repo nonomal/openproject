@@ -46,8 +46,8 @@ See COPYRIGHT and LICENSE files for more details.
           tab.with_text { t("attributes.custom_values") }
         end
       end
-      tab_nav.with_tab(selected: selected?(:activities), href: project_settings_work_packages_activities_path) do |tab|
-        tab.with_text { activity_title }
+      tab_nav.with_tab(selected: selected?(:internal_coments), href: project_settings_work_packages_internal_comments_path) do |tab|
+        tab.with_text { internal_comments_title }
       end
     end
   end

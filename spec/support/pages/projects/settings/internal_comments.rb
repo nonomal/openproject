@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-#-- copyright
+# -- copyright
 # OpenProject is an open source project management software.
-# Copyright (C) the OpenProject GmbH
+# Copyright (C) 2010-2024 the OpenProject GmbH
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License version 3.
@@ -26,29 +26,26 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 # See COPYRIGHT and LICENSE files for more details.
-#++
+# ++
 
-class Projects::Settings::WorkPackages::ActivitiesController < Projects::SettingsController
-  menu_item :settings_work_packages
+require "support/pages/page"
 
-  def update
-    enabled = ActiveRecord::Type::Boolean.new.cast(expected_params[:enabled_internal_comments])
-    result = Projects::UpdateService
-               .new(user: current_user, model: @project, contract_class: Projects::SettingsContract)
-               .call(enabled_internal_comments: enabled)
+module Pages
+  module Projects
+    module Settings
+      class InternalComments < Pages::Page
+        attr_accessor :project
 
-    if result.success?
-      flash[:notice] = t("notice_successful_update")
-    else
-      flash[:error] = t("notice_unsuccessful_update")
+        def initialize(project)
+          super()
+
+          @project = project
+        end
+
+        def path
+          "/projects/#{project.identifier}/settings/work_packages/internal_comments"
+        end
+      end
     end
-
-    redirect_to project_settings_work_packages_activities_path
-  end
-
-  private
-
-  def expected_params
-    params.expect(project: [:enabled_internal_comments])
   end
 end

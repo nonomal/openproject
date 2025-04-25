@@ -28,30 +28,27 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-require "spec_helper"
+class Projects::Settings::WorkPackages::InternalCommentsController < Projects::SettingsController
+  menu_item :settings_work_packages
 
-RSpec.describe "WorkPackages-Settings-Activities", :js do
-  let!(:project) { create(:project) }
-  let(:activities_settings_page) { Pages::Projects::Settings::Activities.new(project) }
+  def update
+    enabled = ActiveRecord::Type::Boolean.new.cast(expected_params[:enabled_internal_comments])
+    result = Projects::UpdateService
+               .new(user: current_user, model: @project, contract_class: Projects::SettingsContract)
+               .call(enabled_internal_comments: enabled)
 
-  current_user { create(:admin) }
+    if result.success?
+      flash[:notice] = t("notice_successful_update")
+    else
+      flash[:error] = t("notice_unsuccessful_update")
+    end
 
-  it "enables and disables the settings for the project", with_ee: %i[internal_comments] do
-    activities_settings_page.visit!
-    expect(page).to have_css("#activities-form")
+    redirect_to project_settings_work_packages_internal_comments_path
+  end
 
-    expect(page).to have_field(:project_enabled_internal_comments, checked: false)
+  private
 
-    check("Enable internal comments")
-    click_link_or_button "Save"
-
-    expect_and_dismiss_flash(message: "Successful update.")
-    expect(page).to have_field(:project_enabled_internal_comments, checked: true)
-
-    uncheck("Enable internal comments")
-    click_link_or_button "Save"
-
-    expect_and_dismiss_flash(message: "Successful update.")
-    expect(page).to have_field(:project_enabled_internal_comments, checked: false)
+  def expected_params
+    params.expect(project: [:enabled_internal_comments])
   end
 end

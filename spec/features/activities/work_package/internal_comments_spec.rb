@@ -194,6 +194,21 @@ RSpec.describe "Work package internal comments",
     end
   end
 
+  describe "inline banner" do
+    current_user { project_admin }
+
+    before do
+      wp_page.visit!
+      wp_page.wait_for_activity_tab
+    end
+
+    it "shows the banner" do
+      activity_tab.open_new_comment_editor
+
+      expect(page).to have_test_selector("op-enterprise-banner", text: "Write internal comments only a small group can see")
+    end
+  end
+
   describe "mentioning users in comments" do
     current_user { project_admin }
 

@@ -94,13 +94,16 @@
                 end
               end
             end
+
+            form_container.with_row do
+              render(EnterpriseEdition::BannerComponent.new(:internal_comments, dismissable: true, i18n_scope: "ee.upsell.internal_comments_inline", mt: 4))
+            end
           end
         end
       end
     end
   end
 %>
-
 <% if adding_internal_comment_allowed? %>
   <%=
     render(

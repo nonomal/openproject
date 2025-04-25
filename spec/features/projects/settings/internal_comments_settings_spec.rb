@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-# -- copyright
+#-- copyright
 # OpenProject is an open source project management software.
-# Copyright (C) 2010-2024 the OpenProject GmbH
+# Copyright (C) the OpenProject GmbH
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License version 3.
@@ -26,26 +26,32 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 # See COPYRIGHT and LICENSE files for more details.
-# ++
+#++
 
-require "support/pages/page"
+require "spec_helper"
 
-module Pages
-  module Projects
-    module Settings
-      class Activities < Pages::Page
-        attr_accessor :project
+RSpec.describe "WorkPackages-Settings-InternalComments", :js do
+  let!(:project) { create(:project) }
+  let(:internal_comments_settings_page) { Pages::Projects::Settings::InternalComments.new(project) }
 
-        def initialize(project)
-          super()
+  current_user { create(:admin) }
 
-          @project = project
-        end
+  it "enables and disables the settings for the project", with_ee: %i[internal_comments] do
+    internal_comments_settings_page.visit!
+    expect(page).to have_css("#internal-comments-form")
 
-        def path
-          "/projects/#{project.identifier}/settings/work_packages/activities"
-        end
-      end
-    end
+    expect(page).to have_field(:project_enabled_internal_comments, checked: false)
+
+    check("Enable internal comments")
+    click_link_or_button "Save"
+
+    expect_and_dismiss_flash(message: "Successful update.")
+    expect(page).to have_field(:project_enabled_internal_comments, checked: true)
+
+    uncheck("Enable internal comments")
+    click_link_or_button "Save"
+
+    expect_and_dismiss_flash(message: "Successful update.")
+    expect(page).to have_field(:project_enabled_internal_comments, checked: false)
   end
 end
