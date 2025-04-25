@@ -36,6 +36,11 @@ module OpPrimer
     def initialize(current_status:, items:, readonly: false, disabled: false, button_arguments: {}, menu_arguments: {})
       super
 
+      menu_arguments[:classes] = class_names(
+        menu_arguments[:classes],
+        "op-status-button"
+      )
+
       @current_status = current_status
       @items = items
       @readonly = readonly
