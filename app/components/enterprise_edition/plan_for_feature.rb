@@ -70,12 +70,15 @@ module EnterpriseEdition
     end
 
     def plan
-      @plan ||= OpenProject::Token.lowest_plan_for(feature_key)&.capitalize
+      return @plan if defined?(@plan)
+
+      @plan = OpenProject::Token.lowest_plan_for(feature_key)
+      raise ArgumentError, "#{feature_key} is not a valid feature, as no plan mapped to it." if @plan.nil?
     end
 
     def plan_text
       plan_name = render(Primer::Beta::Text.new(font_weight: :bold, classes: "upsell-colored")) do
-        I18n.t("ee.upsell.plan_name", plan:)
+        I18n.t("ee.upsell.plan_name", plan: plan.capitalize)
       end
 
       I18n.t("ee.upsell.plan_text_html", plan_name:).html_safe
