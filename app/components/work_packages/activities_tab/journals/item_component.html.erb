@@ -59,11 +59,7 @@
                     end
                   end
                   header_start_container.with_column(mr: 1, classes: "hidden-for-mobile") do
-                    if OpenProject::FeatureDecisions.work_package_comment_id_url_active?
-                      activity_anchor_link(journal) { journal_updated_at_formatted_time(journal) }
-                    else
-                      journal_updated_at_formatted_time(journal)
-                    end
+                    activity_anchor_link(journal)
                   end
                 end
                 header_container.with_column(flex_layout: true, align_items: :center) do |header_end_container|
@@ -92,12 +88,6 @@
                           color: (journal.internal? ? :attention : :default)
                         )
                       )
-                    end
-                  end
-
-                  unless OpenProject::FeatureDecisions.work_package_comment_id_url_active?
-                    header_end_container.with_column do
-                      activity_anchor_link(journal)
                     end
                   end
 

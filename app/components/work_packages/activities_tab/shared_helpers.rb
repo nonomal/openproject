@@ -49,7 +49,7 @@ module WorkPackages
                    "work-packages--activities-tab--index-anchor-name-param": activity_anchor_name
                  }
                )) do
-          block_given? ? yield : "##{journal_activity_id(journal)}"
+          journal_updated_at_formatted_time(journal)
         end
       end
 
@@ -72,15 +72,11 @@ module WorkPackages
       end
 
       def activity_anchor_name
-        OpenProject::FeatureDecisions.work_package_comment_id_url_active? ? "comment" : "activity"
+        "comment"
       end
 
       def journal_activity_id(journal)
-        if OpenProject::FeatureDecisions.work_package_comment_id_url_active?
-          journal.id
-        else
-          journal.sequence_version
-        end
+        journal.id
       end
     end
   end

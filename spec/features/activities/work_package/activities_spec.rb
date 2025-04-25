@@ -1036,7 +1036,7 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
           end
         end
 
-        context "with #comment- anchor", with_flag: { work_package_comment_id_url: true } do
+        context "with #comment- anchor" do
           before do
             visit project_work_package_path(project, work_package.id, "activity", anchor: "comment-#{comment_1.id}")
             wp_page.wait_for_activity_tab
@@ -1054,7 +1054,7 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
           end
         end
 
-        context "when on mobile screen size", with_flag: { work_package_comment_id_url: true } do
+        context "when on mobile screen size" do
           before do
             page.current_window.resize_to(500, 1000)
 
@@ -1092,7 +1092,7 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
           end
         end
 
-        context "with #comment- anchor", with_flag: { work_package_comment_id_url: true } do
+        context "with #comment- anchor" do
           before do
             visit project_work_package_path(project, work_package.id, "activity", anchor: "comment-#{comment_1.id}")
             wp_page.wait_for_activity_tab
