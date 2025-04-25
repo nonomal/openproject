@@ -42,6 +42,8 @@ postgres_migration:
   label: :homescreen.links.postgres_migration
 postgres_13_upgrade:
   href: https://www.openproject.org/docs/installation-and-operations/misc/migration-to-postgresql13/
+postgres_17_upgrade:
+  href: https://www.openproject.org/docs/installation-and-operations/misc/migration-to-postgresql17/
 configuration_guide:
   href: https://www.openproject.org/docs/installation-and-operations/configuration/
   label: links.configuration_guide

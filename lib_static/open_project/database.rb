@@ -81,7 +81,7 @@ module OpenProject
     ##
     # Determine whether the current version is deprecated
     def self.version_deprecated?
-      !version_matches?(130000)
+      !version_matches?(160000)
     end
 
     ##
