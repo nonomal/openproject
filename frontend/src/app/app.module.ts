@@ -55,7 +55,6 @@ import {
 } from 'core-app/shared/components/work-package-graphs/openproject-work-package-graphs.module';
 import { OpenprojectOverviewModule } from 'core-app/features/overview/openproject-overview.module';
 import { OpenprojectMyPageModule } from 'core-app/features/my-page/openproject-my-page.module';
-import { OpenprojectProjectsModule } from 'core-app/features/projects/openproject-projects.module';
 import { KeyboardShortcutService } from 'core-app/shared/directives/a11y/keyboard-shortcut.service';
 import { CopyToClipboardService } from 'core-app/shared/components/copy-to-clipboard/copy-to-clipboard.service';
 import {
@@ -269,9 +268,6 @@ export function initializeServices(injector:Injector) {
     OpenprojectFieldsModule,
     OpenprojectGridsModule,
     OpenprojectAttachmentsModule,
-
-    // Project module
-    OpenprojectProjectsModule,
 
     // Work packages and their routes
     OpenprojectWorkPackagesModule,

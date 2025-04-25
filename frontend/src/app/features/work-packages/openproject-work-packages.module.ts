@@ -231,7 +231,6 @@ import {
   WorkPackageViewDropdownMenuDirective,
 } from 'core-app/shared/components/op-context-menu/handlers/wp-view-dropdown-menu.directive';
 import { HalEventsService } from 'core-app/features/hal/services/hal-events.service';
-import { OpenprojectProjectsModule } from 'core-app/features/projects/openproject-projects.module';
 import {
   WorkPackageNotificationService,
 } from 'core-app/features/work-packages/services/notifications/work-package-notification.service';
@@ -419,8 +418,6 @@ import { OpenprojectEnterpriseModule } from 'core-app/features/enterprise/openpr
     OpenprojectAttachmentsModule,
 
     OpenprojectBcfModule,
-
-    OpenprojectProjectsModule,
 
     OpenprojectModalModule,
 
