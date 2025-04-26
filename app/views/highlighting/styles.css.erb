@@ -9,6 +9,10 @@
 <%= resource_color_css("meeting_status", meeting_status) %>
 <% end %>
 
+<% Projects::Statuses::AVAILABLE.each do |project_status| %>
+<%= resource_color_css("project_status", project_status) %>
+<% end %>
+
 <%= color_css %>
 
 <%# usage classes %>

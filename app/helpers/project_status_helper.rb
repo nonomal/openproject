@@ -29,7 +29,7 @@
 module ProjectStatusHelper
   def project_status_css_class(status_code)
     code = project_status_ensure_default_code(status_code)
-    "-" + code.tr("_", "-")
+    "-#{code.dasherize}"
   end
 
   def project_status_name(status_code)
@@ -39,8 +39,10 @@ module ProjectStatusHelper
 
   def project_status_name_for_code(code)
     code ||= "not_set"
-    I18n.t("js.grid.widgets.project_status." + code)
+    I18n.t("js.grid.widgets.project_status.#{code}")
   end
+
+  private
 
   def project_status_ensure_default_code(status_code)
     status_code || "not_set"

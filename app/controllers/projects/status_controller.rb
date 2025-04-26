@@ -27,18 +27,22 @@
 #
 # See COPYRIGHT and LICENSE files for more details.
 #++
-#
-require "spec_helper"
 
-RSpec.describe Projects::Settings::StatusForm, type: :forms do
-  include_context "with rendered form"
+class Projects::StatusController < ApplicationController
+  include OpTurbo::ComponentStream
 
-  let(:model) { build_stubbed(:project, status_explanation: "example status info") }
+  before_action :find_project_by_project_id
+  before_action :authorize
 
-  it "renders status description field" do
-    expect(page).to have_field "Project status description", with: "example status info", visible: :hidden
-    expect(page).to have_element "opce-ckeditor-augmented-textarea",
-                                 "data-textarea-selector": "\"#project_status_explanation\""
-    expect(page).to have_element "opce-ckeditor-augmented-textarea", "data-qa-field-name": "statusExplanation"
+  def update
+    Projects::UpdateService
+      .new(model: @project, user: current_user)
+      .call(status_code: params.fetch(:status_code).presence)
+
+    update_via_turbo_stream(
+      component: Projects::StatusButtonComponent.new(project: @project, user: current_user)
+    )
+
+    respond_with_turbo_streams
   end
 end

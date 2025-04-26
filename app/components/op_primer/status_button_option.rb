@@ -43,7 +43,7 @@ module OpPrimer
     end
 
     def colored?
-      !icon && color_ref && color_namespace
+      color_ref && color_namespace
     end
 
     def to_s

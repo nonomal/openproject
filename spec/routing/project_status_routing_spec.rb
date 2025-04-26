@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,18 +25,15 @@
 #
 # See COPYRIGHT and LICENSE files for more details.
 #++
-#
+
 require "spec_helper"
 
-RSpec.describe Projects::Settings::StatusForm, type: :forms do
-  include_context "with rendered form"
-
-  let(:model) { build_stubbed(:project, status_explanation: "example status info") }
-
-  it "renders status description field" do
-    expect(page).to have_field "Project status description", with: "example status info", visible: :hidden
-    expect(page).to have_element "opce-ckeditor-augmented-textarea",
-                                 "data-textarea-selector": "\"#project_status_explanation\""
-    expect(page).to have_element "opce-ckeditor-augmented-textarea", "data-qa-field-name": "statusExplanation"
+RSpec.describe Projects::StatusController do
+  describe "update" do
+    it do
+      expect(put("/projects/123/status")).to route_to(
+        controller: "projects/status", action: "update", project_id: "123"
+      )
+    end
   end
 end

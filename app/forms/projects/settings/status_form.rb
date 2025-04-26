@@ -30,30 +30,7 @@
 module Projects
   module Settings
     class StatusForm < ApplicationForm
-      include ProjectStatusHelper
-
       form do |f|
-        f.autocompleter(
-          name: :status_code,
-          label: attribute_name(:status_code),
-          include_blank: true,
-          autocomplete_options: {
-            decorated: true,
-            clearable: false,
-            focusDirectly: false,
-            data: { qa_field_name: "status" }
-          }
-        ) do |select|
-          [nil, *Project.status_codes.keys].map do |status_code|
-            select.option(
-              label: project_status_name(status_code),
-              value: status_code,
-              classes: "project-status--name #{project_status_css_class(status_code)}",
-              selected: model.status_code == status_code
-            )
-          end
-        end
-
         f.rich_text_area(
           name: :status_explanation,
           label: attribute_name(:status_explanation),
