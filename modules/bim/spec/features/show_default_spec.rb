@@ -75,6 +75,9 @@ RSpec.describe "show default model", :js, with_config: { edition: "bim" } do
     end
 
     it "loads and shows the viewer and WPs correctly" do
+      expect(show_default_page).to have_test_selector("op-breadcrumbs--item", text: "BCF")
+      expect(show_default_page).to have_css(".op-breadcrumbs--current", text: "All open", aria: { current: "page" })
+
       show_default_page.model_viewer_visible true
       show_default_page.model_viewer_shows_a_toolbar true
       show_default_page.page_shows_a_toolbar true
@@ -95,9 +98,7 @@ RSpec.describe "show default model", :js, with_config: { edition: "bim" } do
     end
 
     it "renders a notification" do
-      show_default_page
-        .expect_toast(type: :info,
-                      message: I18n.t(:"ifc_models.processing_notice.processing_default"))
+      expect(page).to have_css(".Banner", text: I18n.t(:"ifc_models.processing_notice.processing_default"))
     end
   end
 end

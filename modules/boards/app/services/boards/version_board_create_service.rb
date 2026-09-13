@@ -4,7 +4,7 @@ module Boards
   class VersionBoardCreateService < BaseCreateService
     protected
 
-    def before_perform(params, _service_result)
+    def before_perform(_service_result)
       create_queries_results = create_queries(params)
 
       return create_queries_results.find(&:failure?) if create_queries_results.any?(&:failure?)

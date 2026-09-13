@@ -38,14 +38,6 @@ RSpec.describe "Recurring meetings CRUD",
                :js do
   include Components::Autocompleter::NgSelectAutocompleteHelpers
 
-  before_all do
-    travel_to(Date.new(2024, 12, 1))
-  end
-
-  after(:all) do # rubocop:disable RSpec/BeforeAfterAll
-    travel_back
-  end
-
   shared_let(:project) { create(:project, enabled_module_names: %w[meetings]) }
   shared_let(:user) do
     create :user,
@@ -85,13 +77,17 @@ RSpec.describe "Recurring meetings CRUD",
     RecurringMeetings::InitNextOccurrenceJob.perform_now(meeting, meeting.first_occurrence.to_time)
   end
 
+  after do
+    travel_back
+  end
+
   it "can delete a recurring meeting from the show page and return to the index page" do
     show_page.visit!
 
     show_page.delete_meeting_series
     retry_block do
       show_page.within_modal "Delete meeting series" do
-        check "I understand that this deletion cannot be reversed", allow_label_click: true
+        check "I understand that this deletion cannot be reversed.", allow_label_click: true
         click_on "Delete permanently"
       end
     end
@@ -119,6 +115,8 @@ RSpec.describe "Recurring meetings CRUD",
   it "can cancel an occurrence from the show page" do
     show_page.visit!
 
+    ical_sequence = meeting.ical_sequence
+
     show_page.cancel_occurrence date: "12/31/2024 01:30 PM"
     show_page.within_modal "Cancel meeting occurrence" do
       click_on "Cancel occurrence"
@@ -130,10 +128,14 @@ RSpec.describe "Recurring meetings CRUD",
 
     show_page.expect_no_open_meeting date: "12/31/2024 01:30 PM"
     show_page.expect_cancelled_meeting date: "12/31/2024 01:30 PM"
+
+    expect(meeting.reload.ical_sequence).to eq ical_sequence + 1
   end
 
   it "can cancel a planned occurrence from the show page" do
     show_page.visit!
+
+    ical_sequence = meeting.ical_sequence
 
     show_page.cancel_occurrence date: "01/07/2025 01:30 PM"
     show_page.within_modal "Cancel meeting occurrence" do
@@ -145,6 +147,34 @@ RSpec.describe "Recurring meetings CRUD",
     expect(page).to have_current_path(show_page.path)
 
     show_page.expect_cancelled_meeting date: "01/07/2025 01:30 PM"
+
+    expect(meeting.reload.ical_sequence).to eq ical_sequence + 1
+  end
+
+  it "sends an email notification when restoring a cancelled planned occurrence" do
+    meeting.template.update(notify: true)
+    show_page.visit!
+
+    show_page.cancel_occurrence date: "01/07/2025 01:30 PM"
+    show_page.within_modal "Cancel meeting occurrence" do
+      click_on "Cancel occurrence"
+    end
+
+    expect_flash(type: :success, message: "Successful cancellation.")
+    show_page.expect_cancelled_meeting date: "01/07/2025 01:30 PM"
+
+    ical_sequence = meeting.reload.ical_sequence
+
+    show_page.restore date: "01/07/2025 01:30 PM"
+    wait_for_reload
+
+    expect(meeting.reload.ical_sequence).to eq ical_sequence + 1
+
+    ActionMailer::Base.deliveries.clear
+
+    perform_enqueued_jobs
+    expect(ActionMailer::Base.deliveries.size).to eq 1
+    expect(ActionMailer::Base.deliveries.last.subject).to eq("[#{project.name}] #{meeting.template.title}")
   end
 
   it "can edit the details of a recurring meeting" do
@@ -188,6 +218,28 @@ RSpec.describe "Recurring meetings CRUD",
     show_page.expect_cancelled_actions date: "12/31/2024 01:30 PM"
   end
 
+  it "sends restoration notification when restoring a cancelled open occurrence" do
+    meeting.template.update(notify: true)
+    show_page.visit!
+
+    show_page.cancel_occurrence date: "12/31/2024 01:30 PM"
+    show_page.within_modal "Cancel meeting occurrence" do
+      click_on "Cancel occurrence"
+    end
+
+    expect_flash(type: :success, message: "Successful cancellation.")
+    show_page.expect_cancelled_meeting date: "12/31/2024 01:30 PM"
+
+    show_page.restore date: "12/31/2024 01:30 PM"
+    wait_for_reload
+
+    ActionMailer::Base.deliveries.clear
+
+    perform_enqueued_jobs
+    expect(ActionMailer::Base.deliveries.size).to eq 1
+    expect(ActionMailer::Base.deliveries.last.subject).to eq("[#{project.name}] #{meeting.template.title}")
+  end
+
   it "can edit the meeting series interval when created with working days (Regression #62089)" do
     meeting.update!(frequency: "working_days")
 
@@ -210,13 +262,13 @@ RSpec.describe "Recurring meetings CRUD",
   context "with view permissions only" do
     let(:current_user) { other_user }
 
-    it "does not allow to act on the recurring meeting" do
+    it "does not allow to act on the recurring meeting, except for downloading the ical event" do
       show_page.visit!
 
       expect(page).to have_no_button "Open"
       show_page.expect_open_meeting date: "12/31/2024 01:30 PM"
 
-      within("li", text: "12/31/2024 01:30 PM") do
+      within_row("12/31/2024 01:30 PM") do
         click_on "more-button"
 
         expect(page).to have_css(".ActionListItem-label", count: 1)
@@ -229,7 +281,11 @@ RSpec.describe "Recurring meetings CRUD",
       show_page.expect_planned_meeting date: "01/07/2025 01:30 PM"
       show_page.expect_planned_meeting date: "01/14/2025 01:30 PM"
 
-      expect(page).not_to have_test_selector "recurring-meeting-action-menu"
+      page.find_test_selector("recurring-meeting-action-menu").click
+      page.find(".Overlay")
+      page.within(".Overlay") do
+        expect(page).to have_css(".ActionListItem-label", count: 1)
+      end
     end
   end
 end

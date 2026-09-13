@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,10 +29,11 @@
 #++
 
 class RepresentedWebhookJob < WebhookJob
-  attr_reader :resource
+  attr_reader :resource, :actor
 
-  def perform(webhook_id, resource, event_name)
+  def perform(webhook_id, resource, event_name, actor: nil)
     @resource = resource
+    @actor = actor
     super(webhook_id, event_name)
 
     return unless accepted_in_project?
@@ -48,7 +51,7 @@ class RepresentedWebhookJob < WebhookJob
   end
 
   def accepted_in_project?
-    webhook.enabled_for_project?(resource.project_id)
+    webhook.enabled_for_project?(project_id)
   end
 
   def request_signature(request_body)
@@ -59,13 +62,9 @@ class RepresentedWebhookJob < WebhookJob
 
   def request_headers
     {
-      content_type: "application/json",
-      accept: "application/json"
+      "Content-Type": "application/json",
+      Accept: "application/json"
     }
-  end
-
-  def payload_key
-    raise NotImplementedError
   end
 
   def represented_payload
@@ -73,18 +72,31 @@ class RepresentedWebhookJob < WebhookJob
       .create(resource, current_user: User.current, embed_links: true)
   end
 
+  def payload_key
+    raise SubclassResponsibilityError
+  end
+
   def payload_representer_class
-    raise NotImplementedError
+    raise SubclassResponsibilityError
+  end
+
+  def project_id # rubocop:disable Rails/Delegate
+    resource.project_id
   end
 
   def request_body
     # to_json needs to be called within the system user block in order to
     # have all the custom field visibility permissions set up correctly.
     User.system.run_given do
-      {
-        action: event_name,
-        payload_key => represented_payload
-      }.to_json
+      payload = { action: event_name, payload_key => represented_payload }
+      payload[:actor] = actor_payload if actor
+      payload.to_json
     end
+  end
+
+  def actor_payload
+    return nil unless actor
+
+    ::API::V3::Users::UserRepresenter.create(actor, current_user: User.current)
   end
 end

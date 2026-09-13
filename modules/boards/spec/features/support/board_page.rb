@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -137,8 +139,10 @@ module Pages
     # Expect the given titled card in the list name to be present (expect=true) or not (expect=false)
     def expect_card(list_name, card_title, present: true)
       within_list(list_name) do
-        # Wait for the card loading to finish
-        expect(page).to have_no_selector(".loading-indicator--background")
+        # Wait for the card loading to finish. A list can start another reload
+        # right after a card was added or moved, so this needs more than the
+        # default wait time.
+        expect(page).to have_no_selector(".loading-indicator--background", wait: 10)
         expect(page).to have_conditional_selector(present,
                                                   '[data-test-selector="op-wp-single-card--content-subject"]',
                                                   text: card_title,
@@ -172,24 +176,34 @@ module Pages
 
     def move_card(index, from:, to:)
       source = page.all("#{list_selector(from)} [data-test-selector='op-wp-single-card']")[index]
-      target = page.find list_selector(to)
-
-      drag_n_drop_element(from: source, to: target)
+      drag_onto_list(source, to)
     end
 
     def move_card_by_name(text, from:, to:)
       source = page.find("#{list_selector(from)} [data-test-selector='op-wp-single-card']", text:)
-      target = page.find list_selector(to)
+      drag_onto_list(source, to)
+    end
 
-      drag_n_drop_element(from: source, to: target)
+    # rubocop:disable Style/AccessModifierDeclarations -- `private` alone would flip
+    # visibility of every method declared after it in this class.
+    private def drag_onto_list(source, list_name)
+      # rubocop:enable Style/AccessModifierDeclarations
+      target = page.find("#{list_selector(list_name)} [data-test-selector='op-wp-card-view']")
+      perform_native_drag(source:, target:)
+      wait_for_lists_reload
+
+      # Wait a little more because the cards sorting order can still be changing
+      # after moving them
+      sleep 2
     end
 
     def wait_for_lists_reload
       # wait for reload of lists to start and finish
       # Not sure if that's the most reliable way to do it, but there is nothing visible
       # about the PATCH request being sent and executed successfully after moving a card.
-      expect(page).to have_css(".op-loading-indicator", wait: 5)
-      expect(page).to have_no_css(".op-loading-indicator")
+      # Use has_css? to not fail if no loading indicator is present at all
+      has_css?(".op-loading-indicator", wait: 2)
+      expect(page).to have_no_css(".op-loading-indicator", wait: 5)
     end
 
     def add_list(option: nil, query: option)
@@ -217,8 +231,8 @@ module Pages
 
     def save
       page.find(".editable-toolbar-title--save").click
-      wait_for_lists_reload
       expect_and_dismiss_toaster message: "Successful update."
+      wait_for_lists_reload
     end
 
     def expect_changed
@@ -352,18 +366,17 @@ module Pages
 
     def expect_query(name, editable: true)
       if editable
-        expect(page).to have_field("editable-toolbar-title", with: name)
+        expect(page).to have_field("editable-toolbar-title", with: name, wait: 10)
       else
-        expect(page).to have_css(".editable-toolbar-title--fixed", text: name)
+        expect(page).to have_css(".editable-toolbar-title--fixed", text: name, wait: 10)
       end
     end
 
     def change_board_highlighting(mode, attribute = nil)
       click_dropdown_entry "Configure view"
 
-      if attribute.nil?
-        choose(option: mode)
-      else
+      choose mode
+      unless attribute.nil?
         select attribute, from: "selected_attribute"
       end
 

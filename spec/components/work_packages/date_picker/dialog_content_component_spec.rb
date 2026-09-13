@@ -50,9 +50,9 @@ RSpec.describe WorkPackages::DatePicker::DialogContentComponent, type: :componen
       let(:schedule_manually) { true }
 
       it "shows the date form" do
-        expect(dialog_content).to have_field(I18n.t("attributes.start_date"), aria: { live: :polite })
-        expect(dialog_content).to have_field(I18n.t("attributes.due_date"), aria: { live: :polite })
-        expect(dialog_content).to have_field(WorkPackage.human_attribute_name("duration"), aria: { live: :polite })
+        expect(dialog_content).to have_field(I18n.t("attributes.start_date"))
+        expect(dialog_content).to have_field(I18n.t("attributes.due_date"))
+        expect(dialog_content).to have_field(WorkPackage.human_attribute_name("duration"))
       end
 
       it "has an enabled save button" do

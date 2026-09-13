@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,16 +34,21 @@ RSpec.describe "Omniauth authentication" do
   # Load ViewAccountLoginAuthProvider to have this spec passing
   OpenProject::Hooks::ViewAccountLoginAuthProvider
 
+  let(:mail) { "omnibob@example.com" }
+  let(:login) { "omnibob" }
+  let(:firstname) { "omni" }
+  let(:lastname) { "bob" }
   let(:user) do
     create(:user,
            force_password_change: false,
-           identity_url: "developer:omnibob@example.com",
-           login: "omnibob",
-           mail: "omnibob@example.com",
-           firstname: "omni",
-           lastname: "bob")
+           login:,
+           mail:,
+           firstname:,
+           lastname:)
   end
+  let(:user_menu) { Components::UserMenu.new }
 
+  # rubocop:disable RSpec/InstanceVariable
   before do
     @omniauth_test_mode = OmniAuth.config.test_mode
     @capybara_ignore_elements = Capybara.ignore_hidden_elements
@@ -55,17 +62,12 @@ RSpec.describe "Omniauth authentication" do
     Capybara.ignore_hidden_elements = @capybara_ignore_elements
     OmniAuth.config.logger = @omniauth_logger
   end
+  # rubocop:enable RSpec/InstanceVariable
 
-  ##
-  # Returns a given translation up until the first occurrence of a parameter (exclusive).
-  def translation_substring(translation)
-    translation.scan(/(^.*) %\{/).first.first
-  end
-
-  context "sign in existing user" do
+  describe "existing user sign in" do
     it "redirects to back url" do
       visit account_lost_password_path
-      click_link("Omniauth Developer", match: :first, visible: :all)
+      click_link_or_button("Omniauth Developer", match: :first, visible: :all)
 
       SeleniumHubWaiter.wait
       fill_in("first_name", with: user.firstname)
@@ -77,7 +79,7 @@ RSpec.describe "Omniauth authentication" do
     end
 
     it "signs in user" do
-      visit "/auth/developer"
+      start_omniauth_developer
 
       SeleniumHubWaiter.wait
       fill_in("first_name", with: user.firstname)
@@ -85,15 +87,15 @@ RSpec.describe "Omniauth authentication" do
       fill_in("email", with: user.mail)
       click_link_or_button "Sign In"
 
-      expect(page).to have_link("omni bob")
+      user_menu.expect_user_shown "omni bob"
       expect(page).to have_link("Sign out")
     end
 
     context "with direct login",
-            with_config: { omniauth_direct_login_provider: "developer" } do
+            with_settings: { omniauth_direct_login_provider: "developer" } do
       it "goes directly to the developer sign in and then redirect to the back url" do
         visit my_account_path
-        # requires login, redirects to developer login which is why we see the login form now
+        start_omniauth_developer
 
         SeleniumHubWaiter.wait
         fill_in("first_name", with: user.firstname)
@@ -101,26 +103,30 @@ RSpec.describe "Omniauth authentication" do
         fill_in("email", with: user.mail)
         click_link_or_button "Sign In"
 
-        expect(current_path).to eql my_account_path
+        expect(page).to have_current_path(my_account_path)
+
+        # Expect the dropdown menu to be the logged in one
+        expect(page).to have_test_selector "op-app-header--user-menu-button"
       end
     end
   end
 
   describe "sign out a user with direct login and login required",
-           with_config: { omniauth_direct_login_provider: "developer", login_required: true } do
+           with_settings: { omniauth_direct_login_provider: "developer", login_required: true } do
     it "shows a notice that the user has been logged out" do
       visit signout_path
 
-      expect(page).to have_content(I18n.t(:notice_logged_out))
-      expect(page).to have_content translation_substring(I18n.t(:instructions_after_logout))
+      expect(page).to have_text(I18n.t(:notice_logged_out))
+      expect(page).to have_text "You can sign in again by clicking"
     end
 
     it "sign-in after previous sign-out shows my page" do
       visit signout_path
 
-      expect(page).to have_content(I18n.t(:notice_logged_out))
+      expect(page).to have_text(I18n.t(:notice_logged_out))
 
       click_on "here"
+      start_omniauth_developer
 
       SeleniumHubWaiter.wait
       fill_in("first_name", with: user.firstname)
@@ -135,59 +141,50 @@ RSpec.describe "Omniauth authentication" do
   shared_examples "omniauth user registration" do
     it "registers new user" do
       visit "/"
-      click_link("Omniauth Developer", match: :first)
+      start_omniauth_developer
 
       SeleniumHubWaiter.wait
       # login form developer strategy
-      fill_in("first_name", with: user.firstname)
+      fill_in("first_name", with: firstname)
       # intentionally do not supply last_name
-      fill_in("email", with: user.mail)
+      fill_in("email", with: mail)
       click_link_or_button "Sign In"
 
-      expect(page).to have_content "Last name can't be blank"
+      expect(page).to have_text "Last name can't be blank"
       # on register form, we are prompted for a last name
       within("#content") do
         SeleniumHubWaiter.wait
-        fill_in("user_lastname", with: user.lastname)
+        fill_in("user_lastname", with: lastname)
         click_link_or_button "Create"
       end
 
-      expect(page).to have_content(I18n.t(:notice_account_registered_and_logged_in))
+      expect(page).to have_text(I18n.t(:notice_account_registered_and_logged_in))
       expect(page).to have_link("Sign out")
     end
   end
 
-  context "register on the fly",
-          with_settings: {
-            self_registration?: true,
-            self_registration: Setting::SelfRegistration.automatic
-          } do
-    let(:user) do
-      User.new(force_password_change: false,
-               identity_url: "developer:omnibob@example.com",
-               login: "omnibob",
-               mail: "omnibob@example.com",
-               firstname: "omni",
-               lastname: "bob")
-    end
-
+  describe "on-the-fly registration",
+           with_settings: {
+             self_registration?: true,
+             self_registration: Setting::SelfRegistration.automatic
+           } do
     it_behaves_like "omniauth user registration"
 
     it "redirects to homescreen" do
       visit account_lost_password_path
-      click_link("Omniauth Developer", match: :first)
+      start_omniauth_developer
 
       SeleniumHubWaiter.wait
       # login form developer strategy
-      fill_in("first_name", with: user.firstname)
+      fill_in("first_name", with: firstname)
       # intentionally do not supply last_name
-      fill_in("email", with: user.mail)
+      fill_in("email", with: mail)
       click_link_or_button "Sign In"
 
       # on register form, we are prompted for a last name
       within("#content") do
         SeleniumHubWaiter.wait
-        fill_in("user_lastname", with: user.lastname)
+        fill_in("user_lastname", with: lastname)
         click_link_or_button "Create"
       end
 
@@ -195,18 +192,25 @@ RSpec.describe "Omniauth authentication" do
     end
 
     context "with password login disabled",
-            with_config: { disable_password_login: "true" } do
+            :settings_reset,
+            with_env: { "OPENPROJECT_DISABLE__PASSWORD__LOGIN" => "true" } do
+      before do
+        reset(:disable_password_login)
+        reset(:password_login)
+      end
+
       it_behaves_like "omniauth user registration"
     end
   end
 
-  context "registration by email",
-          with_settings: {
-            self_registration: Setting::SelfRegistration.by_email
-          } do
+  describe "email registration",
+           with_settings: {
+             self_registration: Setting::SelfRegistration.by_email
+           } do
     shared_examples "registration with registration by email" do
       it "still automatically activates the omniauth account" do
         visit login_path
+        start_omniauth_developer unless page.has_field?("email")
 
         SeleniumHubWaiter.wait
         # login form developer strategy
@@ -219,22 +223,40 @@ RSpec.describe "Omniauth authentication" do
     end
 
     it_behaves_like "registration with registration by email" do
-      let(:login_path) { "/auth/developer" }
+      let(:login_path) { signin_path }
     end
 
     context "with direct login enabled and login required",
-            with_config: { omniauth_direct_login_provider: "developer" } do
-      before do
-        allow(Setting).to receive(:login_required?).and_return(true)
+            with_settings: { omniauth_direct_login_provider: "developer", login_required: true } do
+      it_behaves_like "registration with registration by email" do
+        let(:login_path) { signin_path }
       end
 
-      it_behaves_like "registration with registration by email" do
-        let(:login_path) { "/auth/developer" }
+      context "when authorizing an external OAuth app" do
+        let(:oauth_client) { create(:oauth_application, redirect_uri: "https://rp.example.com/callback") }
+
+        it "logs in and registers successfully" do
+          visit oauth_authorization_path(
+            client_id: oauth_client.uid,
+            redirect_uri: oauth_client.redirect_uri,
+            response_type: "code",
+            prompt: "login"
+          )
+
+          start_omniauth_developer unless page.has_field?("email")
+
+          SeleniumHubWaiter.wait
+          fill_in "email", with: user.mail # login form developer strategy
+
+          click_link_or_button "Sign In"
+
+          expect(page).to have_current_path(oauth_authorization_path, ignore_query: true)
+        end
       end
     end
   end
 
-  context "error occurs" do
+  describe "error handling" do
     shared_examples "omniauth signin error" do
       it "fails with generic error message" do
         # set omniauth to test mode will redirect all calls to omniauth
@@ -244,31 +266,32 @@ RSpec.describe "Omniauth authentication" do
         OmniAuth.config.mock_auth[:developer] = :invalid_credentials
         # seems like this default behaviour is removed when running the full
         # test suite, so let's set it back when running this test
+        original_on_failure = OmniAuth.config.on_failure
         OmniAuth.config.on_failure = Proc.new do |env|
           OmniAuth::FailureEndpoint.new(env).redirect_to_failure
         end
         visit login_path
-        expect(page).to have_content(I18n.t(:error_external_authentication_failed_message, message: "Unknown error"))
+        error_message = I18n.t(:error_external_authentication_failed_message, message: "Unknown error")
+        start_omniauth_developer unless page.has_content?(error_message)
+        expect(page).to have_text(error_message)
 
         if defined? instructions
-          expect(page).to have_content instructions
+          expect(page).to have_text instructions
         end
+      ensure
+        OmniAuth.config.on_failure = original_on_failure
       end
     end
 
     it_behaves_like "omniauth signin error" do
-      let(:login_path) { "/auth/developer" }
+      let(:login_path) { signin_path }
     end
 
     context "with direct login and login required",
-            with_config: { omniauth_direct_login_provider: "developer" } do
-      before do
-        allow(Setting).to receive(:login_required?).and_return(true)
-      end
-
+            with_settings: { omniauth_direct_login_provider: "developer", login_required: true } do
       it_behaves_like "omniauth signin error" do
         let(:login_path) { signin_path }
-        let(:instructions) { translation_substring I18n.t(:instructions_after_error) }
+        let(:instructions) { "You can try to sign in again by clicking" }
       end
     end
   end

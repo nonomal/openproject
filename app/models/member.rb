@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -121,6 +123,10 @@ class Member < ApplicationRecord
                     end
 
     ALLOWED_ENTITIES.include?(checked_class)
+  end
+
+  def self.newest_first
+    order(created_at: :desc)
   end
 
   protected

@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -31,8 +31,8 @@ import { input } from '@openproject/reactivestates';
 import { Observable } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-export type ModelLinks = { [action:string]:any };
-export type ModelLinksHash = { [model:string]:ModelLinks };
+export type ModelLinks = Record<string, any>;
+export type ModelLinksHash = Record<string, ModelLinks>;
 
 @Injectable({ providedIn: 'root' })
 export class AuthorisationService {

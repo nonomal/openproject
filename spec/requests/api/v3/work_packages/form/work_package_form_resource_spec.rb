@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -68,7 +70,7 @@ RSpec.describe "API v3 Work package form resource" do
     shared_context "with post request" do
       before do
         login_as(current_user)
-        post post_path, (params ? params.to_json : nil), "CONTENT_TYPE" => "application/json"
+        post post_path, params&.to_json, "CONTENT_TYPE" => "application/json"
       end
     end
 
@@ -92,10 +94,8 @@ RSpec.describe "API v3 Work package form resource" do
 
         include_context "with post request"
 
-        it_behaves_like "param validation error" do
-          let(:id) { "eeek" }
-          let(:type) { "WorkPackage" }
-        end
+        it_behaves_like "not found",
+                        I18n.t("api_v3.errors.not_found.work_package")
       end
 
       context "with existing work package" do
@@ -124,10 +124,10 @@ RSpec.describe "API v3 Work package form resource" do
               .at_path("_embedded/schema/subject/writable")
           end
 
-          it "denotes version to be writable" do
+          it "denotes target versions to be writable" do
             expect(subject)
               .to be_json_eql(true)
-              .at_path("_embedded/schema/version/writable")
+              .at_path("_embedded/schema/targetVersions/writable")
           end
 
           it "denotes string custom_field to be writable" do
@@ -206,7 +206,7 @@ RSpec.describe "API v3 Work package form resource" do
               end
 
               it_behaves_like "parse error",
-                              "unexpected comma (after ) at line 1, column 3"
+                              "expected object key, got ',' at line 1 column 3"
             end
 
             describe "lock version" do
@@ -516,7 +516,7 @@ RSpec.describe "API v3 Work package form resource" do
 
                 context "invalid #{property}" do
                   context "for non-existing user" do
-                    let(:user_link) { api_v3_paths.user 4200 }
+                    let(:user_link) { api_v3_paths.user(not_existing_id(User)) }
 
                     include_context "with post request"
 
@@ -549,7 +549,7 @@ RSpec.describe "API v3 Work package form resource" do
               it_behaves_like "handling people", "responsible"
             end
 
-            describe "version" do
+            describe "version", with_settings: { work_package_multiple_versions: false } do
               let(:path) { "_embedded/payload/_links/version/href" }
               let(:target_version) { create(:version, project:, start_date: Time.zone.today - 2.days) }
               let(:other_version) { create(:version, project:, start_date: Time.zone.today - 1.day) }
@@ -581,6 +581,29 @@ RSpec.describe "API v3 Work package form resource" do
 
                 it "responds with updated work package version" do
                   expect(subject.body).to be_json_eql(version_link.to_json).at_path(path)
+                end
+              end
+            end
+
+            describe "targetVersions" do
+              let(:path) { "_embedded/payload/_links/targetVersions" }
+              let(:target_version) { create(:version, project:) }
+              let(:version_parameter) do
+                { _links: { targetVersions: [{ href: api_v3_paths.version(target_version.id) }] } }
+              end
+              let(:params) { valid_params.merge(version_parameter) }
+
+              context "for a valid version" do
+                include_context "with post request"
+
+                it_behaves_like "valid payload"
+
+                it_behaves_like "having no errors"
+
+                it "echoes the requested target versions although they are not persisted yet" do
+                  expect(subject.body)
+                    .to be_json_eql(api_v3_paths.version(target_version.id).to_json)
+                    .at_path("#{path}/0/href")
                 end
               end
             end
@@ -671,7 +694,7 @@ RSpec.describe "API v3 Work package form resource" do
               let(:params) { valid_params.merge(type_parameter) }
 
               before do
-                project.types << target_type # make sure we have a valid transition
+                project.project_types.create!(type: target_type) # make sure we have a valid transition
               end
 
               describe "allowed values" do
@@ -752,7 +775,7 @@ RSpec.describe "API v3 Work package form resource" do
             end
 
             describe "multiple errors" do
-              let(:user_link) { api_v3_paths.user 4200 }
+              let(:user_link) { api_v3_paths.user(not_existing_id(User)) }
               let(:status_link) { api_v3_paths.status -1 }
               let(:links) do
                 {
@@ -784,26 +807,103 @@ RSpec.describe "API v3 Work package form resource" do
               }
             end
 
-            describe "formattable custom field set to nil" do
-              let(:custom_field) do
-                create(:work_package_custom_field, field_format: "text")
+            describe "custom fields" do
+              describe "formattable custom field set to nil" do
+                let(:custom_field) do
+                  create(:work_package_custom_field, field_format: "text")
+                end
+
+                let(:cf_param) { { custom_field.attribute_name(:camel_case) => nil } }
+                let(:params) { valid_params.merge(cf_param) }
+
+                before do
+                  project.work_package_custom_fields << custom_field
+                  project.save!
+                  work_package.type.default_variant.custom_fields << custom_field
+                  work_package.save!
+
+                  login_as(current_user)
+                  post post_path, params&.to_json, "CONTENT_TYPE" => "application/json"
+                end
+
+                it "responds with a valid body (Regression OP#37510)" do
+                  expect(last_response).to have_http_status(:ok)
+                end
               end
 
-              let(:cf_param) { { custom_field.attribute_name(:camel_case) => nil } }
-              let(:params) { valid_params.merge(cf_param) }
+              context "when the custom field is required" do
+                let!(:required_custom_field) do
+                  create(:work_package_custom_field,
+                         field_format: "string",
+                         name: "Department",
+                         is_required: true,
+                         projects: [project],
+                         types: [work_package.type])
+                end
 
-              before do
-                project.work_package_custom_fields << custom_field
-                project.save!
-                work_package.type.custom_fields << custom_field
-                work_package.save!
+                context "when no custom field value is provided" do
+                  let(:params) { valid_params }
 
-                login_as(current_user)
-                post post_path, (params ? params.to_json : nil), "CONTENT_TYPE" => "application/json"
-              end
+                  include_context "with post request"
 
-              it "responds with a valid body (Regression OP#37510)" do
-                expect(last_response).to have_http_status(:ok)
+                  it_behaves_like "having no errors"
+
+                  it "has a commit link" do
+                    expect(subject.body)
+                      .to be_json_eql(api_v3_paths.work_package(work_package.id).to_json)
+                      .at_path("_links/commit/href")
+                  end
+                end
+
+                context "when the custom field value is provided but empty" do
+                  let(:params) do
+                    valid_params.merge("customField#{required_custom_field.id}" => "")
+                  end
+
+                  include_context "with post request"
+
+                  it "has validation errors for the required custom field" do
+                    expect(subject.body).to have_json_path("_embedded/validationErrors/customField#{required_custom_field.id}")
+                  end
+
+                  it "explains the custom field error" do
+                    expect(subject.body)
+                      .to be_json_eql("Department can't be blank.".to_json)
+                      .at_path("_embedded/validationErrors/customField#{required_custom_field.id}/message")
+                  end
+
+                  it "includes the empty value in the payload" do
+                    expect(subject.body)
+                      .to be_json_eql("".to_json)
+                      .at_path("_embedded/payload/customField#{required_custom_field.id}")
+                  end
+
+                  it "does not have a commit link" do
+                    expect(subject.body).not_to have_json_path("_links/commit")
+                  end
+                end
+
+                context "when the custom field value is provided and valid" do
+                  let(:params) do
+                    valid_params.merge("customField#{required_custom_field.id}" => "Engineering")
+                  end
+
+                  include_context "with post request"
+
+                  it_behaves_like "having no errors"
+
+                  it "has a commit link" do
+                    expect(subject.body)
+                      .to be_json_eql(api_v3_paths.work_package(work_package.id).to_json)
+                      .at_path("_links/commit/href")
+                  end
+
+                  it "has the custom field value in the payload" do
+                    expect(subject.body)
+                      .to be_json_eql("Engineering".to_json)
+                      .at_path("_embedded/payload/customField#{required_custom_field.id}")
+                  end
+                end
               end
             end
           end
@@ -831,7 +931,7 @@ RSpec.describe "API v3 Work package form resource" do
 
         it { is_expected.to have_json_path("_embedded/payload/lockVersion") }
 
-        it { is_expected.to have_json_path("_embedded/payload/_links/version") }
+        it { is_expected.to have_json_path("_embedded/payload/_links/targetVersions") }
 
         it { is_expected.not_to have_json_path("_embedded/payload/subject") }
       end
@@ -844,10 +944,10 @@ RSpec.describe "API v3 Work package form resource" do
           .at_path("_embedded/schema/subject/writable")
       end
 
-      it "denotes version to be writable" do
+      it "denotes target versions to be writable" do
         expect(subject)
           .to be_json_eql(true)
-          .at_path("_embedded/schema/version/writable")
+          .at_path("_embedded/schema/targetVersions/writable")
       end
 
       it "denotes custom_field to not be writable" do

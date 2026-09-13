@@ -72,4 +72,22 @@ RSpec.describe Storages::OneDriveStorage do
       end
     end
   end
+
+  describe "#non_confidential_configuration" do
+    subject { storage.non_confidential_configuration }
+
+    let(:storage) { create(:one_drive_storage_configured) }
+
+    it "returns the expected hash" do
+      expect(subject).to eq(
+        automatically_managed: false,
+        health_notifications_enabled: true,
+        host: storage.host,
+        drive_id: storage.drive_id,
+        tenant_id: storage.tenant_id,
+        oauth_application_client_id: storage.oauth_application.uid,
+        oauth_client_id: storage.oauth_client.client_id
+      )
+    end
+  end
 end

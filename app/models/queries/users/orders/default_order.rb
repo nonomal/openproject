@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,6 +32,6 @@ class Queries::Users::Orders::DefaultOrder < Queries::Orders::Base
   self.model = User
 
   def self.key
-    /\A(id|lastname|firstname|mail|login)\z/
+    /\A(id|lastname|firstname|mail|login|admin|created_at|last_login_on)\z/
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -168,6 +170,12 @@ module Projects::Hierarchy
         stmt = stmt.or(projects_table[:lft].gt(lft).and(projects_table[:rgt].lt(rgt)))
       end
       stmt
+    end
+
+    def allowed_parent_workspace_types = Project::ALLOWED_PARENT_WORKSPACE_TYPES[workspace_type] || []
+
+    def parent_allowed?
+      allowed_parent_workspace_types.any?
     end
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -78,7 +80,16 @@ module Components
       end
 
       def save
-        find('[data-test-selector="spot-modal-wp-table-configuration-save-button"]').click
+        retry_block do
+          find('[data-test-selector="spot-modal-wp-table-configuration-save-button"]').click
+          expect_closed
+        end
+
+        if using_cuprite?
+          wait_for_reload
+        else
+          SeleniumHubWaiter.wait
+        end
       end
 
       def cancel

@@ -11,7 +11,7 @@ keywords: Stimulus, Ruby on Rail, Hotwire
 
 In a decision to move OpenProject towards the [Hotwire approach](https://hotwired.dev/), we introduced [Stimulus.js](https://stimulus.hotwired.dev) to replace a collection of dynamically loaded custom JavaScript files used to sprinkle some interactivity.
 
-This guide will outline how to add controllers and the conventions around it. This is _not_ a documentation of stimulus itself. Use their documentation instead: https://stimulus.hotwired.dev
+This guide will outline how to add controllers and the conventions around it. This is _not_ a documentation of stimulus itself. Use their [documentation](https://stimulus.hotwired.dev) instead.
 
 ## Adding controllers
 
@@ -19,14 +19,28 @@ All controllers live under `frontend/src/stimulus/controllers/`. The naming conv
 
 If you want to add a common pattern, manually register the controller under `frontend/src/stimulus/setup.ts`. Often you'll want to have a dynamically loaded controller instead though.
 
+### Adding a static controller from a plugin
+
+If you want to add a stimulus controller from plugin code, you can do so by manually adding it to the preregister:
+
+```typescript
+import { OpenProjectStimulusApplication } from 'core-stimulus/openproject-stimulus-application';
+import { MyTestControllerClass } from './test/foo/my-test.controller';
+  
+
+OpenProjectStimulusApplication.preregister(
+  'test',
+  MyTestControllerClass
+);
+```
+
 ### Dynamically loaded controllers
 
 To dynamically load a controller, it needs to live under `frontend/src/stimulus/controllers/dynamic/<controller-name>.controller.ts`.
-
-In DOM, you'll tell the application the controller is dynamically loaded using the `data-application-target="dynamic"`attribute. It tells the application controller (`frontend/src/stimulus/controllers/op-application.controller.ts`) we load on every page on body to dynamically import and load the controller named `users`.
+The application controller (`frontend/src/stimulus/controllers/op-application.controller.ts`) will automatically load controllers dynamically if they are not registered in the `setup.ts` file.
 
 ```html
-<div data-controller="users" data-application-target="dynamic"></div>
+<div data-controller="users"></div>
 ```
 
 #### Namespacing dynamic controllers
@@ -37,10 +51,25 @@ If you want to organize your dynamic controllers in a subfolder, use the [double
 2. Specify the controller name with a double dash for each folder
 
 ```html
-<div data-controller="admin--settings" data-application-target="dynamic"></div>
+<div data-controller="admin--settings"></div>
 ```
 
 You need to take care to prefix all actions, values etc. with the exact same pattern, e.g., `data-admin--settings-target="foobar"`.
+
+#### Dynamically loading controllers from plugins
+
+If you want to add a dynamic stimulus controller import from plugin code, you can do so by manually adding it to the preregister:
+
+```typescript
+import { OpenProjectStimulusApplication } from 'core-app/stimulus/app';
+
+OpenProjectStimulusApplication.preregisterDynamic(
+  'test',
+  () => import('./test.controller')
+);
+```
+
+This ensures that the controller is loaded only when it is needed, and not at application startup. The controller will then be enabled when the `data-controller` attribute is present in the DOM through the same mechanism as for the core dynamic controllers.
 
 ### Requiring a page controller
 
@@ -48,6 +77,5 @@ If you have a single controller used in a partial, we have added a helper to use
 
 ```erb
 <% content_controller 'project-storage-form',
-                      dynamic: true,
                       'project-storage-form-folder-mode-value': @project_storage.project_folder_mode %>
 ```

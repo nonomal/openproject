@@ -39,7 +39,10 @@ def files_with_user_references
   files = {}
 
   # Check migrations
-  added_or_modified_migrations?.each do |file|
+  added_or_modified_migrations?
+    # Ignore files that have been removed.
+    .select { |file| File.exist?(file) }
+    .each do |file|
     content = File.read(file)
     if content.match?(USER_REFERENCE_REGEX)
       files[file] = "migration with user reference"

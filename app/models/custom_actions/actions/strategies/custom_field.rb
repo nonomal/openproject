@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,7 +30,10 @@
 
 module CustomActions::Actions::Strategies::CustomField
   def apply(work_package)
-    work_package.send(custom_field.attribute_setter, values) if work_package.respond_to?(custom_field.attribute_setter)
+    if work_package.respond_to?(custom_field.attribute_setter)
+      set_custom_field_value(work_package)
+      validate_custom_field(work_package)
+    end
   end
 
   delegate :required?, to: :custom_field

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -47,8 +49,7 @@ class CustomActions::Actions::Type < CustomActions::Actions::Base
 
   def associated
     ::Type
-      .select(:id, :name)
       .order(:position)
-      .map { |u| [u.id, u.name] }
+      .map { |type| [type.id, type.name] }
   end
 end

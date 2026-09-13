@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 require "support/pages/work_packages/abstract_work_package"
 
@@ -29,7 +31,7 @@ RSpec.describe "multi select custom values", :js do
   before do
     login_as current_user
     wp_page.visit!
-    wait_for_reload
+    wait_for_network_idle
   end
 
   describe "with mixed users, group, and placeholders" do
@@ -173,14 +175,14 @@ RSpec.describe "multi select custom values", :js do
 
         page.find(".inline-edit--display-field", text: "Billy Nobbler").click
 
-        wait_for_reload
+        wait_for_network_idle
 
         cf_edit_field.unset_value "Anton Lupin", multi: true
         cf_edit_field.set_value "Cooper Quatermaine"
 
         click_on "Reviewer: Save"
         wp_page.expect_and_dismiss_toaster(message: "Successful update.")
-        expect(page).to have_css(".custom-option", count: 2)
+        expect(page).to have_css("#{cf_edit_field.selector} .op-principal", count: 2)
 
         expect(page).to have_text custom_field.name
         expect(page).to have_text "Billy Nobbler"

@@ -79,22 +79,26 @@ RSpec.describe "DELETE /recurring_meetings/:id",
       expect(ActionMailer::Base.deliveries.size).to eq(1)
       mail = ActionMailer::Base.deliveries.first
       expect(mail.body.parts.first.parts.first.body.to_s)
-        .to include "Meeting series '#{title}' has been cancelled by #{user.name}."
+        .to include "Meeting series '#{title}' has been cancelled by #{user.name}, or you have been removed as a participant"
     end
 
     context "when deleting an occurrence" do
-      let(:request) { delete project_meeting_path(project, recurring_meeting.meetings.not_templated.last) }
+      let(:meeting) { recurring_meeting.meetings.not_templated.last }
+      let(:request) { delete project_meeting_path(project, meeting) }
 
-      it "deletes the occurrence" do
+      it "sets the occurrence as cancelled" do
         title = recurring_meeting.template.title
-        expect { subject }.to change(recurring_meeting.meetings, :count).by(-1)
+        expect { subject }.to change(recurring_meeting.meetings, :count).by(0)
         expect(subject).to have_http_status(:see_other)
 
         expect(recurring_meeting.reload).to be_present
         expect(ActionMailer::Base.deliveries.size).to eq(1)
         mail = ActionMailer::Base.deliveries.first
         expect(mail.body.parts.first.parts.first.body.to_s)
-          .to include "An occurrence of '#{title}' has been cancelled by #{user.name}."
+          .to include "An occurrence of '#{title}' has been cancelled by #{user.name}, or you have been removed as a participant"
+
+        meeting.reload
+        expect(meeting).to be_cancelled
       end
     end
   end

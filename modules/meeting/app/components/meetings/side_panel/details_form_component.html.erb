@@ -5,8 +5,7 @@
       method: :put,
       data: { turbo: true,
               turbo_stream: true,
-              controller: "meetings--form",
-              "application-target": "dynamic" },
+              controller: "meetings--form" },
       url: update_details_project_meeting_path(@project, @meeting)
     ) do |f|
       component_collection do |collection|
@@ -20,8 +19,12 @@
               render(Meeting::TimeGroup.new(f, meeting: @meeting))
             end
 
-            modal_body.with_row do
+            modal_body.with_row(mb: 3) do
               render(Meeting::Location.new(f, meeting: @meeting))
+            end
+
+            modal_body.with_row do
+              render(Meetings::EmailUpdatesBannerComponent.new(@meeting))
             end
 
             modal_body.with_row do

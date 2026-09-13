@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rails_helper"
 require_relative "../../users/notifications/shared_examples"
 require "support/pages/my/notifications"

@@ -21,35 +21,37 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { BcfViewService } from 'core-app/features/bim/ifc_models/pages/viewer/bcf-view.service';
 
 @Component({
   template: `
-    <ng-container *ngIf="(view$ | async) as current">
+    @if ((view$ | async); as current) {
       <button class="button"
-              id="bcf-view-toggle-button"
-              opBcfViewDropdown>
-        <op-icon icon-classes="button--icon {{bcfView.icon[current]}}"></op-icon>
+        id="bcf-view-toggle-button"
+        opBcfViewDropdown>
+        <op-icon icon-classes="button--icon {{bcfView.icon[current]}}" />
         <span class="button--text"
-              aria-hidden="true"
-              [textContent]="bcfView.text[current]">
+          aria-hidden="true"
+          [textContent]="bcfView.text[current]">
         </span>
-        <op-icon icon-classes="button--icon icon-small icon-pulldown"></op-icon>
+        <op-icon icon-classes="button--icon icon-small icon-pulldown" />
       </button>
-    </ng-container>
-  `,
+    }
+    `,
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'op-bcf-view-toggle-button',
+  standalone: false,
 })
 export class BcfViewToggleButtonComponent {
-  view$ = this.bcfView.live$();
+  readonly I18n = inject(I18nService);
+  readonly bcfView = inject(BcfViewService);
 
-  constructor(readonly I18n:I18nService, readonly bcfView:BcfViewService) { }
+  view$ = this.bcfView.live$();
 }

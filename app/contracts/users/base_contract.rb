@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,13 +34,16 @@ module Users
 
     attribute :login,
               writable: ->(*) {
-                can_create_or_manage_users? && model.id != user.id
+                can_create_or_manage_users? && !editing_self?
               }
-    attribute :firstname
-    attribute :lastname
-    attribute :mail
+    attribute :firstname, writable: ->(*) { can_create_or_manage_users? || can_change_self? }
+    attribute :lastname, writable: ->(*) { can_create_or_manage_users? || can_change_self? }
+    attribute :mail,
+              # We restrict email changes to admins (not :manage_user role), to prevent privilege escalation
+              # Escalation path: change email of user with desired permissions to own email -> reset password -> login as user
+              writable: ->(*) { model.new_record? || user.admin? || can_change_own_mail? }
     attribute :admin,
-              writable: ->(*) { user.admin? && model.id != user.id }
+              writable: ->(*) { user.admin? && !editing_self? }
     attribute :language
 
     attribute :ldap_auth_source_id,
@@ -46,9 +51,6 @@ module Users
 
     attribute :status,
               writable: ->(*) { can_create_or_manage_users? }
-
-    attribute :identity_url,
-              writable: ->(*) { user.admin? }
 
     attribute :force_password_change,
               writable: ->(*) { user.admin? }
@@ -58,23 +60,38 @@ module Users
     end
 
     validate :validate_password_writable
+    validate :validate_identity_url_writable
     validate :existing_auth_source
 
     delegate :available_custom_fields, to: :model
 
     def reduce_writable_attributes(attributes)
       super.tap do |writable|
+        # `password` and `identity_url` are not regular attributes so they bypass
+        # attribute writable checks. therewore they must be added to the list
+        # of writable attributes under certain conditions.
         writable << "password" if password_writable?
+        writable << "identity_url" if identity_url_writable?
       end
     end
 
     private
 
-    ##
-    # Password is not a regular attribute so it bypasses
-    # attribute writable checks
     def password_writable?
-      user.admin? || user.id == model.id
+      return true if user.admin? && !editing_self?
+
+      editing_self? && current_password_valid?
+    end
+
+    def current_password_valid?
+      return true if model.password.blank?
+
+      provided_current_password = model.current_password_input
+      provided_current_password.present? && model.check_password?(provided_current_password)
+    end
+
+    def identity_url_writable?
+      user.admin?
     end
 
     ##
@@ -82,22 +99,55 @@ module Users
     # but just an accessor, so we need to identify it being written there.
     # It is only present when freshly written
     def validate_password_writable
-      # Only admins or the user themselves can set the password
+      return if model.password.blank?
+
+      unless model.password_login_allowed?
+        errors.add :password, :error_readonly
+        return
+      end
+
       return if password_writable?
 
-      errors.add :password, :error_readonly if model.password.present?
+      if editing_self?
+        errors.add :current_password, :invalid
+      else
+        errors.add :password, :error_readonly
+      end
     end
 
-    # rubocop:disable Rails/DynamicFindBy
+    def validate_identity_url_writable
+      return if identity_url_writable?
+
+      errors.add(:identity_url, :error_readonly) if model.user_auth_provider_links.any?(&:changed?)
+    end
+
     def existing_auth_source
       if ldap_auth_source_id && LdapAuthSource.find_by_unique(ldap_auth_source_id).nil?
         errors.add :auth_source, :error_not_found
       end
     end
-    # rubocop:enable Rails/DynamicFindBy
 
     def can_create_or_manage_users?
       user.allowed_globally?(:manage_user) || user.allowed_globally?(:create_user)
+    end
+
+    def editing_self?
+      model.id == user.id
+    end
+
+    def can_change_self?
+      # Editing of own attributes is disallowed when external auth source defines attributes
+      return false if authenticates_externally?
+
+      editing_self?
+    end
+
+    def can_change_own_mail?
+      can_change_self? && Setting.user_can_change_email?
+    end
+
+    def authenticates_externally?
+      model.uses_external_authentication? || model.ldap_auth_source_id
     end
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -51,18 +53,12 @@ module Projects
       validate_templated_set_by_admin
     end
 
-    attribute :_limit_custom_fields_validation_to_section_id
-    # `_limit_custom_fields_validation_to_section_id` used in Projects::ActsAsCustomizablePatches in order to
-    # only validate custom fields of the touched section
-
     validate :validate_user_allowed_to_manage
 
     def valid?(context = :saving_custom_fields) = super
 
     def assignable_parents
-      Project
-        .allowed_to(user, :add_subprojects)
-        .where.not(id: model.self_and_descendants)
+      Project.assignable_parents(user, model)
     end
 
     def available_custom_fields
@@ -90,7 +86,7 @@ module Projects
       #
       # relevant especially for the project API
 
-      model.all_available_custom_fields.map(&:attribute_name)
+      model.all_available_custom_fields.flat_map(&:all_attribute_names)
     end
 
     private
@@ -98,8 +94,8 @@ module Projects
     def validate_parent_assignable
       if model.parent &&
          model.parent_id_changed? &&
-         !assignable_parents.where(id: parent.id).exists?
-        errors.add(:parent, :does_not_exist)
+         !assignable_parents.exists?(id: parent.id)
+        errors.add(:parent, :invalid)
       end
     end
 
@@ -126,7 +122,7 @@ module Projects
     end
 
     def manage_permission
-      raise NotImplementedError
+      raise SubclassResponsibilityError
     end
 
     def with_unchanged_id
@@ -145,6 +141,14 @@ module Projects
       contract = contract_klass.new(model, user)
 
       validate_and_merge_errors(contract)
+    end
+
+    def all_available_custom_fields
+      if user.admin?
+        model.all_available_custom_fields
+      else
+        model.all_available_custom_fields.where(admin_only: false)
+      end
     end
   end
 end

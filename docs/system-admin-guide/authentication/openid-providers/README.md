@@ -7,8 +7,9 @@ keywords: OpenID providers
 ---
 # OpenID providers (Enterprise add-on)
 
-> [!IMPORTANT] 
-> OpenID Connect providers is an Enterprise add-on. If you do not see the button you will have to activate the Enterprise edition first.
+> [!IMPORTANT]
+>
+> OpenID Connect providers is an Enterprise add-on.  If you do not see the button you will have to activate the Enterprise  edition first.
 
 | Topic                                                              | Content                                                                         |
 |--------------------------------------------------------------------|---------------------------------------------------------------------------------|
@@ -17,15 +18,13 @@ keywords: OpenID providers
 | [Custom OpenID Connect Providers](#custom-openid-connect-provider) | Configuration of additional OpenID Connect providers.                           |
 | [Troubleshooting](#troubleshooting)                                | Common complications when using OpenID as SSO.                                  |
 
-To activate and configure OpenID providers in OpenProject, navigate to *Administration* -> *Authentication* and choose -> *OpenID providers*.
+To activate and configure OpenID providers in OpenProject, navigate to _Administration_ -> _Authentication_ and choose -> _OpenID providers_.
 
 ## Add a new OpenID Connect provider
 
 To add a new OpenID provider, click the green **+ OpenID provider** button.
 
-![OpenIDprovider selection in OpenProject administration](openproject_system-admin-guide_authentication_openid_provider_empty.png) 
-
-
+![OpenIDprovider selection in OpenProject administration](openproject_system-admin-guide_authentication_openid_provider_empty.png)
 
 You can create different kinds of providers with a different set of properties. You can choose from:
 
@@ -33,22 +32,21 @@ You can create different kinds of providers with a different set of properties. 
 - [Microsoft Entra ID](#microsoft-entra) (previously Azure)
 - [Custom OpenID Connect Providers](#custom-openid-connect-provider)
 
-
 ## Google
 
 ### Step 1: Create the OAuth consent screen
 
-1. Navigate to your GCP console.  (https://console.cloud.google.com/)
+1. Navigate to your [GCP console](https://console.cloud.google.com/).
 2. Go to **APIs & Services** > OAuth consent screen.
 
 ![APIs and services OAuth consent screen](g1-apis-and-services-oauth-consent-screen.png)
 
 3. Create a new project and a new app or edit an existing project and an existing app, setting the following fields (should be internal):
    1. **App name** (e.g. EXAMPLE.COM SSO)
-   2. **User support email** (e.g. user-support@example.com)
+   2. **User support email** (e.g. `user-support@example.com`)
    3. **App domains** (at minimum, you must provide the Application home page - e.g. `https://example.openproject.com`)
    4. **Authorized domains** (e.g. openproject.com)
-   5. **Developer Contact information** (e.g.  developer@example.com)
+   5. **Developer Contact information** (e.g. `developer@example.com`)
    6. Click **SAVE AND CONTINUE** to proceed.
 
 ![Edit app registration](g2-edit-app-registration.png)
@@ -84,8 +82,8 @@ After pressing **CREATE** you will see a following pop-up window.
 ### Step 3: Add Google as an OpenID Provider to OpenProject
 
 1. Login as OpenProject Administrator
-2. Navigate to *Administration* -> *Authentication* and choose -> *OpenID providers*. 
-   - **Click** the green *+ OpenID Connect provider* button
+2. Navigate to _Administration_ -> _Authentication_ and choose -> _OpenID providers_.
+   - **Click** the green _+ OpenID Connect provider_ button
    - **Choose** Choose the Option Google
    - Set a **Display Name**, this is the name of the login button shown to users.
    - On the next section, set **Client ID** and **Client Secret** (from step 2)
@@ -103,7 +101,7 @@ Press **Finish setup** to save the client and complete. If you go back to the in
 
 #### Step 1: Register an App in Azure Active Directory
 
-If your organization currently has an Azure Active Directory to manage users, and you want to use that to log in to OpenProject, you will need to register a new *App*.
+If your organization currently has an Azure Active Directory to manage users, and you want to use that to log in to OpenProject, you will need to register a new _App_.
 
 The steps are as follows:
 
@@ -125,9 +123,9 @@ The steps are as follows:
 
 5. You will then be asked to specify the following settings:
 
-* For **Name**, enter *OpenProject*.
-* For **Supported account types**, select *Accounts in this organization directory only*.
-* For **Redirect URI**, select the *Web* type, and enter the URL to your OpenProject installation, followed by */auth/oidc-microsoft-entra/callback*. For instance: "https://myserver.com/auth/oidc-microsoft-entra/callback".
+- For **Name**, enter _OpenProject_.
+- For **Supported account types**, select _Accounts in this organization directory only_.
+- For **Redirect URI**, select the _Web_ type, and enter the URL to your OpenProject installation, followed by _/auth/oidc-microsoft-entra/callback_. For instance: `https://myserver.com/auth/oidc-microsoft-entra/callback`.
 
 > [!NOTE]
 >
@@ -144,11 +142,11 @@ The steps are as follows:
 
 ![Azure Active Directory Certificates](06-certificates.png)
 
-8. Then click **New client secret**, set the description to *client_secret*, and the expiration to *730 days (24 months)*. Then click **Add**.
+8. Then click **New client secret**, set the description to _client_secret_, and the expiration to _730 days (24 months)_. Then click **Add**.
 
 ![Azure Active Directory New Client Secret](07-client-secret.png)
 
-9. A secret should have been generated and will be displayed on the page. 
+9. A secret should have been generated and will be displayed on the page.
 
 > [!IMPORTANT]
 > Make sure to save it because it will only be displayed once.
@@ -162,8 +160,8 @@ At the end of this step, you should have a copy of the Application client ID as 
 Next, you need to create the OpenID Connect provider in OpenProject:
 
 1. Login as OpenProject Administrator
-2. Navigate to *Administration* -> *Authentication* and choose -> *OpenID providers*. 
-   - **Click** the green *+ OpenID Connect provider* button
+2. Navigate to _Administration_ -> _Authentication_ and choose -> _OpenID providers_.
+   - **Click** the green _+ OpenID Connect provider_ button
    - **Choose** Choose the option **Microsoft Entra**
    - Set display name **Microsoft Entra**. Please note that if you change this value, the redirect URI in step 1) might change. The redirect URI is shown in the side panel on the right side once you saved the configuration.
    - Set the **Tenant**: By default, OpenProject will use the Microsoft Graph API endpoint to perform user info requests.
@@ -185,17 +183,15 @@ Starting with OpenProject 15.0., you can also create custom OpenID Connect provi
 To start creating a custom provider, please follow these steps:
 
 1. Login as OpenProject Administrator
-2. Navigate to *Administration* -> *Authentication* and choose -> *OpenID providers*. 
-   - **Click** the green *+ OpenID Connect provider* button
-   - **Choose** the *Option* **Custom**
+2. Navigate to _Administration_ -> _Authentication_ and choose -> _OpenID providers_.
+   - **Click** the green _+ OpenID Connect provider_ button
+   - **Choose** the _Option_ **Custom**
 
 ### Step-by-step
 
 #### Step 1: Display name
 
-- Set a **Display Name**, this is the name of the login button shown to users. Let's assume we're trying to connect *Keycloak* with OpenProject for this example. We will type in Keycloak as that's the label of the button to be shown to users trying to authenticate.
-
-
+- Set a **Display Name**, this is the name of the login button shown to users. Let's assume we're trying to connect _Keycloak_ with OpenProject for this example. We will type in Keycloak as that's the label of the button to be shown to users trying to authenticate.
 
 #### Step 2: Discovery endpoint
 
@@ -211,8 +207,8 @@ To start creating a custom provider, please follow these steps:
 - Unless the metadata endpoint provided these values, you will have to fill out some required endpoint URLs, such as **Authorization endpoint**, **User information endpoint**, and **Token endpoint**.
 - Fill out the **Issuer** field which depends on the provider. For Keycloak, this value would be the realm URL: `http://keycloak.example.com:443/realms/{realm}`
 - Optionally fill out:
-  -  **End session endpoint**, an URL where OpenProject should redirect to terminate a user's session.
-  -  **JWKS URI**. This is the URL of the provider's  JSON Web Key Set document containing e.g., signing keys and certificates.
+  - **End session endpoint**, an URL where OpenProject should redirect to terminate a user's session.
+  - **JWKS URI**. This is the URL of the provider's  JSON Web Key Set document containing e.g., signing keys and certificates.
   - A custom icon by using a publicly available URL to fetch the logo from.
 - Click **Continue** to validate this form and move to the next step. If there are any errors in this form, they will turn red and inform you about what you need to change.
 
@@ -235,7 +231,48 @@ If you need to set some of these values, enter the attribute key used/returned i
 
 For example: Keycloak allows you to map custom properties of the user. This allows you to specify a login with, e.g, `preferred_username` userinfo. In this case, you would fill out `Mapping for: Username` with that attribute returned in the userinfo JSON response.
 
-#### Step 7: Claims
+#### Step 7: Group mapping
+
+OpenProject can optionally synchronize groups of users when they log in. If you want to enable this, you have to enable the checkbox "Synchronize groups". OpenProject will expect a claim with an array of group names that the user is a member of. By default this claim
+is expected to be named `groups`, but you can change this if desired.
+
+The default behaviour of OpenProject is to create a new group for each unknown group listed in this claim. It will match existing groups by their name before creating a new group. You can later rename groups created this way in the group management UI, they will still be linked
+to the ID with which they are referenced in OpenID Connect claims and recognized that way.
+
+Once this option is enabled, the identity provider becomes fully responsible for managing group assignments. Each time a user logs in through this provider, only the group memberships declared by the identity provider will be assigned to that user. Any group memberships not declared by the identity provider will be removed.
+
+> [!IMPORTANT]
+> There are no exceptions — even if a different assignment was previously configured in OpenProject, it will be overwritten if it is not set in the identity provider.
+
+##### Matching groups with regular expressions
+
+For advanced use cases, it's possible to filter which groups will be imported into OpenProject and which part of the group name will be considered.
+
+The input under "Patterns (regular expressions)" expects a list of regular expressions that will be used to match against the name of a group. If
+the group name matches at least one of the regular expressions, it will be synchronized. If it matches none of the expressions, it will not be synchronized. The captured groups inside the first matching regular expression are used to extract the name of the imported group. If the regular expression does not contain any captured groups, the full group name is used.
+
+As an example, consider your OpenID Connect provider defines the following groups:
+
+- `/your-company/department-accounting`
+- `/your-company/department-sales`
+- `/your-company/administrators`
+- `/your-company/external-contractors`
+
+Assuming you only want to import groups for the different departments, but not for other groups that may exist, you could specify
+the following regular expression:
+
+```text
+^/your-company/(department-[\w]+)$
+```
+
+This would reject the `/your-company/administrators` and `/your-company/external-contractors` groups, because they do not match the expression.
+The other two groups would be considered to be named `department-accounting` and `department-sales`, during synchronization, because the captured
+group (i.e. the parenthesis) only covers that part of the match.
+
+OpenProject parses regular expressions using syntax accepted by the Ruby programming language. One good online resource to understand
+Ruby regular expressions is [Rubular](https://rubular.com/).
+
+#### Step 8: Claims
 
 You can optionally request [claims](https://openid.net/specs/openid-connect-core-1_0-final.html#Claims) for both the id_token and userinfo endpoint. Keep in mind that currently only claims requested for the id_token returned with the authorize response are validated. That means that the authentication will fail if a requested essential claim is not returned.
 
@@ -253,7 +290,7 @@ In the following example we request a list of ACR values. One of which must be s
 
 To specify these, you can provide a JSON. Use the following template as a starting point:
 
-```
+```json
 {
   "id_token": {
     "acr": {
@@ -264,8 +301,6 @@ To specify these, you can provide a JSON. Use the following template as a starti
 }
 ```
 
-
-
 **Non-essential claims**
 
 You may also request non-essential claims. In the example above this indicates that users should preferably be authenticated using those mechanisms but it’s not strictly required. The login into OpenProject will then work even if none of the claims are returned by the identity provider.
@@ -274,8 +309,8 @@ You may also request non-essential claims. In the example above this indicates t
 
 For non-essential ACR claims you can also use the shorthand form of the option like this:
 
-```
-options = { ... }
+```ruby
+options = { … }
 
 options["acr_values"] = "phr phrh Multi_Factor"
 ```
@@ -285,8 +320,6 @@ The option takes a space-separated list of ACR values. This is functionally the 
 After entering Claims information, click **Finish setup** to complete the provider creation form.
 
 ![Custom provider claims](./custom-provider-claims.png)
-
-
 
 ### Additional custom configuration instructions for Okta
 
@@ -299,14 +332,12 @@ If you use Okta with OpenID Connect, use these configuration properties in the c
 - **Token endpoint**: `/oauth2/v1/token`
 - **End session endpoint**: `https://mypersonal.okta.com/oauth2/{authorizationServerId}/v1/logout`
 
-
-
 ### Additional custom configuration instructions for Keycloak
 
 In Keycloak, use the following steps to set up an OIDC integration for OpenProject:
 
 - Select or create a realm you want to authenticate OpenProject with. Remember that realm identifier. For the remainder of this section, we're using REALM as the placeholder you'll need to replace.
-- Under **Clients** menu, click *Create* or *Create client*
+- Under **Clients** menu, click _Create_ or _Create client_
 - **Add client**: Enter the following details
   - **Client type / protocol**: OpenID Connect
   - **Client ID**: `https://<Your OpenProject hostname>`
@@ -336,8 +367,6 @@ Next, you will need to create or note down the client secret for that client.
   - Set Token claim name to `preferred_username`
 - Click **Save**
 
-
-
 #### Form values for OpenProject
 
 In OpenProject, create a custom provider as shown above using these parameters
@@ -349,10 +378,6 @@ In OpenProject, create a custom provider as shown above using these parameters
 - **Token endpoint**: `/oauth2/v1/token`
 - **End session endpoint**: `https://mypersonal.okta.com/oauth2/{authorizationServerId}/v1/logout`
 - **OpenProject Redirect URI**: `https://openproject.example.com/auth/oidc-keycloak/callback` (Note that this URL depends on the display name above. See the UI for the actual Redirect URI)
-
-
-
-
 
 ## Configuration using environment variables
 
@@ -374,7 +399,7 @@ OPENPROJECT_OPENID__CONNECT_OKTA_IDENTIFIER="<identifier or client id>"
 
 Underscores in option names must be escaped by doubling them. So make sure to really do use two consecutive underscores in `DISPLAY__NAME`, `TOKEN__ENDPOINT` and so forth
 
-Use the following configuration as a template for your configuration. 
+Use the following configuration as a template for your configuration.
 
 > [!NOTE]
 >
@@ -384,9 +409,7 @@ Use the following configuration as a template for your configuration.
 >
 > You can also see the actual redirect URI in the user interface after the provider has been successfully created from these environment variables.
 
-
-
-```bash
+```shell
 # The name of the login button in OpenProject, you can freely set this to anything you like
 OPENPROJECT_OPENID__CONNECT_KEYCLOAK_DISPLAY__NAME="Keycloak"
 
@@ -406,6 +429,9 @@ OPENPROJECT_OPENID__CONNECT_KEYCLOAK_USERINFO__ENDPOINT="/realms/<REALM>/protoco
 
 # Optional: endpoint to redirect users for logout
 OPENPROJECT_OPENID__CONNECT_KEYCLOAK_END__SESSION__ENDPOINT="http://keycloak.example.com/realms/<REALM>/protocol/openid-connect/logout"
+
+# Optional: space separated list of grant types supported by the provider
+OPENPROJECT_OPENID__CONNECT_KEYCLOAK_GRANT__TYPES__SUPPORTED="authorization_code urn:ietf:params:oauth:grant-type:token-exchange"
 
 # Host name of Keycloak, required if endpoint information are not absolute URLs
 OPENPROJECT_OPENID__CONNECT_KEYCLOAK_HOST="<Hostname of the keycloak server>"
@@ -427,9 +453,13 @@ OPENPROJECT_OPENID__CONNECT_KEYCLOAK_ACR__VALUES="phr phrh Multi_Factor"
 
 # Optional: Claim mapping using JSON, see Step 7 above for more information on syntax
 OPENPROJECT_OPENID__CONNECT_KEYCLOAK_CLAIMS="{\"id_token\":{\"acr\":{\"essential\":true,\"values\":[\"phr\",\"phrh\",\"Multi_Factor\"]}}}"
+
+# Optional: Whether group synchronization should be enabled (default: false)
+OPENPROJECT_OPENID__CONNECT_KEYCLOAK_SYNC__GROUPS="true"
+
+# Optional: The name of the claim in the ID token that contains the group memberships
+OPENPROJECT_OPENID__CONNECT_KEYCLOAK_GROUPS__CLAIM="groups"
 ```
-
-
 
 ### Applying the configuration
 
@@ -438,33 +468,37 @@ To apply the configuration after changes, you need to run the `db:seed` rake tas
 - **Packaged installation**: `sudo openproject run bundle exec rake db:seed`
 - **Docker**: `docker exec -it <container of all-in-one or web> bundle exec rake db:seed`.
 
-
-
 ## Troubleshooting
 
-Q: After clicking on a provider badge, I am redirected to a signup form that says a user already exists with that login.
+**Q: After clicking on a provider badge, I am redirected to a signup form that says a user already exists with that login.**
 
 A: This can happen if you previously created user accounts in OpenProject with the same email than what is stored in the OpenID provider. In this case, if you want to allow existing users to be automatically remapped to the OpenID provider, you should do the following:
 
 Spawn an interactive console in OpenProject. The following example shows the command for the packaged installation. See [our process control guide](https://github.com/opf/openproject/blob/dev/docs/installation-and-operations/operation/control) for information on other installation types.
 
-```
+```shell
 sudo openproject run console
 # or if using docker:
 # docker-compose run --rm web bundle exec rails console
 ```
 
-
-
 Once in the console you can then enter the following to enable the setting and leave the console.
 
-```
+```shell
 Setting.oauth_allow_remapping_of_existing_users = true
 exit
 ```
 
-
-
 Then, existing users should be able to log in using their Azure identity. Note that this works only if the user is using password-based authentication, and is not linked to any other authentication source (e.g. LDAP) or OpenID provider.
 
 Note that this setting is set to true by default for new installations already.
+
+**Q: How can I automatically log users out of OpenProject after I delete them from the SSO provider?**
+
+A: OpenProject does not currently revalidate user sessions after the initial login of a user. So even if the SSO provider session expires
+or the user is removed from the SSO provider, this will not immediately have an effect in OpenProject. [A feature  was requested](https://community.openproject.org/wp/65072) to improve this flow.
+
+Workarounds that are available:
+
+- Ensure that the SSO provider performs a backchannel logout for all sessions of the user upon account suspension
+- Synchronize the user account via a provisioning integration, such as SCIM, to ensure that account suspensions are synchronized quickly

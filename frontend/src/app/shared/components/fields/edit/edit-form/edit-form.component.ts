@@ -21,23 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import {
-  Component,
-  ElementRef,
-  EventEmitter,
-  Injector,
-  Input,
-  OnDestroy,
-  OnInit,
-  Optional,
-  Output,
-  ApplicationRef,
-} from '@angular/core';
+import { ApplicationRef, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, Injector, Input, OnDestroy, OnInit, Output, inject } from '@angular/core';
 import { StateService, Transition, TransitionService } from '@uirouter/core';
 import { ConfigurationService } from 'core-app/core/config/configuration.service';
 import { EditableAttributeFieldComponent } from 'core-app/shared/components/fields/edit/field/editable-attribute-field.component';
@@ -57,39 +46,54 @@ import { EditFormRoutingService } from 'core-app/shared/components/fields/edit/e
 import { ResourceChangesetCommit } from 'core-app/shared/components/fields/edit/services/hal-resource-editing.service';
 import { GlobalEditFormChangesTrackerService } from 'core-app/shared/components/fields/edit/services/global-edit-form-changes-tracker/global-edit-form-changes-tracker.service';
 import { firstValueFrom } from 'rxjs';
+import * as Turbo from '@hotwired/turbo';
 
 @Component({
   selector: 'edit-form,[edit-form]',
-  template: '<ng-content></ng-content>',
+  template: '<ng-content />',
+  standalone: false,
+  // TODO: This component has been partially migrated to be zoneless-compatible.
+  // After testing, this should be updated to ChangeDetectionStrategy.OnPush.
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class EditFormComponent extends EditForm<HalResource> implements OnInit, OnDestroy {
-  @Input('resource') resource:HalResource;
+  readonly injector:Injector;
+  protected readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  private appRef = inject(ApplicationRef);
+  private readonly cdRef = inject(ChangeDetectorRef);
+  protected readonly $transitions = inject(TransitionService);
+  protected readonly configurationService = inject(ConfigurationService);
+  protected readonly editingPortalService = inject(EditingPortalService);
+  protected readonly $state = inject(StateService);
+  protected readonly I18n = inject(I18nService);
+  protected readonly editFormRouting = inject(EditFormRoutingService, { optional: true });
+  private globalEditFormChangesTrackerService = inject(GlobalEditFormChangesTrackerService);
+
+  @Input() resource:HalResource;
 
   @Input('inEditMode') initializeEditMode = false;
 
-  @Input('skippedFields') skippedFields:string[] = [];
+  @Input() skippedFields:string[] = [];
 
   @Output('onSaved') onSavedEmitter = new EventEmitter<{ savedResource:HalResource, isInitial:boolean }>();
 
-  public fields:{ [attribute:string]:EditableAttributeFieldComponent } = {};
+  public fields:Record<string, EditableAttributeFieldComponent> = {};
 
   private registeredFields = input<string[]>();
 
   private unregisterListener:Function;
 
-  constructor(public readonly injector:Injector,
-    protected readonly elementRef:ElementRef,
-    private appRef:ApplicationRef,
-    protected readonly $transitions:TransitionService,
-    protected readonly ConfigurationService:ConfigurationService,
-    protected readonly editingPortalService:EditingPortalService,
-    protected readonly $state:StateService,
-    protected readonly I18n:I18nService,
-    @Optional() protected readonly editFormRouting:EditFormRoutingService,
-    private globalEditFormChangesTrackerService:GlobalEditFormChangesTrackerService) {
+  constructor() {
+    const injector = inject(Injector);
+
     super(injector);
+    this.injector = injector;
+    const $transitions = this.$transitions;
+    const I18n = this.I18n;
+
     const confirmText = I18n.t('js.work_packages.confirm_edit_cancel');
-    const requiresConfirmation = ConfigurationService.warnOnLeavingUnsaved();
+    const requiresConfirmation = this.configurationService.warnOnLeavingUnsaved();
 
     this.unregisterListener = $transitions.onBefore({}, (transition:Transition) => {
       if (!this.editing) {
@@ -100,6 +104,7 @@ export class EditFormComponent extends EditForm<HalResource> implements OnInit, 
       // that's not within the edit mode.
       if (!this.editFormRouting || this.editFormRouting.blockedTransition(transition)) {
         if (requiresConfirmation && !window.confirm(confirmText)) {
+          this.undoCanceledBrowserBackTransition(transition);
           return false;
         }
 
@@ -108,6 +113,31 @@ export class EditFormComponent extends EditForm<HalResource> implements OnInit, 
 
       return true;
     });
+  }
+
+  private undoCanceledBrowserBackTransition(transition:Transition) {
+    if (transition.options().source !== 'url') {
+      return;
+    }
+
+    const fromUrl = transition
+      .router
+      .stateService
+      .href(transition.from(), transition.params('from'));
+
+    if (!fromUrl) {
+      return;
+    }
+
+    // Restore the canceled Back URL without firing a real forward navigation,
+    // which would make Turbo restore a stale snapshot of the split view.
+    Turbo.session
+      .history
+      .push(new URL(fromUrl, window.location.origin));
+
+    // Keep UI-Router from replacing the restored browser history entry while
+    // it rolls back the aborted Back navigation.
+    transition.router.urlRouter.update(true);
   }
 
   ngOnInit() {
@@ -178,7 +208,7 @@ export class EditFormComponent extends EditForm<HalResource> implements OnInit, 
 
   public register(field:EditableAttributeFieldComponent) {
     this.fields[field.fieldName] = field;
-    this.registeredFields.putValue(_.keys(this.fields));
+    this.registeredFields.putValue(Object.keys(this.fields));
 
     const shouldActivate = (this.editMode && !this.skipField(field) || this.activeFields[field.fieldName]);
 
@@ -191,28 +221,28 @@ export class EditFormComponent extends EditForm<HalResource> implements OnInit, 
     return firstValueFrom(this.registeredFields
       .values$()
       .pipe(
-        filter((keys) => keys.indexOf(name) >= 0),
+        filter((keys) => keys.includes(name)),
         take(1),
         map(() => this.fields[name]),
       ));
   }
 
   public start() {
-    _.each(this.fields, (ctrl) => this.activate(ctrl.fieldName));
+    Object.values(this.fields).forEach((ctrl) => { void this.activate(ctrl.fieldName); });
   }
 
   protected focusOnFirstError():void {
+    this.cdRef.detectChanges();
     // Focus the first field that is erroneous
-    jQuery(this.elementRef.nativeElement)
-      .find(`.${activeFieldContainerClassName}.-error .${activeFieldClassName}`)
-      .first()
-      .trigger('focus');
+    this.elementRef.nativeElement
+      .querySelector<HTMLElement>(`.${activeFieldContainerClassName}.-error .${activeFieldClassName}`)
+      ?.focus();
   }
 
   private skipField(field:EditableAttributeFieldComponent) {
     const { fieldName } = field;
 
-    const isSkipField = this.skippedFields.indexOf(fieldName) !== -1;
+    const isSkipField = this.skippedFields.includes(fieldName);
 
     // Only skip status or type
     if (!isSkipField) {

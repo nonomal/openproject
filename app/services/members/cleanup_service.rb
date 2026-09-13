@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -37,7 +39,7 @@ module Members
 
     protected
 
-    def perform(*)
+    def perform
       prune_watchers
       unassign_categories
 

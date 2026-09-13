@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -38,7 +40,7 @@ module CustomFields
       nil
     end
 
-    def perform(params)
+    def perform
       super
     rescue StandardError => e
       ServiceResult.failure(message: e.message)
@@ -54,9 +56,11 @@ module CustomFields
     def after_perform(call)
       cf = call.result
 
-      if cf.is_a?(ProjectCustomField)
-        add_cf_to_visible_columns(cf)
-      elsif cf.field_format_hierarchy?
+      if cf.field_format_calculated_value? && cf.is_required?
+        enqueue_recalculate_values(cf)
+      end
+
+      if cf.hierarchical_list?
         CustomFields::Hierarchy::HierarchicalItemService.new.generate_root(cf)
       end
 
@@ -65,8 +69,11 @@ module CustomFields
 
     private
 
-    def add_cf_to_visible_columns(custom_field)
-      Setting.enabled_projects_columns = (Setting.enabled_projects_columns + [custom_field.column_name]).uniq
+    def enqueue_recalculate_values(custom_field)
+      CustomFields::RecalculateValuesJob.perform_later(
+        user: User.current,
+        custom_field_id: custom_field.id
+      )
     end
   end
 end

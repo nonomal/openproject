@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -51,11 +53,13 @@ module API::V3::StorageFiles
     date_time_property :last_modified_at
     property :created_by_name
     property :last_modified_by_name
-    property :location
+    property :location,
+             exec_context: :decorator,
+             getter: ->(*) { Storages::UrlBuilder.path(represented.location) }
     property :permissions
 
     def _type
-      Storages::StorageFile.name.split("::").last
+      Storages::Adapters::Results::StorageFile.name.split("::").last
     end
   end
 end

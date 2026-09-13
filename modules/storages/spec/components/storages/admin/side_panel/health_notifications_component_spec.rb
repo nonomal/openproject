@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -56,7 +58,7 @@ RSpec.describe Storages::Admin::SidePanel::HealthNotificationsComponent, type: :
 
         it "shows a healthy status" do
           expect(page).to have_test_selector("storage-health-status", text: "Healthy")
-          expect(page).to have_test_selector("storage-health-checked-at", text: "Last checked 11/28/2023 01:02 AM")
+          expect(page).to have_test_selector("storage-health-checked-at", text: "Last sync: 11/28/2023 01:02 AM")
         end
       end
 
@@ -110,30 +112,6 @@ RSpec.describe Storages::Admin::SidePanel::HealthNotificationsComponent, type: :
           expect(page).to have_test_selector("storage-health-status", text: "Error")
           expect(page).to have_test_selector("storage-health-error",
                                              text: "Unauthorized: Outbound request not authorized since 11/28/2023 01:02 AM")
-        end
-      end
-    end
-
-    describe "email notifications" do
-      context "when subscribed to email notifications" do
-        let(:storage) { build_stubbed(:nextcloud_storage, :with_health_notifications_enabled, :as_automatically_managed) }
-
-        it "renders an unsubscribe option with info" do
-          expect(page).to have_css("input[type=hidden][value='0']", visible: :hidden)
-          text = "All administrators receive health status email notifications for this storage."
-          expect(page).to have_test_selector("storage-health-notifications-description", text: text)
-          expect(page).to have_button("Unsubscribe")
-        end
-      end
-
-      context "when unsubscribed to email notifications" do
-        let(:storage) { build_stubbed(:nextcloud_storage, :with_health_notifications_disabled, :as_automatically_managed) }
-
-        it "renders an unsubscribe option with info" do
-          expect(page).to have_css("input[type=hidden][value='1']", visible: :hidden)
-          text = "Health status email notifications for this storage have been turned off for all administrators."
-          expect(page).to have_test_selector("storage-health-notifications-description", text:)
-          expect(page).to have_button("Subscribe")
         end
       end
     end

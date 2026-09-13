@@ -35,77 +35,13 @@ module PaginationHelper
   SHOW_MORE_DEFAULT_INCREMENT = 20
   SHOW_MORE_MAX_LIMIT = 1000
 
-  def pagination_links_full(paginator, options = {})
+  def pagination_links_full(paginator, params: {}, allowed_params: nil, per_page_links: true, **)
     return unless paginator.total_entries > 0
 
-    pagination_options = default_options.merge(options)
-
-    content_tag(:div, class: "op-pagination") do
-      content = content_tag(:nav,
-                            pagination_entries(paginator, pagination_options),
-                            class: "op-pagination--pages")
-
-      if pagination_options[:per_page_links]
-        content << pagination_option_links(paginator, pagination_options)
-      end
-
-      content.html_safe
+    content_tag(:div, class: ["op-pagination", { "op-pagination--single-page": paginator.total_pages <= 1 }]) do
+      concat pagination_pages_section(paginator, params:, allowed_params:, **)
+      concat pagination_options_section(paginator, params:, allowed_params:) if per_page_links
     end
-  end
-
-  def pagination_option_links(paginator, pagination_options)
-    allowed_params = pagination_options[:allowed_params] || %w[filters sortBy]
-
-    option_links = pagination_settings(paginator,
-                                       pagination_options[:params]
-                                        .merge(safe_query_params(allowed_params)))
-
-    content_tag(:div, option_links, class: "op-pagination--options")
-  end
-
-  ##
-  # Builds the pagination nav with pages and range
-  def pagination_entries(paginator, options)
-    page_first = paginator.offset + 1
-    page_last = paginator.offset + paginator.length
-    total = paginator.total_entries
-
-    content_tag(:ul, class: "op-pagination--items op-pagination--items_start") do
-      # will_paginate will return nil early when no pages available
-      content = will_paginate(paginator, options) || ""
-
-      range = "(#{page_first} - #{page_last}/#{total})"
-      content += content_tag(:li, range, class: "op-pagination--range", title: range)
-
-      content.html_safe
-    end
-  end
-
-  ##
-  # Builds pagination options (range).
-  def pagination_settings(paginator, options)
-    links = per_page_links(paginator, options)
-
-    if links.size > 1
-      label = I18n.t(:label_per_page)
-      content_tag(:ul, class: "op-pagination--items op-pagination--items_end") do
-        content_tag(:li, label + ":", class: "op-pagination--label", title: label) + links
-      end
-    end
-  end
-
-  ##
-  # Constructs the 'n items per page' entries
-  # determined from available options in the settings.
-  def per_page_links(paginator, options)
-    Setting.per_page_options_array.inject("") do |html, n|
-      if n == paginator.per_page
-        html + content_tag(:li, n, class: "op-pagination--item op-pagination--item_current")
-      else
-        link = link_to_content_update(n, options.merge(page: 1, per_page: n), { class: "op-pagination--item-link" })
-        html + content_tag(:li, link.html_safe, class: "op-pagination--item")
-      end
-    end.html_safe
   end
 
   # Returns page option used for pagination
@@ -160,8 +96,8 @@ module PaginationHelper
   ##
   # For "Show more" paginated links, we want to load an initial number of items (defaulting to 5)
   # unless a higher number is provided. These values do not correspond to the per_page_options
-  def show_more_limit_param(options = params, initial_limit: SHOW_MORE_DEFAULT_LIMIT)
-    limit = options[:limit].to_i
+  def show_more_limit_param(limit: nil, initial_limit: SHOW_MORE_DEFAULT_LIMIT)
+    limit = limit.to_i
     if limit.zero?
       initial_limit
     else
@@ -171,96 +107,100 @@ module PaginationHelper
 
   ##
   # Paginate an AR relation for the "show more" pagination functionality
-  def show_more_pagination(paginator, options = params)
-    paginator.paginate(page: 1, per_page: show_more_limit_param(options))
-  end
-
-  class LinkRenderer < ::WillPaginate::ActionView::LinkRenderer
-    def to_html
-      pagination.inject("") do |html, item|
-        html + (item.is_a?(Integer) ? page_number(item) : send(item))
-      end.html_safe
-    end
-
-    protected
-
-    def merge_get_params(url_params)
-      params = super
-      allowed_params ? params.slice(*allowed_params) : params
-    end
-
-    def page_number(page)
-      if page == current_page
-        tag(:li, page, class: "op-pagination--item op-pagination--item_current")
-      else
-        tag(:li, link(page, page, { class: "op-pagination--item-link" }), class: "op-pagination--item")
-      end
-    end
-
-    def gap
-      tag(:li, "&#x2026;", class: "op-pagination--space")
-    end
-
-    def previous_page
-      num = @collection.current_page > 1 && (@collection.current_page - 1)
-      previous_or_next_page(num, I18n.t(:label_previous), "prev")
-    end
-
-    def next_page
-      num = @collection.current_page < total_pages && (@collection.current_page + 1)
-      previous_or_next_page(num, I18n.t(:label_next), "next")
-    end
-
-    def previous_or_next_page(page, text, class_suffix)
-      if page
-        tag(:li,
-            link(text, page, { class: "op-pagination--item-link op-pagination--item-link_#{class_suffix}" }),
-            class: "op-pagination--item op-pagination--item_#{class_suffix}")
-      else
-        ""
-      end
-    end
-
-    private
-
-    def link(text, target, attributes)
-      new_attributes = attributes.dup
-      new_attributes["data-turbo-stream"] = true if turbo?
-      new_attributes["data-turbo-action"] = turbo_action if turbo_action.present?
-
-      super(text, target, new_attributes)
-    end
-
-    def allowed_params
-      @options[:allowed_params] # rubocop:disable Rails/HelperInstanceVariable
-    end
-
-    # Customize the Turbo visit action for pagination links. Can be set to "advance" or "replace".
-    #  "advance" - push a new entry onto the history stack.
-    #  "replace" - replace the current history entry.
-    # See: https://turbo.hotwired.dev/reference/attributes
-    #
-    # Example: Promoting a Frame Navigation to a Page Visit
-    #   By default navigation within a turbo frame does not change the rest of the browser's state,
-    #   but you can promote a frame navigation a "Visit" by setting the turbo-action attribute to "advance".
-    #   See: https://turbo.hotwired.dev/handbook/frames#promoting-a-frame-navigation-to-a-page-visit
-    #
-    def turbo_action
-      @options[:turbo_action] # rubocop:disable Rails/HelperInstanceVariable
-    end
-
-    def turbo?
-      @options[:turbo] # rubocop:disable Rails/HelperInstanceVariable
-    end
+  def show_more_pagination(paginator, limit: nil)
+    paginator.paginate(page: 1, per_page: show_more_limit_param(limit:))
   end
 
   private
 
-  def default_options
-    {
-      renderer: LinkRenderer,
-      per_page_links: true,
-      params: {}
-    }
+  def pagination_pages_section(paginator, params:, allowed_params:, **)
+    content_tag(:div, class: "op-pagination--pages") do
+      safe_join(
+        [
+          render_primer_pagination(paginator, params:, allowed_params:, **),
+          pagination_range(paginator)
+        ]
+      )
+    end
+  end
+
+  def render_primer_pagination(paginator, params:, allowed_params:, turbo: false, turbo_action: nil, **)
+    link_arguments = {}
+    link_arguments[:data] = {}
+    link_arguments[:data][:turbo_stream] = true if turbo
+    link_arguments[:data][:turbo_action] = turbo_action if turbo_action.present?
+    link_arguments.delete(:data) if link_arguments[:data].empty?
+
+    render(
+      Primer::OpenProject::Pagination.new(
+        page_count: paginator.total_pages,
+        current_page: paginator.current_page,
+        href_builder: ->(page) { pagination_href(page, params:, allowed_params:) },
+        link_arguments:
+      )
+    )
+  end
+
+  def pagination_href(page, params:, allowed_params:)
+    allowed_params ||= %w[filters sortBy]
+
+    url_for(
+      params
+        .merge(page:)
+        .merge(safe_query_params(allowed_params))
+    )
+  end
+
+  def pagination_range(paginator)
+    page_first = paginator.offset + 1
+    page_last = paginator.offset + paginator.length
+    total = paginator.total_entries
+
+    content_tag(
+      :div,
+      "(#{page_first} - #{page_last}/#{total})",
+      class: "op-pagination--range",
+      aria: { live: "polite" }
+    )
+  end
+
+  def pagination_options_section(paginator, params:, allowed_params:)
+    per_page_options = Setting.per_page_options_array
+    return "" if per_page_options.empty?
+
+    allowed_params ||= %w[filters sortBy]
+    content_tag(:div, class: "op-pagination--options") do
+      content_tag(:nav, aria: { label: I18n.t(:"js.pagination.per_page_navigation") }) do
+        pagination_options_list(
+          per_page_options,
+          current_per_page: paginator.per_page,
+          **params.merge(safe_query_params(allowed_params))
+        )
+      end
+    end
+  end
+
+  def pagination_options_list(per_pages, current_per_page:, **)
+    safe_join [
+      content_tag(:span, I18n.t(:label_per_page), class: "op-pagination--label"),
+      per_pages.map { |per_page| pagination_options_item(per_page, current: per_page == current_per_page, **) }
+    ]
+  end
+
+  ##
+  # Constructs the 'n items per page' entries
+  # determined from available options in the settings.
+  def pagination_options_item(per_page, current:, **options)
+    label = I18n.t("js.pagination.pages.show_per_page", number: per_page)
+    aria_props = { label: }
+    aria_props[:current] = "page" if current
+
+    link_to(
+      per_page,
+      options.merge(page: 1, per_page:),
+      class: "Page",
+      aria: aria_props,
+      target: "_top"
+    )
   end
 end

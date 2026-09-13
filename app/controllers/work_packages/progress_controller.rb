@@ -29,29 +29,38 @@
 # ++
 
 class WorkPackages::ProgressController < ApplicationController
-  ERROR_PRONE_ATTRIBUTES = %i[status_id
-                              estimated_hours
-                              remaining_hours
-                              done_ratio].freeze
+  include OpTurbo::ComponentStream
+  include FlashMessagesHelper
+  include WorkPackages::Progress::ModalParams
 
   layout false
-  authorization_checked! :new, :edit, :create, :update
+  authorization_checked! :new, :edit, :preview, :create, :update
 
   def new
     make_fake_initial_work_package
     set_progress_attributes_to_work_package
 
-    render progress_modal_component
+    render_modal
   end
 
   def edit
     find_work_package
     set_progress_attributes_to_work_package
 
-    render progress_modal_component
+    render_modal
   end
 
-  # rubocop:disable Metrics/AbcSize
+  def preview
+    if params[:work_package_id]
+      find_work_package
+    else
+      make_fake_initial_work_package
+    end
+
+    set_progress_attributes_to_work_package
+    render_modal
+  end
+
   def create
     make_fake_initial_work_package
     service_call = set_progress_attributes_to_work_package
@@ -61,13 +70,16 @@ class WorkPackages::ProgressController < ApplicationController
                    .intersect?(ERROR_PRONE_ATTRIBUTES)
       respond_to do |format|
         format.turbo_stream do
+          update_via_turbo_stream(
+            component: progress_modal_component,
+            method: "morph"
+          )
+
           # Bundle 422 status code into stream response so
           # Angular has context as to the success or failure of
           # the request in order to fetch the new set of Work Package
           # attributes in the ancestry solely on success.
-          render turbo_stream: [
-            turbo_stream.morph("work_package_progress_modal", progress_modal_component)
-          ], status: :unprocessable_entity
+          respond_with_turbo_streams(status: :unprocessable_entity)
         end
       end
     else
@@ -76,7 +88,6 @@ class WorkPackages::ProgressController < ApplicationController
                      percentageDone: @work_package.done_ratio }
     end
   end
-  # rubocop:enable Metrics/AbcSize
 
   def update
     find_work_package
@@ -86,21 +97,23 @@ class WorkPackages::ProgressController < ApplicationController
                      .call(work_package_progress_params)
 
     if service_call.success?
-      respond_to do |format|
-        format.turbo_stream do
-          render turbo_stream: []
-        end
-      end
+      head :ok
     else
       respond_to do |format|
         format.turbo_stream do
+          # errors not visible from progress modal fields are rendered in a flash message
+          render_error_flash_message_via_turbo_stream(message: extra_error_messages(service_call))
+
+          update_via_turbo_stream(
+            component: progress_modal_component,
+            method: "morph"
+          )
+
           # Bundle 422 status code into stream response so
           # Angular has context as to the success or failure of
           # the request in order to fetch the new set of Work Package
           # attributes in the ancestry solely on success.
-          render turbo_stream: [
-            turbo_stream.morph("work_package_progress_modal", progress_modal_component)
-          ], status: :unprocessable_entity
+          respond_with_turbo_streams(status: :unprocessable_entity)
         end
       end
     end
@@ -108,20 +121,11 @@ class WorkPackages::ProgressController < ApplicationController
 
   private
 
-  def progress_modal_component
-    modal_class.new(@work_package, focused_field:, touched_field_map:)
-  end
-
-  def modal_class
-    if WorkPackage.status_based_mode?
-      WorkPackages::Progress::StatusBased::ModalBodyComponent
-    else
-      WorkPackages::Progress::WorkBased::ModalBodyComponent
-    end
-  end
-
-  def focused_field
-    params[:field]
+  def render_modal
+    render :modal,
+           locals: {
+             progress_modal_component:
+           }
   end
 
   def find_work_package
@@ -134,54 +138,6 @@ class WorkPackages::ProgressController < ApplicationController
       .permit!
     @work_package = WorkPackage.new(initial_params)
     @work_package.clear_changes_information
-  end
-
-  def touched_field_map
-    params.require(:work_package)
-          .slice("estimated_hours_touched",
-                 "remaining_hours_touched",
-                 "done_ratio_touched",
-                 "status_id_touched")
-          .transform_values { _1 == "true" }
-          .permit!
-  end
-
-  def work_package_progress_params
-    params.require(:work_package)
-          .slice(*allowed_touched_params)
-          .permit!
-  end
-
-  def allowed_touched_params
-    allowed_params.filter { touched?(_1) }
-  end
-
-  def allowed_params
-    if WorkPackage.status_based_mode?
-      %i[estimated_hours status_id]
-    else
-      %i[estimated_hours remaining_hours done_ratio]
-    end
-  end
-
-  def touched?(field)
-    touched_field_map[:"#{field}_touched"]
-  end
-
-  def set_progress_attributes_to_work_package
-    WorkPackages::SetAttributesService
-      .new(user: current_user,
-           model: @work_package,
-           contract_class:)
-      .call(work_package_progress_params)
-  end
-
-  def contract_class
-    if @work_package.new_record?
-      WorkPackages::CreateContract
-    else
-      WorkPackages::UpdateContract
-    end
   end
 
   def formatted_duration(hours)

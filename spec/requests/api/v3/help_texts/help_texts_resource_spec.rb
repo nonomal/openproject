@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -40,8 +42,6 @@ RSpec.describe "API v3 Help texts resource" do
   end
 
   let!(:help_texts) do
-    # need to clear the cache to free the memoized
-    # Type.translated_work_package_form_attributes
     Rails.cache.clear
 
     custom_field = create(:text_wp_custom_field)

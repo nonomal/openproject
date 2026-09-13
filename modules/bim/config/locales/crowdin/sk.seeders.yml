@@ -13,14 +13,14 @@ sk:
         item_2:
           name: Vysoká
         item_3:
-          name: Critical
+          name: Kritické
       statuses:
         item_0:
           name: Nový
         item_1:
           name: Prebieha
         item_2:
-          name: Resolved
+          name: Vyriešené
         item_3:
           name: Zatvorený
       time_entry_activities:
@@ -40,14 +40,14 @@ sk:
         item_3:
           name: Problém
         item_4:
-          name: Remark
+          name: Pripomienka
         item_5:
-          name: Request
+          name: Žiadosť
         item_6:
           name: Clash
       global_queries:
         item_0:
-          name: 'Embedded table: Children'
+          name: 'Vložená tabuľka: Deti'
       type_configuration:
         item_0:
           form_configuration:
@@ -55,67 +55,67 @@ sk:
               group_name: Potomkovia
       groups:
         item_0:
-          name: Architects
+          name: Architekti
         item_1:
-          name: BIM Coordinators
+          name: Koordinátori BIM
         item_2:
-          name: BIM Managers
+          name: Manažéri BIM
         item_3:
-          name: BIM Modellers
+          name: Modelári BIM
         item_4:
           name: Lead BIM Coordinators
         item_5:
-          name: MEP Engineers
+          name: Inžinieri MEP
         item_6:
-          name: Planners
+          name: Plánovači
         item_7:
-          name: Structural Engineers
+          name: Stavební inžinieri
       welcome:
-        title: Welcome to OpenProject BIM edition!
+        title: Vitajte v edícii OpenProject BIM!
         text: |
-          Checkout the demo projects to get started with some examples.
+          Pozrite si demonštračné projekty a začnite s niektorými príkladmi.
 
-          * [(Demo) Construction project]({{opSetting:base_url}}/projects/demo-construction-project): Planning, BIM process, BCF management, and constructing, all at a glance.
-              * [(Demo) Planning & constructing]({{opSetting:base_url}}/projects/demo-planning-constructing-project): Classical planning and construction management.
-              * [(Demo) Bim project]({{opSetting:base_url}}/projects/demo-bim-project): BIM process and coordination.
-                  * [(Demo) BCF management]({{opSetting:base_url}}/projects/demo-bcf-management-project): BCF management.
+          * [(Demo) Stavebný projekt]({{opSetting:base_url}}/projects/demo-construction-project): Plánovanie, proces BIM, riadenie BCF a výstavba, to všetko v jednom.
+              * [(Demo) Plánovanie a konštruovanie]({{opSetting:base_url}}/projects/demo-planning-constructing-project): Klasické plánovanie a riadenie výstavby.
+              * [(Demo) Bim projekt]({{opSetting:base_url}}/projects/demo-bim-project): BIM proces a koordinácia.
+                  * [(Demo) BCF manažment]({{opSetting:base_url}}/projects/demo-bcf-management-project): BCF management.
 
-          Also, you can create a blank [new project]({{opSetting:base_url}}/projects/new).
+          Môžete tiež vytvoriť prázdny [nový projekt]({{opSetting:base_url}}/projects/new).
 
-          Never stop collaborating. With open source and open mind.
+          Nikdy neprestávajte spolupracovať. S otvoreným zdrojom a otvorenou mysľou.
 
-          You can change this welcome text [here]({{opSetting:base_url}}/admin/settings/general).
+          Tento uvítací text môžete zmeniť [tu]({{opSetting:base_url}}/admin/settings/general).
       projects:
         demo-construction-project:
-          name: "(Demo) Construction project"
-          status_explanation: All tasks and the sub-projects are on schedule. The people involved know their tasks. The system is completely set up.
-          description: This is a short summary of the goals of this demo construction project.
+          name: "(Demo) Stavebný projekt"
+          status_explanation: Všetky úlohy a čiastkové projekty sa realizujú podľa harmonogramu. Zúčastnení ľudia poznajú svoje úlohy. Systém je kompletne nastavený.
+          description: Toto je krátke zhrnutie cieľov týchto demonštračného stavebného projektu.
           news:
             item_0:
-              title: Welcome to your demo project
+              title: Vitajte vo svojom demo projekte
               summary: |
-                We are glad you joined.
-                In this module you can communicate project news to your team members.
-              description: The actual news
+                Sme radi, že ste sa pridali.
+                V tomto module môžete členom svojho tímu oznamovať novinky o projekte.
+              description: Aktuálne správy
           categories:
-            item_0: Category 1 (to be changed in Project settings)
+            item_0: Kategória 1 (treba zmeniť v nastaveniach projektu)
           queries:
             item_0:
-              name: Project plan
+              name: Plán projektu
             item_1:
-              name: Milestones
+              name: Míľniky
             item_2:
-              name: Tasks
+              name: Úlohy
             item_3:
-              name: Team planner
+              name: Plánovač tímu
           boards:
             bcf:
-              name: Simple drag'n drop workflow
+              name: Jednoduchý pracovný postup drag´n drop (potiahni a pusti)
           project-overview:
             widgets:
               item_0:
                 options:
-                  name: Welcome
+                  name: Vitajte
               item_1:
                 options:
                   name: Začíname
@@ -147,34 +147,34 @@ sk:
                   name: Pracovné balíčky
               item_6:
                 options:
-                  name: Milestones
+                  name: Míľniky
         demo-planning-constructing-project:
           name: "(Demo) Planning & constructing"
           status_explanation: All tasks are on schedule. The people involved know their tasks. The system is completely set up.
           description: This is a short summary of the goals of this demo planning and constructing project.
           news:
             item_0:
-              title: Welcome to your demo project
+              title: Vitajte vo svojom demo projekte
               summary: |
-                We are glad you joined.
-                In this module you can communicate project news to your team members.
-              description: The actual news
+                Sme radi, že ste sa pridali.
+                V tomto module môžete členom svojho tímu oznamovať novinky o projekte.
+              description: Aktuálne správy
           categories:
-            item_0: Category 1 (to be changed in Project settings)
+            item_0: Kategória 1 (treba zmeniť v nastaveniach projektu)
           queries:
             item_0:
-              name: Project plan
+              name: Plán projektu
             item_1:
-              name: Milestones
+              name: Míľniky
             item_2:
-              name: Tasks
+              name: Úlohy
             item_3:
-              name: Team planner
+              name: Plánovač tímu
           project-overview:
             widgets:
               item_0:
                 options:
-                  name: Welcome
+                  name: Vitajte
               item_1:
                 options:
                   name: Začíname
@@ -202,7 +202,7 @@ sk:
                   name: Pracovné balíčky
               item_6:
                 options:
-                  name: Milestones
+                  name: Míľniky
           work_packages:
             item_0:
               subject: Project kick off construction project
@@ -408,27 +408,27 @@ sk:
           description: This is a short summary of the goals of this demo BIM project.
           news:
             item_0:
-              title: Welcome to your demo project
+              title: Vitajte vo svojom demo projekte
               summary: |
-                We are glad you joined.
-                In this module you can communicate project news to your team members.
-              description: The actual news
+                Sme radi, že ste sa pridali.
+                V tomto module môžete členom svojho tímu oznamovať novinky o projekte.
+              description: Aktuálne správy
           categories:
-            item_0: Category 1 (to be changed in Project settings)
+            item_0: Kategória 1 (treba zmeniť v nastaveniach projektu)
           queries:
             item_0:
-              name: Project plan
+              name: Plán projektu
             item_1:
-              name: Milestones
+              name: Míľniky
             item_2:
-              name: Tasks
+              name: Úlohy
             item_3:
-              name: Team planner
+              name: Plánovač tímu
           project-overview:
             widgets:
               item_0:
                 options:
-                  name: Welcome
+                  name: Vitajte
               item_1:
                 options:
                   name: Začíname
@@ -459,7 +459,7 @@ sk:
                   name: Pracovné balíčky
               item_6:
                 options:
-                  name: Milestones
+                  name: Míľniky
           work_packages:
             item_0:
               subject: Project kick off creating BIM model
@@ -679,7 +679,7 @@ sk:
             item_2:
               name: Hospital - Mechanical (cc-by-sa-3.0 Autodesk Inc.)
           categories:
-            item_0: Category 1 (to be changed in Project settings)
+            item_0: Kategória 1 (treba zmeniť v nastaveniach projektu)
           queries:
             item_0:
               name: Issues
@@ -690,13 +690,13 @@ sk:
             item_3:
               name: Remarks
             item_4:
-              name: Project plan
+              name: Plán projektu
             item_5:
-              name: Milestones
+              name: Míľniky
             item_6:
-              name: Tasks
+              name: Úlohy
             item_7:
-              name: Team planner
+              name: Plánovač tímu
           boards:
             bcf:
               name: BCF issues
@@ -704,7 +704,7 @@ sk:
             widgets:
               item_0:
                 options:
-                  name: Welcome
+                  name: Vitajte
               item_1:
                 options:
                   name: Začíname

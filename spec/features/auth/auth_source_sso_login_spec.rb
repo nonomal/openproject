@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -51,6 +53,7 @@ RSpec.describe "Login with auth source SSO" do
            password: user_password,
            password_confirmation: user_password)
   end
+  let(:user_menu) { Components::UserMenu.new }
 
   it "can still login" do
     login_with(user.login, user_password)
@@ -58,6 +61,6 @@ RSpec.describe "Login with auth source SSO" do
     # on the my page
     expect(page).to have_current_path home_path
 
-    expect(page).to have_css("a[title='#{user.name}']")
+    user_menu.expect_user_shown user.name
   end
 end

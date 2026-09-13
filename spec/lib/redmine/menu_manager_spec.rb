@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #  OpenProject is an open source project management software.
 #  Copyright (C) the OpenProject GmbH
 #
@@ -64,7 +66,6 @@ RSpec.describe Redmine::MenuManager do
                       :gantt,
                       :team_planner_view,
                       :boards,
-                      :dashboards,
                       :backlogs,
                       :news,
                       :costs,
@@ -105,7 +106,7 @@ RSpec.describe Redmine::MenuManager do
     context "for the my_menu" do
       it "includes the expected items" do
         expect(described_class.items(:my_menu).map(&:name))
-          .to include(:account, :settings, :password, :access_token, :notifications, :reminders, :delete_account)
+          .to include(:account, :locale, :security, :access_tokens, :notifications)
       end
     end
 

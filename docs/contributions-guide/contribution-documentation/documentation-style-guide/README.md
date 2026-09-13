@@ -30,7 +30,7 @@ Within each folder there is a sub-hierarchy of topics. E.g. in the Getting start
 
 ### Folder content
 
-We aim to have a clear hierarchical structure with meaningful URLs like `https://www.openproject.org/docs/getting-started/sign-in-registration/`. With this structure you can identify straight away that this part of the documentation is about the sign in and registration process. At the same time, the website path matches our repository, making it easy to update the documentation.
+We aim to have a clear hierarchical structure with meaningful URLs like `/docs/getting-started/sign-in-registration/`. With this structure you can identify straight away that this part of the documentation is about the sign in and registration process. At the same time, the website path matches our repository, making it easy to update the documentation.
 
 Find an overview of content per folder here:
 
@@ -92,7 +92,7 @@ Do not include the same information in multiple places. Instead, link through to
 
 The OpenProject documentation should be as clear and easy to understand as possible. Avoid unnecessary words.
 
-- Be clear and concise with as little words as possible.
+- Be clear and concise with as few words as possible.
 
 - Write in US English with US grammar.  
 
@@ -221,8 +221,8 @@ Example for an unordered list:
 
 - Do not add commas (`,`) or semicolons (`;`) to the ends of list items.
 - Separate list items from explanatory text with a colon (`:`). For example:
-    - Feature 1: very attractive new feature
-    - Feature 2: description of an additional feature
+  - Feature 1: very attractive new feature
+  - Feature 2: description of an additional feature
 
 ## Tables
 
@@ -320,7 +320,7 @@ All project menu items are spelled as in the application in bold, e.g.
 
 To be consistent, use this format when you write about UI navigation. Use the same names as in the application in italic and with arrows in between:
 
-* In the header menu, click on your *Avatar > Administration* to find system settings.
+- In the header menu, click on your _Avatar > Administration_ to find system settings.
 
 ## Images
 
@@ -335,18 +335,17 @@ Use images to help the reader understand where they are in a process, or how the
 When you take screenshots:
 
 - Capture the most relevant area: Do not include unnecessary blank space or areas of the page that do not help illustrate the point. The project menu on the left of the OpenProject application can change, so don’t include it unless it is necessary.
-
 - Be consistent: Coordinate screenshots with the other screenshots already on a documentation page. For example, if other screenshots include the left sidebar, include the sidebar in all screenshots.
 
 ### Highlight specific areas and add numbered labels
 
 You can highlight a specific area of a screenshot to draw the reader's attention to it. Additionally, add numbered labels to refer to specific parts of the screenshot in the documentation text. These should be used sparingly since any future changes to the interface require the highlighted areas and labels to be manually added to each updated screenshot.
 
-A highlighted area should be marked with a green rectangle (3px width, *Accent/Accent* color in our design system: #308720). The size of the area will naturally depend on the size of the area you wish you highlight.
+A highlighted area should be marked with a green rectangle (3px width, _Accent/Accent_ color in our design system: #308720). The size of the area will naturally depend on the size of the area you wish to highlight.
 
 ![screenshot_highlights_example](screenshot_area_highlight.png)
 
-The numbered labels should be light grey text *(Basic/Grey 6*: #F3F3F3) on a 24-pixel green circle (*Accent/Accent*: #308720) with a light grey outline (2px, *Basic/Grey 6*: #F3F3F3).
+The numbered labels should be light grey text _(Basic/Grey 6_: #F3F3F3) on a 24-pixel green circle (_Accent/Accent_: #308720) with a light grey outline (2px, _Basic/Grey 6_: #F3F3F3).
 
 ![Style guide for numbered labels](screenshot_numberedlabels_highlight.png)
 
@@ -358,13 +357,12 @@ When referring to the numbered labels in the documentation text, use either an o
 
 ### Save images
 
+- Prefer PNG format for images. Use JPG only if the image is a photo or if the PNG file size exceeds 200 KB.
+- Try to compress your image with a tool like [squoosh](https://squoosh.app/) with `OxiPNG` or `MozJPEG`.
 - Save the image with a file name that describes the image. Use lower cases and no spaces (see [file names requirements](#directory-and-file-names)).
-
-- Make sure to not exceed the maximum image size of 200KB.
-
+- Make sure to not exceed the maximum image size of **200 KB**.
 - Place your images in the same directory where the README.md document that you are working on is located.
-
-- Compress GIFs, maximum size 250KB.
+- Compress GIFs, maximum size **2 MB**.
 
 ### Add the image link to content
 
@@ -414,18 +412,14 @@ Alerts are a Markdown extension by Github based on the blockquote syntax that yo
 > [!NOTE]
 > Useful information that users should know, even when skimming content.
 
-
 > [!TIP]
 > Helpful advice for doing things better or more easily.
-
 
 > [!IMPORTANT]
 > Key information users need to know to achieve their goal.
 
-
 > [!WARNING]
 > Urgent info that needs immediate user attention to avoid problems.
-
 
 > [!CAUTION]
 > Advises about risks or negative outcomes of certain actions.

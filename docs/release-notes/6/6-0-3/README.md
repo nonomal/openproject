@@ -17,20 +17,20 @@ CVEs:
 
 **The following bugs have been fixed in OpenProject 6.0.3:**
 
-  - The help and profile dropdown changed rapidly when hovering over
-    them ([#23745](https://community.openproject.org/wp/23745)).
-  - Safari did not display the pagination buttons on the work package
-    page
-    ([#23785](https://community.openproject.org/wp/23785)).
-  - The projects-menu did not properly display all projects in some
-    cases
-    ([#23774](https://community.openproject.org/wp/23774)).
-  - Several design errors have been fixes
-    ([#23778](https://community.openproject.org/wp/23778),
-    [#23801](https://community.openproject.org/wp/23801)).
-  - Additionally, the performance on the work package page has been
-    slightly improved
-    ([#23781](https://community.openproject.org/wp/23781)).
+- The help and profile dropdown changed rapidly when hovering over
+  them ([#23745](https://community.openproject.org/wp/23745)).
+- Safari did not display the pagination buttons on the work package
+  page
+  ([#23785](https://community.openproject.org/wp/23785)).
+- The projects-menu did not properly display all projects in some
+  cases
+  ([#23774](https://community.openproject.org/wp/23774)).
+- Several design errors have been fixes
+  ([#23778](https://community.openproject.org/wp/23778),
+  [#23801](https://community.openproject.org/wp/23801)).
+- Additionally, the performance on the work package page has been
+  slightly improved
+  ([#23781](https://community.openproject.org/wp/23781)).
 
 We strongly recommend the upgrade.
 

@@ -1,6 +1,7 @@
 module OpenProject::Bim::Patches::WorkPackageSeederPatch
   def self.included(base) # :nodoc:
     base.prepend InstanceMethods
+    base.attribute_names_for_required_references << "bcf_issue"
   end
 
   module InstanceMethods

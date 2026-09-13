@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -35,7 +37,7 @@ module SecurityBadgeHelper
       version: OpenProject::VERSION.to_semver,
       db: ActiveRecord::Base.connection.adapter_name.downcase,
       lang: User.current.try(:language),
-      ee: EnterpriseToken.current.present?
+      ee: EnterpriseToken.active?
     }.merge(args.symbolize_keys)
     uri.query = info.to_query
     uri.to_s

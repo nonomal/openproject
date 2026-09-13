@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -36,8 +38,8 @@ module Admin
           "project-#{project.id}"
         end
 
-        def more_menu_items
-          @more_menu_items ||= [more_menu_detach_project].compact
+        def menu_items
+          @menu_items ||= [more_menu_detach_project].compact
         end
 
         private

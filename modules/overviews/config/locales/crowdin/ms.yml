@@ -1,4 +1,10 @@
+---
 ms:
+  activerecord:
+    models:
+      grids/overview:
+        other: Overviews
   overviews:
-    label: 'Gambaran Keseluruhan'
-  permission_manage_overview: 'Urus halaman gambaran keseluruhan'
+    label_dashboard: Papan Pemuka
+    label_home: "%{workspace_type} home"
+    label_overview: Gambaran Keseluruhan

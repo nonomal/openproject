@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,31 +32,74 @@ module Redmine::MenuManager::TopMenuHelper
   include Redmine::MenuManager::TopMenu::HelpMenu
   include Redmine::MenuManager::TopMenu::ProjectsMenu
   include Redmine::MenuManager::TopMenu::QuickAddMenu
+  include Redmine::MenuManager::TopMenu::UserMenu
+  include Redmine::MenuManager::TopMenu::ModuleMenu
 
   def render_top_menu_left
-    content_tag :ul, class: "op-app-menu op-app-menu_drop-left" do
+    tag.nav class: "op-app-menu op-app-menu_drop-left", aria: { label: t(:label_top_menu) } do
       safe_join top_menu_left_menu_items
     end
   end
 
   def top_menu_left_menu_items
-    [render_main_top_menu_nodes,
-     render_projects_top_menu_node,
-     render_quick_add_menu]
+    items = [
+      render_module_top_menu_node,
+      render_logo
+    ]
+
+    cs = CustomStyle.current
+    if cs&.logo_mobile.present? || !custom_logo?
+      items << render_logo_icon
+    end
+
+    items
   end
 
   def render_top_menu_center
+    render_top_menu_search
+  end
+
+  def render_logo
+    mode_class = "op-logo--link_high_contrast" if User.current.pref.light_high_contrast_theme?
     content_tag :div, class: "op-logo" do
-      mode_class = User.current.pref.high_contrast_theme? ? "op-logo--link_high_contrast" : ""
       link_to(I18n.t("label_home"),
               configurable_home_url,
-              class: "op-logo--link #{mode_class}")
+              data: { auto_theme_switcher_target: "desktopLogo" },
+              class: ["op-logo--link", mode_class].compact)
     end
+  end
+
+  def render_logo_icon
+    mode_class = "op-logo--icon_white" unless User.current.pref.light_high_contrast_theme?
+    link_to(I18n.t("label_home"),
+            configurable_home_url,
+            data: { auto_theme_switcher_target: "mobileLogo" },
+            class: ["op-logo", "op-logo--icon", "op-logo--link", mode_class].compact)
+  end
+
+  def render_waffle_menu_logo_icon
+    style = CustomStyle.current
+    classes = ["op-logo"]
+    if style&.logo_mobile.present?
+      classes << "op-logo--icon"
+    else
+      mode_class = User.current.pref.theme == "dark" ? "op-logo--icon_white" : "op-logo--icon"
+      classes << mode_class
+    end
+    render Primer::BaseComponent.new(tag: :div, classes:)
   end
 
   def render_top_menu_search
     content_tag :div, class: "op-app-search" do
       render_global_search_input
+    end
+  end
+
+  def render_top_menu_teaser
+    if User.current.admin? && EnterpriseToken.trial_only?
+      render(Primer::BaseComponent.new(tag: :div, classes: "op-app-menu--item hidden-for-mobile")) do
+        render(EnterpriseEdition::BuyNowButtonComponent.new)
+      end
     end
   end
 
@@ -67,22 +112,12 @@ module Redmine::MenuManager::TopMenuHelper
 
   def render_top_menu_right
     capture do
-      concat render_top_menu_search
-      concat top_menu_right_node
+      concat render_top_menu_teaser
+      concat render_quick_add_menu
+      concat render_notification_top_menu_node
+      concat render_help_top_menu_node
+      concat render_user_top_menu_node
     end
-  end
-
-  def top_menu_right_node
-    content_tag(:ul, class: "op-app-menu") do
-      safe_join top_menu_right_menu_items
-    end
-  end
-
-  def top_menu_right_menu_items
-    [render_module_top_menu_node,
-     render_notification_top_menu_node,
-     render_help_top_menu_node,
-     render_user_top_menu_node]
   end
 
   private
@@ -91,155 +126,22 @@ module Redmine::MenuManager::TopMenuHelper
     return "".html_safe unless User.current.logged?
     return "".html_safe if Setting.notifications_hidden?
 
-    content_tag("li", class: "op-app-menu--item", title: I18n.t("mail.notification.center")) do
-      angular_component_tag "opce-in-app-notification-bell",
-                            inputs: {
-                              interval: Setting.notifications_polling_interval
-                            }
+    render(Primer::BaseComponent.new(tag: :div,
+                                     classes: "op-app-menu--item",
+                                     position: :relative,
+                                     px: 1)) do
+      concat(render(Primer::Beta::IconButton.new(icon: :inbox,
+                                                 tag: :a,
+                                                 href: notifications_path,
+                                                 classes: "op-app-header--primer-button op-ian-bell",
+                                                 scheme: :invisible,
+                                                 test_selector: "op-ian-bell",
+                                                 aria: { label: I18n.t(:label_notification_center_plural) })))
+      concat(angular_component_tag("opce-in-app-notification-bell",
+                                   inputs: {
+                                     interval: Setting.notifications_polling_interval
+                                   }))
     end
-  end
-
-  def render_user_top_menu_node(items = first_level_menu_items_for(:account_menu))
-    if User.current.logged?
-      render_user_drop_down items
-    elsif omniauth_direct_login?
-      render_direct_login
-    else
-      render_login_drop_down
-    end
-  end
-
-  def render_login_drop_down
-    url = { controller: "/account", action: "login" }
-    link = link_to url,
-                   class: "op-app-menu--item-action",
-                   title: I18n.t(:label_login) do
-      concat content_tag(:span, I18n.t(:label_login), class: "op-app-menu--item-title hidden-for-mobile")
-      concat content_tag(:i, "", class: "op-app-menu--item-dropdown-indicator button--dropdown-indicator hidden-for-mobile")
-      concat content_tag(:i, "", class: "icon2 icon-user hidden-for-desktop")
-    end
-
-    render_menu_dropdown(link, menu_item_class: "") do
-      render_login_partial
-    end
-  end
-
-  def render_direct_login
-    link = link_to signin_path,
-                   class: "op-app-menu--item-action login",
-                   title: I18n.t(:label_login) do
-      concat content_tag(:span, I18n.t(:label_login), class: "op-app-menu--item-title hidden-for-mobile")
-      concat content_tag(:i, "", class: "icon2 icon-user hidden-for-desktop")
-    end
-
-    content_tag :li, class: "" do
-      concat link
-    end
-  end
-
-  def render_user_drop_down(items)
-    avatar = avatar(User.current, class: "op-top-menu-user-avatar", hover_card: { active: false })
-    render_menu_dropdown_with_items(
-      label: avatar.presence || "",
-      label_options: {
-        title: User.current.name,
-        class: "op-top-menu-user",
-        icon: (avatar.present? ? "overridden-by-avatar" : "icon-user")
-      },
-      items:,
-      options: { drop_down_id: "user-menu", menu_item_class: "last-child" }
-    )
-  end
-
-  def render_login_partial
-    partial =
-      if OpenProject::Configuration.disable_password_login?
-        "account/omniauth_login"
-      else
-        "account/login"
-      end
-
-    render partial:
-  end
-
-  def render_module_top_menu_node(item_groups = module_top_menu_item_groups)
-    unless item_groups.empty?
-      render Primer::Alpha::ActionMenu.new(classes: "op-app-menu--item",
-                                           menu_id: "op-app-header--modules-menu",
-                                           anchor_align: :end) do |menu|
-        menu.with_show_button(icon: "op-grid-menu",
-                              scheme: :invisible,
-                              classes: "op-app-menu--item-action op-app-header--primer-button hidden-for-mobile",
-                              title: I18n.t("label_modules"),
-                              test_selector: "op-app-header--modules-menu-button",
-                              "aria-label": I18n.t("label_modules"))
-
-        item_groups.each do |item_group|
-          render_menu_item_group(menu, item_group)
-        end
-      end
-    end
-  end
-
-  def render_menu_item_group(menu, item_group)
-    menu.with_group do |menu_group|
-      menu_group.with_heading(title: item_group[:title], align_items: :flex_start) if item_group[:title]
-
-      item_group[:items].each do |item|
-        menu_group.with_item(
-          href: url_for(item.url),
-          label: item.caption,
-          test_selector: "op-menu--item-action"
-        ) do |menu_item|
-          menu_item.with_leading_visual_icon(icon: item.icon) if item.icon
-        end
-      end
-    end
-  end
-
-  def render_main_top_menu_nodes(items = main_top_menu_items)
-    items.map do |item|
-      render_menu_node(item)
-    end.join(" ")
-  end
-
-  # Menu items for the main top menu
-  def main_top_menu_items
-    split_top_menu_into_main_or_more_menus[:base]
-  end
-
-  # Menu items for the modules top menu
-  def more_top_menu_items
-    split_top_menu_into_main_or_more_menus[:modules]
-  end
-
-  def module_top_menu_item_groups
-    items = more_top_menu_items
-    item_groups = []
-
-    # add untitled group, if no heading is present
-    unless items.first.heading?
-      item_groups = [{ title: nil, items: [] }]
-    end
-
-    # create item groups
-    items.reduce(item_groups) do |groups, item|
-      if item.heading?
-        groups << { title: item.caption, items: [] }
-      else
-        groups.last[:items] << item
-      end
-
-      groups
-    end
-  end
-
-  def project_menu_items
-    split_top_menu_into_main_or_more_menus[:projects]
-  end
-
-  def help_menu_item
-    split_top_menu_into_main_or_more_menus[:help]
   end
 
   # Split the :top_menu into separate :main and :modules items

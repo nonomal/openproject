@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -78,13 +80,19 @@ RSpec.describe Principals::Scopes::Visible do
       end
     end
 
+    shared_examples "sees principals in same projets and groups" do
+      it "sees only the users, groups, and placeholder users in the same project" do
+        expect(subject).to contain_exactly(current_user, project_user, project_group, project_placeholder_user)
+      end
+    end
+
     context "when user has manage_members project permission" do
       current_user do
         create(:user, firstname: "current user",
                       member_with_roles: { project => role })
       end
 
-      include_examples "sees all principals"
+      include_examples "sees principals in same projets and groups"
     end
 
     context "when user has no manage_members project permission, and is member of a project" do
@@ -93,13 +101,17 @@ RSpec.describe Principals::Scopes::Visible do
                       member_with_permissions: { project => %i[view_work_packages] })
       end
 
-      it "sees only the users, groups, and placeholder users in the same project" do
-        expect(subject).to contain_exactly(current_user, project_user, project_group, project_placeholder_user)
-      end
+      include_examples "sees principals in same projets and groups"
     end
 
-    context "when user has manage_user global permission" do
-      current_user { create(:user, firstname: "current user", global_permissions: %i[manage_user]) }
+    context "when user has view_all_principals global permission" do
+      current_user { create(:user, firstname: "current user", global_permissions: %i[view_all_principals]) }
+
+      include_examples "sees all principals"
+    end
+
+    context "when user is an admin" do
+      current_user { create(:admin, firstname: "current user") }
 
       include_examples "sees all principals"
     end
@@ -107,8 +119,12 @@ RSpec.describe Principals::Scopes::Visible do
     context "when user has no permission" do
       current_user { create(:user, firstname: "current user") }
 
-      it "sees only themself" do
-        expect(subject).to contain_exactly(current_user)
+      let!(:current_user_group) do
+        create(:group, firstname: "current user group", members: [current_user])
+      end
+
+      it "sees only themself and groups they belong to" do
+        expect(subject).to contain_exactly(current_user, current_user_group)
       end
     end
   end

@@ -13,28 +13,18 @@
 
 <%=
   render(Primer::OpenProject::SubHeader.new) do |subheader|
-    subheader.with_action_component do
-      render(
-        Primer::Alpha::ActionMenu.new(
-          anchor_align: :end
+    subheader.with_action_menu(leading_icon: :plus,
+                               trailing_icon: :"triangle-down",
+                               label: I18n.t("openid_connect.providers.singular"),
+                               anchor_align: :end,
+                               button_arguments: { scheme: :primary,
+                                                   disabled: !EnterpriseToken.allows_to?(:sso_auth_providers),
+                                                   aria: { label: I18n.t("openid_connect.providers.label_add_new") } }) do |menu|
+      OpenIDConnect::Provider::OIDC_PROVIDERS.each do |provider_type|
+        menu.with_item(
+          label: I18n.t("openid_connect.providers.#{provider_type}.name"),
+          href: url_helpers.new_openid_connect_provider_path(oidc_provider: provider_type)
         )
-      ) do |menu|
-        menu.with_show_button(
-          scheme: :primary,
-          disabled: !EnterpriseToken.allows_to?(:sso_auth_providers),
-          aria: { label: I18n.t("openid_connect.providers.label_add_new") }
-        ) do |button|
-          button.with_leading_visual_icon(icon: :plus)
-          button.with_trailing_action_icon(icon: :"triangle-down")
-          I18n.t("openid_connect.providers.singular")
-        end
-
-        OpenIDConnect::Provider::OIDC_PROVIDERS.each do |provider_type|
-          menu.with_item(
-            label: I18n.t("openid_connect.providers.#{provider_type}.name"),
-            href: url_helpers.new_openid_connect_provider_path(oidc_provider: provider_type)
-          )
-        end
       end
     end
   end

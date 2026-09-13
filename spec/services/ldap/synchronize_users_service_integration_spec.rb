@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 
 RSpec.describe Ldap::SynchronizeUsersService do
@@ -20,8 +22,8 @@ RSpec.describe Ldap::SynchronizeUsersService do
   end
 
   context "when updating users" do
-    let!(:user_aa729) { create(:user, login: "aa729", firstname: "Foobar", ldap_auth_source:) }
-    let!(:user_bb459) { create(:user, login: "bb459", firstname: "Bla", ldap_auth_source:) }
+    let!(:user_aa729) { create(:user, login: "aa729", firstname: "Foobar", lastname: "Bobbit", ldap_auth_source:) }
+    let!(:user_bb459) { create(:user, login: "bb459", firstname: "Bla", lastname: "Bobbit", ldap_auth_source:) }
 
     context "when user sync status is enabled",
             with_config: { ldap_users_sync_status: true } do

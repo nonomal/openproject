@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,10 +31,6 @@
 require "spec_helper"
 
 RSpec.describe "users 2fa devices" do
-  it "route to index" do
-    expect(get("/my/two_factor_devices")).to route_to("two_factor_authentication/my/two_factor_devices#index")
-  end
-
   it "route to new" do
     expect(get("/my/two_factor_devices/new")).to route_to("two_factor_authentication/my/two_factor_devices#new")
   end

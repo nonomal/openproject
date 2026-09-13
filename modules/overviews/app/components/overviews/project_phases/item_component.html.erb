@@ -21,7 +21,7 @@
 
     life_cycle_container.with_row(w: :full) do
       render(authorized_edit_link) do
-        if not_set?
+        if date_range_not_set?
           render(Primer::Beta::Text.new) { t("placeholders.default") }
         else
           render Projects::PhaseComponent.new(phase: model)

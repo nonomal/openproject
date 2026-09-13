@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module TwoFactorAuthentication
   class Device < ApplicationRecord
     default_scope { order("id ASC") }
@@ -90,7 +92,7 @@ module TwoFactorAuthentication
     end
 
     def self.device_type
-      raise NotImplementedError
+      raise SubclassResponsibilityError
     end
 
     def self.available_channels_in_strategy

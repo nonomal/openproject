@@ -1,35 +1,36 @@
 # frozen_string_literal: true
 
+#-- copyright
+# OpenProject is an open source project management software.
+# Copyright (C) the OpenProject GmbH
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License version 3.
+#
+# OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+# Copyright (C) 2006-2013 Jean-Philippe Lang
+# Copyright (C) 2010-2013 the ChiliProject Team
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# See COPYRIGHT and LICENSE files for more details.
+#++
+
 class CreateGoodJobBatches < ActiveRecord::Migration[7.0]
   def change
-    reversible do |dir|
-      dir.up do
-        # Ensure this incremental update migration is idempotent
-        # with monolithic install migration.
-        return if connection.table_exists?(:good_job_batches)
-      end
-    end
-
-    create_table :good_job_batches, id: :uuid do |t|
-      t.timestamps
-      t.text :description
-      t.jsonb :serialized_properties
-      t.text :on_finish
-      t.text :on_success
-      t.text :on_discard
-      t.text :callback_queue_name
-      t.integer :callback_priority
-      t.datetime :enqueued_at
-      t.datetime :discarded_at
-      t.datetime :finished_at
-    end
-
-    change_table :good_jobs do |t|
-      t.uuid :batch_id
-      t.uuid :batch_callback_id
-
-      t.index :batch_id, where: "batch_id IS NOT NULL"
-      t.index :batch_callback_id, where: "batch_callback_id IS NOT NULL"
-    end
+    # Moved to db/migrate/tables/good_job_batches.rb and db/migrate/tables/good_jobs.rb
+    # This file is not squashed since good_job would otherwise recreate it when an update is done.
   end
 end

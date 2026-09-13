@@ -32,6 +32,8 @@ module Pages
   ##
   # Offers common steps for Budget Page instances.
   module BudgetForm
+    include ::Components::Autocompleter::NgSelectAutocompleteHelpers
+
     ##
     # Adds planned unit costs with the default cost type.
     def add_unit_costs!(num_units, comment: nil, expected_costs: nil)
@@ -59,9 +61,14 @@ module Pages
       prefix = "#{unit_cost_attr_id(type)}_#{id}"
       options = { fill_options: { clear: :backspace } }
 
-      fill_in("#{prefix}_units", with: units, **options) if units.present?
-      fill_in("#{prefix}_comments", with: comment, **options) if comment.present?
-      expect(page).to have_css("##{prefix}_costs", text: expected_costs) if expected_costs.present?
+      retry_block do
+        fill_in("#{prefix}_units", with: units, **options) if units.present?
+        fill_in("#{prefix}_comments", with: comment, **options) if comment.present?
+
+        if expected_costs.present?
+          expect(page).to have_css("##{prefix}_costs", text: expected_costs)
+        end
+      end
     end
 
     def open_edit_planned_costs!(id, type:)
@@ -98,21 +105,33 @@ module Pages
       prefix = "#{labor_cost_attr_id(type)}_#{id}"
       options = { fill_options: { clear: :backspace } }
 
-      fill_in("#{prefix}_hours", with: hours, **options) if hours.present?
-      select user_name, from: "#{prefix}_user_id" if user_name.present?
-      fill_in("#{prefix}_comments", with: comment, **options) if comment.present?
+      retry_block do
+        fill_in("#{prefix}_hours", with: hours, **options) if hours.present?
+        select_labor_costs_user!(prefix, user_name) if user_name.present?
+        fill_in("#{prefix}_comments", with: comment, **options) if comment.present?
 
-      expect(page).to have_css("##{prefix}_costs", text: expected_costs) if expected_costs.present?
+        if expected_costs.present?
+          expect(page).to have_css("##{prefix}_costs", text: expected_costs)
+        end
+      end
+    end
+
+    def select_labor_costs_user!(row_id, user_name)
+      select_autocomplete page.find("##{row_id} opce-user-autocompleter"),
+                          query: user_name,
+                          results_selector: "body"
     end
 
     def add_unit_costs_row!
-      find("#material_budget_items_fieldset .wp-inline-create--add-link").click
+      find(:region, Budget.human_attribute_name(:material_budget))
+        .click_on accessible_name: I18n.t(:button_add_budget_item)
 
       @unit_rows = unit_rows + 1
     end
 
     def add_labor_costs_row!
-      find("#labor_budget_items_fieldset .wp-inline-create--add-link").click
+      find(:region, Budget.human_attribute_name(:labor_budget))
+        .click_on accessible_name: I18n.t(:button_add_budget_item)
 
       @labor_rows = labor_rows + 1
     end
@@ -120,10 +139,10 @@ module Pages
     def expect_planned_costs!(type:, row:, expected:)
       raise "Unknown type: #{type}, allowed: labor, material" unless %i[labor material].include? type.to_sym
 
-      retry_block(args: { tries: 3, base_interval: 5 }) do
-        container = page.all("##{type}_budget_items_fieldset td.currency.budget-table--fields")[row - 1]
-        actual = container.text
-        raise "Expected planned costs #{expected}, got #{actual}" unless expected == actual
+      within(:region, Budget.human_attribute_name(:"#{type}_budget")) do
+        container = find("tbody tr:nth-of-type(#{row}) td.currency.budget-table--fields")
+        expect(container).to have_text(expected, exact: true),
+                             "Expected planned costs to be #{expected.inspect}, was #{container.text.inspect}"
       end
     end
 

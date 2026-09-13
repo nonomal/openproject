@@ -63,6 +63,20 @@ RSpec.describe WorkPackageRelationsTab::ClosestRelation do
       expect(described_class.of(work_package, relations)).to eq(relations.last)
     end
 
+    it "is correct even when there is negative lag" do
+      relations = [
+        follows_relation(due_date: 4.days.ago),
+        follows_relation(due_date: 3.days.ago, lag: -2) # 3.days.ago - 2.days = 5.days.ago
+      ]
+      expect(described_class.of(work_package, relations)).to eq(relations.first)
+
+      relations = [
+        follows_relation(due_date: 3.days.ago, lag: -3),
+        follows_relation(due_date: 3.days.ago, lag: -1)
+      ]
+      expect(described_class.of(work_package, relations)).to eq(relations.second)
+    end
+
     it "ignores relations not being 'follows' relations" do
       relations = [
         follows_relation(due_date: 4.days.ago),
@@ -228,7 +242,6 @@ RSpec.describe WorkPackageRelationsTab::ClosestRelation do
 
       context "with a negative lag" do
         it "returns the combined due date and lag" do
-          pending "negative lags are not yet implemented"
           expect(closest_relation(lag: -2, due_date:).soonest_start).to eq(Date.new(2020, 7, 13))
         end
       end
@@ -251,7 +264,6 @@ RSpec.describe WorkPackageRelationsTab::ClosestRelation do
 
       context "with a negative lag" do
         it "returns the combined start date and lag" do
-          pending "negative lags are not yet implemented (Feature OP#38606)"
           expect(closest_relation(lag: -2, start_date:).soonest_start).to eq(Date.new(2020, 7, 13))
         end
       end

@@ -41,18 +41,13 @@ See COPYRIGHT and LICENSE files for more details.
 <%=
   unless @custom_field.is_for_all?
     render(Primer::OpenProject::SubHeader.new(test_selector: "add-projects-sub-header")) do |component|
-      component.with_action_component do
-        render(
-          Primer::Beta::Button.new(
-            scheme: :primary,
-            tag: :a,
-            href: new_custom_field_project_path(@custom_field),
-            data: { controller: "async-dialog" }
-          )
-        ) do |button|
-          button.with_leading_visual_icon(icon: "op-include-projects")
-          I18n.t(:label_add_projects)
-        end
+      component.with_action_button(scheme: :primary,
+                                   leading_icon: :"op-include-projects",
+                                   label: I18n.t(:label_add_projects),
+                                   tag: :a,
+                                   href: new_custom_field_project_path(@custom_field),
+                                   data: { controller: "async-dialog" }) do
+        I18n.t(:label_add_projects)
       end
     end
   end

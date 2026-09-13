@@ -2,13 +2,12 @@
 
 .op-baseline
   &--header
-    display: flex
-    justify-content: space-between
-    align-items: flex-start
-    flex-direction: column
     width: 280px
     margin: $spot-spacing-1 $spot-spacing-1 0 $spot-spacing-1
     color: var(--fgColor-muted)
+
+    &_banner-active
+      width: 450px
 
     &:has(+ .op-baseline--body_ranged)
       width: auto
@@ -75,6 +74,3 @@
       margin-left: 0
     .op-baseline--range-container
       margin: 0
-
-  &_banner_active.op-baseline--header
-    width: 450px

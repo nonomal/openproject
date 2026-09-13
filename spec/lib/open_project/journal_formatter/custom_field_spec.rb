@@ -33,11 +33,10 @@ require "spec_helper"
 RSpec.describe OpenProject::JournalFormatter::CustomField do
   include CustomFieldsHelper
   include ActionView::Helpers::TagHelper
-  # WARNING: the order of the modules is important to ensure that url_for of
+  # WARNING: the order of inclusion is important to ensure that url_for of
   # ActionController::UrlWriter is called and not the one of ActionView::Helpers::UrlHelper
+  include Rails.application.routes.url_helpers
   include ActionView::Helpers::UrlHelper
-
-  def url_helper = Rails.application.routes.url_helpers
 
   let(:instance) { described_class.new(journal) }
   let(:id) { 1 }
@@ -317,14 +316,14 @@ RSpec.describe OpenProject::JournalFormatter::CustomField do
     let(:custom_field) { build_stubbed(:text_wp_custom_field) }
 
     let(:path) do
-      url_helper.diff_journal_path(id: journal.id,
-                                   field: key.downcase)
+      diff_journal_path(id: journal.id,
+                        field: key.downcase)
     end
     let(:url) do
-      url_helper.diff_journal_url(id: journal.id,
-                                  field: key.downcase,
-                                  protocol: Setting.protocol,
-                                  host: Setting.host_name)
+      diff_journal_url(id: journal.id,
+                       field: key.downcase,
+                       protocol: Setting.protocol,
+                       host: Setting.host_name)
     end
     let(:link) { link_to(I18n.t(:label_details), path, class: "diff-details", target: "_top") }
     let(:full_url_link) { link_to(I18n.t(:label_details), url, class: "diff-details", target: "_top") }
@@ -398,12 +397,14 @@ RSpec.describe OpenProject::JournalFormatter::CustomField do
     end
   end
 
-  context "for hierarchy custom field" do
-    shared_let(:custom_field) { create(:hierarchy_wp_custom_field) }
-    shared_let(:service) { CustomFields::Hierarchy::HierarchicalItemService.new }
-    shared_let(:root) { custom_field.hierarchy_root }
-    shared_let(:luke) { service.insert_item(parent: root, label: "luke", short: "LS").value! }
-    shared_let(:mara) { service.insert_item(parent: luke, label: "mara").value! }
+  context "for hierarchy custom field", with_ee: [:custom_field_hierarchies] do
+    let!(:custom_field) { build_stubbed(:hierarchy_wp_custom_field) }
+
+    let!(:service) { CustomFields::Hierarchy::HierarchicalItemService.new }
+    let!(:root) { custom_field.hierarchy_root }
+    let(:contract_class) { CustomFields::Hierarchy::InsertListItemContract }
+    let!(:luke) { service.insert_item(contract_class:, parent: root, label: "luke", short: "LS").value! }
+    let!(:mara) { service.insert_item(contract_class:, parent: luke, label: "mara").value! }
 
     describe "first value being nil and second value a string" do
       let(:values) { [nil, mara.id.to_s] }
@@ -484,6 +485,71 @@ RSpec.describe OpenProject::JournalFormatter::CustomField do
         end
 
         it { expect(rendered).to be_html_eql(expected) }
+      end
+    end
+  end
+
+  context "with a Proc-based :view_permission option" do
+    let(:values) { [nil, "1"] }
+
+    context "when the proc, receiving the resolved custom field, allows" do
+      let(:options) do
+        expected_custom_field = custom_field
+        { view_permission: ->(field) { field == expected_custom_field } }
+      end
+
+      let(:expected) do
+        I18n.t(:text_journal_set_to,
+               label: custom_field.name,
+               value: format_value(values.last, custom_field))
+      end
+
+      it "renders normally" do
+        expect(rendered).to eq(expected)
+      end
+    end
+
+    context "when the proc, receiving the resolved custom field, denies" do
+      let(:options) do
+        expected_custom_field = custom_field
+        { view_permission: ->(field) { field != expected_custom_field } }
+      end
+
+      it "renders the permission denied message" do
+        expect(rendered).to eq("_#{I18n.t(:text_journal_permission_denied)}_")
+      end
+    end
+  end
+
+  context "with a named (Symbol) :view_permission option" do
+    let(:values) { [nil, "1"] }
+    let(:options) { { view_permission: :view_project } }
+    let(:project) { build_stubbed(:project) }
+    let(:journal) { instance_double(Journal, id:, project:) }
+    let(:expected_journal_set_to_message) do
+      I18n.t(:text_journal_set_to,
+             label: custom_field.name,
+             value: format_value(values.last, custom_field))
+    end
+
+    context "when the current user has the permission in the project" do
+      before do
+        allow(User.current).to receive(:allowed_in_project?).with(:view_project, project).and_return(true)
+      end
+
+      it "renders normally" do
+        expect(rendered).to eq(expected_journal_set_to_message)
+      end
+    end
+
+    context "when the current user lacks the permission in the project" do
+      before do
+        allow(User.current).to receive(:allowed_in_project?).with(:view_project, project).and_return(false)
+      end
+
+      it "renders the permission denied message" do
+        expect(rendered).to include(I18n.t(:text_journal_permission_denied))
+        expect(rendered).not_to include(expected_journal_set_to_message)
       end
     end
   end

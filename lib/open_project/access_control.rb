@@ -95,7 +95,7 @@ module OpenProject
                         @mapped_permissions.select { |p| p.name == action }
                       end
 
-        permissions.any? && permissions.all? { !_1.enabled? }
+        permissions.any? && permissions.all? { !it.enabled? }
       end
 
       def public_permissions
@@ -128,6 +128,14 @@ module OpenProject
 
       def global_permissions
         @global_permissions ||= permissions.select(&:global?)
+      end
+
+      def module_permissions(module_name)
+        @module_permissions ||= Hash.new do |hash, key|
+          hash[key] = permissions.select { |p| p.project_module.to_s == key.to_s }
+        end
+
+        @module_permissions[module_name]
       end
 
       def available_project_modules(sorted: false)

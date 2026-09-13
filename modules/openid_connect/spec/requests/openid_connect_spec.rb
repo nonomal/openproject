@@ -35,7 +35,7 @@ RSpec.configure do |c|
   c.include OpenIDConnectSpecHelpers
 end
 
-RSpec.describe "OpenID Connect", :skip_2fa_stage, # Prevent redirects to 2FA stage
+RSpec.describe "OpenID Connect", :skip_2fa_stage, :skip_csrf, # Prevent redirects to 2FA stage
                type: :rails_request,
                with_ee: %i[sso_auth_providers] do
   let(:host) { "keycloak.local" }
@@ -45,7 +45,8 @@ RSpec.describe "OpenID Connect", :skip_2fa_stage, # Prevent redirects to 2FA sta
       name: "Hans Wurst",
       email: "h.wurst@finn.de",
       given_name: "Hans",
-      family_name: "Wurst"
+      family_name: "Wurst",
+      groups: ["my-group"]
     }
   end
   let(:access_token) { "foo-bar-baz" }
@@ -76,7 +77,7 @@ RSpec.describe "OpenID Connect", :skip_2fa_stage, # Prevent redirects to 2FA sta
     let(:limit_self_registration) { false }
     let!(:provider) { create(:oidc_provider, slug: "keycloak", limit_self_registration:) }
 
-    it "signs up and logs in the user", :freeze_time do
+    it "signs up and logs in the user", :freeze_time do # rubocop:disable RSpec/ExampleLength
       ##
       # it should redirect to the provider's openid connect authentication endpoint
       click_on_signin("keycloak")
@@ -99,8 +100,11 @@ RSpec.describe "OpenID Connect", :skip_2fa_stage, # Prevent redirects to 2FA sta
 
       user = User.find_by(mail: user_info[:email])
 
-      expect(user).not_to be_nil
-      expect(user.active?).to be true
+      aggregate_failures "user details" do
+        expect(user).not_to be_nil
+        expect(user.active?).to be true
+        expect(user.groups).to be_empty # group-sync not enabled
+      end
 
       session = Sessions::UserSession.for_user(user).first
       session_link = session&.oidc_session_link
@@ -115,6 +119,22 @@ RSpec.describe "OpenID Connect", :skip_2fa_stage, # Prevent redirects to 2FA sta
         expect(token.refresh_token).to eq refresh_token
         expect(token.expires_at).to eq 60.seconds.from_now.change(usec: 0)
         expect(token.audiences).to eq ["__op-idp__"]
+      end
+    end
+
+    context "when provider is configured to synchronize groups" do
+      let!(:provider) do
+        create(:oidc_provider, slug: "keycloak", limit_self_registration:, sync_groups: true, groups_claim: "groups")
+      end
+
+      it "signs up and logs in the user, adding them to the group", :freeze_time do
+        click_on_signin("keycloak")
+        redirect_from_provider("keycloak")
+
+        user = User.find_by(mail: user_info[:email])
+
+        expect(user).not_to be_nil
+        expect(user.groups.pluck(:name)).to eq(["my-group"])
       end
     end
 
@@ -138,6 +158,34 @@ RSpec.describe "OpenID Connect", :skip_2fa_stage, # Prevent redirects to 2FA sta
 
         expect(response).to have_http_status :found
         expect(response.location).to eq "http://#{Setting.host_name}/"
+      end
+
+      context "when synchronizing groups, but the groups-claim is empty" do
+        let!(:provider) do
+          create(:oidc_provider, slug: "keycloak", limit_self_registration:, sync_groups: true, groups_claim: "groups")
+        end
+        let(:user_info) do
+          {
+            sub: "87117114115116",
+            name: "Hans Wurst",
+            email: "h.wurst@finn.de",
+            given_name: "Hans",
+            family_name: "Wurst",
+            groups: []
+          }
+        end
+
+        before do
+          User.find_by(mail: user_info[:email]).groups.create!(name: "A group")
+        end
+
+        it "removes all groups" do
+          click_on_signin("keycloak")
+          redirect_from_provider("keycloak")
+
+          user = User.find_by(mail: user_info[:email])
+          expect(user.groups.pluck(:name)).to be_empty
+        end
       end
     end
 

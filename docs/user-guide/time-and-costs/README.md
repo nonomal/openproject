@@ -3,7 +3,7 @@ sidebar_navigation:
   title: Time and costs
   priority: 790
 description: Time tracking and cost reporting in OpenProject.
-keywords: Time tracking, cost reporting
+keywords: Time tracking, cost tracking, cost reporting
 ---
 
 # Time tracking and cost reporting
@@ -16,6 +16,7 @@ Create budgets, log time and costs on specific work packages and create time and
 |--------------------------------------|:--------------------------------------------|
 | [Progress tracking](progress-tracking)| How to track progress for work packages     |
 | [Time tracking](time-tracking)       | How to log time to work packages.           |
+| [My time tracking module](my-time-tracking) | How to log time in my tracking module |
 | [Cost tracking](cost-tracking)       | How to track unit costs spent in a project. |
 | [Time and cost reporting](reporting) | How to create time and cost reports.        |
 
@@ -23,10 +24,10 @@ Create budgets, log time and costs on specific work packages and create time and
 
 Watch this short video to get a first overview about time and cost reporting in OpenProject.
 
-<video src="https://openproject-docs.s3.eu-central-1.amazonaws.com/videos/OpenProject-Track-Time-and-Costs.mp4" type="video/mp4" controls="" style="width:100%"></video>
+<video src="https://openproject-docs.s3.eu-central-1.amazonaws.com/videos/OpenProject-Track-Time-and-Costs.mp4"></video>
 
 ## Frequently asked questions (FAQ)
 
 ### Does OpenProject provide resource management?
 
-Please note that OpenProject currently does not yet support resource management. However, this is scheduled in our [roadmap](https://community.openproject.org/projects/openproject/roadmap) as one of our main topics. Our [use cases](../../use-cases/resource-management/) provide examples for workarounds to support resource management within OpenProject.
+Yes. The Resource management module enables project managers to plan capacity, allocate work and staff projects based on team members' availability and skills. For details, see the [Resource management user guide](../resource-management/).

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -91,8 +93,8 @@ RSpec.describe Storages::Admin::StorageRowComponent, type: :component do
     end
   end
 
-  describe "OneDrive/SharePoint storage" do
-    shared_examples "a OneDrive/SharePoint storage row" do
+  describe "OneDrive storage" do
+    shared_examples "a OneDrive storage row" do
       it "render the storage name" do
         expect(page).to have_link(storage.name, href: edit_admin_settings_storage_path(storage))
       end
@@ -103,14 +105,14 @@ RSpec.describe Storages::Admin::StorageRowComponent, type: :component do
       end
 
       it "renders the storage provider" do
-        expect(page).to have_test_selector("storage-provider", text: "OneDrive/SharePoint")
+        expect(page).to have_test_selector("storage-provider", text: "OneDrive")
       end
     end
 
     context "with complete storage" do
-      shared_let(:storage) { create(:sharepoint_dev_drive_storage) }
+      shared_let(:storage) { create(:one_drive_sandbox_storage) }
 
-      it_behaves_like "a OneDrive/SharePoint storage row"
+      it_behaves_like "a OneDrive storage row"
 
       it "does not show an incomplete label" do
         expect(page).not_to have_test_selector("label-incomplete")
@@ -120,7 +122,7 @@ RSpec.describe Storages::Admin::StorageRowComponent, type: :component do
     context "with incomplete storage" do
       shared_let(:storage) { create(:one_drive_storage) }
 
-      it_behaves_like "a OneDrive/SharePoint storage row"
+      it_behaves_like "a OneDrive storage row"
 
       it 'renders an "Incomplete" label' do
         expect(page).to have_test_selector("label-incomplete", text: "Incomplete")

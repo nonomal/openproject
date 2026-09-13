@@ -30,11 +30,11 @@ module ::Recaptcha
     # Request verification form
     def perform
       if OpenProject::Recaptcha::Configuration.use_hcaptcha?
-        use_content_security_policy_named_append(:hcaptcha)
+        allow_captcha_service(:hcaptcha)
       elsif OpenProject::Recaptcha::Configuration.use_turnstile?
-        use_content_security_policy_named_append(:turnstile)
+        allow_captcha_service(:turnstile)
       elsif OpenProject::Recaptcha::Configuration.use_recaptcha?
-        use_content_security_policy_named_append(:recaptcha)
+        allow_captcha_service(:recaptcha)
       end
     end
 
@@ -162,6 +162,32 @@ module ::Recaptcha
 
     def failure_stage_redirect
       redirect_to authentication_stage_failure_path :recaptcha
+    end
+
+    ##
+    # Add CAPTCHA service CSP rules
+    def allow_captcha_service(service_type)
+      case service_type.to_sym
+      when :recaptcha
+        append_content_security_policy_directives(
+          frame_src: %w[https://www.recaptcha.net/recaptcha/ https://www.gstatic.com/recaptcha/]
+        )
+      when :hcaptcha
+        sources = %w[https://*.hcaptcha.com]
+        append_content_security_policy_directives(
+          frame_src: sources,
+          script_src: sources,
+          style_src: sources,
+          connect_src: sources
+        )
+      when :turnstile
+        sources = %w[https://challenges.cloudflare.com]
+        append_content_security_policy_directives(
+          frame_src: sources,
+          style_src: sources,
+          connect_src: sources
+        )
+      end
     end
   end
 end

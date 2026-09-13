@@ -55,7 +55,7 @@ See COPYRIGHT and LICENSE files for more details.
         disabled: !deletable?,
         href: delete_button_href,
         aria: { label: I18n.t(:button_delete) },
-        data: { "test-selector": "placeholder-user--delete-button" },
+        data: { controller: "async-dialog", "test-selector": "placeholder-user--delete-button" },
         title: delete_button_title
       ) do |button|
         button.with_leading_visual_icon(icon: :trash)
@@ -63,14 +63,6 @@ See COPYRIGHT and LICENSE files for more details.
       end
     end
 
-    if @tabs.present?
-      header.with_tab_nav(label: nil) do |tab_nav|
-        @tabs.each do |tab|
-          tab_nav.with_tab(selected: selected_tab(@tabs) == tab, href: tab[:path]) do |t|
-            t.with_text { I18n.t("js.#{tab[:label]}") }
-          end
-        end
-      end
-    end
+    helpers.render_tab_header_nav(header, @tabs)
   end
 %>

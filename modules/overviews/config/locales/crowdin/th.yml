@@ -1,4 +1,10 @@
+---
 th:
+  activerecord:
+    models:
+      grids/overview:
+        other: Overviews
   overviews:
-    label: 'ภาพรวม'
-  permission_manage_overview: 'Manage overview page'
+    label_dashboard: Dashboard
+    label_home: "%{workspace_type} home"
+    label_overview: ภาพรวม

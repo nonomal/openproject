@@ -31,20 +31,10 @@
 module Storages
   module Admin
     class EditFormHeaderComponent < ApplicationComponent
-      TAB_NAVS = %i[
-        edit
-        project_storages
-      ].freeze
-
       def initialize(storage:, selected:)
         super
         @storage = storage
         @selected = selected
-      end
-
-      def tab_selected?(tab_name)
-        TAB_NAVS.include?(tab_name) &&
-          tab_name == @selected
       end
 
       def label_storage_name_with_provider_label
@@ -61,6 +51,21 @@ module Storages
         [{ href: admin_index_path, text: t("label_administration") },
          { href: admin_settings_storages_path, text: t("project_module_storages") },
          @storage.name]
+      end
+
+      def tabs
+        [
+          {
+            name: "edit",
+            path: edit_admin_settings_storage_path(@storage),
+            label: t(:label_details)
+          },
+          {
+            name: "project_storages",
+            path: admin_settings_storage_project_storages_path(@storage),
+            label: t(:label_project_mappings)
+          }
+        ]
       end
     end
   end

@@ -35,14 +35,14 @@ package.
 
 ## Improved work package split screen
 
-  - It is possible to edit and comment in one step in the work package
-    split screen
-    ([#20208](https://community.openproject.org/wp/20208)).
-  - Watcher behavior changed: User receive an email notification when
-    they have been added as watchers.
-  - Repository revisions are shown in the activity tab on the work
-    package split screen
-    ([#15422](https://community.openproject.org/wp/15422)).
+- It is possible to edit and comment in one step in the work package
+  split screen
+  ([#20208](https://community.openproject.org/wp/20208)).
+- Watcher behavior changed: User receive an email notification when
+  they have been added as watchers.
+- Repository revisions are shown in the activity tab on the work
+  package split screen
+  ([#15422](https://community.openproject.org/wp/15422)).
 
 ## New home screen
 
@@ -135,21 +135,21 @@ attributes.
 In order to reduce complexity, some rarely used OpenProject features
 have been deprecated and removed with OpenProject 5.0:
 
-  - The field “Homepage” in the project settings has been removed to
-    reduce complexity. Instead a custom field or the project description
-    can be used to contain the homepage information
-    ([#1928](https://community.openproject.org/wp/1928)).
-  - The field “Summary” in the project settings has been removed to
-    reduce complexity. Instead of the summary the first row of the
-    project description is shown on the project list.
-  - Project dependencies have been removed from OpenProject since they
-    didn’t serve  a significant purpose. Additionally, the “second
-    grouping criterion” has been removed from the timelines filters
-    ([#21509](https://community.openproject.org/wp/21509)).
-  - The column “Set current rate” has been removed from the project
-    member table
-    ([#21501](https://community.openproject.org/wp/21501)).
-    A user’s hourly rate can be set in the user administration.
+- The field “Homepage” in the project settings has been removed to
+  reduce complexity. Instead a custom field or the project description
+  can be used to contain the homepage information
+  ([#1928](https://community.openproject.org/wp/1928)).
+- The field “Summary” in the project settings has been removed to
+  reduce complexity. Instead of the summary the first row of the
+  project description is shown on the project list.
+- Project dependencies have been removed from OpenProject since they
+  didn’t serve  a significant purpose. Additionally, the “second
+  grouping criterion” has been removed from the timelines filters
+  ([#21509](https://community.openproject.org/wp/21509)).
+- The column “Set current rate” has been removed from the project
+  member table
+  ([#21501](https://community.openproject.org/wp/21501)).
+  A user’s hourly rate can be set in the user administration.
 
 The **copy** and **duplicate** functionality on the work package
 fullscreen and split screen has been temporarily excluded. It will be
@@ -160,12 +160,12 @@ re-implemented in the next OpenProject version.
 Aside from the main features, several smaller usability improvements are
 included in OpenProject 5.0:
 
-  - The custom fields have been moved to a separate tab in the project
-    settings
-    ([#20841](https://community.openproject.org/wp/20841)).
-  - Status reports are no longer a separate menu entry in the side menu
-    but they have been moved to the timeline
-    toolbar ([#21822](https://community.openproject.org/wp/21822)).
+- The custom fields have been moved to a separate tab in the project
+  settings
+  ([#20841](https://community.openproject.org/wp/20841)).
+- Status reports are no longer a separate menu entry in the side menu
+  but they have been moved to the timeline
+  toolbar ([#21822](https://community.openproject.org/wp/21822)).
 
 ## Improved design
 
@@ -181,16 +181,14 @@ and the layout has been improved in many other places as well.
 ## Additional functionalities for API v3
 
 The future OpenProject API (API v3) has been extended by several
-functionalities. For instance, the [API
-v3](../../../api/) now includes an
+functionalities. For instance, the [API v3](../../../api/) now includes an
 endpoint for the work package index-action.
 
 Please note that the API v3 is still a draft.
 
 ## Updated Rails version
 
-Rails – the main framework used for OpenProject – has been updated to
-Rails 4.2
+Rails – the main framework used for OpenProject – has been updated to Rails 4.2
 ([#20045](https://community.openproject.org/wp/20045)).
 
 This ensures the technical reliability and allows future improvements.
@@ -200,20 +198,13 @@ This ensures the technical reliability and allows future improvements.
 Several new plugins have been published. They are included in the
 OpenProject Packager edition.
 
-  - OpenProject – Local Avatars ([Read more on
-    GitHub](https://www.github.com/finnlabs/openproject-local_avatars))
-  - OpenProject – Announcements ([Read more on
-    GitHub](https://www.github.com/finnlabs/openproject-announcements))
-  - OpenProject – XLS-Export ([Read more on
-    GitHub](https://www.github.com/finnlabs/openproject-xls_export))
-  - OpenProject – Dark-Theme ([Read more on
-    GitHub](https://www.github.com/finnlabs/openproject-themes-dark))
-  - OpenProject – OpenID-Connect ([Read more on
-    GitHub](https://www.github.com/finnlabs/openproject-openid_connect))
-  - OpenProject – OmniAuth OpenID-Connect-Providers ([Read more on
-    GitHub](https://www.github.com/finnlabs/omniauth-openid-connect))
+- OpenProject – Local Avatars ([Read more on GitHub](https://www.github.com/finnlabs/openproject-local_avatars))
+- OpenProject – Announcements ([Read more on GitHub](https://www.github.com/finnlabs/openproject-announcements))
+- OpenProject – XLS-Export ([Read more on GitHub](https://www.github.com/finnlabs/openproject-xls_export))
+- OpenProject – Dark-Theme ([Read more on GitHub](https://www.github.com/finnlabs/openproject-themes-dark))
+- OpenProject – OpenID-Connect ([Read more on GitHub](https://www.github.com/finnlabs/openproject-openid_connect))
+- OpenProject – OmniAuth OpenID-Connect-Providers ([Read more on GitHub](https://www.github.com/finnlabs/omniauth-openid-connect))
 
 ## Substantial number of bug fixes
 
-A large number of bugs have been fixed with the release of OpenProject
-5.0.
+A large number of bugs have been fixed with the release of OpenProject 5.0.

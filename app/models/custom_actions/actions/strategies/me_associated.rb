@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -60,7 +62,7 @@ module CustomActions::Actions::Strategies::MeAssociated
   end
 
   def current_user_value_key
-    "current_user".freeze
+    "current_user"
   end
 
   def current_user_name

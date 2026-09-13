@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,7 +33,7 @@ module Groups
   # This can be scoped to only a certain project which results in considerably better performance.
   class CreateInheritedRolesService < ::BaseServices::BaseContracted
     using CoreExtensions::SquishSql
-    include Groups::Concerns::MembershipManipulation
+    include MembershipManipulation
 
     def initialize(group, current_user:, contract_class: AdminOnlyContract)
       self.model = group
@@ -83,6 +85,7 @@ module Groups
           FROM #{MemberRole.table_name} member_roles
           JOIN #{Member.table_name} members
           ON members.id = member_roles.member_id AND members.user_id = :group_id
+          WHERE member_roles.inherited_from IS NULL
         ),
         -- find members that already exist
         existing_members AS (

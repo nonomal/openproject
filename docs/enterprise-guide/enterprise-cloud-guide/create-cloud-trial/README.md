@@ -18,12 +18,12 @@ To create a new OpenProject trial, either go to the [OpenProject website](https:
 
 **Enter your organization domain**. This name will become part of the URL of your OpenProject installation, for example `myneworganization.openproject.com`.
 
-You can include a hyphen "-" in the organization name, e.g. *my-new-organization.openproject.com*. 
+You can include a hyphen "-" in the organization name, e.g. _myneworganization.openproject.com_. 
 
 > [!TIP]
 > We also support [custom domains](../enterprise-cloud-faq/#can-i-get-a-custom-domain-name-instead-of-exampleopenprojectcom). 
 
-Next, specify your **Email** and **Team language** preferences. 
+Next, specify your **Email**, **Team language** and [**Data center**  preferences](https://www.openproject.org/legal/data-processing-agreement/sub-processors/). 
 
 > [!IMPORTANT]
 > Keep in mind that the OpenProject [privacy policy](https://www.openproject.org/legal/privacy/) and the [terms of service](https://www.openproject.org/legal/terms-of-service/) apply if you create a trial instance.
@@ -46,7 +46,6 @@ You will then be asked to **Confirm your email** by clicking the link sent to yo
 Open your inbox and click **Start testing OpenProject** button to proceed.
 
 ![Confirmation email to start the free 14 day trial of OpenProject test instance](openproject_enterprise_guide_create_trial_confirmation_email.png)
-
 
 You will then be asked to [create your OpenProject administrator account for this trial instance](../../../getting-started/sign-in-registration/#create-a-new-account).
 

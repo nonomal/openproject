@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,7 +34,7 @@ require "features/work_packages/work_packages_page"
 RSpec.describe "Work package table refreshing due to split view", :js do
   let(:project) { create(:project_with_types) }
   let!(:work_package) { create(:work_package, project:) }
-  let(:wp_split) { Pages::SplitWorkPackage.new work_package }
+  let(:wp_split) { Pages::PrimerizedSplitWorkPackage.new work_package }
   let(:wp_table) { Pages::WorkPackagesTable.new project }
   let(:user) { create(:admin) }
 

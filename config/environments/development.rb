@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -86,6 +88,13 @@ Rails.application.configure do
   # Highlight code that triggered database queries in logs.
   config.active_record.verbose_query_logs = true
 
+  # Rotate the development log so the disk is never filled
+  if ENV["RAILS_LOG_TO_STDOUT"].blank?
+    config.logger = ActiveSupport::TaggedLogging.new(
+      ActiveSupport::Logger.new(Rails.root.join("log/development.log"), 3, 150.megabytes)
+    )
+  end
+
   # Highlight code that enqueued background job in logs.
   config.active_job.verbose_enqueue_logs = true
 
@@ -108,12 +117,14 @@ Rails.application.configure do
   # Raise error when a before_action's only/except options reference missing actions
   config.action_controller.raise_on_missing_callback_actions = true
 
-  # Send mails to browser window
-  config.action_mailer.delivery_method = :letter_opener_web
+  # Send mails to browser window (unless configured otherwise)
+  config.action_mailer.delivery_method = ENV["OPENPROJECT_EMAIL_DELIVERY_METHOD"]&.to_sym || :letter_opener_web
 
   # Set email preview locations to rspec
   config.action_mailer.preview_paths << Rails.root.join("spec/mailers/previews")
 
+  # Used with `bin/safari_browser_stack` for testing Safari on Browser Stack
+  # Allow Browser Stack local server when assets are proxied
   config.hosts << "bs-local.com" if ENV["OPENPROJECT_DISABLE_DEV_ASSET_PROXY"].present?
 
   if ENV["OPENPROJECT_DEV_EXTRA_HOSTS"].present?

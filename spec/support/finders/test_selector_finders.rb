@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -45,6 +47,10 @@ module TestSelectorFinders
   # expect(page).to have_test_selector('foo')
   def have_test_selector(value, **)
     have_selector(test_selector(value), **)
+  end
+
+  def have_no_test_selector(value, **)
+    have_no_selector(test_selector(value), **)
   end
 end
 

@@ -32,20 +32,23 @@ require "spec_helper"
 require_module_spec_helper
 
 RSpec.describe Storages::Storage do
+  describe "provider_types" do
+    it "maps the short_name to the provider class" do
+      expect(described_class.provider_types["nextcloud"]).to eq(Storages::NextcloudStorage)
+      expect(described_class.provider_types[:nextcloud]).to eq(Storages::NextcloudStorage)
+    end
+
+    it "excludes non exposed storage types" do
+      expect(described_class.provider_types[:inexistent]).to be_nil
+    end
+  end
+
   describe "#oauth_access_granted?" do
     let(:storage) { build(:storage, oauth_client:) }
     let(:oauth_client) { create(:oauth_client) }
     let(:user) { create(:user) }
-    let(:selector_class) { Storages::Peripherals::StorageInteraction::AuthenticationMethodSelector }
-    let(:mocked_instance) { instance_double(selector_class, authentication_method:) }
-
-    before do
-      allow(selector_class).to receive(:new).and_return(mocked_instance)
-    end
 
     context "when user is authenticated through storage oauth" do
-      let(:authentication_method) { :storage_oauth }
-
       it "responds with true if oauth_client_token exists" do
         create(:oauth_client_token, user: user, oauth_client:)
         expect(storage.oauth_access_granted?(user)).to be true
@@ -57,11 +60,21 @@ RSpec.describe Storages::Storage do
     end
 
     context "when user is authenticated through sso" do
-      let(:authentication_method) { :sso }
+      let(:provider) { create(:oidc_provider) }
+      let(:user) { create(:user, authentication_provider: provider) }
+      let(:storage) { build(:nextcloud_storage, :oidc_sso_enabled) }
 
       it "responds with true" do
         expect(storage.oauth_access_granted?(user)).to be true
       end
+    end
+  end
+
+  describe "#supports_oauth_redirect?" do
+    let(:storage) { described_class.new }
+
+    it "returns true by default (to be overridden by subclasses)" do
+      expect(storage).to be_supports_oauth_redirect
     end
   end
 

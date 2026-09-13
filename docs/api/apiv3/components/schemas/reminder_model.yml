@@ -17,8 +17,16 @@ properties:
   _links:
     required:
       - creator
+      - remindable
     type: object
     properties:
+      self:
+        allOf:
+          - $ref: "./link.yml"
+          - description: |-
+              This reminder
+
+              **Resource**: Reminder
       creator:
         allOf:
           - $ref: "./link.yml"
@@ -26,3 +34,10 @@ properties:
               The person that created the reminder
 
               **Resource**: User
+      remindable:
+        allOf:
+          - $ref: "./link.yml"
+          - description: |-
+              The resource that the reminder is associated with
+
+              **Resource**: WorkPackage

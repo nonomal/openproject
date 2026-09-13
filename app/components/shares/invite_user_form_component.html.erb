@@ -4,7 +4,6 @@
         model: new_share,
         url: url_for([entity, Member]),
         data: { controller: 'user-limit shares--user-selected',
-                'application-target': 'dynamic',
                 'user-limit-open-seats-value': OpenProject::Enterprise.open_seats_count,
                 action: 'submit->shares--user-selected#ensureUsersSelected' }
       ) do |form|
@@ -40,11 +39,11 @@
 
                 user_limit_row.with_column do
                   render(Primer::Beta::Text.new(color: :danger)) do
-                    I18n.t(
+                    helpers.link_translate(
                       "sharing.warning_user_limit_reached#{'_admin' if User.current.admin?}",
-                      upgrade_url: OpenProject::Enterprise.upgrade_url,
-                      entity: entity.model_name.human
-                    ).html_safe
+                      i18n_args: { entity: entity.model_name.human },
+                      links: { upgrade_url: OpenProject::Enterprise.upgrade_url }
+                    )
                   end
                 end
               end

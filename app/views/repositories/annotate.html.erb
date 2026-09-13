@@ -30,10 +30,6 @@ See COPYRIGHT and LICENSE files for more details.
 <% html_title(t(:button_annotate)) %>
 <%= render partial: "repository_header", locals: { empty: false } %>
 
-<div class="repository-breadcrumbs">
-  <%= render partial: "breadcrumbs",
-             locals: { path: @path, revision: @rev }.merge(kind: "file") %>
-</div>
 <p><%= render partial: "link_to_functions" %></p>
 
 <% if @annotate.nil? || @annotate.empty? %>

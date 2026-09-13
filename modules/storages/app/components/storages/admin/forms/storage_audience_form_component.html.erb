@@ -36,11 +36,22 @@ See COPYRIGHT and LICENSE files for more details.
         method: :patch,
         data: {
           turbo_frame: "page-content",
-          application_target: "dynamic",
           controller: "storages--storage-audience"
         }
       ) do |form|
         flex_layout do |general_info_row|
+          general_info_row.with_row(mb: 3) do
+            render(Primer::Alpha::Banner.new(icon: :info, scheme: :default)) do |component|
+              component.with_action_button(
+                size: :medium,
+                tag: :a,
+                href: OpenProject::Static::Links.url_for(:storage_docs, :nextcloud_sso)
+              ) { I18n.t(:label_read_documentation) }
+
+              t('storages.storage_audience.documentation_intro')
+            end
+          end
+
           general_info_row.with_row(mb: 3) do
             render(Storages::Admin::StorageAudienceInputForm.new(form))
           end

@@ -31,6 +31,7 @@
 class WorkPackages::UpdateService < BaseServices::Update
   include ::WorkPackages::Shared::UpdateAncestors
   include Attachments::ReplaceAttachments
+  include Types::ApplyPatterns
 
   attr_accessor :cause_of_rescheduling
 
@@ -41,14 +42,12 @@ class WorkPackages::UpdateService < BaseServices::Update
 
   private
 
-  def set_templated_attributes
-    model.type.enabled_patterns.each do |key, pattern|
-      model.public_send(:"#{key}=", pattern.resolve(model))
-    end
-  end
-
   def after_perform(service_call)
-    set_templated_attributes
+    # TODO: code smell here: saving the automatically generated subject depends
+    # on running the UpdateAncestorsService right after. The subject gets saved
+    # only thanks to this. If the UpdateAncestorsService is not run, the subject
+    # is not saved. That's an odd coupling.
+    apply_patterns(service_call.result, save: false)
     update_related_work_packages(service_call)
     cleanup(service_call.result)
 
@@ -56,19 +55,24 @@ class WorkPackages::UpdateService < BaseServices::Update
   end
 
   def update_related_work_packages(service_call)
-    update_ancestors([service_call.result]).each do |ancestor_service_call|
+    work_package = service_call.result
+    changed_attributes = work_package.changed_attribute_keys_before_last_save
+    update_ancestors(work_package, changed_attributes).tap do |ancestor_service_call|
       ancestor_service_call.dependent_results.each do |ancestor_dependent_service_call|
         service_call.add_dependent!(ancestor_dependent_service_call)
       end
     end
 
-    update_related(service_call.result).each do |related_service_call|
+    # update saved changes as they might have changed due to the ancestors updates
+    changed_attributes += work_package.changed_attribute_keys_before_last_save
+    changed_attributes.uniq!
+    update_related(work_package, changed_attributes).each do |related_service_call|
       service_call.add_dependent!(related_service_call)
     end
   end
 
-  def update_related(work_package)
-    consolidated_calls(update_descendants(work_package) + reschedule_related(work_package))
+  def update_related(work_package, changed_attributes)
+    consolidated_calls(update_descendants(work_package) + reschedule_related(work_package, changed_attributes))
       .each { |dependent_call| dependent_call.result.save(validate: false) }
   end
 
@@ -98,9 +102,27 @@ class WorkPackages::UpdateService < BaseServices::Update
       delete_relations(moved_work_packages)
       move_time_entries(moved_work_packages, work_package.project_id)
       move_work_package_memberships(moved_work_packages, work_package.project_id)
+      update_semantic_ids(moved_work_packages) if Setting::WorkPackageIdentifier.semantic?
     end
     if work_package.saved_change_to_type_id?
       reset_custom_values(work_package)
+    end
+  end
+
+  def update_semantic_ids(work_packages)
+    return if work_packages.empty?
+
+    # reserve_semantic_id_block! writes via raw SQL UPDATE, so the in-memory
+    # records still carry the nil identifier left by SetAttributesService.
+    # Apply the returned assignments in-memory so callers (HAL representers,
+    # redirect helpers) see the freshly allocated semantic id without N reloads.
+    assignments = work_packages.first.project.reserve_semantic_id_block!(work_packages.map(&:id))
+    work_packages.each do |wp|
+      next unless (identifier = assignments[wp.id])
+
+      wp.assign_attributes(identifier:,
+                           sequence_number: WorkPackage::SemanticIdentifier.sequence_number_from_identifier(identifier))
+      wp.clear_attribute_changes(%i[identifier sequence_number])
     end
   end
 
@@ -128,18 +150,18 @@ class WorkPackages::UpdateService < BaseServices::Update
     work_package.reset_custom_values!
   end
 
-  def reschedule_related(work_package)
+  def reschedule_related(work_package, changed_attributes)
     work_packages_to_reschedule = [work_package]
 
     # if parent changed, the former parent needs to be rescheduled too.
     if parent_just_changed?(work_package)
-      former_parent = WorkPackage.find_by(id: work_package.parent_id_before_last_save)
+      former_parent = WorkPackage.visible(user).find_by(id: work_package.parent_id_before_last_save)
       work_packages_to_reschedule << former_parent if former_parent
     end
 
     WorkPackages::SetScheduleService
       .new(user:, work_package: work_packages_to_reschedule, initiated_by: cause_of_rescheduling)
-      .call(work_package.saved_changes.keys.map(&:to_sym))
+      .call(changed_attributes)
       .dependent_results
   end
 

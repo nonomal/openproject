@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -35,18 +36,16 @@ class MeetingSection < ApplicationRecord
   has_many :agenda_items, dependent: :destroy, class_name: "MeetingAgendaItem"
   has_one :project, through: :meeting
 
-  after_save :trigger_meeting_agenda_item_time_slots_calculation, if: Proc.new { |section|
-    section.position_previously_changed?
-  }
-
-  acts_as_list scope: :meeting
+  acts_as_list scope: [:meeting_id, { backlog: false }]
 
   default_scope { order(:position) }
 
   scope :backlog, -> { where(backlog: true) }
 
-  def trigger_meeting_agenda_item_time_slots_calculation
-    meeting.calculate_agenda_item_time_slots
+  def title
+    return super unless backlog?
+
+    meeting.recurring? ? I18n.t(:label_series_backlog) : I18n.t(:label_agenda_backlog)
   end
 
   def untitled?
@@ -54,10 +53,6 @@ class MeetingSection < ApplicationRecord
   end
 
   def editable?
-    !meeting&.closed?
-  end
-
-  def modifiable?
     !meeting&.closed?
   end
 

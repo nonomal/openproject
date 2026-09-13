@@ -21,11 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
+import { keyBy } from 'lodash-es';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -77,6 +78,7 @@ export interface IProjectAutocompleterData {
     useExisting: forwardRef(() => ProjectAutocompleterComponent),
     multi: true,
   }],
+  standalone: false,
 })
 export class ProjectAutocompleterComponent extends OpAutocompleterComponent<IProjectAutocompleterData> implements OnInit, ControlValueAccessor {
   @HostBinding('class.op-project-autocompleter') public className = true;
@@ -91,7 +93,7 @@ export class ProjectAutocompleterComponent extends OpAutocompleterComponent<IPro
 
   @Input() public isInlineContext = false;
 
-  @Input() public disabledProjects:{ [key:string]:string|boolean } = {};
+  @Input() public disabledProjects:Record<string, string|boolean> = {};
 
   // This function allows mapping of the results before they are fed to the tree
   // structuring and destructuring algorithms used internally the this component
@@ -141,7 +143,7 @@ export class ProjectAutocompleterComponent extends OpAutocompleterComponent<IPro
       return projects;
     }
 
-    const normalizedValue = (value || []);
+    const normalizedValue = (value ?? []);
     const arrayedValue = (Array.isArray(normalizedValue) ? normalizedValue : [normalizedValue]).map((p) => p.href || p.id);
     return projects.map((project) => {
       const isSelected = !!arrayedValue.find((selected) => selected === this.projectTracker(project));
@@ -150,7 +152,7 @@ export class ProjectAutocompleterComponent extends OpAutocompleterComponent<IPro
       return {
         ...project,
         disabled,
-        disabledReason: (typeof this.disabledProjects[id] === 'string') ? this.disabledProjects[id] as string : '',
+        disabledReason: (typeof this.disabledProjects[id] === 'string') ? this.disabledProjects[id] : '',
       };
     });
   }
@@ -176,7 +178,7 @@ export class ProjectAutocompleterComponent extends OpAutocompleterComponent<IPro
 
         filteredURL.searchParams.set('pageSize', params.pageSize?.toString() || '-1');
         filteredURL.searchParams.set('offset', params.offset?.toString() || '1');
-        filteredURL.searchParams.set('select', 'elements/id,elements/name,elements/identifier,elements/self,elements/ancestors,total,count,pageSize');
+        filteredURL.searchParams.set('select', 'elements/id,elements/name,elements/identifier,elements/self,elements/ancestors,elements/_type,total,count,pageSize');
 
         return this
           .http
@@ -192,8 +194,9 @@ export class ProjectAutocompleterComponent extends OpAutocompleterComponent<IPro
             id: project.id,
             href: project._links.self.href,
             name: project.name,
+            _type: project._type,
             disabled,
-            disabledReason: (typeof this.disabledProjects[id] === 'string') ? this.disabledProjects[id] as string : '',
+            disabledReason: (typeof this.disabledProjects[id] === 'string') ? this.disabledProjects[id] : '',
             ancestors: project._links.ancestors,
             children: [],
           };
@@ -217,7 +220,7 @@ export class ProjectAutocompleterComponent extends OpAutocompleterComponent<IPro
 
   // Todo: Reduce duplication with method from user-autocompleter
   protected buildFilteredURL(searchTerm?:string):URL {
-    const filterObject = _.keyBy(this.filters, 'name');
+    const filterObject = keyBy(this.filters, 'name');
     const searchFilters = ApiV3FilterBuilder.fromFilterObject(filterObject);
 
     if (searchTerm?.length) {

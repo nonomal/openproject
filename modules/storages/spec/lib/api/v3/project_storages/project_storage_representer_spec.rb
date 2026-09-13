@@ -35,16 +35,20 @@ RSpec.describe API::V3::ProjectStorages::ProjectStorageRepresenter do
   include API::V3::Utilities::PathHelper
   include EnsureConnectionPathHelper
 
-  let(:user) { build_stubbed(:user) }
+  let(:current_user) { build_stubbed(:user) }
 
-  let(:project_storage) { build_stubbed(:project_storage, project_folder_mode: "manual", project_folder_id: "1337") }
+  let(:workspace) { build_stubbed(:project) }
+  let(:project_storage) do
+    build_stubbed(:project_storage, project: workspace, project_folder_mode: "manual", project_folder_id: "1337")
+  end
 
-  let(:representer) { described_class.new(project_storage, current_user: user) }
+  let(:representer) { described_class.new(project_storage, current_user:) }
+  let(:user_allowed_in_project) { true }
 
   subject { representer.to_json }
 
   before do
-    allow(user).to receive("allowed_in_project?").and_return(true)
+    allow(current_user).to receive("allowed_in_project?").and_return(user_allowed_in_project)
   end
 
   describe "properties" do
@@ -67,18 +71,16 @@ RSpec.describe API::V3::ProjectStorages::ProjectStorageRepresenter do
     it_behaves_like "property", :projectFolderMode do
       let(:value) { project_storage.project_folder_mode }
     end
+  end
 
+  describe "_links" do
     it_behaves_like "has a titled link" do
       let(:link) { "storage" }
       let(:href) { api_v3_paths.storage(project_storage.storage.id) }
       let(:title) { project_storage.storage.name }
     end
 
-    it_behaves_like "has a titled link" do
-      let(:link) { "project" }
-      let(:href) { api_v3_paths.project(project_storage.project.id) }
-      let(:title) { project_storage.project.name }
-    end
+    it_behaves_like "has workspace linked"
 
     it_behaves_like "has a titled link" do
       let(:link) { "creator" }
@@ -96,28 +98,14 @@ RSpec.describe API::V3::ProjectStorages::ProjectStorageRepresenter do
       let(:href) { api_v3_paths.project_storage_open(project_storage.id) }
     end
 
-    context "when storage is not configured" do
-      it_behaves_like "has an untitled link" do
-        let(:link) { "openWithConnectionEnsured" }
-        let(:href) { nil }
-      end
-    end
-
-    context "when storage is configured" do
-      before { project_storage.storage = create(:nextcloud_storage_configured) }
-
-      it_behaves_like "has an untitled link" do
-        let(:link) { "openWithConnectionEnsured" }
-        let(:href) { ensure_connection_path(project_storage) }
-      end
+    it_behaves_like "has an untitled link" do
+      let(:link) { "openWithConnectionEnsured" }
+      let(:href) { api_v3_paths.project_storage_open(project_storage.id) }
     end
 
     context "when user does not have read_files permission" do
       let(:project_storage) { build_stubbed(:project_storage, project_folder_mode: "automatic", project_folder_id: "1337") }
-
-      before do
-        allow(user).to receive("allowed_in_project?").and_return(false)
-      end
+      let(:user_allowed_in_project) { false }
 
       it_behaves_like "has no link" do
         let(:link) { "openWithConnectionEnsured" }
@@ -125,6 +113,14 @@ RSpec.describe API::V3::ProjectStorages::ProjectStorageRepresenter do
 
       it_behaves_like "has no link" do
         let(:link) { "open" }
+      end
+    end
+
+    describe "_embedded" do
+      describe "project" do
+        let(:embedded_path) { "_embedded/project" }
+
+        it_behaves_like "has the resource not embedded"
       end
     end
   end

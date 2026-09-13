@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -32,7 +32,7 @@ import { Injectable } from '@angular/core';
   providedIn: 'root',
 })
 export class HookService {
-  private hooks:{ [hook:string]:Function[] } = {};
+  private hooks:Record<string, Function[]> = {};
 
   public register(id:string, callback:Function) {
     if (!callback) {

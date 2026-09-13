@@ -33,7 +33,7 @@ See COPYRIGHT and LICENSE files for more details.
     header.with_title { t(:label_user_settings) }
     header.with_breadcrumbs(
       [{ href: admin_index_path, text: t("label_administration") },
-       { href: admin_settings_users_path, text: t(:label_user_and_permission) },
+       { href: admin_settings_users_path, text: t(:label_user_and_permission), skip_for_mobile: true },
        t(:label_user_settings)]
     )
   end
@@ -65,6 +65,13 @@ See COPYRIGHT and LICENSE files for more details.
       <%= setting_select :user_format, @options[:user_format], container_class: "-slim" %>
     </div>
 
+  </fieldset>
+
+  <fieldset class="form--fieldset">
+    <legend class="form--fieldset-legend"><%= t(:"settings.user.account") %></legend>
+    <div class="form--field">
+      <%= setting_check_box :user_can_change_email %>
+    </div>
   </fieldset>
 
   <fieldset class="form--fieldset">

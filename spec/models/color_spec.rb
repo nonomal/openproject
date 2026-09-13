@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -56,73 +58,46 @@ RSpec.describe Color do
     end
   end
 
-  describe "- Validations" do
-    let(:attributes) do
-      { name: "Color No. 1",
-        hexcode: "#FFFFFF" }
+  describe "normalization" do
+    it "does not normalize non-hexcodes, except to strip whitespace", :aggregate_failures do
+      expect(subject).to normalize(:hexcode).from("").to("")
+      expect(subject).to normalize(:hexcode).from(" ").to("")
+      expect(subject).to normalize(:hexcode).from("11").to("11")
+      expect(subject).to normalize(:hexcode).from("purple").to("purple")
+      expect(subject).to normalize(:hexcode).from("green ").to("green")
     end
 
-    describe "name" do
-      it "is invalid w/o a name" do
-        attributes[:name] = nil
-        color = Color.new(attributes)
-
-        expect(color).not_to be_valid
-
-        expect(color.errors[:name]).to be_present
-        expect(color.errors[:name]).to eq(["can't be blank."])
-      end
-
-      it "is invalid w/ a name longer than 255 characters" do
-        attributes[:name] = "A" * 500
-        color = Color.new(attributes)
-
-        expect(color).not_to be_valid
-
-        expect(color.errors[:name]).to be_present
-        expect(color.errors[:name]).to eq(["is too long (maximum is 255 characters)."])
-      end
+    it "normalizes short hexcodes", :aggregate_failures do
+      expect(subject).to normalize(:hexcode).from(" fc3").to("#FFCC33")
+      expect(subject).to normalize(:hexcode).from("333 ").to("#333333")
+      expect(subject).to normalize(:hexcode).from("#fc3").to("#FFCC33")
     end
 
-    describe "hexcode" do
-      it "is invalid w/o a hexcode" do
-        attributes[:hexcode] = nil
-        color = Color.new(attributes)
+    it "normalizes full hexcodes", :aggregate_failures do
+      expect(subject).to normalize(:hexcode).from(" FFCC33").to("#FFCC33")
+      expect(subject).to normalize(:hexcode).from("#ffcc33 ").to("#FFCC33")
+      expect(subject).to normalize(:hexcode).from("#00CED1").to("#00CED1")
+    end
+  end
 
-        expect(color).not_to be_valid
+  describe "validations" do
+    it "validates name is present and at most 255 chars" do
+      expect(subject).to validate_presence_of(:name)
+      expect(subject).to validate_length_of(:name).is_at_most(255)
+    end
 
-        expect(color.errors[:hexcode]).to be_present
-        expect(color.errors[:hexcode]).to eq(["can't be blank."])
-      end
+    it "validates hexcode is present" do
+      expect(subject).to validate_presence_of(:hexcode)
+    end
 
-      it "is invalid w/ malformed hexcodes" do
-        expect(Color.new(attributes.merge(hexcode: "0#FFFFFF"))).not_to be_valid
-        expect(Color.new(attributes.merge(hexcode: "#FFFFFF0"))).not_to be_valid
-        expect(Color.new(attributes.merge(hexcode: "white"))).not_to be_valid
-      end
+    it "does not allow malformed hexcodes" do
+      expect(subject).not_to allow_values("0#FFFFFF", "#FFFFFF0", "white")
+        .for(:hexcode)
+        .with_message("is not a valid 6-digit hexadecimal color code.")
+    end
 
-      it "fixes some wrong formats of hexcode automatically" do
-        color = Color.new(attributes.merge(hexcode: "FFCC33"))
-        expect(color).to be_valid
-        expect(color.hexcode).to eq("#FFCC33")
-
-        color = Color.new(attributes.merge(hexcode: "#ffcc33"))
-        expect(color).to be_valid
-        expect(color.hexcode).to eq("#FFCC33")
-
-        color = Color.new(attributes.merge(hexcode: "fc3"))
-        expect(color).to be_valid
-        expect(color.hexcode).to eq("#FFCC33")
-
-        color = Color.new(attributes.merge(hexcode: "#fc3"))
-        expect(color).to be_valid
-        expect(color.hexcode).to eq("#FFCC33")
-      end
-
-      it "is valid w/ proper hexcodes" do
-        expect(Color.new(attributes.merge(hexcode: "#FFFFFF"))).to be_valid
-        expect(Color.new(attributes.merge(hexcode: "#FF00FF"))).to be_valid
-      end
+    it "allows valid hexcodes" do
+      expect(subject).to allow_values("#FFFFFF", "#FF00FF").for(:hexcode)
     end
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,14 +31,18 @@
 require_relative "base"
 
 class Tables::WikiPages < Tables::Base
-  def self.table(migration)
+  def self.table(migration) # rubocop:disable Metrics/AbcSize
     create_table migration do |t|
-      t.integer :wiki_id, null: false
+      t.bigint :wiki_id, null: false
       t.string :title, null: false
-      t.datetime :created_on, null: false
+      t.datetime :created_at, precision: nil, null: false, default: -> { "CURRENT_TIMESTAMP" }
       t.boolean :protected, default: false, null: false
-      t.integer :parent_id
+      t.bigint :parent_id
       t.string :slug, null: false
+      t.datetime :updated_at, precision: nil, null: false, index: true
+      t.references :author, index: true, null: false, foreign_key: { to_table: :users }
+      t.text :text, limit: 16.megabytes
+      t.integer :lock_version, null: false
 
       t.index %i[wiki_id slug], name: "wiki_pages_wiki_id_slug", unique: true
       t.index :parent_id, name: "index_wiki_pages_on_parent_id"

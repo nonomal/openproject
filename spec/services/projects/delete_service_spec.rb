@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -104,6 +106,17 @@ RSpec.describe Projects::DeleteService, type: :model do
             end
           end
         end
+      end
+    end
+
+    context "with semantic work package identifiers (regression #COMMS-936)",
+            with_settings: { work_packages_identifier: Setting::WorkPackageIdentifier::SEMANTIC } do
+      let!(:child) { create(:project, parent: project) }
+      let!(:work_package) { create(:work_package, project: child) }
+
+      it "destroys the project hierarchy together with the semantic aliases of its work packages" do
+        expect { subject }.to change(Project, :count).by(-2)
+        expect(WorkPackageSemanticAlias.where(work_package_id: work_package.id)).not_to exist
       end
     end
 

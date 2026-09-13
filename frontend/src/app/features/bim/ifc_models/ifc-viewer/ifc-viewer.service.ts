@@ -21,34 +21,36 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { Injectable, Injector } from '@angular/core';
-import { XeokitServer } from 'core-app/features/bim/ifc_models/xeokit/xeokit-server';
+import { Injectable } from '@angular/core';
 import { ViewerBridgeService } from 'core-app/features/bim/bcf/bcf-viewer-bridge/viewer-bridge.service';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { WorkPackageResource } from 'core-app/features/hal/resources/work-package-resource';
 import { PathHelperService } from 'core-app/core/path-helper/path-helper.service';
 import { BcfApiService } from 'core-app/features/bim/bcf/api/bcf-api.service';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
+import { LazyInject } from 'core-app/shared/helpers/angular/lazy-inject.decorator';
 import { ViewpointsService } from 'core-app/features/bim/bcf/helper/viewpoints.service';
 import { CurrentProjectService } from 'core-app/core/current-project/current-project.service';
 import { HttpClient } from '@angular/common/http';
-import { IfcProjectDefinition } from 'core-app/features/bim/ifc_models/pages/viewer/ifc-models-data.service';
-import { BIMViewer } from '@xeokit/xeokit-bim-viewer/dist/xeokit-bim-viewer.es';
+import {
+  IfcModelsDataService,
+  IfcProjectDefinition,
+} from 'core-app/features/bim/ifc_models/pages/viewer/ifc-models-data.service';
 import { BcfViewpointData, CreateBcfViewpointData } from 'core-app/features/bim/bcf/api/bcf-api.model';
 import { HalResource } from 'core-app/features/hal/resources/hal-resource';
 import idFromLink from 'core-app/features/hal/helpers/id-from-link';
+import { getMetaContent } from 'core-app/core/setup/globals/global-helpers';
 
 export interface XeokitElements {
-  canvasElement:HTMLElement;
+  canvasElement:HTMLCanvasElement;
   explorerElement:HTMLElement;
   toolbarElement:HTMLElement;
   inspectorElement:HTMLElement;
-  navCubeCanvasElement:HTMLElement;
+  navCubeCanvasElement:HTMLCanvasElement;
   busyModelBackdropElement:HTMLElement;
   enableEditModels?:boolean;
   keyboardEventsElement?:HTMLElement;
@@ -82,9 +84,9 @@ export interface BCFLoadOptions {
 /**
  * Wrapping type from xeokit module. Can be removed after we get a real type package.
  */
-type Controller = {
+interface Controller {
   on:(event:string, callback:(event:unknown) => void) => string
-};
+}
 
 /**
  * Wrapping type from xeokit module. Can be removed after we get a real type package.
@@ -97,6 +99,12 @@ type XeokitBimViewer = Controller&{
   destroy:() => void
 };
 
+/**
+ * Minimal constructor type for the untyped `@xeokit/xeokit-bim-viewer` default export,
+ * so the dynamic import stays type-checked without an `any` escape hatch.
+ */
+type BimViewerConstructor = new (server:unknown, elements:XeokitElements) => XeokitBimViewer;
+
 @Injectable()
 export class IFCViewerService extends ViewerBridgeService {
   public shouldShowViewer = true;
@@ -107,31 +115,36 @@ export class IFCViewerService extends ViewerBridgeService {
 
   private xeokitViewer:XeokitBimViewer|undefined;
 
-  @InjectField() pathHelper:PathHelperService;
+  @LazyInject() pathHelper:PathHelperService;
 
-  @InjectField() bcfApi:BcfApiService;
+  @LazyInject() bcfApi:BcfApiService;
 
-  @InjectField() viewpointsService:ViewpointsService;
+  @LazyInject() viewpointsService:ViewpointsService;
 
-  @InjectField() currentProjectService:CurrentProjectService;
+  @LazyInject() ifcModelsDataService:IfcModelsDataService;
 
-  @InjectField() httpClient:HttpClient;
+  @LazyInject() currentProjectService:CurrentProjectService;
 
-  constructor(readonly injector:Injector) {
-    super(injector);
-  }
+  @LazyInject() httpClient:HttpClient;
 
-  public newViewer(elements:XeokitElements, projects:IfcProjectDefinition[]):void {
-    const server = new XeokitServer(this.pathHelper);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    const viewerUI = new BIMViewer(server, elements) as XeokitBimViewer;
+  public async newViewer(elements:XeokitElements, projects:IfcProjectDefinition[]):Promise<void> {
+    // Load the heavy xeokit SDK and BIM viewer on demand so they are split into
+    // their own chunk instead of bloating the eager bundle (see OP-19600).
+    const [{ XeokitServer }, { BIMViewer }] = await Promise.all([
+      import('core-app/features/bim/ifc_models/xeokit/xeokit-server'),
+      // @xeokit/xeokit-bim-viewer ships no type declarations; cast its untyped export.
+      import('@xeokit/xeokit-bim-viewer/dist/xeokit-bim-viewer.es') as Promise<{ BIMViewer:BimViewerConstructor }>,
+    ]);
+
+    const server = new XeokitServer(this.pathHelper, this.ifcModelsDataService);
+    const viewerUI = new BIMViewer(server, elements);
 
     viewerUI.on('modelLoaded', () => this.viewerVisible$.next(true));
 
     viewerUI.loadProject(projects[0].id);
 
     viewerUI.on('addModel', () => { // "Add" selected in Models tab's context menu
-      window.location.href = this.pathHelper.ifcModelsNewPath(this.currentProjectService.identifier as string);
+      window.location.href = this.pathHelper.ifcModelsNewPath(this.currentProjectService.identifier!);
     });
 
     viewerUI.on('openInspector', () => {
@@ -139,7 +152,7 @@ export class IFCViewerService extends ViewerBridgeService {
     });
 
     viewerUI.on('editModel', (event:{ modelId:number|string }) => { // "Edit" selected in Models tab's context menu
-      window.location.href = this.pathHelper.ifcModelsEditPath(this.currentProjectService.identifier as string, event.modelId);
+      window.location.href = this.pathHelper.ifcModelsEditPath(this.currentProjectService.identifier!, event.modelId);
     });
 
     viewerUI.on('deleteModel', (event:{ modelId:number|string }) => { // "Delete" selected in Models tab's context menu
@@ -147,7 +160,7 @@ export class IFCViewerService extends ViewerBridgeService {
       const formData = new FormData();
       formData.append(
         'authenticity_token',
-        jQuery('meta[name=csrf-token]').attr('content') as string,
+        getMetaContent('csrf-token')
       );
       formData.append(
         '_method',
@@ -155,7 +168,7 @@ export class IFCViewerService extends ViewerBridgeService {
       );
 
       this.httpClient.post(
-        this.pathHelper.ifcModelsDeletePath(this.currentProjectService.identifier as string, event.modelId),
+        this.pathHelper.ifcModelsDeletePath(this.currentProjectService.identifier!, event.modelId),
         formData,
       )
         .subscribe()

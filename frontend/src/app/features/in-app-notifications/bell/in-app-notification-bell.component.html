@@ -1,15 +1,9 @@
-<a
-  class="op-ian-bell op-app-menu--item-action"
-  data-test-selector="op-ian-bell"
-  [href]="notificationsPath()"
->
-  <svg bell-fill-icon size="small"></svg>
-  <ng-container *ngIf="(unreadCount$ | async) as unreadCount">
+@if ((unreadCount$ | async); as unreadCount) {
+  @if (unreadCount !== 0) {
     <span
-      *ngIf="unreadCount !== 0"
-      class="op-ian-bell--indicator"
+      [ngClass]="{ 'op-ian-bell--indicator': true, 'op-ian-bell--indicator_max': unreadCount > bellDisplayLimit }"
       data-test-selector="op-ian-notifications-count"
-      [textContent]="unreadCountText$ | async"
+      [innerHTML]="unreadCountText$ | async"
     ></span>
-  </ng-container>
-</a>
+  }
+}

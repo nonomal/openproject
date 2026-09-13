@@ -40,9 +40,7 @@ Rails.application.routes.draw do
   scope "projects/:project_id", as: "projects" do
     resources :cost_entries, controller: "costlog", only: %i[new create]
 
-    resources :hourly_rates, only: %i[show edit update] do
-      post :set_rate, on: :member
-    end
+    resources :hourly_rates, only: %i[show edit update]
 
     get "/time_entries/dialog" => "time_entries#dialog"
   end
@@ -53,9 +51,9 @@ Rails.application.routes.draw do
     get "/time-tracking/(:mode-:view_mode)(/:date)" => "time_tracking#index",
         as: :time_tracking,
         constraints: {
-          mode: /day|week|month/,
+          mode: /day|week|workweek|month/,
           view_mode: /list|calendar/,
-          date: /\d{4}-\d{2}-\d{2}/
+          date: /(\d{4}-\d{2}-\d{2}|today)/
         }
     get "/time-tracking/refresh" => "time_tracking#refresh",
         as: :time_tracking_refresh
@@ -64,6 +62,9 @@ Rails.application.routes.draw do
   scope "projects/:project_id", as: "project", module: "projects" do
     namespace "settings" do
       resource :time_entry_activities, only: %i[show update]
+      resources :cost_types, only: %i[index] do
+        member { post :toggle }
+      end
     end
   end
 
@@ -94,6 +95,12 @@ Rails.application.routes.draw do
         # TODO: check if this can be replaced with update method
         put :set_rate
         patch :restore
+        get :rates
+      end
+
+      scope module: :cost_types do
+        resources :projects, controller: :cost_type_projects, only: %i[index new create]
+        resource :project, controller: :cost_type_projects, only: :destroy
       end
     end
 
@@ -101,5 +108,10 @@ Rails.application.routes.draw do
              only: %i[show update],
              controller: "costs_settings",
              as: "costs_settings"
+
+    resource :time,
+             only: %i[show update],
+             controller: "time_settings",
+             as: "time_settings"
   end
 end

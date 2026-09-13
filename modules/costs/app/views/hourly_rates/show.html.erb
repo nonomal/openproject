@@ -34,7 +34,7 @@ See COPYRIGHT and LICENSE files for more details.
                        [{ href: project_overview_path(@project.identifier), text: @project.name },
                         { href: projects_budgets_path(@project.identifier), text: I18n.t(:label_budget_plural) }]
                      else
-                       [{ href: home_path, text: organization_name }]
+                       []
                      end
 %>
 

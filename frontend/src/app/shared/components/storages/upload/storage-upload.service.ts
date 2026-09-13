@@ -21,21 +21,22 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
 import { Observable } from 'rxjs';
 import { ID } from '@datorama/akita';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpEvent } from '@angular/common/http';
 
 import { IUploadFile, OpUploadService } from 'core-app/core/upload/upload.service';
 import { IUploadStrategy } from 'core-app/shared/components/storages/upload/upload-strategy';
 import { NextcloudUploadStrategy } from 'core-app/shared/components/storages/upload/nextcloud-upload.strategy';
-import { nextcloud, oneDrive } from 'core-app/shared/components/storages/storages-constants.const';
+import { nextcloud, oneDrive, sharepoint } from 'core-app/shared/components/storages/storages-constants.const';
 import { OneDriveUploadStrategy } from 'core-app/shared/components/storages/upload/one-drive-upload.strategy';
+import { SharepointUploadStrategy } from 'core-app/shared/components/storages/upload/sharepoint-upload.strategy';
 
 export interface IStorageFileUploadResponse {
   id:ID;
@@ -46,13 +47,9 @@ export interface IStorageFileUploadResponse {
 
 @Injectable()
 export class StorageUploadService extends OpUploadService {
-  private uploadStrategy:IUploadStrategy;
+  private readonly http = inject(HttpClient);
 
-  constructor(
-    private readonly http:HttpClient,
-  ) {
-    super();
-  }
+  private uploadStrategy:IUploadStrategy;
 
   public upload<T>(
     href:string,
@@ -72,6 +69,9 @@ export class StorageUploadService extends OpUploadService {
         break;
       case oneDrive:
         this.uploadStrategy = new OneDriveUploadStrategy(this.http);
+        break;
+      case sharepoint:
+        this.uploadStrategy = new SharepointUploadStrategy(this.http);
         break;
       default:
         throw new Error('unknown storage type');

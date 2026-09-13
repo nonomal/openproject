@@ -1,6 +1,8 @@
 require "spec_helper"
 
 RSpec.describe "Cost report showing my own times", :js do
+  include Components::Autocompleter::NgSelectAutocompleteHelpers
+
   let(:project) { create(:project) }
   let(:user) { create(:admin) }
   let(:user2) { create(:admin) }
@@ -11,14 +13,14 @@ RSpec.describe "Cost report showing my own times", :js do
   let!(:time_entry1) do
     create(:time_entry,
            user:,
-           work_package:,
+           entity: work_package,
            project:,
            hours: 10)
   end
   let!(:time_entry2) do
     create(:time_entry,
            user: user2,
-           work_package:,
+           entity: work_package,
            project:,
            hours: 15)
   end
@@ -28,12 +30,16 @@ RSpec.describe "Cost report showing my own times", :js do
     login_as user
 
     # Create and save cost report
-    visit cost_reports_path(project)
+    visit project_reporting_cost_reports_path(project)
   end
 
   shared_examples "me filter value" do |filter_name, filter_selector|
     it 'keeps the special "me" value for the current user' do
-      select "me", from: filter_selector
+      user_autocompleter = find("opce-user-autocompleter##{filter_selector}")
+
+      ng_select_clear(user_autocompleter, raise_on_missing: false)
+      select_autocomplete(user_autocompleter, query: "me", results_selector: "body")
+
       click_on "Save"
       fill_in "query_name", with: "Query ME value"
       check "query_is_public"
@@ -45,22 +51,23 @@ RSpec.describe "Cost report showing my own times", :js do
 
       report = nil
       retry_block do
-        report = CostQuery.last
-        raise "Expected CostQuery to exist" unless report
+        report = CostReport.last
+        raise "Expected CostReport to exist" unless report
       end
 
-      user_filter = report.serialized[:filters].detect { |name, _| name == filter_name }
-      expect(user_filter[1][:values]).to eq %w(me)
+      user_filter = report.query.filters.detect { |filter| filter.name.to_s == filter_name }
+      expect(user_filter.values).to eq %w(me)
 
       # Login as the next user
       login_as user2
 
       # Create and save cost report
-      visit cost_report_path(report.id, project_id: project.identifier)
-      expect(page).to have_no_css(".report", text: "10.00")
+      visit project_reporting_cost_report_path(project, report)
       expect(page).to have_css(".report", text: "15.00")
 
-      expect(page).to have_field(filter_selector, text: "me")
+      # Refresh the user_autocompleter value to avoid cuprite issues in case the internal nodeID changes (stale element)
+      user_autocompleter = find("opce-user-autocompleter##{filter_selector}")
+      expect_current_autocompleter_value(user_autocompleter, "me")
     end
   end
 
@@ -71,14 +78,14 @@ RSpec.describe "Cost report showing my own times", :js do
     let!(:time_entry1) do
       create(:time_entry,
              user:,
-             work_package:,
+             entity: work_package,
              project:,
              hours: 10)
     end
     let!(:time_entry2) do
       create(:time_entry,
              user: user2,
-             work_package: work_package2,
+             entity: work_package2,
              project:,
              hours: 15)
     end
@@ -89,10 +96,10 @@ RSpec.describe "Cost report showing my own times", :js do
       select "Assignee", from: "add_filter_select"
     end
 
-    it_behaves_like "me filter value", "AssignedToId", "assigned_to_id_arg_1_val"
+    it_behaves_like "me filter value", "assigned_to_id", "assigned_to_id_select_1"
   end
 
   describe "user filter" do
-    it_behaves_like "me filter value", "UserId", "user_id_arg_1_val"
+    it_behaves_like "me filter value", "user_id", "user_id_select_1"
   end
 end

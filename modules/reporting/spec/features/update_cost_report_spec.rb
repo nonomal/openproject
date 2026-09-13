@@ -29,7 +29,7 @@
 require_relative "../spec_helper"
 require_relative "support/pages/cost_report_page"
 
-RSpec.describe "updating a cost report's cost type", :js, :selenium do
+RSpec.describe "updating a cost report's cost type", :js do
   let(:project) { create(:project_with_types, members: { user => create(:project_role) }) }
   let(:user) do
     create(:admin)
@@ -55,8 +55,8 @@ RSpec.describe "updating a cost report's cost type", :js, :selenium do
     report_page.save(as: "My Query", public: true)
     report_page.wait_for_page_to_reload
 
-    cost_query = CostQuery.find_by!(name: "My Query")
-    expect(page).to have_current_path("/projects/#{project.identifier}/cost_reports/#{cost_query.id}")
+    report = CostReport.find_by!(name: "My Query")
+    expect(page).to have_current_path(project_reporting_cost_report_path(project, report))
 
     expect(page).to have_field("Labor", checked: true)
 

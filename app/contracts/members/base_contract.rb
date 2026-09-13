@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,6 +32,7 @@ module Members
   class BaseContract < ::ModelContract
     delegate :principal,
              :project,
+             :project_id,
              :new_record?,
              to: :model
 
@@ -39,6 +42,7 @@ module Members
     validate :roles_grantable
     validate :project_set
     validate :project_manageable
+    validate :validate_no_global_placeholder
 
     def assignable_projects
       Project
@@ -47,6 +51,12 @@ module Members
     end
 
     private
+
+    def validate_no_global_placeholder
+      return unless principal.is_a?(PlaceholderUser)
+
+      errors.add :principal, :invalid if project_id.nil?
+    end
 
     def user_allowed_to_manage
       errors.add :base, :error_unauthorized unless user_allowed_to_manage?

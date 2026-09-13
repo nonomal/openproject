@@ -35,7 +35,7 @@ module Primer
         class SingleDatePickerInput < Primer::Forms::Dsl::TextFieldInput
           attr_reader :datepicker_options
 
-          def initialize(name:, label:, datepicker_options:, **system_arguments)
+          def initialize(name:, label:, datepicker_options: {}, **system_arguments)
             @datepicker_options = derive_datepicker_options(datepicker_options)
 
             super(name:, label:, **system_arguments)

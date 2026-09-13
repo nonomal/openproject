@@ -48,7 +48,7 @@ module EnterpriseEdition
     def description
       @description || begin
         if I18n.exists?(:description_html, scope: i18n_scope)
-          I18n.t(:description_html, scope: i18n_scope).html_safe
+          helpers.t(:description_html, scope: i18n_scope)
         else
           I18n.t(:description, scope: i18n_scope)
         end
@@ -64,21 +64,38 @@ module EnterpriseEdition
     end
 
     def features
-      return @features if defined?(@features)
+      defined?(@features) || begin
+        @features = I18n.t(:features, scope: i18n_scope, default: nil)&.values
+      end
 
       @features = I18n.t(:features, scope: i18n_scope, default: nil)&.values
     end
 
     def plan
-      @plan ||= OpenProject::Token.lowest_plan_for(feature_key)&.capitalize
+      defined?(@plan) || begin
+        @plan = OpenProject::Token.lowest_plan_for(feature_key)
+        raise ArgumentError, "#{feature_key} is not a valid feature, as no plan mapped to it." if @plan.nil?
+      end
+
+      @plan
     end
 
     def plan_text
-      plan_name = render(Primer::Beta::Text.new(font_weight: :bold, classes: "upsell-colored")) do
-        I18n.t("ee.upsell.plan_name", plan:)
+      if trial_feature?
+        safe_join [helpers.t("ee.upsell.trial_text"), upsell_plan_text], " "
+      else
+        upsell_plan_text
+      end
+    end
+
+    private
+
+    def upsell_plan_text
+      plan_name = render(Primer::Beta::Text.new(font_weight: :bold, classes: "upsell-colored-text")) do
+        I18n.t("ee.upsell.plan_name", plan: plan.capitalize)
       end
 
-      I18n.t("ee.upsell.plan_text_html", plan_name:).html_safe
+      helpers.t("ee.upsell.plan_text_html", plan_name:)
     end
   end
 end

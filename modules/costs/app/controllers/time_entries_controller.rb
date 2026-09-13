@@ -30,7 +30,6 @@
 
 class TimeEntriesController < ApplicationController
   include OpTurbo::ComponentStream
-  include OpTurbo::DialogStreamHelper
   include Redmine::I18n
 
   before_action :require_login
@@ -46,7 +45,7 @@ class TimeEntriesController < ApplicationController
 
   def dialog
     @show_work_package = params[:work_package_id].blank?
-    @show_user = show_user_input_in_dialog
+    @show_user = show_user_input_in_dialog?
     @limit_to_project_id = @project&.id
 
     prefill_time_entry_from_params
@@ -90,7 +89,7 @@ class TimeEntriesController < ApplicationController
     @time_entry = call.result
 
     if call.success?
-      close_dialog_via_turbo_stream("#time-entry-dialog", additional: { spent_on: @time_entry.spent_on })
+      close_dialog_via_turbo_stream("time-entry-dialog", additional: { spent_on: @time_entry.spent_on })
     else
       form_component = TimeEntries::TimeEntryFormComponent.new(time_entry: @time_entry, **form_config_options)
       update_via_turbo_stream(component: form_component, status: :bad_request)
@@ -107,32 +106,49 @@ class TimeEntriesController < ApplicationController
     @time_entry = call.result
 
     if call.success?
-      close_dialog_via_turbo_stream("#time-entry-dialog", additional: { spent_on: @time_entry.spent_on })
-    elsif params[:no_dialog]
-      render_error_flash_message_via_turbo_stream(message: t("notice_time_entry_update_failed",
-                                                             errors: call.errors.full_messages.join(", ")))
-    else
+      if request_from_dialog?
+        close_dialog_via_turbo_stream("time-entry-dialog", additional: { spent_on: @time_entry.spent_on })
+      else
+        reload_page_via_turbo_stream
+      end
+    elsif call.failure? && request_from_dialog?
       form_component = TimeEntries::TimeEntryFormComponent.new(time_entry: @time_entry, **form_config_options)
       update_via_turbo_stream(component: form_component, status: :bad_request)
+    else
+      render_error_flash_message_via_turbo_stream(message: t("notice_time_entry_update_failed",
+                                                             errors: call.errors.full_messages.join(", ")))
     end
 
-    respond_with_turbo_streams(status: call.success? ? :ok : :bad_request)
+    respond_with_turbo_streams(status: call)
   end
 
-  def destroy
+  def destroy # rubocop:disable Metrics/AbcSize
     call = TimeEntries::DeleteService.new(user: current_user, model: @time_entry).call
 
     @time_entry = call.result
 
-    if call.success?
-      close_dialog_via_turbo_stream("#time-entry-dialog")
+    if request_from_dialog?
+      if call.success?
+        close_dialog_via_turbo_stream("time-entry-dialog")
+      else
+        form_component = TimeEntries::TimeEntryFormComponent.new(time_entry: @time_entry, **form_config_options)
+        update_via_turbo_stream(component: form_component, status: :bad_request)
+      end
+    elsif call.success?
+      reload_page_via_turbo_stream
     else
-      form_component = TimeEntries::TimeEntryFormComponent.new(time_entry: @time_entry, **form_config_options)
-      update_via_turbo_stream(component: form_component, status: :bad_request)
+      render_error_flash_message_via_turbo_stream(message: t("notice_time_entry_delete_failed",
+                                                             errors: call.errors.full_messages.join(", ")))
     end
+
+    respond_with_turbo_streams(status: call)
   end
 
   private
+
+  def request_from_dialog?
+    !ActiveModel::Type::Boolean.new.cast(params[:no_dialog])
+  end
 
   def prefill_time_entry_from_params # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
     # correct time calcuation needs a time zone
@@ -161,7 +177,7 @@ class TimeEntriesController < ApplicationController
     end
   end
 
-  def show_user_input_in_dialog
+  def show_user_input_in_dialog?
     return false if params[:onlyMe] == "true"
 
     if @project
@@ -216,7 +232,7 @@ class TimeEntriesController < ApplicationController
                       entry
                     end
                   else
-                    TimeEntry.new(project: @project, work_package: @work_package, user: User.current)
+                    TimeEntry.new(project: @project, entity: @work_package, user: User.current)
                   end
   end
 end

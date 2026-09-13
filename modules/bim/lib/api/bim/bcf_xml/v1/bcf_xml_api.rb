@@ -100,7 +100,7 @@ module API
                   rescue API::Errors::UnsupportedMediaType => e
                     raise e
                   rescue StandardError => e
-                    raise API::Errors::InternalError.new(e.message)
+                    raise API::Errors::InternalError.new(e.message, exception: e)
                   ensure
                     file.delete
                   end

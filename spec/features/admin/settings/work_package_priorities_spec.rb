@@ -30,24 +30,48 @@
 
 require "spec_helper"
 
-RSpec.describe "Work package priorities" do
-  shared_let(:admin) { create(:admin) }
+RSpec.describe "Work package priorities", :js do
+  include Flash::Expectations
 
-  before do
-    login_as(admin)
+  current_user { create(:admin) }
+  let!(:default_priority) { create(:issue_priority, is_default: true, name: "Normal") }
+
+  def within_enumeration_item(priority, &)
+    page.within("#admin-enumerations-item-component-#{priority.id}", &)
   end
 
-  it "allows creating new priorities" do
+  it "can be managed (created, updated, deleted)" do
     visit admin_settings_work_package_priorities_path
+
+    within_enumeration_item(default_priority) do
+      expect(page).to have_content("Normal")
+      expect(page).to have_content("Default")
+    end
 
     page.find_test_selector("add-enumeration-button").click
 
     fill_in "Name", with: "Immediate"
+    check "Default"
     click_on("Save")
+
+    expect_and_dismiss_flash(message: "Successful update.")
 
     # we are redirected back to the index page
     expect(page).to have_current_path(admin_settings_work_package_priorities_path)
-    expect(page).to have_content("Immediate")
+
+    new_priority = IssuePriority.last
+
+    # The new priority is shown in the list as the default priority
+    within_enumeration_item(new_priority) do
+      expect(page).to have_content("Immediate")
+      expect(page).to have_content("Default")
+    end
+
+    # Since the new priority is now the default, the former default looses that flag
+    within_enumeration_item(default_priority) do
+      expect(page).to have_content("Normal")
+      expect(page).to have_no_content("Default")
+    end
 
     # It allows editing (Regression #62459)
     click_link "Immediate"
@@ -55,10 +79,30 @@ RSpec.describe "Work package priorities" do
     fill_in "Name", with: "Urgent"
     click_on("Save")
 
-    expect(page).to have_current_path(admin_settings_work_package_priorities_path)
-    expect(page).to have_content("Urgent")
+    expect_and_dismiss_flash(message: "Successful update.")
+
+    within_enumeration_item(new_priority) do
+      expect(page).to have_content("Urgent")
+      expect(page).to have_content("Default")
+    end
 
     expect(IssuePriority).to exist(name: "Urgent")
     expect(IssuePriority).not_to exist(name: "Immediate")
+
+    # It allows deleting priorities
+    within_enumeration_item(new_priority) do
+      find(test_selector("op-enumeration--action-menu")).click
+      click_button("Delete")
+    end
+
+    expect_and_dismiss_flash(message: "Successful deletion.")
+
+    expect(page).to have_no_content("Urgent")
+
+    # Since the old default is deleted another is now the default.
+    within_enumeration_item(default_priority) do
+      expect(page).to have_content("Normal")
+      expect(page).to have_no_content("Default")
+    end
   end
 end

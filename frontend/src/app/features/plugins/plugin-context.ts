@@ -1,4 +1,32 @@
-import { Injector, NgZone } from '@angular/core';
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
+import { ApplicationRef, Injector } from '@angular/core';
 import { ToastService } from 'core-app/shared/components/toaster/toast.service';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import {
@@ -15,7 +43,7 @@ import { CKEditorPreviewService } from 'core-app/shared/components/editor/compon
 import {
   ExternalRelationQueryConfigurationService,
 } from 'core-app/features/work-packages/components/wp-table/external-configuration/external-relation-query-configuration.service';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
+import { LazyInject } from 'core-app/shared/helpers/angular/lazy-inject.decorator';
 import { ApiV3Service } from 'core-app/core/apiv3/api-v3.service';
 import { ConfigurationService } from 'core-app/core/config/configuration.service';
 import { EditorMacrosService } from 'core-app/shared/components/modals/editor/editor-macros.service';
@@ -30,6 +58,8 @@ import { AttachmentsResourceService } from 'core-app/core/state/attachments/atta
 import { HttpClient } from '@angular/common/http';
 import { TimezoneService } from 'core-app/core/datetime/timezone.service';
 import { TurboRequestsService } from 'core-app/core/turbo/turbo-requests.service';
+import { CurrentProjectService } from 'core-app/core/current-project/current-project.service';
+import { HalEventsService } from '../hal/services/hal-events.service';
 /**
  * Plugin context bridge for plugins outside the CLI compiler context
  * in order to access services and parts of the core application
@@ -47,6 +77,7 @@ export class OpenProjectPluginContext {
     confirmDialog: this.injector.get<ConfirmDialogService>(ConfirmDialogService),
     externalQueryConfiguration: this.injector.get<ExternalQueryConfigurationService>(ExternalQueryConfigurationService),
     externalRelationQueryConfiguration: this.injector.get<ExternalRelationQueryConfigurationService>(ExternalRelationQueryConfigurationService),
+    halEvents: this.injector.get<HalEventsService>(HalEventsService),
     halResource: this.injector.get<HalResourceService>(HalResourceService),
     hooks: this.injector.get<HookService>(HookService),
     i18n: this.injector.get<I18nService>(I18nService),
@@ -65,6 +96,7 @@ export class OpenProjectPluginContext {
     attachmentsResourceService: this.injector.get(AttachmentsResourceService),
     http: this.injector.get(HttpClient),
     turboRequests: this.injector.get(TurboRequestsService),
+    currentProject: this.injector.get(CurrentProjectService),
   };
 
   public readonly helpers = {
@@ -83,10 +115,18 @@ export class OpenProjectPluginContext {
 
   // Hooks
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  public readonly hooks:{ [hook:string]:(callback:(...args:any[]) => unknown) => void } = {};
+  public readonly hooks:Record<string, (callback:(...args:any[]) => unknown) => void> = {};
 
-  // Angular zone reference
-  @InjectField() public readonly zone:NgZone;
+  /**
+   * @deprecated Noop shim — the app is zoneless. Remove usages.
+   */
+  public readonly zone = {
+    run: <T>(cb:() => T):T => cb(),
+    runOutsideAngular: <T>(cb:() => T):T => cb(),
+  };
+
+  // Angular application reference
+  @LazyInject() public readonly appRef:ApplicationRef;
 
   // Angular2 global injector reference
   constructor(public readonly injector:Injector) {
@@ -98,12 +138,10 @@ export class OpenProjectPluginContext {
   }
 
   /**
-   * Run the given callback in the angular zone,
-   * resulting in triggered change detection that would otherwise not occur.
-   *
-   * @param cb
+   * @deprecated This method is a no-op since the app is zoneless.
+   * Replace calls with direct invocation of the callback.
    */
   public runInZone(cb:() => void) {
-    this.zone.run(cb);
+    cb();
   }
 }

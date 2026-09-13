@@ -21,27 +21,36 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import {
-  Component, Input, EventEmitter, Output,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { WorkPackageResource } from 'core-app/features/hal/resources/work-package-resource';
 import { WorkPackageRelationsHierarchyService } from 'core-app/features/work-packages/components/wp-relations/wp-relations-hierarchy/wp-relations-hierarchy.service';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { WorkPackageNotificationService } from 'core-app/features/work-packages/services/notifications/work-package-notification.service';
+import { PathHelperService } from 'core-app/core/path-helper/path-helper.service';
 
 @Component({
   templateUrl: './wp-breadcrumb-parent.html',
   selector: 'wp-breadcrumb-parent',
+  standalone: false,
+  // TODO: This component has been partially migrated to be zoneless-compatible.
+  // After testing, this should be updated to ChangeDetectionStrategy.OnPush.
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class WorkPackageBreadcrumbParentComponent {
-  @Input('workPackage') workPackage:WorkPackageResource;
+  protected readonly I18n = inject(I18nService);
+  protected readonly wpRelationsHierarchy = inject(WorkPackageRelationsHierarchyService);
+  protected readonly notificationService = inject(WorkPackageNotificationService);
+  protected readonly pathHelper = inject(PathHelperService);
 
-  @Output('onSwitch') onSwitch = new EventEmitter<boolean>();
+  @Input() workPackage:WorkPackageResource;
+
+  @Output() onSwitch = new EventEmitter<boolean>();
 
   public isSaving = false;
 
@@ -53,13 +62,6 @@ export class WorkPackageBreadcrumbParentComponent {
   };
 
   private editing:boolean;
-
-  public constructor(
-    protected readonly I18n:I18nService,
-    protected readonly wpRelationsHierarchy:WorkPackageRelationsHierarchyService,
-    protected readonly notificationService:WorkPackageNotificationService,
-  ) {
-  }
 
   public canModifyParent():boolean {
     return !!this.workPackage.changeParent;
@@ -84,7 +86,7 @@ export class WorkPackageBreadcrumbParentComponent {
   public updateParent(newParent:WorkPackageResource|null) {
     this.close();
     const newParentId = newParent ? newParent.id : null;
-    if (_.get(this.parent, 'id', null) === newParentId) {
+    if ((this.parent?.id ?? null) === newParentId) {
       return;
     }
 
@@ -101,5 +103,9 @@ export class WorkPackageBreadcrumbParentComponent {
       this.editing = state;
       this.onSwitch.emit(this.editing);
     }
+  }
+
+  public parentLink(parent:WorkPackageResource):string {
+    return this.pathHelper.genericWorkPackagePath(parent.project?.identifier, parent.displayId) + window.location.search;
   }
 }

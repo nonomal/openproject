@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 
 RSpec.describe "Switching types in work package table", :js do
@@ -92,8 +94,8 @@ RSpec.describe "Switching types in work package table", :js do
         message: "#{cf_req_text.name} can't be blank."
       )
 
-      # Required CF requires activation
-      req_text_field.activate!
+      # After a failed type switch, the required CF field is auto-opened in edit mode
+      req_text_field.expect_active!
       req_text_field.set_value "Required"
       req_text_field.save!
 
@@ -115,22 +117,26 @@ RSpec.describe "Switching types in work package table", :js do
     end
 
     it "can switch back from an open required CF (Regression test #28099)" do
+      # The required field is not a column, so opening it makes the table load its query form and
+      # add the required field. we need to make sure the type is editable before we try it to prevent a race condition
+      expect(type_field).to be_editable
+      wait_for_network_idle
+
       # Switch type
       type_field.activate!
-      type_field.set_value type_bug.name
+      type_field.set_select_field_value type_bug.name
 
       wp_table.expect_and_dismiss_toaster(
         type: :error,
         message: "#{cf_req_text.name} can't be blank."
       )
 
-      # Required CF requires activation
+      # After a failed type switch, the required CF field is auto-opened in edit mode
       req_text_field.expect_active!
 
       # Now switch back to a type without the required CF
       type_field.activate!
-      type_field.openSelectField
-      type_field.set_value type_task.name
+      type_field.set_select_field_value type_task.name
 
       wp_table.expect_and_dismiss_toaster(
         message: "Successful update."
@@ -303,7 +309,7 @@ RSpec.describe "Switching types in work package table", :js do
       new_wp = WorkPackage.last
       expect(new_wp.subject).to eq("My subject")
       expect(new_wp.type_id).to eq(type_with_cf.id)
-      expect(new_wp.custom_value_for(custom_field.id).map(&:typed_value)).to match_array(%w(pineapple mushrooms))
+      expect(new_wp.custom_value_for(custom_field).map(&:typed_value)).to match_array(%w(pineapple mushrooms))
     end
   end
 end

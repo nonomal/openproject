@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -37,20 +39,16 @@ RSpec.shared_examples_for "time entry contract" do
   end
 
   let(:other_user) { build_stubbed(:user) }
-  let(:time_entry_work_package) do
-    build_stubbed(:work_package,
-                  project: time_entry_project)
-  end
+  let(:time_entry_entity) { build_stubbed(:work_package, project: time_entry_project) }
   let(:time_entry_project) { build_stubbed(:project) }
   let(:time_entry_user) { current_user }
-  let(:time_entry_activity) do
-    build_stubbed(:time_entry_activity)
-  end
+  let(:time_entry_activity) { build_stubbed(:time_entry_activity) }
   let(:time_entry_activity_active) { true }
   let(:time_entry_spent_on) { Time.zone.today }
   let(:time_entry_hours) { 5 }
   let(:time_entry_comments) { "A comment" }
-  let(:work_package_visible) { true }
+  let(:time_entry_ongoing) { false }
+  let(:entity_visible) { true }
   let(:user_visible) { true }
   let(:time_entry_day_sum) { 5 }
   let(:activities_scope) do
@@ -67,11 +65,11 @@ RSpec.shared_examples_for "time entry contract" do
   end
 
   before do
-    if time_entry_work_package
-      allow(time_entry_work_package)
+    if time_entry_entity
+      allow(time_entry_entity)
         .to receive(:visible?)
         .with(current_user)
-        .and_return(work_package_visible)
+        .and_return(entity_visible)
     end
 
     allow(TimeEntryActivity)
@@ -99,7 +97,7 @@ RSpec.shared_examples_for "time entry contract" do
       .with(time_entry_project)
       .and_return(activities_scope)
 
-    allow(time_entry_user).to receive(:visible?).and_return(user_visible)
+    allow(time_entry_user).to receive_messages(visible?: user_visible, member_of?: true)
   end
 
   def expect_valid(valid, symbols = {})
@@ -119,17 +117,38 @@ RSpec.shared_examples_for "time entry contract" do
   it_behaves_like "is valid"
 
   context "when the work_package is within a different project than the provided project" do
-    let(:time_entry_work_package) { build_stubbed(:work_package) }
+    let(:another_project) { build_stubbed(:project) }
+    let(:time_entry_entity) { build_stubbed(:work_package, project: another_project) }
 
     it "is invalid" do
-      expect_valid(false, work_package_id: %i(invalid))
+      expect_valid(false, entity: %i(invalid))
+    end
+  end
+
+  context "when the meeting is within a different project than the provided project" do
+    let(:another_project) { build_stubbed(:project) }
+    let(:time_entry_entity) { build_stubbed(:meeting, project: another_project) }
+
+    it "is invalid" do
+      expect_valid(false, entity: %i(invalid))
+    end
+  end
+
+  context "when the meeting is not visible to the user" do
+    let(:time_entry_entity) { build_stubbed(:meeting, project: time_entry_project) }
+    let(:entity_visible) { false }
+
+    it "is invalid" do
+      expect_valid(false, entity: %i(invalid))
     end
   end
 
   context "when the work_package is nil" do
-    let(:time_entry_work_package) { nil }
+    let(:time_entry_entity) { nil }
 
-    it_behaves_like "is valid"
+    it "is invalid" do
+      expect_valid(false, entity: %i(blank))
+    end
   end
 
   context "when the project is nil" do
@@ -210,6 +229,68 @@ RSpec.shared_examples_for "time entry contract" do
     end
   end
 
+  context "with a maximum number of hours per time entry configured" do
+    let(:max_hours_per_entry) { 4 }
+
+    before do
+      allow(Setting).to receive(:time_entries_max_hours_per_entry).and_return(max_hours_per_entry)
+    end
+
+    it_behaves_like "is valid" # without an Enterprise token, the restriction is not enforced
+
+    context "with an Enterprise token", with_ee: %i[time_entry_time_restrictions] do
+      context "when hours exceed the maximum" do
+        it "is invalid" do
+          expect_valid(false, hours: %i(max_hours_per_entry_exceeded))
+        end
+      end
+
+      context "when hours equal the maximum" do
+        let(:time_entry_hours) { max_hours_per_entry }
+
+        it_behaves_like "is valid"
+      end
+
+      context "when the maximum is 0" do
+        let(:max_hours_per_entry) { 0 }
+
+        it_behaves_like "is valid"
+      end
+    end
+  end
+
+  context "with a maximum number of hours per day configured" do
+    let(:max_hours_per_day) { 8 }
+    let(:time_entry_hours) { 5 }
+    let(:time_entry_day_sum) { 4 }
+
+    before do
+      allow(Setting).to receive(:time_entries_max_hours_per_day).and_return(max_hours_per_day)
+    end
+
+    it_behaves_like "is valid" # without an Enterprise token, the restriction is not enforced
+
+    context "with an Enterprise token", with_ee: %i[time_entry_time_restrictions] do
+      context "when the hours already logged plus the entry's hours exceed the maximum" do
+        it "is invalid" do
+          expect_valid(false, hours: %i(max_hours_per_day_exceeded))
+        end
+      end
+
+      context "when the hours already logged plus the entry's hours equal the maximum" do
+        let(:time_entry_day_sum) { max_hours_per_day - time_entry_hours }
+
+        it_behaves_like "is valid"
+      end
+
+      context "when the maximum is 0" do
+        let(:max_hours_per_day) { 0 }
+
+        it_behaves_like "is valid"
+      end
+    end
+  end
+
   context "when comment is nil" do
     let(:time_entry_comments) { nil }
 
@@ -221,6 +302,21 @@ RSpec.shared_examples_for "time entry contract" do
 
     it "is valid" do
       expect_valid(true)
+    end
+  end
+
+  context "when ongoing and another ongoing time entry already exists for the current user" do
+    let(:time_entry_ongoing) { true }
+
+    before do
+      allow(TimeEntry)
+        .to receive(:ongoing_for_user_other_than)
+              .with(time_entry_user, time_entry)
+              .and_return([build_stubbed(:time_entry, user: time_entry_user, ongoing: true)])
+    end
+
+    it "is invalid" do
+      expect_valid(false, base: %i(duplicate_ongoing))
     end
   end
 
@@ -253,8 +349,8 @@ RSpec.shared_examples_for "time entry contract" do
           .and_return project_versions
       end
 
-      if time_entry_work_package
-        allow(time_entry_work_package)
+      if time_entry_entity
+        allow(time_entry_entity)
           .to receive(:assignable_versions)
           .and_return wp_versions
       end
@@ -262,7 +358,7 @@ RSpec.shared_examples_for "time entry contract" do
 
     context "if no project and no work package is set" do
       let(:time_entry_project) { nil }
-      let(:time_entry_work_package) { nil }
+      let(:time_entry_entity) { nil }
 
       it "is empty" do
         expect(contract.assignable_versions)
@@ -271,7 +367,7 @@ RSpec.shared_examples_for "time entry contract" do
     end
 
     context "if a project is set but no work package" do
-      let(:time_entry_work_package) { nil }
+      let(:time_entry_entity) { nil }
 
       it "returns assignable_versions of the project" do
         expect(contract.assignable_versions)

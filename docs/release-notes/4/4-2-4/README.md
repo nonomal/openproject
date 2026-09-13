@@ -12,9 +12,8 @@ OpenProject 4.2.4 contains a bug fix and updated translations.
 
 The following bug has been fixed:
 
-  - An English string in the project dependencies was wrong and has been
-    fixed
-    ([#20910](https://community.openproject.org/work_packages/20910)).
+- An English string in the project dependencies was wrong and has been fixed
+  ([#20910](https://community.openproject.org/work_packages/20910)).
 
 Additionally, new translations have been included (including complete
 translations for Portuguese, Brazilian).

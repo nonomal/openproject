@@ -33,11 +33,19 @@ class WorkPackages::SetAttributesService < BaseServices::SetAttributes
 
   private
 
+  def validate_and_result
+    result = super
+    # restore identifier for error messages
+    work_package.restore_identifier_after_failed_move unless result.success?
+    result
+  end
+
   def set_attributes(attributes)
-    file_links_ids = attributes.delete(:file_links_ids)
-    model.file_links = Storages::FileLink.where(id: file_links_ids) if file_links_ids
+    validate_custom_fields = attributes.delete(:validate_custom_fields)
 
     set_attachments_attributes(attributes)
+    claim_attachments_referenced_in_description(attributes)
+    set_versions_attributes(attributes)
     set_static_attributes(attributes)
 
     model.change_by_system do
@@ -45,18 +53,40 @@ class WorkPackages::SetAttributesService < BaseServices::SetAttributes
     end
 
     set_custom_attributes(attributes)
-    mark_templated_subject
+    set_custom_values_to_validate(attributes, validate_custom_fields)
   end
 
-  def mark_templated_subject
-    if work_package.type&.replacement_pattern_defined_for?(:subject)
-      work_package.subject = I18n.t("work_packages.templated_subject_hint", type: work_package.type.name)
+  def set_custom_values_to_validate(attributes, validate_custom_fields = nil)
+    if validate_custom_fields
+      # When validate_custom_fields is explicitly set to true from frontend,
+      # activate validation for all custom fields regardless of whether they're in params
+      model.activate_custom_field_validations!
+    else
+      super(attributes)
     end
+  end
+
+  def claim_attachments_referenced_in_description(attributes)
+    return unless model.new_record? && attributes.key?(:description)
+
+    claimable_ids = Attachments::ClaimableIdsFromText.call(attributes[:description], user:)
+    return if claimable_ids.empty?
+
+    explicit_ids = model.attachments_replacements&.ids || []
+    model.attachments_replacements = Attachment.where(id: explicit_ids | claimable_ids)
+  end
+
+  def set_versions_attributes(attributes)
+    target_ids = attributes.delete(:target_version_ids)
+    observed_in_ids = attributes.delete(:observed_in_version_ids)
+
+    model.target_version_ids_replacements = Array(target_ids).map(&:to_i) if target_ids
+    model.observed_in_version_ids_replacements = Array(observed_in_ids).map(&:to_i) if observed_in_ids
   end
 
   def set_static_attributes(attributes)
     assignable_attributes = attributes.select do |key, _|
-      !CustomField.custom_field_attribute?(key) && work_package.respond_to?(key)
+      !CustomField.custom_field_attribute?(key) && work_package.respond_to?("#{key}=")
     end
 
     work_package.attributes = assignable_attributes
@@ -68,6 +98,7 @@ class WorkPackages::SetAttributesService < BaseServices::SetAttributes
       unify_milestone_dates
     else
       update_dates
+      update_ignore_non_working_days
     end
     shift_dates_to_soonest_working_days
     update_duration_to_one_day_for_milestones
@@ -217,19 +248,15 @@ class WorkPackages::SetAttributesService < BaseServices::SetAttributes
     # And the type was changed
     return unless work_package.type_id_changed?
 
-    # And the new type has a default text
-    default_description = work_package.type&.description
-    return if default_description.blank?
-
     # And the current description matches ANY current default text
     return unless work_package.description.blank? || default_description?
 
-    work_package.description = default_description
+    work_package.description = work_package.type_variant&.default_work_package_description
   end
 
   def default_description?
-    Type
-      .pluck(:description)
+    TypeVariant
+      .pluck(:default_work_package_description)
       .compact
       .map(&method(:normalize_whitespace))
       .include?(normalize_whitespace(work_package.description))
@@ -245,8 +272,6 @@ class WorkPackages::SetAttributesService < BaseServices::SetAttributes
     end
 
     work_package.attributes = assignable_attributes
-
-    initialize_unset_custom_values
   end
 
   def custom_field_context_changed?
@@ -261,12 +286,22 @@ class WorkPackages::SetAttributesService < BaseServices::SetAttributes
     return unless work_package.project_id_changed? && work_package.project_id
 
     model.change_by_system do
-      set_version_to_nil
+      clear_unassignable_versions
       reassign_category
       set_parent_to_nil
+      clear_semantic_identifier
 
       assign_default_type unless work_package.type
     end
+  end
+
+  # The identifier belongs to the source project; a fresh one is allocated
+  # after the move (WorkPackages::UpdateService#update_semantic_ids). The
+  # fields must be cleared in the same UPDATE that changes project_id because
+  # of the unique index on (project_id, sequence_number).
+  def clear_semantic_identifier
+    work_package.sequence_number = nil
+    work_package.identifier = nil
   end
 
   def update_dates
@@ -287,9 +322,16 @@ class WorkPackages::SetAttributesService < BaseServices::SetAttributes
     # Better return and keep dates unified to have only one meaningful error.
     return if work_package_now_milestone?
 
-    # do a reschedule call to get the work package dates from the rescheduled children
+    # do a reschedule call to get the work package dates from the (potentially)
+    # rescheduled children.
+    #
+    # This happens for instance when a work package with a child gets a new
+    # parent having a predecessor. If the child is in automatic mode, it could
+    # be forced to move to a date after the grandparent's predecessor, forcing
+    # the parent to also move to the same dates. These dates are known only
+    # after the child is properly rescheduled.
     service = WorkPackages::SetScheduleService.new(user: User.current, work_package:, switching_to_automatic_mode: [work_package])
-    service.call(work_package.changes.keys.map(&:to_sym)).result
+    service.call(work_package.changed_attribute_keys).result
   end
 
   def update_dates_from_self
@@ -300,6 +342,12 @@ class WorkPackages::SetAttributesService < BaseServices::SetAttributes
 
     work_package.due_date = new_due_date(min_start)
     work_package.start_date = min_start
+  end
+
+  def update_ignore_non_working_days
+    if work_package.schedule_automatically? && work_package.children.any?
+      work_package.ignore_non_working_days = work_package.children.any?(&:ignore_non_working_days)
+    end
   end
 
   def unify_milestone_dates
@@ -332,11 +380,37 @@ class WorkPackages::SetAttributesService < BaseServices::SetAttributes
     end
   end
 
-  def set_version_to_nil
-    if work_package.version &&
-       work_package.project&.shared_versions&.exclude?(work_package.version)
-      work_package.version = nil
+  def clear_unassignable_versions
+    assignable_ids = work_package.project&.shared_versions&.pluck(:id) || []
+
+    %w[target observed_in].each do |kind|
+      clear_unassignable_versions_for(kind, assignable_ids)
     end
+  end
+
+  def clear_unassignable_versions_for(kind, assignable_ids)
+    attr = :"#{kind}_version_ids_replacements"
+    current_replacements = work_package.send(attr)
+
+    current_ids = current_replacements || persisted_version_ids(kind)
+    filtered_ids = current_ids & assignable_ids
+
+    return if filtered_ids.sort == current_ids.sort
+
+    work_package.send(:"#{attr}=", filtered_ids)
+    # Assigning the replacement above marks the versions as changed, which the
+    # contract only allows for users holding the assign_versions permission.
+    # When the user did not ask for any version change (current_replacements
+    # is nil), the clearing is system-initiated (e.g. a project move), so it
+    # is marked as such and exempted from that permission. A user-requested
+    # set that merely got filtered stays attributed to the user.
+    work_package.mark_system_version_override(kind) if current_replacements.nil?
+  end
+
+  def persisted_version_ids(kind)
+    return [] unless work_package.persisted?
+
+    work_package.work_package_versions.where(kind:).pluck(:version_id)
   end
 
   def set_parent_to_nil
@@ -358,9 +432,7 @@ class WorkPackages::SetAttributesService < BaseServices::SetAttributes
   end
 
   def assign_default_type
-    available_types = work_package.project.types.order(:position)
-
-    work_package.type = available_types.first
+    work_package.type = work_package.project.enabled_types.first
     update_duration_to_one_day_for_milestones
     unify_milestone_dates
 
@@ -377,15 +449,10 @@ class WorkPackages::SetAttributesService < BaseServices::SetAttributes
   def reassign_invalid_status_if_type_changed
     # Checks that the issue can not be moved to a type with the status unchanged
     # and the target type does not have this status
-    if work_package.type_id_changed?
-      reassign_status work_package.type.statuses(include_default: true)
-    end
-  end
+    return unless work_package.type_id_changed?
+    return unless work_package.type_variant
 
-  # Take over any default custom values
-  # for new custom fields
-  def initialize_unset_custom_values
-    work_package.set_default_values! if custom_field_context_changed?
+    reassign_status work_package.type_variant.statuses(include_default: true)
   end
 
   def new_start_date
@@ -419,7 +486,7 @@ class WorkPackages::SetAttributesService < BaseServices::SetAttributes
     elsif reuse_current_due_date?
       # if due date is before start date, then start is used as due date.
       [min_start, work_package.due_date].max
-    elsif work_package.duration
+    elsif duration_assignable?
       days.due_date(min_start, work_package.duration)
     end
   end
@@ -429,7 +496,11 @@ class WorkPackages::SetAttributesService < BaseServices::SetAttributes
     return true if work_package.ignore_non_working_days_came_from_user?
 
     # use due date only if duration cannot be used
-    work_package.duration.nil?
+    work_package.duration.nil? || !duration_assignable?
+  end
+
+  def duration_assignable?
+    work_package&.duration.is_a?(Integer) && work_package.duration > 0
   end
 
   def work_package
@@ -440,28 +511,8 @@ class WorkPackages::SetAttributesService < BaseServices::SetAttributes
     instantiate_contract(work_package, user).assignable_statuses(include_default: true)
   end
 
-  def min_child_date
-    children_dates.min
-  end
-
-  def children_duration
-    max = max_child_date
-
-    return unless max
-
-    days.duration(min_child_date, max_child_date)
-  end
-
   def days
     WorkPackages::Shared::Days.for(work_package)
-  end
-
-  def max_child_date
-    children_dates.max
-  end
-
-  def children_dates
-    @children_dates ||= work_package.children.pluck(:start_date, :due_date).flatten.compact
   end
 
   def parent_start_earlier_than_due?

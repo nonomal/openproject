@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -77,7 +79,7 @@ RSpec.describe Token::ICal do
       # therefore a user needs to be allowed to have N ical tokens per query
       ical_token1 = described_class.create(
         user:,
-        ical_token_query_assignment_attributes: { query:, name: "#{name}_1" }
+        ical_token_query_assignment_attributes: { query:, name: "#{name}it" }
       )
       ical_token2 = described_class.create(
         user:,
@@ -107,11 +109,11 @@ RSpec.describe Token::ICal do
     it "a user cannot have N ical tokens per query with the same name" do
       ical_token1 = described_class.create(
         user:,
-        ical_token_query_assignment_attributes: { query:, name: "#{name}_1" }
+        ical_token_query_assignment_attributes: { query:, name: "#{name}it" }
       )
       ical_token2 = described_class.create(
         user:,
-        ical_token_query_assignment_attributes: { query:, name: "#{name}_1" }
+        ical_token_query_assignment_attributes: { query:, name: "#{name}it" }
       )
 
       expect(ical_token2.errors["ical_token_query_assignment.name"].first).to eq(
@@ -128,7 +130,7 @@ RSpec.describe Token::ICal do
 
       ical_token3 = described_class.create(
         user:,
-        ical_token_query_assignment_attributes: { query: query2, name: "#{name}_1" }
+        ical_token_query_assignment_attributes: { query: query2, name: "#{name}it" }
       )
 
       expect(described_class.where(user_id: user.id)).to contain_exactly(
@@ -150,9 +152,7 @@ RSpec.describe Token::ICal do
 
         ical_token1 = described_class.where(user_id: user.id).last
 
-        # rubocop:disable Rails/DynamicFindBy
         expect(described_class.find_by_plaintext_value(ical_token1_value)).to eq ical_token1
-        # rubocop:enable Rails/DynamicFindBy
 
         expect(ical_token1.query).to eq query
         expect(ical_token1.ical_token_query_assignment.name).to eq name
@@ -183,9 +183,7 @@ RSpec.describe Token::ICal do
 
         ical_token1 = described_class.where(user_id: user.id).last
 
-        # rubocop:disable Rails/DynamicFindBy
         expect(described_class.find_by_plaintext_value(ical_token1_value)).to eq ical_token1
-        # rubocop:enable Rails/DynamicFindBy
       end
     end
 
@@ -275,10 +273,8 @@ RSpec.describe Token::ICal do
       end
 
       it "finds using the plaintext value" do
-        # rubocop:disable Rails/DynamicFindBy
         expect(described_class.find_by_plaintext_value(subject.plain_value)).to eq subject
         expect(described_class.find_by_plaintext_value("foobar")).to be_nil
-        # rubocop:enable Rails/DynamicFindBy
       end
     end
   end

@@ -29,8 +29,8 @@
 require "optparse"
 
 begin
-  Bundler.gem("parallel_tests")
-rescue Gem::LoadError
+  require "parallel_tests"
+rescue LoadError
   # In case parallel_tests is not provided, the whole of the parallel task group will not work.
   return
 end

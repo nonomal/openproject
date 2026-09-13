@@ -56,6 +56,8 @@ module API
         property :time_zone,
                  render_nil: true
 
+        property :disable_keyboard_shortcuts
+
         property :warn_on_leaving_unsaved
         property :comments_in_reverse_order,
                  as: :commentSortDescending

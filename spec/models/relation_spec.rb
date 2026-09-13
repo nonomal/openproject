@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -36,17 +38,10 @@ RSpec.describe Relation do
   let(:relation) { build(:relation, from:, to:, relation_type: type) }
 
   it "validates lag numericality" do
-    relation.lag = -1
-    expect(relation).not_to be_valid
-    expect(relation.errors[:lag])
-      .to include(I18n.t(:"activerecord.errors.models.relation.attributes.lag.greater_than_or_equal_to.zero"))
-
-    relation.lag = 2_147_483_648
-    expect(relation).not_to be_valid
-    expect(relation.errors[:lag]).to include(I18n.t(:"activerecord.errors.models.relation.attributes.lag.less_than_or_equal_to"))
-
-    relation.lag = 1_000
-    expect(relation).to be_valid
+    expect(relation).to validate_numericality_of(:lag)
+      .is_greater_than_or_equal_to(Relation::MIN_LAG)
+      .is_less_than_or_equal_to(Relation::MAX_LAG)
+      .allow_nil
   end
 
   it "validates relation uniqueness on both from_id and to_id" do

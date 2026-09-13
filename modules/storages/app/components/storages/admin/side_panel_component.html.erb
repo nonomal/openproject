@@ -5,6 +5,8 @@
 
       if @storage.automatic_management_enabled?
         panel.with_section(Storages::Admin::SidePanel::HealthNotificationsComponent.new(storage: @storage))
+
+        panel.with_section(Storages::Admin::SidePanel::EmailUpdatesModeSelectorComponent.new(storage: @storage))
       end
     end
   end

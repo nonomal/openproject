@@ -31,9 +31,12 @@
 require "spec_helper"
 
 RSpec.describe WorkPackages::ActivitiesTab::CommentAttachmentsClaims::SetAttributesService do
-  let(:user) { build_stubbed(:user) }
+  shared_let(:user) { create(:user) }
+  shared_let(:other_user) { create(:user) }
+  shared_let(:work_package) { create(:work_package, author: user) }
+  shared_let(:journal) { create(:work_package_journal, journable: work_package, version: 2, notes: "") }
 
-  let(:journal) { build_stubbed(:work_package_journal, notes:) }
+  current_user { user }
 
   subject(:set_attributes_service) do
     described_class.new(
@@ -44,9 +47,13 @@ RSpec.describe WorkPackages::ActivitiesTab::CommentAttachmentsClaims::SetAttribu
   end
 
   describe "#call" do
+    before do
+      journal.update!(notes:)
+    end
+
     context "when the journal notes have attachments" do
-      let(:attachment1) { build_stubbed(:attachment) }
-      let(:attachment2) { build_stubbed(:attachment) }
+      shared_let(:attachment1) { create(:attachment, author: user, container: nil) }
+      shared_let(:attachment2) { create(:attachment, author: user, container: nil) }
 
       let(:notes) do
         <<~HTML
@@ -57,15 +64,33 @@ RSpec.describe WorkPackages::ActivitiesTab::CommentAttachmentsClaims::SetAttribu
         HTML
       end
 
-      before do
-        allow(Attachment).to receive(:where)
-          .with(id: [attachment1.id.to_s, attachment2.id.to_s])
-          .and_return([attachment1, attachment2])
-      end
-
       it "sets the attachments replacements" do
         expect(set_attributes_service).to be_success
         expect(set_attributes_service.result.attachments_replacements).to contain_exactly(attachment1, attachment2)
+      end
+    end
+
+    context "when the journal notes reference containered attachments or attachments belonging to other users" do
+      shared_let(:existing_work_package_attachment) { create(:attachment, author: user, container: work_package) }
+      shared_let(:existing_journal_attachment) { create(:attachment, author: user, container: journal) }
+      shared_let(:containered_attachment_other_user) { create(:attachment, author: other_user, container: work_package) }
+      shared_let(:uncontainered_attachment_other_user) { create(:attachment, author: other_user, container: nil) }
+      shared_let(:newly_attached) { create(:attachment, author: user, container: nil) }
+
+      let(:notes) do
+        <<~HTML
+          <img class="op-uc-image op-uc-image_inline" src="/api/v3/attachments/#{existing_work_package_attachment.id}/content">
+          <img class="op-uc-image op-uc-image_inline" src="/api/v3/attachments/#{existing_journal_attachment.id}/content">
+          <img class="op-uc-image op-uc-image_inline" src="/api/v3/attachments/#{containered_attachment_other_user.id}/content">
+          <img class="op-uc-image op-uc-image_inline" src="/api/v3/attachments/#{uncontainered_attachment_other_user.id}/content">
+          <img class="op-uc-image op-uc-image_inline" src="/api/v3/attachments/#{newly_attached.id}/content">
+        HTML
+      end
+
+      it "sets attachment replacements only for attachments belonging to the journal and the user" do
+        expect(set_attributes_service).to be_success
+        expect(set_attributes_service.result.attachments_replacements)
+          .to contain_exactly(existing_journal_attachment, newly_attached)
       end
     end
 
@@ -81,9 +106,9 @@ RSpec.describe WorkPackages::ActivitiesTab::CommentAttachmentsClaims::SetAttribu
     context "when the journal notes are nil" do
       let(:notes) { nil }
 
-      it "defines atttachments as empty" do
+      it "defines attachments as empty" do
         expect(set_attributes_service).to be_success
-        expect(set_attributes_service.result.attachments_replacements).to be_empty
+        expect(set_attributes_service.result.attachments_replacements).to eq([])
       end
     end
   end

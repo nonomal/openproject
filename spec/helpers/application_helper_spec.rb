@@ -42,7 +42,7 @@ RSpec.describe ApplicationHelper do
       create(:work_package,
              project:,
              author: project_member,
-             type: project.types.first)
+             type: project.enabled_types.first)
     end
 
     context "if user is authorized" do
@@ -193,7 +193,54 @@ RSpec.describe ApplicationHelper do
     end
   end
 
-  describe ".all_lang_options_for_select" do
+  describe "#lang_options_for_select" do
+    before do
+      allow(Redmine::I18n)
+        .to receive(:all_languages)
+        .and_return %w[en de es ja zh-CN]
+    end
+
+    context "with all available languages" do
+      it "returns options for all languages" do
+        expect(lang_options_for_select).to eq [
+          ["(auto)", ""],
+          ["Deutsch", "de", { lang: "de" }],
+          ["English", "en", { lang: "en" }],
+          ["Español", "es", { lang: "es" }],
+          ["日本語", "ja", { lang: "ja" }],
+          ["简体中文", "zh-CN", { lang: "zh-CN" }]
+        ]
+      end
+    end
+
+    context "with some available languages", with_settings: { available_languages: %w[en es ja] } do
+      it "returns options for available languages" do
+        expect(lang_options_for_select).to eq [
+          ["English", "en", { lang: "en" }],
+          ["Español", "es", { lang: "es" }],
+          ["日本語", "ja", { lang: "ja" }]
+        ]
+      end
+    end
+
+    context "when blank is true (default)" do
+      it "returns auto option if all languages available" do
+        expect(lang_options_for_select).to start_with ["(auto)", ""]
+      end
+
+      it "does not return auto option if some languages available", with_settings: { available_languages: %w[en] } do
+        expect(lang_options_for_select).not_to start_with ["(auto)", ""]
+      end
+    end
+
+    context "when blank is false" do
+      it "does not return auto option" do
+        expect(lang_options_for_select(false)).not_to start_with ["(auto)", ""]
+      end
+    end
+  end
+
+  describe "#all_lang_options_for_select" do
     it 'has all languages translated ("English" should appear only once)' do
       impostor_locales =
         all_lang_options_for_select
@@ -240,6 +287,56 @@ RSpec.describe ApplicationHelper do
           - commit the additional translation file generated in
             "config/locales/generated/*.yml".
       ERR
+    end
+  end
+
+  describe "#back_url_to_current_page" do
+    context "when back_url param is provided" do
+      it "returns the provided back_url" do
+        allow(helper).to receive(:params).and_return(ActionController::Parameters.new(back_url: "/work_packages"))
+
+        expect(helper.back_url_to_current_page).to eq("/work_packages")
+      end
+    end
+
+    context "when back_url param is missing" do
+      it "returns nil" do
+        allow(helper)
+          .to(
+            receive_messages(
+              params: ActionController::Parameters.new,
+              request: instance_double(ActionDispatch::Request, get?: true, url: "http://test.host/")
+            )
+          )
+
+        expect(helper.back_url_to_current_page).to be_nil
+      end
+    end
+  end
+
+  describe "#link_to_content_update" do
+    let(:options) { { controller: "work_packages", action: "show", id: 10 } }
+
+    subject { link_to_content_update("Пакет работ", options, html_options) }
+
+    context "without html_options" do
+      let(:html_options) { {} }
+
+      it "renders with 'target=\"_top\"'" do
+        expect(subject).to be_html_eql %{
+          <a target="_top" href="/work_packages/10">Пакет работ</a>
+        }
+      end
+    end
+
+    context "with html_options" do
+      let(:html_options) { { aria: { label: "Работайте усердно!", current: "page" } } }
+
+      it "renders with 'target=\"_top\"'" do
+        expect(subject).to be_html_eql %{
+          <a target="_top" aria-label="Работайте усердно!" aria-current="page" href="/work_packages/10">Пакет работ</a>
+        }
+      end
     end
   end
 end

@@ -30,6 +30,7 @@
 
 class Meeting < ApplicationRecord
   include VirtualStartTime
+  include MeetingUid
   include ChronicDuration
   include OpenProject::Journal::AttachmentHelper
 
@@ -39,18 +40,12 @@ class Meeting < ApplicationRecord
   belongs_to :author, class_name: "User"
 
   belongs_to :recurring_meeting, optional: true
-  has_one :scheduled_meeting, inverse_of: :meeting
 
-  # Legacy association to minutes, agendas, contents
-  # to be removed in 17.0
-  has_one :agenda, dependent: :destroy, class_name: "MeetingAgenda"
-  has_one :minutes, dependent: :destroy, class_name: "MeetingMinutes"
-  has_many :contents, -> { readonly }, class_name: "MeetingContent"
+  has_many :time_entries, dependent: :delete_all, inverse_of: :entity, as: :entity
 
   has_many :participants,
            dependent: :destroy,
-           class_name: "MeetingParticipant",
-           after_add: :send_participant_added_mail
+           class_name: "MeetingParticipant"
 
   has_many :agenda_items, dependent: :destroy, class_name: "MeetingAgendaItem", inverse_of: :meeting
   has_many :sections, -> { where(backlog: false) }, dependent: :delete_all, class_name: "MeetingSection"
@@ -60,14 +55,23 @@ class Meeting < ApplicationRecord
 
   scope :templated, -> { where(template: true) }
   scope :not_templated, -> { where(template: false) }
+  scope :onetime_templates, -> { where(template: true, recurring_meeting_id: nil) }
+  scope :series_templates, -> { where(template: true).where.not(recurring_meeting_id: nil) }
 
   scope :not_cancelled, -> { where.not.cancelled }
 
   scope :not_recurring, -> { where(recurring_meeting_id: nil) }
   scope :recurring, -> { where.not(recurring_meeting_id: nil) }
 
+  # Meetings that represent an occurrence of a recurring series
+  scope :recurring_occurrence, -> { not_templated.recurring }
+
   scope :from_tomorrow, -> { where(start_time: Date.tomorrow.beginning_of_day..) }
   scope :from_today, -> { where(start_time: Time.zone.today.beginning_of_day..) }
+  scope :started, -> { where(state: [states[:in_progress], states[:closed]]) }
+  scope :from_today_or_recently_started, -> {
+    from_today.or(started.where(start_time: Setting.ical_feed_keep_closed_meetings_days.days.ago..))
+  }
 
   scope :upcoming, -> { where("start_time + (interval '1 hour' * duration) >= ?", Time.current) }
   scope :past, -> { where("start_time + (interval '1 hour' * duration) < ?", Time.current) }
@@ -76,10 +80,26 @@ class Meeting < ApplicationRecord
     order("#{Meeting.table_name}.title ASC")
       .includes({ participants: :user }, :author)
   }
+
   scope :visible, ->(*args) {
-    includes(:project)
+    not_cancelled
+      .includes(:project)
       .references(:projects)
       .merge(Project.allowed_to(args.first || User.current, :view_meetings))
+  }
+
+  scope :allowed_to, ->(user, permission) {
+    includes(:project)
+      .references(:projects)
+      .merge(Project.allowed_to(user, permission))
+  }
+
+  scope :participated_by, ->(user) {
+    joins(:participants).where(meeting_participants: { user_id: user.id })
+  }
+
+  scope :available_onetime_templates, -> {
+    onetime_templates.where(project_id: Project.active.select(:id))
   }
 
   acts_as_attachable(
@@ -108,21 +128,60 @@ class Meeting < ApplicationRecord
 
   accepts_nested_attributes_for :participants, allow_destroy: true
 
-  validates_presence_of :title, :project_id
+  validates :title, :project_id, presence: true
+  validates :sharing, absence: true, unless: :onetime_template?
+  validates :recurrence_start_time, absence: true, if: :template?
+  validates :recurrence_start_time, presence: true, if: -> { recurring? && !template? }
 
-  validates_numericality_of :duration, greater_than: 0
+  validates :duration, numericality: { greater_than: 0 }
 
   before_save :add_new_participants_as_watcher
 
-  after_update :send_rescheduling_mail, if: -> { saved_change_to_start_time? || saved_change_to_duration? }
+  after_commit :send_updated_mail, on: :update, if: -> {
+    !template? &&
+      (saved_change_to_start_time? || saved_change_to_duration? || saved_change_to_location? || saved_change_to_title?)
+  }
 
   enum :state, {
     open: 0, # 0 -> default, leave values for future states between open and closed
-    planned: 1,
+    draft: 1,
     in_progress: 3,
     cancelled: 4,
     closed: 5
   }
+
+  enum :sharing, {
+    none: "none",
+    descendants: "descendants",
+    system: "system"
+  }, prefix: :sharing, validate: { allow_nil: true }
+
+  # Debounce meeting emails by one minute
+  # this is currently hard coded
+  def self.journal_aggregation_time_minutes
+    1
+  end
+
+  def self.templates_visible_in_project(project, user = User.current)
+    accessible_ids = Project.allowed_to(user, :view_meetings).select(:id)
+
+    available_onetime_templates
+      .where(project_id: project.id).where(project_id: accessible_ids)
+      .or(available_onetime_templates.where(sharing: :descendants, project_id: project.ancestors.select(:id)))
+      .or(available_onetime_templates.where(sharing: :system))
+  end
+
+  def self.templates_visible_globally(user = User.current)
+    accessible = Project.allowed_to(user, :view_meetings).to_a
+    return none if accessible.empty?
+
+    ancestor_ids = accessible.map(&:ancestors).reduce(:or).select(:id)
+
+    available_onetime_templates
+      .where(project_id: accessible.map(&:id))
+      .or(available_onetime_templates.where(sharing: :descendants, project_id: ancestor_ids))
+      .or(available_onetime_templates.where(sharing: :system))
+  end
 
   def recurring?
     recurring_meeting_id.present?
@@ -130,16 +189,17 @@ class Meeting < ApplicationRecord
 
   ##
   # Cache key for detecting changes to be shown to the user
-  def changed_hash # rubocop:disable Metrics/AbcSize
+  def changed_hash
     parts = Meeting
-      .unscoped
-      .where(id:)
-      .left_joins(:agenda_items, :sections, agenda_items: :outcomes)
-      .pick(
-        MeetingAgendaItem.arel_table[:updated_at].maximum,
-        MeetingSection.arel_table[:updated_at].maximum,
-        MeetingOutcome.arel_table[:updated_at].maximum
-      )
+              .unscoped
+              .where(id:)
+              .joins("LEFT JOIN meeting_sections ON meeting_sections.meeting_id = meetings.id")
+              .left_joins(:agenda_items, agenda_items: %i[outcomes meeting_section])
+              .pick(
+                Arel.sql("MAX(CASE WHEN meeting_sections.backlog = FALSE THEN meeting_agenda_items.updated_at END)"),
+                Arel.sql("MAX(CASE WHEN meeting_sections.backlog = FALSE THEN meeting_sections.updated_at END)"),
+                Arel.sql("MAX(meeting_outcomes.updated_at)")
+              )
 
     parts << lock_version
 
@@ -147,15 +207,21 @@ class Meeting < ApplicationRecord
   end
 
   def start_month
-    start_time.month
+    start_time&.month
   end
 
   def start_year
-    start_time.year
+    start_time&.year
   end
 
   def end_time
+    return nil if start_time.nil?
+
     start_time + duration.hours
+  end
+
+  def past?
+    end_time < Time.current
   end
 
   def to_s
@@ -164,6 +230,26 @@ class Meeting < ApplicationRecord
 
   def templated?
     !!template
+  end
+
+  def series_template?
+    template? && recurring_meeting_id.present?
+  end
+
+  def onetime_template?
+    template? && recurring_meeting_id.nil?
+  end
+
+  # The series event in the ICS renders the template: its location, its duration and its attendees.
+  # A change to any of them is a new revision of that event.
+  def bump_series_ical_sequence!
+    recurring_meeting.bump_ical_sequence! if series_template?
+  end
+
+  # One-time meeting time zone
+  # is always in the user's time zone
+  def time_zone
+    User.current.time_zone
   end
 
   # Returns true if user or current user is allowed to view the meeting
@@ -175,19 +261,14 @@ class Meeting < ApplicationRecord
     !closed? && user.allowed_in_project?(:edit_meetings, project)
   end
 
-  def invited_or_attended_participants
-    participants.where(invited: true).or(participants.where(attended: true))
-  end
+  def notify?
+    return false if onetime_template?
 
-  def all_changeable_participants
-    changeable_participants = participants.select(&:invited).collect(&:user)
-    changeable_participants = changeable_participants + participants.select(&:attended).collect(&:user)
-    changeable_participants = changeable_participants +
-      User.allowed_members(:view_meetings, project)
-
-    changeable_participants
-      .compact
-      .uniq(&:id)
+    if recurring?
+      recurring_meeting.template.notify
+    else
+      notify
+    end
   end
 
   def self.group_by_time(meetings)
@@ -228,43 +309,6 @@ class Meeting < ApplicationRecord
       .where(user_id: available_members)
   end
 
-  # triggered by MeetingAgendaItem#after_create/after_destroy/after_save
-  def calculate_agenda_item_time_slots
-    current_time = start_time
-    MeetingAgendaItem.transaction do
-      changed_items = agenda_items.includes(:meeting_section).order("meeting_sections.position", :position).map do |top|
-        start_time = current_time
-        current_time += top.duration_in_minutes&.minutes || 0.minutes
-        end_time = current_time
-        top.assign_attributes(start_time:, end_time:)
-        top
-      end
-
-      # Disable optimistic locking in order to avoid causing `StaleObjectError`.
-      MeetingAgendaItem.skip_optimistic_locking do
-        MeetingAgendaItem.import(
-          changed_items,
-          on_duplicate_key_update: {
-            conflict_target: [:id],
-            columns: %i[meeting_id
-                        author_id
-                        title
-                        notes
-                        position
-                        duration_in_minutes
-                        start_time
-                        end_time
-                        created_at
-                        updated_at
-                        work_package_id
-                        item_type
-                        lock_version]
-          }
-        )
-      end
-    end
-  end
-
   def agenda_items_sum_duration_in_minutes
     agenda_items.sum(:duration_in_minutes)
   end
@@ -285,6 +329,27 @@ class Meeting < ApplicationRecord
     end
   end
 
+  def send_emails?
+    return false if onetime_template?
+    return false if template? && recurring_meeting.meetings.not_templated.not_cancelled.none?
+    return false if closed? || cancelled?
+
+    persisted? && notify?
+  end
+
+  # Override virtual_start_time methods for onetime templates
+  def set_initial_values
+    return if onetime_template?
+
+    super
+  end
+
+  def validate_date_and_time
+    return if onetime_template?
+
+    super
+  end
+
   private
 
   def add_new_participants_as_watcher
@@ -293,25 +358,21 @@ class Meeting < ApplicationRecord
     end
   end
 
-  def send_participant_added_mail(participant)
-    return if templated? || new_record?
+  def send_updated_mail
+    return unless send_emails?
 
-    if Journal::NotificationConfiguration.active?
-      MeetingMailer.invited(self, participant.user, User.current).deliver_later
-    end
+    Meetings::NotificationDebounceJob.debounce(
+      self,
+      since_journal_id: last_journal&.predecessor&.id,
+      since_invited_ids: participants.invited.pluck(:user_id),
+      since_attributes: updated_mail_since_attributes
+    )
   end
 
-  def send_rescheduling_mail
-    return if templated? || new_record?
-
-    MeetingNotificationService
-      .new(self)
-      .call :rescheduled,
-            changes: {
-              old_start: saved_change_to_start_time? ? saved_change_to_start_time.first : start_time,
-              new_start: start_time,
-              old_duration: saved_change_to_duration? ? saved_change_to_duration.first : duration,
-              new_duration: duration
-            }
+  def updated_mail_since_attributes
+    %w[title location start_time duration].index_with do |attribute|
+      value = saved_change_to_attribute(attribute)&.first || public_send(attribute)
+      value.respond_to?(:iso8601) ? value.iso8601 : value
+    end
   end
 end

@@ -52,8 +52,21 @@ module Admin
 
         form.check_box(
           name: :active,
-          label: object.class.human_attribute_name(:active)
+          label: object.class.human_attribute_name(:active),
+          disabled: object.is_default,
+          data: { "admin--enumerations-target": "active" }
         )
+
+        if object.class.can_have_default_value?
+          form.check_box(
+            name: :is_default,
+            label: I18n.t(:label_default),
+            caption: I18n.t(:enumeration_default_value_caption,
+                            model: object.class.model_name.human.downcase),
+            data: { action: "admin--enumerations#lockstepActive",
+                    "admin--enumerations-target": "default" }
+          )
+        end
 
         form.submit(
           name: :submit,

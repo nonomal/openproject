@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,32 +30,33 @@
 
 module Calendar
   class GenerateICalUrlService < ::BaseServices::BaseCallable
-    def perform(user:, query_id:, project_id:, token_name:)
-      new_ical_token = create_ical_token(user, query_id, token_name)
+    def perform
+      query_id = params.fetch(:query_id)
+      new_ical_token = create_ical_token(query_id)
 
       if new_ical_token.errors.any?
         ServiceResult.failure(errors: new_ical_token.errors)
       else
         new_ical_token_value = new_ical_token.plain_value
-        new_ical_url = create_ical_url(query_id, project_id, new_ical_token_value)
+        new_ical_url = create_ical_url(query_id, new_ical_token_value)
         ServiceResult.success(result: new_ical_url)
       end
     end
 
     protected
 
-    def create_ical_token(user, query_id, name)
+    def create_ical_token(query_id)
       query = Query.find(query_id)
 
-      Token::ICal.create(user:,
-                         ical_token_query_assignment_attributes: { query:, name: })
+      Token::ICal.create(user: params.fetch(:user),
+                         ical_token_query_assignment_attributes: { query:, name: params.fetch(:token_name) })
     end
 
-    def create_ical_url(query_id, project_id, ical_token)
+    def create_ical_url(query_id, ical_token)
       OpenProject::StaticRouting::StaticRouter.new.url_helpers
         .ical_project_calendar_url(
           id: query_id,
-          project_id:,
+          project_id: params.fetch(:project_id),
           ical_token:
         )
     end

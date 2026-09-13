@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -58,14 +60,14 @@ module OpenProject
       lock_name = "mutex_on_#{entry.class.name}_#{entry.id}"
       lock_name << "_#{suffix}" if suffix
 
-      options[:transaction] ||= true
+      options.with_defaults!(transaction: true)
       ActiveRecord::Base.transaction do
         with_advisory_lock(entry.class, lock_name, options, &)
       end
     end
 
     def with_advisory_lock(resource_class, lock_name, options = {})
-      debug_log("Attempting to fetched advisory lock", lock_name)
+      debug_log("Attempting to fetch advisory lock", lock_name)
       result = resource_class.with_advisory_lock(lock_name, options) do
         debug_log("Fetched advisory lock", lock_name)
         yield
@@ -80,7 +82,7 @@ module OpenProject
         #{action}:
           * lockname: #{lock_name}
           * thread:  #{Thread.current.object_id}
-          * held locks: #{WithAdvisoryLock::Base.lock_stack.map(&:name).join(', ')}
+          * held locks: #{ActiveRecord::Base.current_advisory_locks.join(', ')}
       MESSAGE
 
       Rails.logger.debug { message }

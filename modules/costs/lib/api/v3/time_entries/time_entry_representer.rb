@@ -31,6 +31,7 @@ module API
     module TimeEntries
       class TimeEntryRepresenter < ::API::Decorators::Single
         include API::Decorators::LinkedResource
+        include API::V3::Workspaces::LinkedResource
         include API::Decorators::FormattableProperty
         include API::Decorators::DateProperty
         extend ::API::V3::Utilities::CustomFieldInjector::RepresenterClass
@@ -91,10 +92,22 @@ module API
         date_time_property :created_at
         date_time_property :updated_at
 
-        associated_resource :project
+        associated_project
 
+        associated_resource :entity,
+                            getter: ::API::V3::TimeEntries::EntityRepresenterFactory.create_getter_lambda(:entity),
+                            setter: ::API::V3::TimeEntries::EntityRepresenterFactory.create_setter_lambda(:entity),
+                            link: ::API::V3::TimeEntries::EntityRepresenterFactory.create_link_lambda(:entity)
+
+        # TODO: DEPRECATED!
         associated_resource :work_package,
-                            link_title_attribute: :subject
+                            skip_render: ->(*) { represented.entity_type != "WorkPackage" },
+                            getter: ->(*) {
+                              entity = represented.entity
+                              entity if entity.is_a?(WorkPackage) && entity.visible?(current_user)
+                            },
+                            link: ::API::V3::TimeEntries::EntityRepresenterFactory.create_work_package_link_lambda,
+                            setter: ::API::V3::TimeEntries::EntityRepresenterFactory.create_setter_lambda(:entity)
 
         associated_resource :user
 
@@ -105,11 +118,13 @@ module API
                            },
                            if: ->(*) { TimeEntry.can_track_start_and_end_time? }
 
+        # end_time is derived (start_time + hours), never its own column.
         date_time_property :end_time,
                            exec_context: :decorator,
                            getter: ->(*) {
                              datetime_formatter.format_datetime(represented.end_timestamp, allow_nil: true)
                            },
+                           writable: false,
                            if: ->(*) { TimeEntry.can_track_start_and_end_time? }
 
         associated_resource :activity,
@@ -172,10 +187,10 @@ module API
           end
         end
 
-        self.to_eager_load = [:work_package,
-                              :user,
-                              :activity,
-                              { project: :enabled_modules }]
+        self.to_eager_load = [:user, :activity, { project: :enabled_modules }, { custom_values: :custom_field }]
+
+        # entity is a polymorphic association and thus can't be eager-loaded, but it can be preloaded
+        self.to_preload = [:entity]
       end
     end
   end

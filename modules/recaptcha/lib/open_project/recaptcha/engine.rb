@@ -28,26 +28,6 @@ module OpenProject::Recaptcha
     end
 
     config.after_initialize do
-      SecureHeaders::Configuration.named_append(:recaptcha) do
-        {
-          frame_src: %w[https://www.recaptcha.net/recaptcha/ https://www.gstatic.com/recaptcha/]
-        }
-      end
-
-      SecureHeaders::Configuration.named_append(:hcaptcha) do
-        value = %w(https://*.hcaptcha.com)
-        keys = %i(frame_src script_src style_src connect_src)
-
-        keys.index_with value
-      end
-
-      SecureHeaders::Configuration.named_append(:turnstile) do
-        value = %w(https://challenges.cloudflare.com)
-        keys = %i(frame_src style_src connect_src)
-
-        keys.index_with value
-      end
-
       OpenProject::Authentication::Stage.register(
         :recaptcha,
         nil,

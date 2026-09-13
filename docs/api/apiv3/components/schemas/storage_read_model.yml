@@ -25,24 +25,42 @@ properties:
 
       This is only required for authentication through single-sign-on and so far
       only supported for provider type Nextcloud.
+  tokenExchangeScope:
+    type: string
+    description: |-
+      The scope that will be requested when requesting a token for the storage through token exchange. Has no effect if no
+      token exchange is performed.
+
+      This is only required for authentication through single-sign-on and so far only supported for provider type Nextcloud.
   tenantId:
-    type: string
+    type:
+      - "string"
+      - "null"
     description: |-
-      The tenant id of a file storage of type OneDrive/SharePoint.
+      The tenant id of a file storage of type OneDrive.
 
-      Ignored if the provider type is not OneDrive/SharePoint.
+      Ignored if the provider type is not OneDrive. May be null if the storage is not configured completely.
   driveId:
-    type: string
+    type:
+      - "string"
+      - "null"
     description: |-
-      The drive id of a file storage of type OneDrive/SharePoint.
+      The drive id of a file storage of type OneDrive.
 
-      Ignored if the provider type is not OneDrive/SharePoint.
+      Ignored if the provider type is not OneDrive. May be null if the storage is not configured completely.
   hasApplicationPassword:
     type: boolean
     description: |-
       Whether the storage has the application password to use for the Nextcloud storage.
 
       Ignored if the provider type is not Nextcloud.
+  forbiddenFileNameCharacters:
+    type: string
+    description: |-
+      A string with all the characters forbidden to be used for file and folder names in the storage. Used by OpenProject to avoid
+      creating files with unsupported names (e.g. when creating project folders).
+
+      Only supported for provider type Nextcloud so far.
   createdAt:
     type: string
     format: date-time
@@ -101,7 +119,7 @@ properties:
           - $ref: './link.yml'
           - description: |-
               Web URI of the storage instance. This link is ignored, if the storage is hosted in a cloud and has no own
-              URL, like file storages of type OneDrive/SharePoint.
+              URL, like file storages of type OneDrive.
 
               **Resource**: N/A
       open:

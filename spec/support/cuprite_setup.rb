@@ -31,6 +31,12 @@
 
 require "capybara/cuprite"
 
+module CupriteCdpLogger
+  class << self
+    attr_accessor :logger
+  end
+end
+
 def headful_mode?
   ActiveRecord::Type::Boolean.new.cast(ENV.fetch("OPENPROJECT_TESTING_NO_HEADLESS", nil))
 end
@@ -60,10 +66,12 @@ def register_better_cuprite(language, name: :"better_cuprite_#{language}")
       timeout: 10,
       # In case the timeout is not enough, this option can be activated:
       # pending_connection_errors: false,
-      inspector: true,
       headless: headless_mode?,
       save_path: DownloadList::SHARED_PATH.to_s,
-      window_size: [1920, 1080]
+      window_size: [1920, 1080],
+      # workaround for compatibility issues with browserless docker image and ferrum
+      # see https://github.com/rubycdp/ferrum/issues/540
+      flatten: false
     }
 
     if headful_mode? && ENV["CAPYBARA_WINDOW_RESOLUTION"]
@@ -75,9 +83,10 @@ def register_better_cuprite(language, name: :"better_cuprite_#{language}")
       options = options.merge(slowmo: ENV["OPENPROJECT_TESTING_SLOWDOWN_FACTOR"])
     end
 
-    if ENV["CHROME_URL"].present?
-      options = options.merge(url: ENV["CHROME_URL"])
-    end
+    options = configure_remote_chrome(options)
+
+    CupriteCdpLogger.logger = StringIO.new
+    options = options.merge(logger: CupriteCdpLogger.logger)
 
     browser_options = {
       "disable-dev-shm-usage": nil,
@@ -86,7 +95,25 @@ def register_better_cuprite(language, name: :"better_cuprite_#{language}")
       lang: language,
       "accept-lang": language,
       "no-sandbox": nil,
-      "disable-smooth-scrolling": true
+      "disable-smooth-scrolling": true,
+      # Disable timers being throttled in background pages/tabs. Useful for
+      # parallel test runs.
+      "disable-background-timer-throttling": nil,
+      # Normally, Chrome will treat a 'foreground' tab instead as backgrounded
+      # if the surrounding window is occluded (aka visually covered) by another
+      # window. This flag disables that. Useful for parallel test runs.
+      "disable-backgrounding-occluded-windows": nil,
+      # This disables non-foreground tabs from getting a lower process priority.
+      # Useful for parallel test runs.
+      "disable-renderer-backgrounding": nil,
+      # Software GPU to avoid the dreaded "[ERROR] [Canvas '__0']: Failed to get a
+      # WebGL context" error for tests using xeokit. The automatic fallback to SwiftShader
+      # was disabled in January 2026, so that we now have to enable the fallback manually in
+      # the test environment.
+      # See https://chromium.googlesource.com/chromium/src/+/refs/heads/main/docs/gpu/swiftshader.md
+      "use-gl": "angle",
+      "use-angle": "swiftshader-webgl",
+      "enable-unsafe-swiftshader": true
     }
 
     if ENV["OPENPROJECT_TESTING_AUTO_DEVTOOLS"].present?
@@ -101,6 +128,17 @@ def register_better_cuprite(language, name: :"better_cuprite_#{language}")
   Capybara::Screenshot.register_driver(name) do |driver, path|
     driver.save_screenshot(path)
   end
+end
+
+def configure_remote_chrome(options)
+  if ENV["CHROME_URL"].present? && ENV["CHROME_WS_URL"].present?
+    raise "Both CHROME_URL and CHROME_WS_URL were passed. Only one can be accepted at a time."
+  end
+
+  return options.merge(url: ENV["CHROME_URL"]) if ENV["CHROME_URL"].present?
+  return options.merge(ws_url: ENV["CHROME_WS_URL"]) if ENV["CHROME_WS_URL"].present?
+
+  options
 end
 
 register_better_cuprite "en"

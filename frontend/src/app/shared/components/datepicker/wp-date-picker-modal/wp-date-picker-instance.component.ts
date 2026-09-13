@@ -21,21 +21,13 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import {
-  AfterViewInit,
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-  ElementRef,
-  Injector,
-  Input,
-  ViewChild,
-} from '@angular/core';
+import { isEqual, omitBy } from 'lodash-es';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Injector, Input, ViewChild, inject } from '@angular/core';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { TimezoneService } from 'core-app/core/datetime/timezone.service';
 import { DayElement } from 'flatpickr/dist/types/instance';
@@ -49,7 +41,6 @@ import { PathHelperService } from 'core-app/core/path-helper/path-helper.service
 import { populateInputsFromDataset } from 'core-app/shared/components/dataset-inputs';
 import { fromEvent } from 'rxjs';
 import { filter } from 'rxjs/operators';
-import * as _ from 'lodash';
 
 export type DateMode = 'single'|'range';
 
@@ -62,24 +53,35 @@ export type DateMode = 'single'|'range';
       hidden>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
 export class OpWpDatePickerInstanceComponent extends UntilDestroyedMixin implements AfterViewInit {
+  readonly injector = inject(Injector);
+  readonly cdRef = inject(ChangeDetectorRef);
+  readonly apiV3Service = inject(ApiV3Service);
+  readonly I18n = inject(I18nService);
+  readonly timezoneService = inject(TimezoneService);
+  readonly deviceService = inject(DeviceService);
+  readonly pathHelper = inject(PathHelperService);
+  readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+
   @Input() public ignoreNonWorkingDays:boolean;
   @Input() public scheduleManually:boolean;
 
   @Input() public startDate:string|null;
   @Input() public dueDate:string|null;
 
-  @Input() public isSchedulable:boolean = true;
+  @Input() public isSchedulable = true;
   @Input() public dateMode:DateMode;
+  @Input() public minDate:string|null;
 
   @Input() startDateFieldId:string;
   @Input() dueDateFieldId:string;
   @Input() durationFieldId:string;
 
-  @Input() isMilestone:boolean = false;
+  @Input() isMilestone = false;
 
-  @ViewChild('flatpickrTarget') flatpickrTarget:ElementRef;
+  @ViewChild('flatpickrTarget') flatpickrTarget:ElementRef<HTMLInputElement>;
 
   private datePickerInstance:DatePicker;
   private startDateValue:Date|null;
@@ -87,16 +89,7 @@ export class OpWpDatePickerInstanceComponent extends UntilDestroyedMixin impleme
   private minimalSchedulingDate:Date|null;
   private onFlatpickrSetValuesBound = this.onFlatpickrSetValues.bind(this);
 
-  constructor(
-    readonly injector:Injector,
-    readonly cdRef:ChangeDetectorRef,
-    readonly apiV3Service:ApiV3Service,
-    readonly I18n:I18nService,
-    readonly timezoneService:TimezoneService,
-    readonly deviceService:DeviceService,
-    readonly pathHelper:PathHelperService,
-    readonly elementRef:ElementRef,
-  ) {
+  constructor() {
     super();
     populateInputsFromDataset(this);
     this.startDateValue = this.toDate(this.startDate);
@@ -148,7 +141,11 @@ export class OpWpDatePickerInstanceComponent extends UntilDestroyedMixin impleme
   }
 
   private computeMinimalSchedulingDate() {
-    this.minimalSchedulingDate = this.startDateValue && this.timezoneService.utcDateToLocalDate(this.startDateValue);
+    if (this.dateMode === 'single') {
+      this.minimalSchedulingDate = null;
+    } else {
+      this.minimalSchedulingDate = this.startDateValue && this.timezoneService.utcDateToLocalDate(this.startDateValue);
+    }
   }
 
   private findDateToJumpTo(dates:Date[]):Date|null {
@@ -166,7 +163,7 @@ export class OpWpDatePickerInstanceComponent extends UntilDestroyedMixin impleme
   private isDifferentFromDatePickerSelectedDates(isoDates:string[]):boolean {
     const datePickerSelectedDates = this.datePickerInstance.datepickerInstance.selectedDates;
     const isoDatePickerSelectedDates = datePickerSelectedDates.map((date) => this.timezoneService.formattedISODate(date));
-    return !_.isEqual(isoDates, isoDatePickerSelectedDates);
+    return !isEqual(isoDates, isoDatePickerSelectedDates);
   }
 
   // set dates on flatpickr, trying to avoid jumping to a different month when possible
@@ -209,7 +206,7 @@ export class OpWpDatePickerInstanceComponent extends UntilDestroyedMixin impleme
   }
 
   private currentDates():string[] {
-    const compactedDates = _.compact([this.startDateValue, this.dueDateValue]);
+    const compactedDates = [this.startDateValue, this.dueDateValue].filter((x):x is NonNullable<typeof x> => Boolean(x));
     return this.timezoneService.utcDatesToISODateStrings(compactedDates);
   }
 
@@ -220,29 +217,35 @@ export class OpWpDatePickerInstanceComponent extends UntilDestroyedMixin impleme
       this.injector,
       '#flatpickr-input',
       this.currentDates(),
-      {
-        mode: this.dateMode,
-        showMonths: this.deviceService.isMobile ? 1 : 2,
-        inline: true,
-        onReady: (_date, _datestr, instance) => {
-          instance.calendarContainer.classList.add('op-datepicker-modal--flatpickr-instance');
-
-          this.ensureHoveredSelection(instance.calendarContainer);
-        },
-        onChange: this.onFlatpickrChange.bind(this),
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises
-        onDayCreate: async (dObj:Date[], dStr:string, fp:flatpickr.Instance, dayElem:DayElement) => {
-          onDayCreate(
-            dayElem,
-            this.ignoreNonWorkingDays,
-            await this.datePickerInstance?.isNonWorkingDay(dayElem.dateObj),
-            this.isDayDisabled(dayElem),
-          );
-        },
-      },
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      this.datePickerOptions(),
       this.flatpickrTarget.nativeElement,
     );
+  }
+
+  private datePickerOptions() {
+    const options = {
+      mode: this.dateMode,
+      showMonths: this.deviceService.isMobile ? 1 : 2,
+      inline: true,
+      onReady: (_date, _datestr, instance) => {
+        instance.calendarContainer.classList.add('op-datepicker-modal--flatpickr-instance');
+
+        this.ensureHoveredSelection(instance.calendarContainer);
+      },
+      onChange: this.onFlatpickrChange.bind(this),
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
+      onDayCreate: async (dObj:Date[], dStr:string, fp:flatpickr.Instance, dayElem:DayElement) => {
+        onDayCreate(
+          dayElem,
+          this.ignoreNonWorkingDays,
+          await this.datePickerInstance?.isNonWorkingDay(dayElem.dateObj),
+          this.isDayDisabled(dayElem),
+        );
+      },
+      minDate: this.minDate,
+    } as flatpickr.Options.Options;
+
+    return omitBy(options, (v) => v == null);
   }
 
   private onFlatpickrChange(dates:Date[], _datestr:string, _instance:flatpickr.Instance) {

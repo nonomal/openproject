@@ -83,7 +83,7 @@
 // Because of those requirements, the #content element cannot take care of the paddings.
 // Instead the children elements have to do that themselves depending on which elements are present
 
-$top-space: 10px
+$top-space: var(--main-menu-toggler-top-spacing)
 $right-space: 16px
 $bottom-space: 10px
 $left-space: 16px
@@ -107,7 +107,11 @@ $left-side-min-width: 300px
   // Basically if the content-BodyRight is filled:
   // Apply the user-defined split screen width but be able to shrink in case the screen is not wide enough
   &:has(#content-bodyRight > *)
-    grid-template-columns: minmax($left-side-min-width, 1fr) minmax(550px, var(--split-screen-width))
+    grid-template-columns: minmax($left-side-min-width, 1fr) var(--split-screen-width)
+
+    #content-body,
+    #content-header
+      padding-right: 1rem
 
   &.content--split
     overflow: hidden
@@ -117,9 +121,12 @@ $left-side-min-width: 300px
   padding-right: $right-space
   padding-top: $top-space
   padding-left: $left-space
+  // Limit the width of the header to the container around it
+  overflow-x: hidden
 
 #content-body
   grid-area: body
+  position: relative
   padding-bottom: $bottom-space
   padding-right: $right-space
   padding-left: $left-space

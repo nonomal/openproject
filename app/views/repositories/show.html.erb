@@ -27,22 +27,18 @@ See COPYRIGHT and LICENSE files for more details.
 
 ++#%>
 
-<% content_controller "repository-navigation", dynamic: true %>
+<% content_controller "repository-navigation" %>
 <%= render partial: "repository_header", locals: { empty: false } %>
-
-<div class="repository-breadcrumbs">
-  <%= render partial: "breadcrumbs",
-             locals: { path: @path, revision: @rev }.merge(kind: "dir") %>
-</div>
 
 <% if !@entries.nil? && authorize_for('repositories', 'browse') %>
   <%= render partial: "dir_list" %>
 <% end %>
 
-<%= render_properties(@properties) %>
+<%= render partial: "properties" %>
 
-<%= toolbar title: t(:label_revision_plural), html: { class: "repository--revision-toolbar" } do %>
+<div class="repository--revision-toolbar">
   <%# rev => nil prevents overwriting the rev parameter queried for in the form with the parameter from the request %>
+  <div class="revisions-title-container"><h2><%= t(:label_revision_plural) %></h2></div>
   <%= form_tag(
         { action: controller.action_name,
           project_id: @project,
@@ -55,60 +51,65 @@ See COPYRIGHT and LICENSE files for more details.
           "repository-navigation-target": "form"
         }
       ) do %>
-    <li class="toolbar-item toolbar-input-group hidden-for-mobile">
-      <div>
-        <%= label_tag "rev", I18n.t("repositories.go_to_revision") %>
+    <div class="revisions-items">
+      <div class="revisions-item hidden-for-mobile">
+        <div class="revisions-item--label">
+          <%= label_tag "rev", I18n.t("repositories.go_to_revision") %>
+        </div>
+        <%= text_field_tag :rev,
+                           @rev,
+                           id: "revision-identifier-input",
+                           class: "revisions-item--input",
+                           placeholder: t(:label_revision),
+                           data: {
+                             "repository-navigation-target": "revision",
+                             action: "keydown.enter->repository-navigation#sendForm"
+                           } %>
       </div>
-      <%= text_field_tag :rev,
-                         @rev,
-                         id: "revision-identifier-input",
-                         placeholder: t(:label_revision),
+      <% if !@repository.branches.nil? && @repository.branches.length > 0 %>
+        <div class="revisions-item hidden-for-mobile">
+          <div class="revisions-item--label">
+            <%= label_tag "branch", I18n.t(:label_branch) %>
+          </div>
+          <%= select_tag :branch,
+                         options_for_select(@repository.branches, @rev),
+                         include_blank: "--- #{t(:actionview_instancetag_blank_option)} ---",
+                         id: "revision-branch-select",
+                         class: "revisions-item--input",
                          data: {
-                           "repository-navigation-target": "revision",
-                           action: "keydown.enter->repository-navigation#sendForm"
+                           "repository-navigation-target": "branch",
+                           action: "repository-navigation#applyValue"
                          } %>
-    </li>
-    <% if !@repository.branches.nil? && @repository.branches.length > 0 %>
-      <li class="toolbar-item toolbar-input-group hidden-for-mobile">
-        <div>
-          <%= label_tag "branch", I18n.t(:label_branch) %>
         </div>
-        <%= select_tag :branch,
-                       options_for_select(@repository.branches, @rev),
-                       include_blank: "--- #{t(:actionview_instancetag_blank_option)} ---",
-                       id: "revision-branch-select",
-                       data: {
-                         "repository-navigation-target": "branch",
-                         action: "repository-navigation#applyValue"
-                       } %>
-      </li>
-    <% end %>
-    <% if !@repository.tags.nil? && @repository.tags.length > 0 %>
-      <li class="toolbar-item toolbar-input-group hidden-for-mobile">
-        <div>
-          <%= label_tag "tag", I18n.t(:label_tag) %>
-        </div>
-        <%= select_tag :tag,
-                       options_for_select(@repository.tags, @rev),
-                       include_blank: "--- #{t(:actionview_instancetag_blank_option)} ---",
-                       id: "revision-tag-select",
-                       data: {
-                         "repository-navigation-target": "tag",
-                         action: "repository-navigation#applyValue"
-                       } %>
-      </li>
-    <% end %>
-    <li class="toolbar-item -icon-only">
-      <%= link_to(
-            { url: { action: "revision#revision-identifier-inputs", project_id: @project,
-                     key: User.current.rss_key } },
-            { class: "button", title: t("repositories.atom_revision_feed") }
-          ) do %>
-        <%= op_icon("button--icon icon-export-atom") %>
       <% end %>
-    </li>
+      <% if !@repository.tags.nil? && @repository.tags.length > 0 %>
+        <div class="revisions-item hidden-for-mobile">
+          <div class="revisions-item--label">
+            <%= label_tag "tag", I18n.t(:label_tag) %>
+          </div>
+          <%= select_tag :tag,
+                         options_for_select(@repository.tags, @rev),
+                         include_blank: "--- #{t(:actionview_instancetag_blank_option)} ---",
+                         id: "revision-tag-select",
+                         class: "revisions-item--input",
+                         data: {
+                           "repository-navigation-target": "tag",
+                           action: "repository-navigation#applyValue"
+                         } %>
+        </div>
+      <% end %>
+      <div class="revisions-item -icon-only">
+        <%= link_to(
+              { url: { action: "revision#revision-identifier-inputs", project_id: @project,
+                       key: User.current.rss_key } },
+              { class: "button button_no-margin", title: t("repositories.atom_revision_feed") }
+            ) do %>
+          <%= op_icon("button--icon icon-export-atom") %>
+        <% end %>
+      </div>
+    </div>
   <% end %>
-<% end %>
+</div>
 
 <% if authorize_for('repositories', 'revisions') %>
   <% if @changesets && !@changesets.empty? %>

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,10 +29,14 @@
 #++
 
 class Projects::IdentifierController < ApplicationController
+  include OpTurbo::ComponentStream
+
   before_action :find_project_by_project_id
   before_action :authorize
 
-  def show; end
+  def identifier_update_dialog
+    respond_with_dialog Projects::Settings::ChangeIdentifierDialogComponent.new(project: @project)
+  end
 
   def update
     service_call = Projects::UpdateService
@@ -42,7 +48,8 @@ class Projects::IdentifierController < ApplicationController
       flash[:notice] = I18n.t(:notice_successful_update)
       redirect_to project_settings_general_path(@project)
     else
-      render action: "show", status: :unprocessable_entity
+      respond_with_dialog Projects::Settings::ChangeIdentifierDialogComponent.new(project: service_call.result),
+                          status: :unprocessable_entity
     end
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,7 +30,7 @@
 
 class PlaceholderUsers::DeleteService < BaseServices::Delete
   def destroy(placeholder)
-    placeholder.locked!
+    placeholder.update_column(:status, PlaceholderUser.statuses[:deleted])
     ::Principals::DeleteJob.perform_later(placeholder)
 
     true

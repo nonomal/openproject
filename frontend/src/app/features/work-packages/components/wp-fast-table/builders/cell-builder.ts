@@ -1,3 +1,31 @@
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
 import {
   WorkPackageResource,
 } from 'core-app/features/hal/resources/work-package-resource';
@@ -8,17 +36,16 @@ import {
 import { Injector } from '@angular/core';
 import { QueryColumn } from 'core-app/features/work-packages/components/wp-query/query-column';
 import { SchemaCacheService } from 'core-app/core/schemas/schema-cache.service';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
-import { IWorkPackageTimestamp } from 'core-app/features/hal/resources/work-package-timestamp-resource';
+import { LazyInject } from 'core-app/shared/helpers/angular/lazy-inject.decorator';
 import { WorkPackageViewBaselineService } from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-view-baseline.service';
 
 export const tdClassName = 'wp-table--cell-td';
 export const editCellContainer = 'wp-table--cell-container';
 
 export class CellBuilder {
-  @InjectField(SchemaCacheService) schemaCache:SchemaCacheService;
+  @LazyInject(SchemaCacheService) schemaCache:SchemaCacheService;
 
-  @InjectField(WorkPackageViewBaselineService) wpTableBaseline:WorkPackageViewBaselineService;
+  @LazyInject(WorkPackageViewBaselineService) wpTableBaseline:WorkPackageViewBaselineService;
 
   public fieldRenderer = new DisplayFieldRenderer(this.injector, 'table');
 
@@ -44,7 +71,7 @@ export class CellBuilder {
 
     const schema = this.schemaCache.of(workPackage);
     const fieldSchema = schema.ofProperty(attribute);
-    if (fieldSchema && fieldSchema.type === 'User') {
+    if (fieldSchema?.type === 'User') {
       td.classList.add('-contains-avatar');
     }
 
@@ -81,7 +108,7 @@ export class CellBuilder {
     workPackage:WorkPackageResource,
     attribute:string,
   ):void {
-    const base = (workPackage.attributesByTimestamp as IWorkPackageTimestamp[])[0];
+    const base = (workPackage.attributesByTimestamp!)[0];
     base.$links.schema = base.$links.schema || workPackage.$links.schema;
     const span = this.fieldRenderer.render(base, attribute, null);
     span.classList.add('op-table-baseline--field', 'op-table-baseline--old-field');

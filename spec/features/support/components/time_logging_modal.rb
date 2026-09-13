@@ -47,7 +47,7 @@ module Components
 
     def change_hours(value)
       within modal_container do
-        fill_in "time_entry_hours", with: value
+        fill_in "time_entry_hours_display", with: value
       end
     end
 
@@ -76,9 +76,11 @@ module Components
       end
     end
 
+    # TODO: Make this aware of more entities
     def expect_work_package(work_package)
       title = "#{work_package.type.name} ##{work_package.id} #{work_package.subject}"
       within modal_container do
+        expect(page).to have_field("time_entry_entity_type", with: "WorkPackage", type: :hidden)
         expect(page).to have_css("opce-time-entries-work-package-autocompleter .ng-value", text: title, wait: 10)
       end
     end
@@ -127,11 +129,11 @@ module Components
 
     def update_time_field(field_name, hour:, minute:)
       built_time = browser_timezone.local(2025, 1, 1, hour, minute, 0)
-      page.fill_in "time_entry_#{field_name}", with: built_time.iso8601
+      page.fill_in "time_entry_#{field_name}", with: built_time.strftime("%H:%M")
     end
 
     def update_field(field_name, value)
-      if field_name.in?(%w[work_package_id user_id activity_id])
+      if field_name.in?(%w[entity_id user_id activity_id])
         select_autocomplete modal_container.find("#time_entry_#{field_name}"),
                             query: value,
                             select_text: value,
@@ -142,18 +144,6 @@ module Components
           fill_in "time_entry_#{field_name}", with: value
         end
       end
-    end
-
-    def update_work_package_field(value, recent = false)
-      work_package_field.input_element.click
-
-      if recent
-        within(".ng-dropdown-header") do
-          click_link(I18n.t("js.label_recent"))
-        end
-      end
-
-      work_package_field.set_value(value)
     end
 
     def perform_action(action)
@@ -177,7 +167,7 @@ module Components
     end
 
     def has_hidden_work_package_field_for(work_package)
-      expect(modal_container).to have_field "input#time_entry_work_package_id",
+      expect(modal_container).to have_field "input#time_entry_entity_id",
                                             with: work_package.id,
                                             type: :hidden
     end

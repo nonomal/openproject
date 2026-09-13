@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -40,7 +42,7 @@ RSpec.describe UpdateQueryFromParamsService,
   describe "#call" do
     subject { instance.call(params) }
 
-    context "group_by" do
+    describe "group_by" do
       context "for an existing value" do
         let(:params) { { group_by: "status" } }
 
@@ -64,7 +66,7 @@ RSpec.describe UpdateQueryFromParamsService,
       end
     end
 
-    context "filters" do
+    describe "filters" do
       let(:params) do
         { filters: [{ field: "status_id", operator: "=", values: ["1", "2"] }] }
       end
@@ -83,9 +85,43 @@ RSpec.describe UpdateQueryFromParamsService,
             .to eql(["1", "2"])
         end
       end
+
+      context "for both interchangeable version filters",
+              with_settings: { work_package_multiple_versions: true } do
+        let(:params) do
+          { filters: [{ field: "version_id", operator: "=", values: ["1"] },
+                      { field: "target_version_id", operator: "=", values: ["2"] }] }
+        end
+
+        it "sets the available one once with the later entry's values" do
+          subject
+
+          expect(query.filters.map(&:name))
+            .to eql([:target_version_id])
+          expect(query.filters[0].values)
+            .to eql(["2"])
+        end
+      end
+
+      context "for both interchangeable version filters with multiple versions inactive",
+              with_settings: { work_package_multiple_versions: false } do
+        let(:params) do
+          { filters: [{ field: "version_id", operator: "=", values: ["1"] },
+                      { field: "target_version_id", operator: "=", values: ["2"] }] }
+        end
+
+        it "sets the available one once with the later entry's values" do
+          subject
+
+          expect(query.filters.map(&:name))
+            .to eql([:version_id])
+          expect(query.filters[0].values)
+            .to eql(["2"])
+        end
+      end
     end
 
-    context "sort_by" do
+    describe "sort_by" do
       let(:params) do
         { sort_by: [["status_id", "desc"]] }
       end
@@ -98,7 +134,7 @@ RSpec.describe UpdateQueryFromParamsService,
       end
     end
 
-    context "columns" do
+    describe "columns" do
       let(:params) do
         { columns: ["assigned_to", "author", "category", "subject"] }
       end
@@ -111,7 +147,7 @@ RSpec.describe UpdateQueryFromParamsService,
       end
     end
 
-    context "display representation" do
+    describe "display representation" do
       let(:params) do
         { display_representation: "list" }
       end
@@ -124,7 +160,7 @@ RSpec.describe UpdateQueryFromParamsService,
       end
     end
 
-    context "highlighting mode", with_ee: %i[conditional_highlighting] do
+    describe "highlighting mode" do
       let(:params) do
         { highlighting_mode: "status" }
       end
@@ -137,7 +173,7 @@ RSpec.describe UpdateQueryFromParamsService,
       end
     end
 
-    context "default highlighting mode", with_ee: %i[conditional_highlighting] do
+    describe "default highlighting mode" do
       let(:params) do
         {}
       end
@@ -147,19 +183,6 @@ RSpec.describe UpdateQueryFromParamsService,
 
         expect(query.highlighting_mode)
           .to eq(:inline)
-      end
-    end
-
-    context "highlighting mode without EE" do
-      let(:params) do
-        { highlighting_mode: "status" }
-      end
-
-      it "sets the highlighting_mode" do
-        subject
-
-        expect(query.highlighting_mode)
-          .to eq(:none)
       end
     end
 

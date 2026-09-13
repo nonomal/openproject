@@ -114,9 +114,8 @@ npm-debug.log*
 node_modules/
 
 # Ignore global package-lock.json that generates
-/package-lock.json
 plaintext.yml
-structure.sql
+db/*.sql
 
 # Local development
 # used by dotenv
@@ -133,6 +132,10 @@ structure.sql
 # local user override
 lefthook-local.yml
 .rubocop-local.yml
+
+# Local AI coding agent instruction overrides
+AGENTS.local.md
+CLAUDE.local.md
 
 /.lefthook-local/
 

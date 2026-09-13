@@ -21,20 +21,20 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
+
 import { FormsModule } from '@angular/forms';
-import { Injector, NgModule } from '@angular/core';
+import { Injector, NgModule, inject } from '@angular/core';
 import { A11yModule } from '@angular/cdk/a11y';
 import { UIRouterGlobals } from '@uirouter/core';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { PortalModule } from '@angular/cdk/portal';
 import { CommonModule } from '@angular/common';
-import { NgOptionHighlightModule } from '@ng-select/ng-option-highlight';
-import { DragulaModule } from 'ng2-dragula';
+import { NgOptionHighlightDirective } from '@ng-select/ng-option-highlight';
 import { DynamicModule } from 'ng-dynamic-component';
 import { UIRouterModule } from '@uirouter/angular';
 import { OpSpotModule } from 'core-app/spot/spot.module';
@@ -57,12 +57,9 @@ import {
 import { OPContextMenuComponent } from 'core-app/shared/components/op-context-menu/op-context-menu.component';
 import { OpenprojectPrincipalRenderingModule } from 'core-app/shared/components/principal/principal-rendering.module';
 import { FocusModule } from 'core-app/shared/directives/focus/focus.module';
-import { FreeTrialButtonComponent } from 'core-app/features/enterprise/free-trial-button/free-trial-button.component';
-import { HomescreenNewFeaturesBlockComponent } from 'core-app/features/homescreen/blocks/new-features.component';
 import { TablePaginationComponent } from 'core-app/shared/components/table-pagination/table-pagination.component';
 import { StaticQueriesService } from 'core-app/shared/components/op-view-select/op-static-queries.service';
 import { CopyToClipboardService } from './components/copy-to-clipboard/copy-to-clipboard.service';
-import { CopyToClipboardComponent } from './components/copy-to-clipboard/copy-to-clipboard.component';
 import { OpDateTimeComponent } from './components/date/op-date-time.component';
 import { ToastComponent } from './components/toaster/toast.component';
 import { ToastsContainerComponent } from './components/toaster/toasts-container.component';
@@ -86,6 +83,9 @@ import {
 import { OpenprojectModalModule } from 'core-app/shared/components/modal/modal.module';
 import { FullCalendarModule } from '@fullcalendar/angular';
 import { OpDatePickerModule } from 'core-app/shared/components/datepicker/datepicker.module';
+import { OpBreadcrumbsComponent } from './components/breadcrumbs/op-breadcrumbs.component';
+import { PrimerCounterComponent } from './components/primer/counter.component';
+import { PrimerIconButtonComponent } from './components/primer/icon-button.component';
 
 export function bootstrapModule(injector:Injector):void {
   // Ensure error reporter is run
@@ -111,11 +111,10 @@ export function bootstrapModule(injector:Injector):void {
     A11yModule,
     PortalModule,
     DragDropModule,
-    DragulaModule,
     CurrentUserModule,
     FormsModule,
     NgSelectModule,
-    NgOptionHighlightModule,
+    NgOptionHighlightDirective,
 
     OpenprojectPrincipalRenderingModule,
     OpenprojectContentLoaderModule,
@@ -127,6 +126,9 @@ export function bootstrapModule(injector:Injector):void {
     AttributeHelpTextModule,
     FullCalendarModule,
     OpDatePickerModule,
+
+    PrimerCounterComponent,
+    PrimerIconButtonComponent
   ],
   exports: [
     // Re-export all commonly used
@@ -140,7 +142,7 @@ export function bootstrapModule(injector:Injector):void {
     IconModule,
     AttributeHelpTextModule,
     FormsModule,
-    NgOptionHighlightModule,
+    NgOptionHighlightDirective,
     OpenprojectPrincipalRenderingModule,
     OpenprojectAutocompleterModule,
     OpenprojectContentLoaderModule,
@@ -168,11 +170,8 @@ export function bootstrapModule(injector:Injector):void {
     IconTriggeredContextMenuComponent,
 
     NoResultsComponent,
-
+    OpBreadcrumbsComponent,
     EditableToolbarTitleComponent,
-
-    // Enterprise Edition
-    FreeTrialButtonComponent,
 
     DynamicModule,
 
@@ -182,6 +181,9 @@ export function bootstrapModule(injector:Injector):void {
     OpLoadingProjectListComponent,
 
     OpNonWorkingDaysListComponent,
+
+    PrimerCounterComponent,
+    PrimerIconButtonComponent
   ],
   providers: [
     CopyToClipboardService,
@@ -197,9 +199,6 @@ export function bootstrapModule(injector:Injector):void {
     OPContextMenuComponent,
     IconTriggeredContextMenuComponent,
 
-    // Add functionality to rails rendered templates
-    CopyToClipboardComponent,
-
     ResizerComponent,
 
     TablePaginationComponent,
@@ -209,16 +208,12 @@ export function bootstrapModule(injector:Injector):void {
     ZenModeButtonComponent,
 
     NoResultsComponent,
+    OpBreadcrumbsComponent,
 
     EditableToolbarTitleComponent,
 
     PersistentToggleComponent,
     RemoteFieldUpdaterComponent,
-
-    // Enterprise Edition
-    FreeTrialButtonComponent,
-
-    HomescreenNewFeaturesBlockComponent,
 
     OpOptionListComponent,
     OpProjectIncludeComponent,
@@ -229,7 +224,9 @@ export function bootstrapModule(injector:Injector):void {
   ],
 })
 export class OpSharedModule {
-  constructor(injector:Injector) {
+  constructor() {
+    const injector = inject(Injector);
+
     bootstrapModule(injector);
   }
 }

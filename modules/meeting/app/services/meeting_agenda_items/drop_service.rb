@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,20 +31,26 @@
 module MeetingAgendaItems
   class DropService < ::BaseServices::BaseCallable
     include AfterPerformHook
+    include JournalizeWorkPackageActivity
+
+    attr_reader :user
 
     def initialize(user:, meeting_agenda_item:)
       super()
       @user = user
       @meeting_agenda_item = meeting_agenda_item
       @meeting = meeting_agenda_item.meeting
+      @old_section = meeting_agenda_item.meeting_section
     end
 
-    def perform(params)
+    def perform
       service_call = validate_permission
       service_call = validate_meeting_existence if service_call.success?
       service_call = validate_meeting_agenda_item_editable if service_call.success?
 
       service_call = perform_drop(service_call, params) if service_call.success?
+
+      journalize_move if service_call.success?
 
       # after_perform(service_call) if service_call.success? # TODO properly integrate after_perform_hook
 
@@ -83,13 +90,23 @@ module MeetingAgendaItems
         service_call.result = { section_changed:, current_section:, old_section: }
       rescue StandardError => e
         service_call.success = false
-        service_call.errors = e.message
+        service_call.errors.add(:base, e.message)
       end
 
       service_call
     end
 
     private
+
+    def journalize_move
+      return if @old_section.meeting_id == @meeting_agenda_item.meeting_id
+
+      destination = @meeting_agenda_item.meeting
+      source_meeting = @old_section.meeting if destination.series_template?
+
+      journalize_agenda_item(@meeting_agenda_item,
+                             Journal::CausedByMeetingAgendaItemMoved.new(destination, source_meeting:))
+    end
 
     def check_and_update_section_if_changed(params)
       current_section = @meeting_agenda_item.meeting_section
@@ -105,14 +122,31 @@ module MeetingAgendaItems
     end
 
     def update_section(new_section_id)
-      current_section = MeetingSection.find(new_section_id)
-      @meeting_agenda_item.remove_from_list
-      @meeting_agenda_item.update(meeting_section: current_section)
-      current_section
+      target_section(new_section_id).tap do |new_section|
+        @meeting_agenda_item.remove_from_list
+        @meeting_agenda_item.update(meeting_section: new_section)
+      end
     end
 
     def update_position(new_position)
       @meeting_agenda_item.insert_at(new_position)
+    end
+
+    def target_section(new_section_id)
+      # allows from backlog to current meeting
+      target_section = if @old_section.backlog? && @meeting.backlog == @old_section
+                         MeetingSection
+                         .joins(:meeting)
+                         .where(meetings: { recurring_meeting_id: @meeting.recurring_meeting_id })
+                         .find_by(id: new_section_id)
+                       end
+
+      # allows from current meeting to backlog
+      if @meeting.backlog&.id == new_section_id.to_i
+        target_section ||= @meeting.backlog
+      end
+
+      target_section || @meeting.sections.find(new_section_id)
     end
   end
 end

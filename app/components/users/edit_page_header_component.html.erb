@@ -28,7 +28,19 @@ See COPYRIGHT and LICENSE files for more details.
 ++#%>
 <%=
   render(Primer::OpenProject::PageHeader.new) do |header|
-    header.with_title { @user.name }
+    header.with_title do
+      flex_layout(align_items: :center) do |flex|
+        flex.with_column do
+          @user.name
+        end
+        if @user.persisted?
+          flex.with_column(ml: 2) do
+            render(Users::StatusLabelComponent.new(user: @user, display: :block))
+          end
+        end
+      end
+    end
+
     header.with_breadcrumbs(breadcrumb_items)
 
     header.with_action_button(
@@ -51,7 +63,7 @@ See COPYRIGHT and LICENSE files for more details.
         mobile_label: t(:label_send_invitation),
         size: :medium,
         href: resend_invitation_user_path(@user),
-        data: { method: :post },
+        data: { turbo_method: :post },
         aria: { label: I18n.t(:label_send_invitation) },
         title: I18n.t(:tooltip_resend_invitation)
       ) do |button|
@@ -70,7 +82,7 @@ See COPYRIGHT and LICENSE files for more details.
             size: :medium,
             name: name,
             href: change_status_user_path(@user, { name => "" }),
-            data: { method: :post },
+            data: { turbo_method: :post },
             aria: { label: title },
             title: title
           ) do |button|
@@ -80,7 +92,7 @@ See COPYRIGHT and LICENSE files for more details.
         end
       end
 
-      if Setting.users_deletable_by_admins?
+      if Users::DeleteContract.deletion_allowed?(@user, User.current)
         header.with_action_button(
           tag: :a,
           scheme: :danger,
@@ -88,6 +100,7 @@ See COPYRIGHT and LICENSE files for more details.
           mobile_label: t(:button_delete),
           size: :medium,
           href: deletion_info_user_path(@user),
+          data: { controller: "async-dialog" },
           aria: { label: I18n.t(:button_delete) },
           title: I18n.t(:button_delete)
         ) do |button|
@@ -97,14 +110,6 @@ See COPYRIGHT and LICENSE files for more details.
       end
     end
 
-    if @tabs.present?
-      header.with_tab_nav(label: nil) do |tab_nav|
-        @tabs.each do |tab|
-          tab_nav.with_tab(selected: selected_tab(@tabs) == tab, href: tab[:path]) do |t|
-            t.with_text { I18n.t("js.#{tab[:label]}") }
-          end
-        end
-      end
-    end
+    helpers.render_tab_header_nav(header, @tabs)
   end
 %>

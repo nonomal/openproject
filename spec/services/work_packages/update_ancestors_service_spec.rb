@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -51,7 +53,7 @@ RSpec.describe WorkPackages::UpdateAncestorsService,
   end
 
   def call_update_ancestors_service(work_package)
-    changed_attributes = work_package.changes.keys.map(&:to_sym)
+    changed_attributes = work_package.changed_attribute_keys
     described_class.new(user:, work_package:)
                     .call(changed_attributes)
   end
@@ -607,10 +609,10 @@ RSpec.describe WorkPackages::UpdateAncestorsService,
   end
 
   describe "remaining work propagation" do
-    shared_let(:parent) { create(:work_package, subject: "parent") }
-    shared_let(:child) { create(:work_package, subject: "child", parent:) }
-
     context "when setting remaining work of a work package having children without any remaining work value" do
+      shared_let(:parent) { create(:work_package, subject: "parent") }
+      shared_let(:child) { create(:work_package, subject: "child", parent:) }
+
       before do
         parent.remaining_hours = 2.0
       end
@@ -703,8 +705,6 @@ RSpec.describe WorkPackages::UpdateAncestorsService,
   end
 
   describe "% complete propagation" do
-    shared_let(:parent) { create(:work_package, subject: "parent") }
-
     context "given child with work, when remaining work being set on parent" do
       let_work_packages(<<~TABLE)
         hierarchy | work | total work | remaining work | total remaining work
@@ -1171,22 +1171,41 @@ RSpec.describe WorkPackages::UpdateAncestorsService,
     end
 
     context "when a manually scheduled work package becomes parent for the first time, " \
-            "but it's part of a bulk copy in progress" do
+            "but it's part of a bulk duplicate in progress" do
       let_work_packages(<<~TABLE)
         subject       | scheduling mode
         future parent | manual
         future child  | manual
       TABLE
       let(:initiator_work_package) { future_child }
-      let(:state) { { bulk_copy_in_progress: true } }
+      let(:state) { { bulk_duplicate_in_progress: true } }
 
       before do
         future_child.update!(parent: future_parent)
       end
 
-      it "keeps the scheduling mode (or it would not be an exact copy anymore)" do
+      it "keeps the scheduling mode (or it would not be an exact duplicate anymore)" do
         expect(call_result).to be_success
         expect(future_parent.reload.schedule_manually).to be(true)
+      end
+    end
+
+    context "when a manually scheduled parent with two children has one child deleted" do
+      let_work_packages(<<~TABLE)
+        hierarchy | scheduling mode
+        parent    | manual
+          child1  | manual
+          child2  | manual
+      TABLE
+      let(:initiator_work_package) { child1 }
+
+      before do
+        child1.destroy
+      end
+
+      it "keeps the scheduling mode to manual (Bug #68465)" do
+        expect(call_result).to be_success
+        expect(parent.reload).to have_attributes(schedule_manually: true)
       end
     end
   end
@@ -1363,6 +1382,47 @@ RSpec.describe WorkPackages::UpdateAncestorsService,
 
         expect(sibling.reload.ignore_non_working_days)
           .to be_falsey
+      end
+    end
+  end
+
+  describe "auto-generated journal note when a child triggers an ancestor recompute",
+           with_settings: { work_package_done_ratio: "status" } do
+    shared_let_work_packages(<<~TABLE)
+      hierarchy | status | work | ∑ work | remaining work | ∑ remaining work | % complete | ∑ % complete
+      parent    | Open   |  10h |    15h |            10h |              15h |         0% |           0%
+        child   | Open   |   5h |        |             5h |                  |         0% |
+    TABLE
+
+    # The journal note always stores the primary-key reference (`#42`).
+    # Render-time resolution in the formatter pipeline turns it into
+    # `#PROJ-7` in semantic mode and `#42` in classic mode, so the stored
+    # text survives project-identifier renames.
+    context "in classic mode",
+            with_settings: { work_package_done_ratio: "status", work_packages_identifier: "classic" } do
+      it "writes the child's hash-prefixed primary key into the parent's journal note" do
+        set_attributes_on(child, status: closed_status)
+        call_update_ancestors_service(child)
+
+        note = parent.reload.journals.last.notes
+        expect(note).to include("##{child.id}")
+      end
+    end
+
+    context "in semantic mode",
+            with_settings: { work_package_done_ratio: "status", work_packages_identifier: "semantic" } do
+      before do
+        child.allocate_and_register_semantic_id
+      end
+
+      it "writes the child's hash-prefixed primary key, not its semantic identifier" do
+        set_attributes_on(child, status: closed_status)
+        call_update_ancestors_service(child)
+
+        wp = child.reload
+        note = parent.reload.journals.last.notes
+        expect(note).to include("##{wp.id}")
+        expect(note).not_to include(wp.identifier)
       end
     end
   end

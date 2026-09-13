@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -38,7 +39,21 @@ module RecurringMeetings
         if model.frequency_working_days?
           model.interval = 1
         end
+
+        determine_current_schedule_start
       end
+    end
+
+    # current_schedule_start will become the DTSTART of the ICS series event.
+    #
+    # If DTSTART is changed and the UID does not change, some clients MAY delete all earlier occurrences.
+    # We have to make sure we never write it unless
+    #  - we are really changing the schedule (schedule_changed?)
+    #  - we are first creating the series
+    def determine_current_schedule_start
+      return unless model.new_record? || model.schedule_changed?
+
+      model.current_schedule_start = model.next_occurrence(from_time: Time.current) || model.start_time
     end
 
     def set_default_attributes(_params)

@@ -21,31 +21,32 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-/**
- * A set of global helpers that were used in the app/assets/javascript namespace
- * but exposed globally.
- *
- * It is used in some `link_to_function` helpers in Rails templates
- */
-export class GlobalHelpers {
-  public checkAll(selector:string, checked:boolean) {
-     document
-      .querySelectorAll<HTMLInputElement>(`#${selector} input[type="checkbox"]:not([disabled])`)
-      .forEach((el) => { el.checked = checked; });
-  }
-
-  public toggleCheckboxesBySelector(selector:string) {
-    const checkboxes = Array.from(document.querySelectorAll<HTMLInputElement>(selector));
-    const allChecked = checkboxes.every((el) => el.checked);
-    checkboxes.forEach((el) => { el.checked = !allChecked; });
-  }
+export function getMetaElement(name:string):HTMLMetaElement|null {
+  return document.head.querySelector(`meta[name="${CSS.escape(name)}"]`);
 }
 
-export function getMetaElement(name:string):HTMLMetaElement|null {
-  return document.querySelector(`meta[name=${name}]`);
+export function getMetaContent(name:string):string;
+export function getMetaContent<T extends string|null>(name:string, defaultValue:T):T;
+export function getMetaContent<T extends string|null>(
+  name:string,
+  defaultValue?:T
+):string|T {
+  const content = getMetaElement(name)?.content ?? defaultValue ?? '';
+  return content;
+}
+
+export function getMetaValue(name:string, key:string):string;
+export function getMetaValue<T extends string|null>(name:string, key:string, defaultValue:T):T;
+export function getMetaValue<T extends string|null>(
+  name:string,
+  key:string,
+  defaultValue?:T
+):string|T {
+  const value = getMetaElement(name)?.dataset[key] ?? defaultValue ?? '';
+  return value;
 }

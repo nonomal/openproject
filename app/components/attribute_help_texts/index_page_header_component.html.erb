@@ -28,17 +28,9 @@ See COPYRIGHT and LICENSE files for more details.
 ++#%>
 <%=
   render(Primer::OpenProject::PageHeader.new) do |header|
-    header.with_title { I18n.t(:"attribute_help_texts.label_plural") }
+    header.with_title { AttributeHelpText.human_plural_model_name }
     header.with_breadcrumbs(breadcrumb_items, selected_item_font_weight: :normal)
 
-    if @tabs.present?
-      header.with_tab_nav(label: nil) do |tab_nav|
-        @tabs.each do |tab|
-          tab_nav.with_tab(selected: currently_selected_tab == tab, href: tab[:path]) do |t|
-            t.with_text { I18n.t(tab[:label]) }
-          end
-        end
-      end
-    end
+    helpers.render_tab_header_nav(header, @tabs)
   end
 %>

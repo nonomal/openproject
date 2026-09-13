@@ -21,15 +21,14 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import * as moment from 'moment';
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import moment, { Moment, Duration } from 'moment';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { EditFieldComponent } from 'core-app/shared/components/fields/edit/edit-field.component';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
 import { TimezoneService } from 'core-app/core/datetime/timezone.service';
 
 @Component({
@@ -47,13 +46,14 @@ import { TimezoneService } from 'core-app/core/datetime/timezone.service';
            [id]="handler.htmlId" />
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
 export class HoursDurationEditFieldComponent extends EditFieldComponent {
-  @InjectField() TimezoneService:TimezoneService;
+  readonly TimezoneService = inject(TimezoneService);
 
   inputValue:null|string;
 
-  public parser(value:null|string, input:HTMLInputElement):moment.Duration {
+  public parser(value:null|string, input:HTMLInputElement):Duration {
     // Managing decimal separators in a multi-language app is a complex topic:
     // https://www.ctrl.blog/entry/html5-input-number-localization.html
     // Depending on the locale of the OS, the browser or the app itself,
@@ -84,7 +84,7 @@ export class HoursDurationEditFieldComponent extends EditFieldComponent {
     return Number(moment.duration(value).asHours().toFixed(2));
   }
 
-  protected parseValue(val:moment.Moment | null) {
+  protected parseValue(val:Moment | null) {
     if (val === null || this.inputValue === '') {
       return null;
     }

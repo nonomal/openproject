@@ -161,7 +161,7 @@ RSpec.describe Queries::Projects::Filters::ProjectPhaseGateFilter do
       end
     end
 
-    context "for a user with the necessary permission and the feature flag on", with_flag: { stages_and_gates: true } do
+    context "for a user with the necessary permission" do
       let(:permissions) { %i[view_project_phases] }
 
       it "is true" do
@@ -170,16 +170,7 @@ RSpec.describe Queries::Projects::Filters::ProjectPhaseGateFilter do
       end
     end
 
-    context "for a user with the necessary permission and the feature flag off", with_flag: { stages_and_gates: false } do
-      let(:permissions) { %i[view_project_phases] }
-
-      it "is false" do
-        expect(instance)
-          .not_to be_available
-      end
-    end
-
-    context "for a user without the necessary permission", with_flag: { stages_and_gates: true } do
+    context "for a user without the necessary permission" do
       let(:permissions) { %i[view_project] }
 
       it "is false" do

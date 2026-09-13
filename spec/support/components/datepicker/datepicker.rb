@@ -5,6 +5,7 @@ module Components
     include Capybara::DSL
     include Capybara::RSpecMatchers
     include RSpec::Matchers
+
     attr_reader :context_selector
 
     ##
@@ -31,7 +32,7 @@ module Components
     end
 
     def container
-      page.find(context_selector)
+      page.document.find(context_selector)
     end
 
     def flatpickr_container
@@ -204,6 +205,17 @@ module Components
     def expect_not_disabled(date)
       label = date.strftime("%B %-d, %Y")
       expect(page).to have_css(".flatpickr-day:not(.flatpickr-disabled):not(.flatpickr-non-working-day)[aria-label='#{label}']")
+    end
+
+    def displays_date?(date)
+      expect_visible
+      label = date.strftime("%B %-d, %Y")
+      page.has_css?(".flatpickr-day[aria-label='#{label}']", wait: 0)
+    end
+
+    def has_previous_month_toggle?
+      expect_visible
+      page.has_css?(".flatpickr-prev-month", wait: 0)
     end
 
     protected

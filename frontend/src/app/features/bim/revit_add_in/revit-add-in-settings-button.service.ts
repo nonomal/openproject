@@ -21,12 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 
@@ -36,13 +36,15 @@ import { I18nService } from 'core-app/core/i18n/i18n.service';
  */
 @Injectable()
 export class RevitAddInSettingsButtonService {
+  private readonly i18n = inject(I18nService);
+
   private readonly labelText:string;
 
   private readonly groupLabelText:string;
 
-  constructor(
-    private readonly i18n:I18nService,
-  ) {
+  constructor() {
+    const i18n = this.i18n;
+
     const onRevitAddInEnvironment = window.navigator.userAgent.search('Revit') > -1;
 
     if (onRevitAddInEnvironment) {
@@ -55,19 +57,15 @@ export class RevitAddInSettingsButtonService {
   }
 
   public addUserMenuItem():void {
-    const userMenu = document.getElementById('user-menu');
+    const userMenu = document.getElementById('op-app-header--user-menu-list');
 
     if (userMenu) {
-      const menuItem:HTMLElement = document.createElement('li');
-      menuItem.dataset.name = this.labelText;
-      menuItem.innerHTML = `
-        <a class="op-menu--item-action revit-addin-settings-menu-item ellipsis" title="${this.labelText}" href="#">
-          <span class="menu-item--title ellipsis ">${this.labelText}</span>
-        </a>
-      `;
+      const menuItem:HTMLElement|null = document.getElementById('user-menu--revit-add-in-entry');
 
-      menuItem.addEventListener('click', () => this.goToSettings());
-      userMenu.appendChild(menuItem);
+      if (menuItem) {
+        menuItem.addEventListener('click', () => this.goToSettings());
+        menuItem.closest('li.d-none')?.classList.remove('d-none');
+      }
     }
   }
 

@@ -30,12 +30,13 @@
 
 require "spec_helper"
 
-RSpec.describe MailHandler do
+RSpec.describe IncomingEmails::MailHandler do # rubocop:disable RSpec/SpecFilePathFormat
   # we need these run first so the anonymous and system users are created and
   # there is a default work package priority to save any work packages
   shared_let(:anno_user) { User.anonymous }
   shared_let(:system_user) { User.system }
   shared_let(:priority_low) { create(:priority_low, name: "Low", is_default: true) }
+  shared_let(:default_status) { create(:default_status) }
 
   shared_let(:project) { create(:valid_project, identifier: "onlinestore", name: "OnlineStore", public: false) }
 
@@ -211,7 +212,7 @@ RSpec.describe MailHandler do
       create(:float_wp_custom_field,
              name: "float field") do |cf|
         project.work_package_custom_fields << cf
-        work_package.type.custom_fields << cf
+        work_package.type.default_variant.custom_fields << cf
       end
     end
 
@@ -253,7 +254,7 @@ RSpec.describe MailHandler do
     let!(:feature_type) do
       create(:type,
              name: "Feature request") do |type|
-        project.types << type
+        project.project_types.create!(type:)
       end
     end
     let!(:stock_category) do
@@ -287,7 +288,7 @@ RSpec.describe MailHandler do
     let!(:feature_type) do
       create(:type,
              name: "Feature request") do |type|
-        project.types << type
+        project.project_types.create!(type:)
       end
     end
     let!(:stock_category) do
@@ -333,7 +334,7 @@ RSpec.describe MailHandler do
     let!(:japanese_type) do
       create(:type,
              name: "開発") do |type|
-        project.types << type
+        project.project_types.create!(type:)
       end
     end
     let(:submit_options) { {} }
@@ -389,7 +390,7 @@ RSpec.describe MailHandler do
     let!(:custom_field) do
       create(:string_wp_custom_field, name: "Searchable field") do |cf|
         project.work_package_custom_fields << cf
-        project.types.first.custom_fields << cf
+        project.enabled_variants.first.custom_fields << cf
       end
     end
     let(:submit_options) { {} }
@@ -430,7 +431,7 @@ RSpec.describe MailHandler do
     let!(:feature_type) do
       create(:type,
              name: "Feature request") do |type|
-        project.types << type
+        project.project_types.create!(type:)
       end
     end
     let!(:stock_category) do
@@ -532,7 +533,7 @@ RSpec.describe MailHandler do
 
     context "when sending a mail not as a reply" do
       context "for a given project" do
-        let(:type) { project.types.first }
+        let(:type) { project.enabled_types.first }
         let!(:status) { create(:status, name: "Resolved", workflow_for_type: type) }
         let!(:version) { create(:version, name: "alpha", project:) }
 
@@ -592,9 +593,9 @@ RSpec.describe MailHandler do
             .to eql(status)
         end
 
-        it "sets the version" do
-          expect(subject.version)
-            .to eql(version)
+        it "sets the target version" do
+          expect(subject.target_versions)
+            .to contain_exactly(version)
         end
 
         it "sets the estimated_hours" do
@@ -640,8 +641,8 @@ RSpec.describe MailHandler do
 
       context "for a given project with a default type" do
         let(:default_type) do
-          create(:type, is_default: true) do |t|
-            project.types << t
+          create(:type, default_variant_enabled_in_all_projects: true) do |t|
+            project.project_types.create!(type: t)
           end
         end
 
@@ -746,7 +747,7 @@ RSpec.describe MailHandler do
           end
 
           it "ignores the email" do
-            expect(results).to eq [false]
+            expect(results).to eq [nil]
           end
 
           it "does not respond with an error email" do
@@ -756,7 +757,7 @@ RSpec.describe MailHandler do
 
         context "with unknown_user: 'accept' and permission check present" do
           let(:expected) do
-            "MailHandler: work_package could not be created by Anonymous due to " \
+            "MailHandler: work_package could not be created by Anonymous due to " \
               '#["Type was attempted to be written but is not writable.", ' \
               '"Project was attempted to be written but is not writable.", ' \
               '"Subject was attempted to be written but is not writable.", ' \
@@ -783,8 +784,9 @@ RSpec.describe MailHandler do
               work_package
             end
 
-            it "rejects the email" do
-              expect(work_package).to be false
+            it "rejects the email, and does not save the work package" do
+              expect(work_package).to be_new_record
+              expect(work_package.errors).not_to be_empty
             end
 
             it "logs the error" do
@@ -927,7 +929,7 @@ RSpec.describe MailHandler do
       end
 
       context "for wp with status" do
-        let(:type) { project.types.first }
+        let(:type) { project.enabled_types.first }
         let!(:status) { create(:status, name: "Resolved", workflow_for_type: type) }
 
         # This email contains: 'Project: onlinestore' and 'Status: Resolved'
@@ -942,7 +944,7 @@ RSpec.describe MailHandler do
       end
 
       context "for wp with status case insensitive" do
-        let(:type) { project.types.first }
+        let(:type) { project.enabled_types.first }
         let!(:status) { create(:status, name: "Resolved", workflow_for_type: type) }
         let!(:version) { create(:version, name: "alpha", project:) }
 
@@ -953,7 +955,7 @@ RSpec.describe MailHandler do
 
         it "assigns the status to the created work package" do
           expect(subject.status).to eq(status)
-          expect(subject.version).to eq(version)
+          expect(subject.target_versions).to contain_exactly(version)
           expect(subject.priority).to eq priority_low
         end
       end
@@ -1205,7 +1207,7 @@ RSpec.describe MailHandler do
           expect(subject.subject).to eq("New ticket with full attributes")
           expect(subject.type).to eq(feature_type)
           expect(subject.status).to eq(resolved_status)
-          expect(subject.version).to eq(version)
+          expect(subject.target_versions).to contain_exactly(version)
           expect(subject.priority).to eq(urgent_priority)
           expect(subject.assigned_to).to eq(user)
           expect(subject.responsible).to eq(user)
@@ -1230,7 +1232,7 @@ RSpec.describe MailHandler do
             expect(subject.subject).to eq("Neues Arbeitspaket")
             expect(subject.type).to eq(feature_type)
             expect(subject.status).to eq(resolved_status)
-            expect(subject.version).to eq(version)
+            expect(subject.target_versions).to contain_exactly(version)
             expect(subject.priority).to eq(urgent_priority)
             expect(subject.assigned_to).to eq(user)
             expect(subject.responsible).to eq(user)
@@ -1240,6 +1242,94 @@ RSpec.describe MailHandler do
             expect(subject.remaining_hours).to eq(10.5)
             expect(subject.category).to eq(stock_category)
           end
+        end
+      end
+    end
+
+    context "when setting target versions from keywords" do
+      let(:permissions) { %i[add_work_packages edit_work_packages view_work_packages assign_versions] }
+      let!(:user) do
+        create(:user,
+               mail: "JSmith@somenet.foo",
+               firstname: "John",
+               lastname: "Smith",
+               member_with_permissions: { project => permissions })
+      end
+      let!(:alpha) { create(:version, name: "alpha", project:) }
+      let!(:beta) { create(:version, name: "beta", project:) }
+
+      context "when the multiple-versions feature is enabled",
+              with_settings: { work_package_multiple_versions: true } do
+        subject { submit_email("wp_with_multiple_target_versions.eml", issue: { project: "onlinestore" }) }
+
+        it "assigns every named target version" do
+          expect(subject.target_versions)
+            .to contain_exactly(alpha, beta)
+        end
+
+        it "removes the keyword from the description" do
+          expect(subject.description)
+            .not_to match(/^Target versions:/i)
+        end
+      end
+
+      context "when the multiple-versions feature is disabled",
+              with_settings: { work_package_multiple_versions: false } do
+        context "with a single named version" do
+          subject { submit_email("wp_with_target_version.eml", issue: { project: "onlinestore" }) }
+
+          it "assigns the target version" do
+            expect(subject.target_versions)
+              .to contain_exactly(alpha)
+          end
+        end
+
+        context "with several named versions" do
+          subject { submit_email("wp_with_multiple_target_versions.eml", issue: { project: "onlinestore" }) }
+
+          it "is refused by the single-value rule rather than silently dropped" do
+            expect(subject)
+              .not_to be_persisted
+            expect(subject.errors.symbols_for(:base))
+              .to include(:target_versions_only_allow_single_value)
+          end
+        end
+      end
+
+      context "when both version and target versions keywords are present",
+              with_settings: { work_package_multiple_versions: true } do
+        subject { submit_email("wp_with_version_and_target_versions.eml", issue: { project: "onlinestore" }) }
+
+        it "lets the target versions keyword win" do
+          expect(subject.target_versions)
+            .to contain_exactly(beta)
+        end
+
+        it "removes both keywords from the description" do
+          expect(subject.description)
+            .not_to match(/^Version:/i)
+          expect(subject.description)
+            .not_to match(/^Target versions:/i)
+        end
+      end
+
+      context "when replying to a work package that already has target versions" do
+        let!(:work_package) do
+          create(:work_package, project:).tap do |wp|
+            wp.work_package_versions.create!(version_id: alpha.id, kind: "target")
+            wp.work_package_versions.create!(version_id: beta.id, kind: "target")
+          end
+        end
+
+        before do
+          allow(WorkPackage).to receive(:find_by).with(id: 555).and_return(work_package)
+        end
+
+        it "replaces the whole target version set with the named version" do
+          submit_email("wp_reply_setting_version.eml", issue: { project: "onlinestore" })
+
+          expect(work_package.reload.target_versions)
+            .to contain_exactly(alpha)
         end
       end
     end
@@ -1378,7 +1468,7 @@ RSpec.describe MailHandler do
         let(:type) { create(:type) }
 
         before do
-          type.custom_fields << custom_field
+          type.default_variant.custom_fields << custom_field
           type.save!
 
           allow(work_package).to receive(:available_custom_fields).and_return([custom_field])
@@ -1566,27 +1656,6 @@ RSpec.describe MailHandler do
     end
   end
 
-  describe "#cleanup_body" do
-    let(:input) do
-      "Subject:foo\nDescription:bar\n" \
-        ">>> myserver.example.org 2016-01-27 15:56 >>>\n... (Email-Body) ..."
-    end
-    let(:handler) { described_class.send :new }
-
-    context "with regex delimiter" do
-      before do
-        allow(Setting).to receive(:mail_handler_body_delimiter_regex).and_return(">>>.+?>>>.*")
-        allow(handler).to receive(:plain_text_body).and_return(input)
-        allow(handler).to receive(:cleaned_up_text_body).and_call_original
-      end
-
-      it "removes the irrelevant lines" do
-        expect(handler.send(:cleaned_up_text_body)).to eq("Subject:foo\nDescription:bar")
-        expect(handler).to have_received(:cleaned_up_text_body)
-      end
-    end
-  end
-
   private
 
   def read_email(filename)
@@ -1594,7 +1663,7 @@ RSpec.describe MailHandler do
   end
 
   def submit_email(filename, options = {})
-    MailHandler.receive(read_email(filename), options)
+    IncomingEmails::MailHandler.receive(read_email(filename), options)
   end
 
   def work_package_created(work_package)

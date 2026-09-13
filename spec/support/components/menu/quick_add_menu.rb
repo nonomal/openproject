@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,6 +31,10 @@ require_relative "dropdown"
 
 module Components
   class QuickAddMenu < Dropdown
+    def id
+      "op-app-header--quick-add-menu"
+    end
+
     def expect_visible
       expect(trigger_element).to be_present
     end
@@ -38,7 +44,7 @@ module Components
     end
 
     def expect_add_project(present: true)
-      expect_link "New project", present:
+      expect_link "Project", present:
     end
 
     def expect_user_invite(present: true)
@@ -47,7 +53,7 @@ module Components
 
     def expect_work_package_type(*names, present: true)
       within_dropdown do
-        expect(page).to have_text "WORK PACKAGES"
+        expect(page).to have_text "Work packages"
       end
 
       names.each do |name|
@@ -78,7 +84,7 @@ module Components
     end
 
     def trigger_element
-      page.find('a[title="Open quick add menu"]')
+      page.find_test_selector("quick-add-menu-button")
     end
   end
 end

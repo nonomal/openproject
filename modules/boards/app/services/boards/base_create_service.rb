@@ -13,14 +13,15 @@ module Boards
       )
     end
 
-    def before_perform(params, _service_result)
+    def before_perform(_service_result)
       return super if no_widgets_initially?
 
       create_query_result = create_query(params)
 
       return create_query_result if create_query_result.failure?
 
-      super(params.merge(query_id: create_query_result.result.id), create_query_result)
+      params[:query_id] = create_query_result.result.id
+      super(create_query_result)
     end
 
     def set_attributes_params(params)

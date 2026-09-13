@@ -39,44 +39,44 @@ automatically.
 **Additionally, the following errors have been fixed in OpenProject
 6.0.1:**
 
-  - Activity
-    on work package was not instantly updated when making changes to a
-    work package
-    ([#23675](https://community.openproject.org/wp/23675)).
-  - Copy function was missing from fullscreen work package page
-    ([#23685](https://community.openproject.org/wp/23685)).
-  - Type
-    and status could not be selected when copying a work package
-    ([#23690](https://community.openproject.org/wp/23690)).
-  - Custom field of type “List” could not be changed (always switched
-    back to previous value)
-    ([#23696](https://community.openproject.org/wp/23696)).
-  - Grouped versions from other projects (inherited) in work package
-    table were not displayed correctly
-    ([#23697](https://community.openproject.org/wp/23697)).
-  - Work package export (XLS, PDF, CSV) ignored filters, sorting and
-    grouping
-    ([#23713](https://community.openproject.org/wp/23713)).
-  - Collapsing groups in work package page did not collapse related rows
-    ([#23718](https://community.openproject.org/wp/23718)).
-  - Inherited versions were lost when making changes in the work package
-    table
-    ([#23719](https://community.openproject.org/wp/23719)).
-  - Custom fields were not displayed in queries
-    ([#23725](https://community.openproject.org/wp/23725)).
-  - Timeline
-    graph was not displayed when timeline was embedded (e.g. on overview
-    page)
-    ([#23689](https://community.openproject.org/wp/23689)).
-  - Sorting of cost type was not working
-    ([#23213](https://community.openproject.org/wp/23213)).
-  - Various design errors
-    ([#23645](https://community.openproject.org/wp/23645), \#[23650](https://community.openproject.org/wp/23650),
-    [#23653](https://community.openproject.org/wp/23653),
-    [#23660](https://community.openproject.org/wp/23660),
-    [#23664](https://community.openproject.org/wp/23664),
-    [#23710](https://community.openproject.org/wp/23710))
-  - Several accessibility improvements.
+- Activity
+  on work package was not instantly updated when making changes to a
+  work package
+  ([#23675](https://community.openproject.org/wp/23675)).
+- Copy function was missing from fullscreen work package page
+  ([#23685](https://community.openproject.org/wp/23685)).
+- Type
+  and status could not be selected when copying a work package
+  ([#23690](https://community.openproject.org/wp/23690)).
+- Custom field of type “List” could not be changed (always switched
+  back to previous value)
+  ([#23696](https://community.openproject.org/wp/23696)).
+- Grouped versions from other projects (inherited) in work package
+  table were not displayed correctly
+  ([#23697](https://community.openproject.org/wp/23697)).
+- Work package export (XLS, PDF, CSV) ignored filters, sorting and
+  grouping
+  ([#23713](https://community.openproject.org/wp/23713)).
+- Collapsing groups in work package page did not collapse related rows
+  ([#23718](https://community.openproject.org/wp/23718)).
+- Inherited versions were lost when making changes in the work package
+  table
+  ([#23719](https://community.openproject.org/wp/23719)).
+- Custom fields were not displayed in queries
+  ([#23725](https://community.openproject.org/wp/23725)).
+- Timeline
+  graph was not displayed when timeline was embedded (e.g. on overview
+  page)
+  ([#23689](https://community.openproject.org/wp/23689)).
+- Sorting of cost type was not working
+  ([#23213](https://community.openproject.org/wp/23213)).
+- Various design errors
+  ([#23645](https://community.openproject.org/wp/23645), \#[23650](https://community.openproject.org/wp/23650),
+  [#23653](https://community.openproject.org/wp/23653),
+  [#23660](https://community.openproject.org/wp/23660),
+  [#23664](https://community.openproject.org/wp/23664),
+  [#23710](https://community.openproject.org/wp/23710))
+- Several accessibility improvements.
 
 Thanks a lot to Guillaume Ferry and Willy Gardiol for [reporting
 bugs](../../../development/report-a-bug/).

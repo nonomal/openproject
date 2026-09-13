@@ -1,21 +1,52 @@
-import {
-  ElementRef,
-  Injectable,
-} from '@angular/core';
-import { ThirdPartyDraggable } from '@fullcalendar/interaction';
-import { DragMetaInput } from '@fullcalendar/common';
-import { Drake } from 'dragula';
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
+import { ElementRef, Injectable, inject } from '@angular/core';
+import { Draggable } from '@fullcalendar/interaction';
+import { DragMetaInput, PointerDragEvent } from '@fullcalendar/core/internal';
 import { WorkPackageResource } from 'core-app/features/hal/resources/work-package-resource';
 import { BehaviorSubject } from 'rxjs';
 import { SchemaCacheService } from 'core-app/core/schemas/schema-cache.service';
 import { AuthorisationService } from 'core-app/core/model-auth/model-auth.service';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { OpWorkPackagesCalendarService } from 'core-app/features/calendar/op-work-packages-calendar.service';
-import * as moment from 'moment-timezone';
+import moment from 'moment-timezone';
 
 @Injectable()
 export class CalendarDragDropService {
-  drake:Drake;
+  readonly authorisation = inject(AuthorisationService);
+  readonly schemaCache = inject(SchemaCacheService);
+  readonly workPackagesCalendarService = inject(OpWorkPackagesCalendarService);
+  readonly I18n = inject(I18nService);
+
+  private draggable:Draggable|undefined;
+
+  private draggedElement:HTMLElement|undefined;
 
   draggableWorkPackages$ = new BehaviorSubject<WorkPackageResource[]>([]);
 
@@ -28,41 +59,35 @@ export class CalendarDragDropService {
     },
   };
 
-  constructor(
-    readonly authorisation:AuthorisationService,
-    readonly schemaCache:SchemaCacheService,
-    readonly workPackagesCalendarService:OpWorkPackagesCalendarService,
-    readonly I18n:I18nService,
-  ) {
+  destroyDraggable():void {
+    this.draggable?.destroy();
+    this.draggable = undefined;
   }
 
-  destroyDrake():void {
-    if (this.drake) {
-      this.drake.destroy();
-    }
-  }
+  registerDrag(container:ElementRef<HTMLElement>, itemSelector:string):void {
+    this.destroyDraggable();
 
-  registerDrag(container:ElementRef, itemSelector:string):void {
-    this.drake = dragula({
-      containers: [container.nativeElement],
-      revertOnSpill: true,
-    });
-
-    this.drake.on('drag', (el:HTMLElement) => {
-      el.classList.add('gu-transit');
-      this.isDragging$.next(el.dataset.dragHelperId);
-    });
-
-    this.drake.on('dragend', () => {
-      this.isDragging$.next(undefined);
-    });
-
-    // eslint-disable-next-line no-new
-    new ThirdPartyDraggable(container.nativeElement, {
+    this.draggable = new Draggable(container.nativeElement, {
       itemSelector,
-      mirrorSelector: '.gu-mirror', // the dragging element that dragula renders
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       eventData: this.eventData.bind(this),
+    });
+
+    // `dragging` is typed public but undocumented: FullCalendar treats the
+    // pointer-drag engine as internal, so an upgrade may move or rename it.
+    const { emitter } = this.draggable.dragging;
+
+    emitter.on('dragstart', (ev:PointerDragEvent) => {
+      this.draggedElement = ev.subjectEl as HTMLElement;
+      this.draggedElement.classList.add('op-add-existing-pane--wp_dragging');
+      this.isDragging$.next(this.draggedElement.dataset.dragHelperId);
+    });
+
+    // A mid-drag destroy() delivers a dragend without subjectEl, so the
+    // dragged element is tracked in a field instead.
+    emitter.on('dragend', () => {
+      this.draggedElement?.classList.remove('op-add-existing-pane--wp_dragging');
+      this.draggedElement = undefined;
+      this.isDragging$.next(undefined);
     });
   }
 
@@ -123,7 +148,7 @@ export class CalendarDragDropService {
     const diff = duration > 0 ? duration : dueDate.diff(startDate, 'days') + 1;
 
     return {
-      id: `${workPackage.href as string}-external`,
+      id: `${workPackage.href!}-external`,
       title: workPackage.subject,
       duration: {
         days: diff || 1,

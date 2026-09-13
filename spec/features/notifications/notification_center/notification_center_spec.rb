@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 
 RSpec.describe "Notification center",
@@ -37,8 +39,8 @@ RSpec.describe "Notification center",
   let(:center) { Pages::Notifications::Center.new }
   let(:side_menu) { Components::Submenu.new }
   let(:activity_tab) { Components::WorkPackages::Activities.new(work_package) }
-  let(:split_screen) { Pages::SplitWorkPackage.new work_package }
-  let(:split_screen2) { Pages::SplitWorkPackage.new work_package2 }
+  let(:split_screen) { Pages::PrimerizedSplitWorkPackage.new work_package }
+  let(:split_screen2) { Pages::PrimerizedSplitWorkPackage.new work_package2 }
   let(:full_screen) { Pages::FullWorkPackage.new work_package }
 
   let(:notifications) do
@@ -115,7 +117,7 @@ RSpec.describe "Notification center",
       it "can dismiss all notifications of the currently selected filter" do
         visit home_path
         wait_for_reload
-        center.expect_bell_count "99+"
+        center.expect_bell_count ""
         center.open
 
         # side menu items show full count of notifications (inbox has two more due to the "Created" notification)
@@ -129,7 +131,7 @@ RSpec.describe "Notification center",
         center.mark_all_read
         wait_for_network_idle
 
-        center.expect_bell_count "99+"
+        center.expect_bell_count ""
         side_menu.expect_item_with_count "Inbox", 152
         side_menu.expect_item_with_count "Mentioned", 100
         side_menu.expect_item_with_no_count "Watcher"
@@ -140,7 +142,7 @@ RSpec.describe "Notification center",
         center.mark_all_read
         wait_for_network_idle
 
-        center.expect_bell_count "99+"
+        center.expect_bell_count ""
         side_menu.expect_item_with_count "Inbox", 101
         side_menu.expect_item_with_count "Mentioned", 100
         side_menu.expect_no_item project2.name
@@ -152,6 +154,7 @@ RSpec.describe "Notification center",
         wait_for_network_idle
 
         center.expect_bell_count 0
+        center.expect_mark_all_as_read_button_disabled
         side_menu.expect_item_with_no_count "Inbox"
         side_menu.expect_item_with_no_count "Mentioned"
         side_menu.expect_item_with_no_count "Watcher"
@@ -420,6 +423,20 @@ RSpec.describe "Notification center",
 
         expect(notification2.reload.read_ian).to be_truthy
         expect(notification3.reload.read_ian).to be_truthy
+      end
+    end
+
+    context "with invalid filter parameters" do
+      it "shows error message and redirects for invalid reason" do
+        visit notifications_path(filter: "reason", name: "invalid_reason")
+        expect(page).to have_current_path(notifications_path)
+        expect(page).to have_text("Invalid notification filter")
+      end
+
+      it "shows error message and redirects for invalid filter type" do
+        visit notifications_path(filter: "invalid_filter", name: "something")
+        expect(page).to have_current_path(notifications_path)
+        expect(page).to have_text("Invalid notification filter")
       end
     end
   end

@@ -37,7 +37,10 @@ module API
             end
           end
 
-          post &::API::V3::Utilities::Endpoints::CreateForm.new(model: Project)
+          post &::API::V3::Utilities::Endpoints::CreateForm.new(model: Project,
+                                                                params_modifier: ->(attributes) {
+                                                                  attributes.merge!(workspace_type: "project")
+                                                                })
                                                            .mount
         end
       end

@@ -39,14 +39,14 @@ RSpec.describe EnvData::CustomDesignSeeder, :webmock do
     "data:image/png;base64,#{base64_image}"
   end
   let(:png_stub) do
-    stub_request(:get, "http://test.foobar.com/image.png")
+    stub_request(:get, "https://example.com/image.png")
       .to_return(
         status: 200,
         body: Rails.root.join("spec/fixtures/files/image.png").read
       )
   end
   let(:svg_stub) do
-    stub_request(:get, "http://test.foobar.com/image.svg")
+    stub_request(:get, "https://example.com/image.svg")
       .to_return(
         status: 200,
         body: Rails.root.join("spec/fixtures/files/icon_logo.svg").read
@@ -76,25 +76,21 @@ RSpec.describe EnvData::CustomDesignSeeder, :webmock do
             OPENPROJECT_SEED_DESIGN_PRIMARY__BUTTON__COLOR: "#571EFA",
             OPENPROJECT_SEED_DESIGN_ACCENT__COLOR: "#571EFA",
             OPENPROJECT_SEED_DESIGN_HEADER__BG__COLOR: "#FFFFFF",
-            OPENPROJECT_SEED_DESIGN_HEADER__ITEM__BG__HOVER__COLOR: "#E5E5E5",
             OPENPROJECT_SEED_DESIGN_MAIN__MENU__BG__COLOR: "#FFFFFF",
             OPENPROJECT_SEED_DESIGN_MAIN__MENU__BG__SELECTED__BACKGROUND: "#571EFA",
-            OPENPROJECT_SEED_DESIGN_MAIN__MENU__BG__HOVER__BACKGROUND: "#E5E5E5",
-            OPENPROJECT_SEED_DESIGN_TOUCH__ICON: "http://test.foobar.com/image.png",
+            OPENPROJECT_SEED_DESIGN_TOUCH__ICON: "https://example.com/image.png",
             OPENPROJECT_SEED_DESIGN_LOGO: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wQACfsD/QqnFgAAAABJRU5ErkJggg=="
           } do
     it "uses those variables" do
       reset(:seed_design)
 
-      seeder.seed!
+      perform_enqueued_jobs { seeder.seed! }
 
       expect(DesignColor.find_by(variable: "primary-button-color").hexcode).to eq("#571EFA")
       expect(DesignColor.find_by(variable: "accent-color").hexcode).to eq("#571EFA")
       expect(DesignColor.find_by(variable: "header-bg-color").hexcode).to eq("#FFFFFF")
-      expect(DesignColor.find_by(variable: "header-item-bg-hover-color").hexcode).to eq("#E5E5E5")
       expect(DesignColor.find_by(variable: "main-menu-bg-color").hexcode).to eq("#FFFFFF")
       expect(DesignColor.find_by(variable: "main-menu-bg-selected-background").hexcode).to eq("#571EFA")
-      expect(DesignColor.find_by(variable: "main-menu-bg-hover-background").hexcode).to eq("#E5E5E5")
 
       RequestStore.clear!
       custom_style = CustomStyle.current
@@ -109,17 +105,26 @@ RSpec.describe EnvData::CustomDesignSeeder, :webmock do
   context "when setting logo as svg",
           :settings_reset,
           with_env: {
-            OPENPROJECT_SEED_DESIGN_LOGO: "http://test.foobar.com/image.svg"
+            OPENPROJECT_SEED_DESIGN_LOGO: "https://example.com/image.svg"
           } do
     it "sets the content type" do
       reset(:seed_design)
 
-      seeder.seed!
+      perform_enqueued_jobs { seeder.seed! }
 
+      RequestStore.clear!
       custom_style = CustomStyle.current
 
       expect(custom_style.logo.file).to be_present
       expect(custom_style.logo.file.content_type).to eq "image/svg+xml"
+    end
+
+    it "downloads the asset in a job" do
+      reset(:seed_design)
+
+      expect { seeder.seed! }
+        .to have_enqueued_job(CustomStyles::SeedRemoteAssetJob)
+        .with(an_instance_of(CustomStyle), :logo, "https://example.com/image.svg")
     end
   end
 
@@ -166,7 +171,7 @@ RSpec.describe EnvData::CustomDesignSeeder, :webmock do
     it "uses those variables" do
       reset(:seed_design)
 
-      expect { seeder.seed! }.to raise_error /Hex code is invalid/
+      expect { seeder.seed! }.to raise_error /Hex code is not a valid 6-digit hexadecimal color code./
     end
   end
 
@@ -212,11 +217,9 @@ RSpec.describe EnvData::CustomDesignSeeder, :webmock do
       DesignColor.create!(variable: "primary-button-color", hexcode: "#571EFA")
       DesignColor.create!(variable: "accent-color", hexcode: "#571EFA")
       DesignColor.create!(variable: "header-bg-color", hexcode: "#FFFFFF")
-      DesignColor.create!(variable: "header-item-bg-hover-color", hexcode: "#E5E5E5")
       DesignColor.create!(variable: "main-menu-bg-color", hexcode: "#FFFFFF")
       DesignColor.create!(variable: "main-menu-bg-selected-background", hexcode: "#571EFA")
-      DesignColor.create!(variable: "main-menu-bg-hover-background", hexcode: "#E5E5E5")
-      expect(DesignColor.count).to eq(7)
+      expect(DesignColor.count).to eq(5)
 
       seeder.seed!
 

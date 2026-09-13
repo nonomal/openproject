@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -31,6 +31,7 @@ import {
   Component,
   OnDestroy,
   OnInit,
+  inject,
 } from '@angular/core';
 import { QueryResource } from 'core-app/features/hal/resources/query-resource';
 import { OpTitleService } from 'core-app/core/html/op-title.service';
@@ -39,22 +40,22 @@ import { take } from 'rxjs/operators';
 import { HalResourceNotificationService } from 'core-app/features/hal/services/hal-resource-notification.service';
 import { WorkPackageNotificationService } from 'core-app/features/work-packages/services/notifications/work-package-notification.service';
 import { QueryParamListenerService } from 'core-app/features/work-packages/components/wp-query/query-param-listener.service';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
 import { ComponentType } from '@angular/cdk/overlay';
 import { Ng2StateDeclaration } from '@uirouter/angular';
-import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { OpModalService } from 'core-app/shared/components/modal/modal.service';
-import { InviteUserModalComponent } from 'core-app/features/invite-user-modal/invite-user.component';
 import { WorkPackageFilterContainerComponent } from 'core-app/features/work-packages/components/filters/filter-container/filter-container.directive';
 import isPersistedResource from 'core-app/features/hal/helpers/is-persisted-resource';
 import { UIRouterGlobals } from '@uirouter/core';
 import { ConfigurationService } from 'core-app/core/config/configuration.service';
 import { firstValueFrom } from 'rxjs';
+import { PathHelperService } from 'core-app/core/path-helper/path-helper.service';
+import { CurrentProjectService } from 'core-app/core/current-project/current-project.service';
+import { UrlParamsService } from 'core-app/core/navigation/url-params.service';
 
 export interface DynamicComponentDefinition {
   component:ComponentType<any>;
-  inputs?:{ [inputName:string]:any };
-  outputs?:{ [outputName:string]:Function };
+  inputs?:Record<string, any>;
+  outputs?:Record<string, Function>;
 }
 
 export interface ToolbarButtonComponentDefinition extends DynamicComponentDefinition {
@@ -73,21 +74,26 @@ export type ViewPartitionState = '-split'|'-left-only'|'-right-only';
     { provide: HalResourceNotificationService, useClass: WorkPackageNotificationService },
     QueryParamListenerService,
   ],
+  standalone: false,
 })
 export class PartitionedQuerySpacePageComponent extends WorkPackagesViewBase implements OnInit, OnDestroy {
-  @InjectField() I18n!:I18nService;
+  readonly titleService = inject(OpTitleService);
 
-  @InjectField() titleService:OpTitleService;
+  readonly queryParamListener = inject(QueryParamListenerService);
 
-  @InjectField() queryParamListener:QueryParamListenerService;
+  readonly pathHelperService = inject(PathHelperService);
 
-  @InjectField() opModalService:OpModalService;
+  readonly currentProjectService = inject(CurrentProjectService);
 
-  @InjectField() uiRouterGlobals:UIRouterGlobals;
+  readonly opModalService = inject(OpModalService);
 
-  @InjectField() configuration:ConfigurationService;
+  readonly uiRouterGlobals = inject(UIRouterGlobals);
 
-  text:{ [key:string]:string } = {
+  readonly urlParams = inject(UrlParamsService);
+
+  readonly configuration = inject(ConfigurationService);
+
+  text:Record<string, string> = {
     jump_to_pagination: this.I18n.t('js.work_packages.jump_marks.pagination'),
     text_jump_to_pagination: this.I18n.t('js.work_packages.jump_marks.label_pagination'),
   };
@@ -106,10 +112,6 @@ export class PartitionedQuerySpacePageComponent extends WorkPackagesViewBase imp
   /** Do we currently have query props ? */
   showToolbarSaveButton:boolean;
 
-  /** Listener callbacks */
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  removeTransitionSubscription:Function;
-
   /** Determine when query is initially loaded */
   showToolbar = false;
 
@@ -122,9 +124,6 @@ export class PartitionedQuerySpacePageComponent extends WorkPackagesViewBase imp
   /** We need to pass the correct partition state to the view to manage the grid */
   currentPartition:ViewPartitionState = '-split';
 
-  /** What route (if any) should we go back to using the back button left of the title? */
-  backButtonCallback:() => void|undefined;
-
   /** Which filter container component to mount */
   filterContainerDefinition:DynamicComponentDefinition = {
     component: WorkPackageFilterContainerComponent,
@@ -133,22 +132,22 @@ export class PartitionedQuerySpacePageComponent extends WorkPackagesViewBase imp
   ngOnInit():void {
     super.ngOnInit();
 
-    this.showToolbarSaveButton = !!this.$state.params.query_props;
+    this.showToolbarSaveButton = !!this.urlParams.get('query_props');
     this.setPartition(this.$state.current);
-    this.removeTransitionSubscription = this.$transitions.onSuccess({}, (transition):any => {
-      const params = transition.params('to');
-      const toState = transition.to();
-      this.showToolbarSaveButton = !!params.query_props;
-      this.setPartition(toState);
+    this.urlParams.changed$
+      .pipe(this.untilDestroyed())
+      .subscribe(():void => {
+        this.showToolbarSaveButton = !!this.urlParams.get('query_props');
+        this.setPartition(this.$state.current);
 
-      const query = this.querySpace.query.value;
-      if (query && this.shouldUpdateHtmlTitle()) {
-        // Update the title if we're in the list state alone
-        this.titleService.setFirstPart(this.queryTitle(query));
-      }
+        const query = this.querySpace.query.value;
+        if (query && this.shouldUpdateHtmlTitle()) {
+          // Update the title if we're in the list state alone
+          this.titleService.setFirstPart(this.queryTitle(query));
+        }
 
-      this.cdRef.detectChanges();
-    });
+        this.cdRef.detectChanges();
+      });
 
     // Load the query. If it hasn't been loaded before, do that visibly.
     this.loadInitialQuery();
@@ -175,6 +174,16 @@ export class PartitionedQuerySpacePageComponent extends WorkPackagesViewBase imp
       });
   }
 
+  breadcrumbItems() {
+    throw new Error('Not implemented');
+  }
+
+  currentMenuSectionHeader() {
+    if (!this.currentQuery?.id) return this.I18n.t('js.label_default_queries');
+    if (this.currentQuery.starred) return this.I18n.t('js.label_starred_queries');
+    return this.currentQuery.public ? this.I18n.t('js.label_global_queries') : this.I18n.t('js.label_custom_queries');
+  }
+
   /**
    * We need to set the current partition to the grid to ensure
    * either side gets expanded to full width if we're not in '-split' mode.
@@ -182,7 +191,7 @@ export class PartitionedQuerySpacePageComponent extends WorkPackagesViewBase imp
    * @param state The current or entering state
    */
   protected setPartition(state:Ng2StateDeclaration):void {
-    this.currentPartition = (state.data && state.data.partition) ? state.data.partition : '-split';
+    this.currentPartition = (state.data?.partition) ? state.data.partition : '-split';
   }
 
   protected setupInformationLoadedListener():void {
@@ -199,7 +208,6 @@ export class PartitionedQuerySpacePageComponent extends WorkPackagesViewBase imp
 
   ngOnDestroy():void {
     super.ngOnDestroy();
-    this.removeTransitionSubscription();
     this.queryParamListener.removeQueryChangeListener();
   }
 
@@ -257,8 +265,6 @@ export class PartitionedQuerySpacePageComponent extends WorkPackagesViewBase imp
       });
     }
   }
-
-  protected inviteModal = InviteUserModalComponent;
 
   protected loadQuery(firstPage = false):Promise<QueryResource> {
     let promise:Promise<QueryResource>;

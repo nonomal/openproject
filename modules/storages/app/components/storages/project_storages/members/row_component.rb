@@ -45,6 +45,15 @@ module Storages::ProjectStorages::Members
       "member #{principal_class_name}".strip
     end
 
+    def column_css_class(column)
+      case column
+      when :status
+        "status -no-ellipsis"
+      else
+        super
+      end
+    end
+
     def name
       helpers.avatar principal, hide_name: false, size: :mini
     end
@@ -52,8 +61,8 @@ module Storages::ProjectStorages::Members
     def status
       connection_result = storage_connection_status
       case connection_result
-      when :not_connected
-        helpers.op_icon("icon-warning -warning") +
+      when :not_connected_oauth2
+        warning_icon +
           content_tag(
             :span,
             I18n.t("storages.member_connection_status.not_connected",
@@ -61,6 +70,8 @@ module Storages::ProjectStorages::Members
           )
       when :not_connected_sso
         content_tag(:span, I18n.t("storages.member_connection_status.not_connected_sso"))
+      when :not_connectable
+        warning_icon + content_tag(:span, I18n.t("storages.member_connection_status.not_connectable"))
       else
         I18n.t("storages.member_connection_status.#{connection_result}")
       end
@@ -88,14 +99,13 @@ module Storages::ProjectStorages::Members
     def storage_connection_status
       if storage_connected?
         return :connected if can_read_files?
-
         return :connected_no_permissions
       end
 
-      selector = Storages::Peripherals::StorageInteraction::AuthenticationMethodSelector.new(user: member.principal, storage:)
-      return :not_connected_sso if selector.sso?
+      return :not_connected_sso if storage.authenticate_via_idp? && member.principal.provided_by_oidc?
+      return :not_connected_oauth2 if storage.authenticate_via_storage?
 
-      :not_connected
+      :not_connectable
     end
 
     def storage_connected?
@@ -109,8 +119,12 @@ module Storages::ProjectStorages::Members
     def ensure_connection_url
       oauth_clients_ensure_connection_url(
         oauth_client_id: storage.oauth_client.client_id,
-        storage_id: storage.id
+        integration_id: storage.id
       )
+    end
+
+    def warning_icon
+      helpers.op_icon("icon-warning -warning")
     end
   end
 end

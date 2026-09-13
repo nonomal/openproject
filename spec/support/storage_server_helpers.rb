@@ -34,7 +34,7 @@ module StorageServerHelpers
                                         response_headers: nil,
                                         response_body: nil,
                                         timeout: false,
-                                        response_nextcloud_major_version: 22)
+                                        response_nextcloud_major_version: NextcloudCompatibleHostValidator::MINIMAL_NEXTCLOUD_VERSION)
     response_code ||= 200
     response_headers ||= {
       "Content-Type" => "application/json; charset=utf-8"
@@ -141,6 +141,7 @@ module StorageServerHelpers
     folder1_xml_response = build(:webdav_data_folder)
     folder1_fileinfo_response = {
       ocs: {
+        meta: { statuscode: 100 },
         data: {
           status: "OK",
           statuscode: 200,
@@ -154,11 +155,11 @@ module StorageServerHelpers
     }
 
     stub_request(:propfind, normalize_url("#{storage.host}/remote.php/dav/files/#{remote_identity.origin_user_id}"))
-      .to_return(status: 207, body: root_xml_response, headers: {})
+      .to_return(status: 207, body: root_xml_response, headers: { "Content-Type": "application/xml" })
     stub_request(:propfind, normalize_url("#{storage.host}/remote.php/dav/files/#{remote_identity.origin_user_id}/Folder1"))
-      .to_return(status: 207, body: folder1_xml_response, headers: {})
+      .to_return(status: 207, body: folder1_xml_response, headers: { "Content-Type": "application/xml" })
     stub_request(:get, normalize_url("#{storage.host}/ocs/v1.php/apps/integration_openproject/fileinfo/11"))
-      .to_return(status: 200, body: folder1_fileinfo_response.to_json, headers: {})
+      .to_return(status: 200, body: folder1_fileinfo_response.to_json, headers: { "Content-Type": "application/json" })
     stub_nextcloud_user_query(storage.host)
     stub_request(
       :delete,

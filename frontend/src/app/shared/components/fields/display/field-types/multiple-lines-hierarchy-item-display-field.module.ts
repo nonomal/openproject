@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -57,13 +57,13 @@ export class MultipleLinesHierarchyItemDisplayField extends ResourcesDisplayFiel
     return this.stringValue.join(', ');
   }
 
-  private branches(items:HalResource[]):Observable<HTMLDivElement[]> {
+  private branches(items:HalResource[]):Observable<HTMLSpanElement[]> {
     return combineLatest(items.map((value:HalResource) => {
       const itemLink = value.$link as HalLink;
 
       return from(itemLink.$fetch())
         .pipe(
-          switchMap((resource:HalResource) => renderHierarchyItem(resource)),
+          switchMap((resource:HalResource) => renderHierarchyItem(resource, true)),
         );
     }));
   }

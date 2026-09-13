@@ -27,22 +27,11 @@ See COPYRIGHT and LICENSE files for more details.
 
 ++#%>
 
-<%= render(Settings::ProjectWorkPackages::HeaderComponent.new(@project, selected: :custom_fields)) %>
+<%= render(Settings::ProjectWorkPackages::HeaderComponent.new(@project)) %>
 
 <%=
   if current_user.admin?
-    render(Primer::OpenProject::SubHeader.new) do |subheader|
-      subheader.with_action_button(
-        scheme: :primary,
-        aria: { label: t(:label_custom_field_new) },
-        title: I18n.t(:label_custom_field_new),
-        tag: :a,
-        href: new_custom_field_path(type: "WorkPackageCustomField")
-      ) do |button|
-        button.with_leading_visual_icon(icon: :plus)
-        CustomField.model_name.human
-      end
-    end
+    render(CustomFields::FormatSubHeaderComponent.new(customizable_name: "WorkPackage"))
   end
 %>
 

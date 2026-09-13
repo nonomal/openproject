@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,13 +30,12 @@
 
 require "spec_helper"
 
-RSpec.describe "version edit" do
-  let(:user) do
-    create(:user,
-           member_with_permissions: { version.project => %i[manage_versions view_work_packages] })
-  end
-  let(:version) { create(:version) }
+RSpec.describe "version edit", :js do
+  let(:project) { create(:project, enabled_module_names: %w[backlogs work_package_tracking]) }
+  let(:version) { create(:version, project:, sharing: "descendants") }
   let(:new_version_name) { "A new version name" }
+  let(:permissions) { { project => %i[manage_versions view_work_packages] } }
+  let(:user) { create(:user, member_with_permissions: permissions) }
 
   before do
     login_as(user)
@@ -54,5 +55,49 @@ RSpec.describe "version edit" do
       .to have_current_path(version_path(version))
     expect(page)
       .to have_content new_version_name
+  end
+
+  context "with a custom field" do
+    let!(:custom_field) do
+      create(:version_custom_field, :string,
+             name: "Release Notes",
+             is_required: true)
+    end
+
+    it "I can update a version with a custom field value including validation" do
+      # Create a version with initial custom field value
+      version = create(:version,
+                       name: "Version 2.0",
+                       project: project,
+                       custom_field_values: { custom_field.id => "Initial release notes" })
+
+      visit edit_version_path(version)
+
+      expect(page).to have_text("Version 2.0")
+
+      # Update the version name and clear the required custom field
+      fill_in "Name", with: "Version 2.1"
+      fill_in custom_field.name, with: ""
+
+      click_on "Save"
+
+      # Should stay on the form page and show validation error
+      expect(page).to have_text("Version 2.1")
+      expect(page).to have_field(custom_field.name, with: "", validation_error: "Value can't be blank")
+
+      # Now provide a valid value
+      fill_in custom_field.name, with: "Security updates and bug fixes"
+
+      click_on "Save"
+
+      expect(page).to have_text("Successful update")
+      expect(page).to have_content("Version 2.1")
+
+      # Verify the custom field value was updated
+      updated_version = Version.find_by(name: "Version 2.1")
+      expect(updated_version).not_to be_nil
+      expect(updated_version.send(:"custom_field_#{custom_field.id}"))
+        .to eq("Security updates and bug fixes")
+    end
   end
 end

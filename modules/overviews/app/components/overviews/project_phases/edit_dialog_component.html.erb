@@ -1,14 +1,22 @@
 <%=
   render(
     Primer::Alpha::Dialog.new(
-      title: t("label_life_cycle_step_plural"),
-      size: :medium_portrait,
-      id: DIALOG_ID
+      title:,
+      size: :large,
+      id: DIALOG_ID,
+      classes: "Overlay--size-large-portrait"
     )
   ) do |d|
-    d.with_header(variant: :large)
+    d.with_header(variant: :medium)
     d.with_body do
-      render(Overviews::ProjectPhases::EditComponent.new(model))
+      component_collection do |body|
+        body.with_component(
+          helpers.angular_component_tag("opce-custom-modal-overlay")
+        )
+        body.with_component(
+          Overviews::ProjectPhases::EditComponent.new(model)
+        )
+      end
     end
     d.with_footer do
       component_collection do |footer_collection|
@@ -25,9 +33,9 @@
           Primer::Beta::Button.new(
             scheme: :primary,
             type: :submit,
-            form: "project-life-cycles-edit-form",
+            form: "project-life-cycle-edit-form",
             data: {
-              test_selector: "save-project-life-cycles-button",
+              test_selector: "save-project-life-cycle-button",
               turbo: true
             }
           )

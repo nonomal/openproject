@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -62,7 +64,7 @@ RSpec.describe API::V3::Users::UpdateFormAPI, content_type: :json do
     # Required to satisfy the Users::UpdateContract#at_least_one_admin_is_active
     shared_let(:default_admin) { create(:admin) }
     shared_let(:current_user) do
-      create(:user, global_permissions: [:manage_user])
+      create(:user, global_permissions: %i[manage_user view_all_principals])
     end
 
     describe "empty payload" do
@@ -71,8 +73,8 @@ RSpec.describe API::V3::Users::UpdateFormAPI, content_type: :json do
         expect(response.body).to be_json_eql("Form".to_json).at_path("_type")
 
         expect(body)
-          .to be_json_eql(user.mail.to_json)
-                .at_path("_embedded/payload/email")
+          .to be_json_eql(user.login.to_json)
+                .at_path("_embedded/payload/login")
 
         expect(body)
           .to be_json_eql(user.firstname.to_json)
@@ -125,8 +127,8 @@ RSpec.describe API::V3::Users::UpdateFormAPI, content_type: :json do
         expect(response.body).to be_json_eql("Form".to_json).at_path("_type")
 
         expect(body)
-          .to be_json_eql(user.mail.to_json)
-                .at_path("_embedded/payload/email")
+          .to be_json_eql(user.login.to_json)
+                .at_path("_embedded/payload/login")
 
         expect(body)
           .not_to have_json_path("_embedded/payload/firstName")
@@ -153,10 +155,178 @@ RSpec.describe API::V3::Users::UpdateFormAPI, content_type: :json do
     end
 
     context "with a non existing id" do
-      let(:path) { api_v3_paths.user_form(12345) }
+      let(:path) { api_v3_paths.user_form(not_existing_id(User)) }
 
       it "returns 404 Not found" do
         expect(response).to have_http_status(:not_found)
+      end
+    end
+
+    describe "custom fields" do
+      let!(:required_custom_field) do
+        create(:user_custom_field,
+               :text,
+               name: "Department",
+               is_required: true)
+      end
+
+      context "with a required custom field" do
+        context "when no custom field value is provided" do
+          let(:payload) do
+            {
+              login: "new.login"
+            }
+          end
+
+          it "has no validation errors", :aggregate_failures do
+            expect(response).to have_http_status(:ok)
+            expect(body).to have_json_size(0).at_path("_embedded/validationErrors")
+            expect(body)
+              .to be_json_eql("new.login".to_json)
+              .at_path("_embedded/payload/login")
+            expect(body)
+              .to be_json_eql(api_v3_paths.user(user.id).to_json)
+              .at_path("_links/commit/href")
+          end
+        end
+
+        context "when the custom field is provided but empty" do
+          let(:payload) do
+            {
+              login: "new.login",
+              required_custom_field.attribute_name(:camel_case) => {
+                raw: ""
+              }
+            }
+          end
+
+          it "has validation errors for the required custom field", :aggregate_failures do
+            expect(response).to have_http_status(:ok)
+            expect(body).to have_json_path("_embedded/validationErrors/customField#{required_custom_field.id}")
+            expect(body)
+              .to be_json_eql("Department can't be blank.".to_json)
+              .at_path("_embedded/validationErrors/customField#{required_custom_field.id}/message")
+            expect(body).not_to have_json_path("_links/commit")
+          end
+        end
+
+        context "when the custom field value is provided and valid" do
+          let(:payload) do
+            {
+              login: "new.login",
+              required_custom_field.attribute_name(:camel_case) => {
+                raw: "Engineering"
+              }
+            }
+          end
+
+          it "has no validation errors", :aggregate_failures do
+            expect(response).to have_http_status(:ok)
+            expect(body).to have_json_size(0).at_path("_embedded/validationErrors")
+            expect(body)
+              .to be_json_eql("Engineering".to_json)
+              .at_path("_embedded/payload/customField#{required_custom_field.id}/raw")
+            expect(body)
+              .to be_json_eql(api_v3_paths.user(user.id).to_json)
+              .at_path("_links/commit/href")
+          end
+        end
+      end
+
+      context "with a visible custom field" do
+        let(:visible_custom_field) do
+          create(:user_custom_field, :text)
+        end
+
+        let(:payload) do
+          {
+            login: "new.login",
+            visible_custom_field.attribute_name(:camel_case) => {
+              raw: "CF text"
+            }
+          }
+        end
+
+        it "has no validation errors", :aggregate_failures do
+          expect(response).to have_http_status(:ok)
+          expect(body).to have_json_size(0).at_path("_embedded/validationErrors")
+          expect(body)
+            .to be_json_eql("CF text".to_json)
+            .at_path("_embedded/payload/customField#{visible_custom_field.id}/raw")
+          expect(body)
+            .to be_json_eql(api_v3_paths.user(user.id).to_json)
+            .at_path("_links/commit/href")
+        end
+      end
+
+      context "with an admin only custom field" do
+        let(:is_required) { false }
+        let!(:admin_only_custom_field) do
+          create(:user_custom_field, :text, admin_only: true, is_required:)
+        end
+
+        context "with admin permissions" do
+          let(:current_user) { create(:admin) }
+          let(:payload) do
+            {
+              login: "new.login",
+              admin_only_custom_field.attribute_name(:camel_case) => {
+                raw: "CF text"
+              }
+            }
+          end
+
+          it "has no validation errors", :aggregate_failures do
+            expect(response).to have_http_status(:ok)
+            expect(body).to have_json_size(0).at_path("_embedded/validationErrors")
+            expect(body)
+              .to be_json_eql("CF text".to_json)
+              .at_path("_embedded/payload/customField#{admin_only_custom_field.id}/raw")
+            expect(body)
+              .to be_json_eql(api_v3_paths.user(user.id).to_json)
+              .at_path("_links/commit/href")
+          end
+        end
+
+        context "with non-admin permissions" do
+          let(:payload) do
+            {
+              login: "new.login",
+              admin_only_custom_field.attribute_name(:camel_case) => {
+                raw: "CF text"
+              }
+            }
+          end
+
+          it "ignores the invisible custom field", :aggregate_failures do
+            expect(response).to have_http_status(:ok)
+            expect(body)
+              .not_to have_json_path("_embedded/payload/customField#{admin_only_custom_field.id}/raw")
+            expect(body).to have_json_size(0).at_path("_embedded/validationErrors")
+            expect(body)
+              .to be_json_eql(api_v3_paths.user(user.id).to_json)
+              .at_path("_links/commit/href")
+          end
+
+          context "and when the custom field is required" do
+            let(:is_required) { true }
+            let(:payload) do
+              {
+                login: "new.login"
+              }
+            end
+
+            it "ignores the invisible custom field", :aggregate_failures do
+              expect(response).to have_http_status(:ok)
+              expect(body)
+                .not_to have_json_path("_embedded/payload/customField#{admin_only_custom_field.id}/raw")
+              expect(body).to have_json_size(0).at_path("_embedded/validationErrors")
+              expect(body)
+                .to be_json_eql(api_v3_paths.user(user.id).to_json)
+                .at_path("_links/commit/href")
+            end
+          end
+        end
       end
     end
   end
@@ -164,6 +334,6 @@ RSpec.describe API::V3::Users::UpdateFormAPI, content_type: :json do
   context "with unauthorized user" do
     let(:current_user) { create(:user) }
 
-    it_behaves_like "unauthorized access"
+    it_behaves_like "not found"
   end
 end

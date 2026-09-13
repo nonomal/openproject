@@ -2,7 +2,7 @@
 #Please do not edit directly.
 #This file is part of the sources sent to crowdin for translation.
 ---
-"no":
+'no':
   seeds:
     bim:
       priorities:
@@ -285,10 +285,10 @@
                     *  ...
             item_3:
               subject: Overlevering av innledende planlegging
-              description: Denne typen er hierarkisk overordnet typene &quot;Clash&quot; og &quot;Forespørsel&quot;, og representerer dermed en generell merknad.
+              description: Denne typen er hierarkisk overordnet typene &quot;Konflikt&quot; og &quot;Forespørsel&quot;, og representerer dermed en generell merknad.
             item_4:
               subject: Utformingsplanlegging
-              description: Denne typen er hierarkisk overordnet typene &quot;Clash&quot; og &quot;Forespørsel&quot;, og representerer dermed en generell merknad.
+              description: Denne typen er hierarkisk overordnet typene &quot;Konflikt&quot; og &quot;Forespørsel&quot;, og representerer dermed en generell merknad.
               children:
                 item_0:
                   subject: Ferdigstiller design
@@ -415,7 +415,7 @@
               title: Velkommen til demo-prosjektet
               summary: |
                 Vi er glade for at du ble med.
-                I denne modulen kan du kommunisere nyheter om prosjektet til medlemmene i gruppen.
+                I denne modulen kan du kommunisere nyheter om prosjektet til medlemmene i teamet.
               description: Faktiske nyheter
           categories:
             item_0: Kategori 1 (som skal endres i Prosjektinnstillingene)
@@ -543,7 +543,7 @@
                   description: Denne typen er hierarkisk overordnet typene &quot;Konflikt&quot; og &quot;Forespørsel&quot;, og representerer dermed en generell merknad.
             item_4:
               subject: Modellering, første syklus
-              description: Denne typen er hierarkisk overordnet typene &quot;Clash&quot; og &quot;Forespørsel&quot;, og representerer dermed en generell merknad.
+              description: Denne typen er hierarkisk overordnet typene &quot;Konflikt&quot; og &quot;Forespørsel&quot;, og representerer dermed en generell merknad.
               children:
                 item_0:
                   subject: Referere eksterne BIM-modeller
@@ -582,10 +582,10 @@
                     *  ...
                 item_3:
                   subject: Send BIM-modellen
-                  description: Denne typen er hierarkisk overordnet typene &quot;Clash&quot; og &quot;Forespørsel&quot;, og representerer dermed en generell merknad.
+                  description: Denne typen er hierarkisk overordnet typene &quot;Konflikt&quot; og &quot;Forespørsel&quot;, og representerer dermed en generell merknad.
             item_5:
               subject: Koordinering, første syklus
-              description: Denne typen er hierarkisk overordnet typene &quot;Clash&quot; og &quot;Forespørsel&quot;, og representerer dermed en generell merknad.
+              description: Denne typen er hierarkisk overordnet typene &quot;Konflikt&quot; og &quot;Forespørsel&quot;, og representerer dermed en generell merknad.
               children:
                 item_0:
                   subject: Koordinere de ulike BIM-modellene
@@ -604,22 +604,22 @@
                   subject: Håndtering av utfordringer, første syklus
                 item_2:
                   subject: Fullfører koordinasjon, første syklus
-                  description: Denne typen er hierarkisk overordnet typene &quot;Clash&quot; og &quot;Forespørsel&quot;, og representerer dermed en generell merknad.
+                  description: Denne typen er hierarkisk overordnet typene &quot;Konflikt&quot; og &quot;Forespørsel&quot;, og representerer dermed en generell merknad.
             item_6:
               subject: Modellering & koordinering, andre syklus
               description: "## Mål\r\n\r\n* ...\r\n\r\n## Beskrivelse\r\n\r\n* \\ ..."
             item_7:
               subject: Modellering og koordinering, ... syklus
-              description: Denne typen er hierarkisk overordnet typene &quot;Clash&quot; og &quot;Forespørsel&quot;, og representerer dermed en generell merknad.
+              description: Denne typen er hierarkisk overordnet typene &quot;Konflikt&quot; og &quot;Forespørsel&quot;, og representerer dermed en generell merknad.
             item_8:
               subject: Modellering & koordinering, (n-th minus 1) syklus
               description: "## Mål\r\n\r\n* ...\r\n\r\n## Beskrivelse\r\n\r\n* \\ ..."
             item_9:
               subject: Modellering & koordinering, n-th syklus
-              description: Denne typen er hierarkisk overordnet typene &quot;Clash&quot; og &quot;Forespørsel&quot;, og representerer dermed en generell merknad.
+              description: Denne typen er hierarkisk overordnet typene &quot;Konflikt&quot; og &quot;Forespørsel&quot;, og representerer dermed en generell merknad.
             item_10:
               subject: Sluttføre modellering & koordinering, n-th syklus
-              description: Denne typen er hierarkisk overordnet typene &quot;Clash&quot; og &quot;Forespørsel&quot;, og representerer dermed en generell merknad.
+              description: Denne typen er hierarkisk overordnet typene &quot;Konflikt&quot; og &quot;Forespørsel&quot;, og representerer dermed en generell merknad.
             item_11:
               subject: Bruke modell for byggefase
               children:

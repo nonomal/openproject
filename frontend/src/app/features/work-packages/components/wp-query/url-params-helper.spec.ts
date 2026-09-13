@@ -21,27 +21,37 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-/* jshint expr: true */
-
+import { TestBed } from '@angular/core/testing';
 import { UrlParamsHelperService } from 'core-app/features/work-packages/components/wp-query/url-params-helper';
+import { PaginationService } from 'core-app/shared/components/table-pagination/pagination-service';
 
 describe('UrlParamsHelper', () => {
   const paginationStub = {
     getPerPage: () => 20,
   } as any;
 
-  const UrlParamsHelper = new UrlParamsHelperService(paginationStub);
-  let queryString;
+  let UrlParamsHelper:UrlParamsHelperService;
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        UrlParamsHelperService,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        { provide: PaginationService, useValue: paginationStub },
+      ],
+    });
+    UrlParamsHelper = TestBed.inject(UrlParamsHelperService);
+  });
 
   describe('buildQueryString', () => {
     const params = {
       ids: [1, 2, 3],
       str: '@#$%',
+      importantOption: false
     };
     let queryString:string;
 
@@ -50,11 +60,15 @@ describe('UrlParamsHelper', () => {
     });
 
     it("concatenates propertys with '&'", () => {
-      expect(queryString.split('&').length).toEqual(4);
+      expect(queryString.split('&').length).toEqual(5);
     });
 
     it('escapes special characters', () => {
-      expect(queryString.indexOf('@') === -1).toBeTruthy();
+      expect(!queryString.includes('@')).toBeTruthy();
+    });
+
+    it('does not omit false', () => {
+      expect(queryString.includes('importantOption=false')).toBeTruthy();
     });
   });
 
@@ -156,7 +170,7 @@ describe('UrlParamsHelper', () => {
         pageSize: 100,
       };
 
-      expect(_.isEqual(decodedQueryParams, expected)).toBeTruthy();
+      expect(decodedQueryParams).toEqual(expected);
     });
   });
 
@@ -248,7 +262,7 @@ describe('UrlParamsHelper', () => {
         timestamps: 'PT0S',
       };
 
-      expect(_.isEqual(v3Params, expected)).toBeTruthy();
+      expect(v3Params).toEqual(expected);
     });
 
     it('decodes custom options filters', () => {
@@ -308,7 +322,7 @@ describe('UrlParamsHelper', () => {
         timestamps: 'PT0S',
       };
 
-      expect(_.isEqual(v3Params, expected)).toBeTruthy();
+      expect(v3Params).toEqual(expected);
     });
   });
 });

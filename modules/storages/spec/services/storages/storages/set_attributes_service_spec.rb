@@ -59,7 +59,7 @@ RSpec.describe Storages::Storages::SetAttributesService, type: :model do
     Storages::Storages::CreateContract
   end
 
-  let(:params) { { provider_type: Storages::Storage::PROVIDER_TYPE_NEXTCLOUD } }
+  let(:params) { { provider_type: Storages::NextcloudStorage.name } }
 
   before do
     allow(model_instance)
@@ -85,7 +85,7 @@ RSpec.describe Storages::Storages::SetAttributesService, type: :model do
     end
 
     it "sets provider_type to nextcloud" do
-      expect(subject.result.provider_type).to eq Storages::Storage::PROVIDER_TYPE_NEXTCLOUD
+      expect(subject.result.provider_type).to eq Storages::NextcloudStorage.name
     end
 
     context "with host" do

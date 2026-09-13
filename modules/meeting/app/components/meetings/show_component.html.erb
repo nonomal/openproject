@@ -1,12 +1,12 @@
 <%=
-  flex_layout(data: { turbo: true }) do |show_page|
+  flex_layout(data: show_page_data_attributes) do |show_page|
     show_page.with_row do
-      render(Meetings::HeaderComponent.new(meeting: @meeting))
+      render(Meetings::HeaderComponent.new(meeting: @meeting, state: @state))
     end
 
     show_page.with_row do
       render(Primer::Alpha::Layout.new(stacking_breakpoint: :md)) do |content|
-        content.with_main(classes: "dragula-container", data: wrapper_data_attributes) do
+        content.with_main(classes: "dragula-container") do
           flex_layout do |agenda|
             agenda.with_row do
               render(MeetingAgendaItems::ListComponent.new(meeting: @meeting))

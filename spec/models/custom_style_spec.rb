@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 
 RSpec.describe CustomStyle do
@@ -33,16 +35,23 @@ RSpec.describe CustomStyle do
 
       let!(:file_path) { custom_style.send(image).file.path }
 
-      before do
-        custom_style.send :"remove_#{image}"
-      end
+      subject { custom_style.send :"remove_#{image}!" }
 
       it "deletes the file" do
+        subject
+
         expect(File.exist?(file_path)).to be false
       end
 
       it "clears the file mount column" do
+        subject
+
         expect(custom_style.reload.send(image).file).to be_nil
+      end
+
+      it "updates the model" do
+        expect { subject }
+          .to change(custom_style, :updated_at)
       end
     end
 
@@ -73,6 +82,12 @@ RSpec.describe CustomStyle do
     describe "#remove_export_cover" do
       it_behaves_like "removing an image from a custom style" do
         let(:image) { "export_cover" }
+      end
+    end
+
+    describe "#remove_export_footer" do
+      it_behaves_like "removing an image from a custom style" do
+        let(:image) { "export_footer" }
       end
     end
   end

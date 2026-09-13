@@ -21,28 +21,51 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
 import { StateService, TransitionPromise } from '@uirouter/core';
 import { UrlParamsHelperService } from 'core-app/features/work-packages/components/wp-query/url-params-helper';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { WorkPackageViewPagination } from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-table-pagination';
 import { QueryResource } from 'core-app/features/hal/resources/query-resource';
+import { Subject } from 'rxjs';
+import * as Turbo from '@hotwired/turbo';
+
+/**
+ * Set right before pushing a self-initiated history entry below, consumed once by
+ * QueryParamListenerService's urlParams.changed$ subscriber to skip reacting to its
+ * own write (reloading there would just undo the change that triggered it).
+ *
+ * Turbo's own history object doesn't leave room for a custom flag inside the state
+ * it writes (it always writes `{ turbo: {...} }`, replacing whatever's passed in),
+ * so this can no longer live in `history.state` itself the way a plain `pushState`
+ * call could - hence the free-standing flag instead.
+ */
+let selfInitiatedUrlChange = false;
+
+export function consumeSelfInitiatedUrlChangeFlag():boolean {
+  const value = selfInitiatedUrlChange;
+  selfInitiatedUrlChange = false;
+  return value;
+}
 
 @Injectable()
 export class WorkPackagesListChecksumService {
-  constructor(protected UrlParamsHelper:UrlParamsHelperService,
-    protected $state:StateService) {
-  }
+  protected UrlParamsHelper = inject(UrlParamsHelperService);
+  protected $state = inject(StateService);
+
 
   public id:string|null;
 
   public checksum:string|null;
 
   public visibleChecksum:string|null;
+
+  /** Emits whenever visibleChecksum changes (useful for non-uiRouter pages to react to URL param changes) */
+  public readonly visibleChecksum$ = new Subject<string|null>();
 
   public updateIfDifferent(query:QueryResource,
     pagination:WorkPackageViewPagination):Promise<unknown> {
@@ -86,7 +109,7 @@ export class WorkPackagesListChecksumService {
     return this.isOutdated(query.id, newQueryChecksum);
   }
 
-  public executeIfOutdated(newId:string,
+  public executeIfOutdated(newId:string|null,
     newChecksum:string|null,
     callback:Function) {
     if (this.isUninitialized() || this.isOutdated(newId, newChecksum)) {
@@ -151,8 +174,39 @@ export class WorkPackagesListChecksumService {
     );
   }
 
+  private isOnNonRouterPage():boolean {
+    if (!this.$state.current.name) return true;
+    const { pathname } = window.location;
+    return pathname.includes('/team_planners')
+      || pathname.includes('/calendars')
+      || pathname.includes('/ifc_models');
+  }
+
   private maintainUrlQueryState(id:string|null, checksum:string|null):TransitionPromise {
     this.visibleChecksum = checksum;
+    this.visibleChecksum$.next(checksum);
+
+    // When uiRouter is not managing the current page (e.g. calendar, team planner, BIM after Turbo migration),
+    // $state.current.name may be stale from a previous router page. Detect by URL to avoid incorrect $state.go() navigation.
+    if (this.isOnNonRouterPage()) {
+      const url = new URL(window.location.href);
+
+      if (checksum) {
+        url.searchParams.set('query_props', checksum);
+      } else {
+        url.searchParams.delete('query_props');
+      }
+
+      if (id) {
+        url.searchParams.set('query_id', id);
+      } else {
+        url.searchParams.delete('query_id');
+      }
+
+      selfInitiatedUrlChange = true;
+      Turbo.session.history.push(url);
+      return Promise.resolve() as unknown as TransitionPromise;
+    }
 
     return this.$state.go(
       '.',

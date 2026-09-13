@@ -1,7 +1,9 @@
 class OpenProject::Reporting::CostEntryXlsTable < OpenProject::XlsExport::XlsViews
   def generate
     @spreadsheet = OpenProject::XlsExport::SpreadsheetBuilder.new(I18n.t(:label_money))
-    default_query = serialize_query_without_hidden(@query)
+    # The unit is view state rather than a stored filter, so the configuration
+    # can be rebuilt per tab with a different one.
+    default_query = @query.to_query_params
 
     available_cost_type_tabs(options[:cost_types]).each_with_index do |(unit_id, name), idx|
       setup_query_for_tab(default_query, unit_id)
@@ -13,15 +15,13 @@ class OpenProject::Reporting::CostEntryXlsTable < OpenProject::XlsExport::XlsVie
     spreadsheet
   end
 
-  def setup_query_for_tab(query, unit_id)
-    @query = CostQuery.deserialize(query)
+  def setup_query_for_tab(report_params, unit_id)
     @cost_type = nil
     @unit_id = unit_id
+    params = @unit_id == 0 ? report_params.except(:unit) : report_params.merge(unit: @unit_id)
 
-    if @unit_id != 0
-      @query.filter :cost_type_id, operator: "=", value: @unit_id.to_s
-      @cost_type = CostType.find(unit_id) if unit_id.positive?
-    end
+    @query = ::CostReports::ParamsToReport.new(params, project: @project, user: User.current).call
+    @cost_type = CostType.find(unit_id) if unit_id.positive?
   end
 
   def build_spreadsheet
@@ -41,7 +41,8 @@ class OpenProject::Reporting::CostEntryXlsTable < OpenProject::XlsExport::XlsVie
 
   def build_cost_rows
     sorted_results.each do |result|
-      spreadsheet.add_row(cost_row(result))
+      row = spreadsheet.add_row(cost_row(result))
+      row.set_format 0, date_format
     end
   end
 
@@ -73,13 +74,15 @@ class OpenProject::Reporting::CostEntryXlsTable < OpenProject::XlsExport::XlsVie
   end
 
   def cost_main_columns(result)
-    main_cols = [show_field(:spent_on, result.fields["spent_on"])]
+    main_cols = [result.fields["spent_on"].to_date]
     main_cols.concat cost_main_times_columns(result) if with_times_column?
     main_cols
   end
 
   def cost_row(result)
     current_cost_type_id = result.fields["cost_type_id"].to_i
+    # TODO: What would be the correct way here?
+    result.fields["entity_gid"] = result.entity_gid
 
     cost_main_columns(result)
       .concat(cost_fields_columns(result))
@@ -125,17 +128,20 @@ class OpenProject::Reporting::CostEntryXlsTable < OpenProject::XlsExport::XlsVie
   end
 
   def cost_entry_attributes
-    %i[user_id activity_id work_package_id comments project_id]
+    %i[user_id activity_id entity_gid comments project_id]
   end
 
-  # Returns the results of the query sorted by date the time was spent on and by id
+  # Returns the results of the query sorted by date the time was spent on and name
   def sorted_results
-    query
-      .each_direct_result
-      .map(&:itself)
+    results = query.each_direct_result.map(&:itself)
+    users_by_id = load_users_for_results(results)
+
+    results
       .group_by { |r| r.fields["spent_on"] }
       .sort
-      .flat_map { |_, date_results| date_results.sort_by { |r| r.fields["id"] } }
+      .flat_map do |_, date_results|
+      date_results.sort_by { |r| user_name_for_sorting(r, users_by_id) }
+    end
   end
 
   def labour_query?
@@ -144,5 +150,14 @@ class OpenProject::Reporting::CostEntryXlsTable < OpenProject::XlsExport::XlsVie
 
   def with_times_column?
     Setting.allow_tracking_start_and_end_times && labour_query?
+  end
+
+  def load_users_for_results(results)
+    user_ids = results.map { |r| r.fields["user_id"] }.uniq
+    User.where(id: user_ids).index_by(&:id)
+  end
+
+  def user_name_for_sorting(result, users_by_id)
+    users_by_id[result.fields["user_id"]]&.name&.downcase || ""
   end
 end

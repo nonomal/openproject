@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # -- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -38,7 +40,7 @@ module Projects::Scopes
       def visible(user = User.current)
         # Use a shortcut for admins and anonymous where
         # we don't need to calculate for work package roles which is more expensive
-        if user.admin? || user.anonymous?
+        if user.active_admin? || user.anonymous?
           allowed_to(user, :view_project)
         else
           active.public_projects.or(active.where(id: user.members.select(:project_id)))

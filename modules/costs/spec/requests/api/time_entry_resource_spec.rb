@@ -39,16 +39,16 @@ RSpec.describe "API v3 time_entry resource" do
     create(:user, member_with_roles: { project => role })
   end
   let(:time_entry) do
-    create(:time_entry, project:, work_package:, user: current_user)
+    create(:time_entry, project:, entity: work_package, user: current_user)
   end
   let(:other_time_entry) do
-    create(:time_entry, project:, work_package:, user: other_user)
+    create(:time_entry, project:, entity: work_package, user: other_user)
   end
   let(:other_user) do
     create(:user, member_with_roles: { project => role })
   end
   let(:invisible_time_entry) do
-    create(:time_entry, project: other_project, work_package: other_work_package, user: other_user)
+    create(:time_entry, project: other_project, entity: other_work_package, user: other_user)
   end
   let(:project) { work_package.project }
   let(:work_package) { create(:work_package) }
@@ -141,7 +141,7 @@ RSpec.describe "API v3 time_entry resource" do
 
     context "when filtering by user" do
       let(:invisible_time_entry) do
-        create(:time_entry, project: other_project, work_package: other_work_package, user: other_user)
+        create(:time_entry, project: other_project, entity: other_work_package, user: other_user)
       end
       let(:path) do
         filter = [{ "user" => {
@@ -173,18 +173,18 @@ RSpec.describe "API v3 time_entry resource" do
 
     context "when filtering by work package" do
       let(:unwanted_work_package) do
-        create(:work_package, project:, type: project.types.first)
+        create(:work_package, project:, type: project.enabled_types.first)
       end
 
       let(:other_time_entry) do
-        create(:time_entry, project:, work_package: unwanted_work_package, user: current_user)
+        create(:time_entry, project:, entity: unwanted_work_package, user: current_user)
       end
 
       let(:path) do
-        filter = [{ "work_package" => {
-          "operator" => "=",
-          "values" => [work_package.id]
-        } }]
+        filter = [
+          { "entity_type" => { "operator" => "=", "values" => ["WorkPackage"] } },
+          { "entity_id" => { "operator" => "=", "values" => [work_package.id] } }
+        ]
 
         "#{api_v3_paths.time_entries}?#{{ filters: filter.to_json }.to_query}"
       end
@@ -210,13 +210,12 @@ RSpec.describe "API v3 time_entry resource" do
 
     context "when filtering by project" do
       let(:other_time_entry) do
-        create(:time_entry, project: other_project, work_package: other_work_package, user: current_user)
+        create(:time_entry, project: other_project, entity: other_work_package, user: current_user)
       end
       let(:path) do
-        filter = [{ "project" => {
-          "operator" => "=",
-          "values" => [other_project.id]
-        } }]
+        filter = [
+          { "project" => { "operator" => "=", "values" => [other_project.id] } }
+        ]
 
         "#{api_v3_paths.time_entries}?#{{ filters: filter.to_json }.to_query}"
       end
@@ -264,25 +263,13 @@ RSpec.describe "API v3 time_entry resource" do
         create(:time_entry_activity)
       end
       let!(:time_entry) do
-        create(:time_entry,
-               project:,
-               work_package:,
-               user: current_user,
-               activity:)
+        create(:time_entry, project:, entity: work_package, user: current_user, activity:)
       end
       let!(:other_time_entry) do
-        create(:time_entry,
-               project: other_project,
-               work_package: other_work_package,
-               user: current_user,
-               activity:)
+        create(:time_entry, project: other_project, entity: other_work_package, user: current_user, activity:)
       end
       let!(:another_time_entry) do
-        create(:time_entry,
-               project:,
-               work_package:,
-               user: current_user,
-               activity: another_activity)
+        create(:time_entry, project:, entity: work_package, user: current_user, activity: another_activity)
       end
 
       before do
@@ -333,7 +320,7 @@ RSpec.describe "API v3 time_entry resource" do
     context "when start- & end-time tracking is enabled", with_settings: { allow_tracking_start_and_end_times: true } do
       context "when start and end time were tracked" do
         let!(:time_entry) do
-          create(:time_entry, :with_start_and_end_time, project:, work_package:, user: current_user)
+          create(:time_entry, :with_start_and_end_time, project:, entity: work_package, user: current_user)
         end
 
         it "includes start and end timestamps in the API response" do
@@ -351,7 +338,7 @@ RSpec.describe "API v3 time_entry resource" do
 
       context "when start and end time were not tracked" do
         let!(:time_entry) do
-          create(:time_entry, project:, work_package:, user: current_user)
+          create(:time_entry, project:, entity: work_package, user: current_user)
         end
 
         it "returns nil as start and end timestamps in the API response" do
@@ -371,7 +358,7 @@ RSpec.describe "API v3 time_entry resource" do
     context "when start- & end-time tracking is disabled", with_settings: { allow_tracking_start_and_end_times: false } do
       context "when start and end time were tracked" do
         let!(:time_entry) do
-          create(:time_entry, :with_start_and_end_time, project:, work_package:, user: current_user)
+          create(:time_entry, :with_start_and_end_time, project:, entity: work_package, user: current_user)
         end
 
         it "does not include start and end time fields" do
@@ -384,7 +371,7 @@ RSpec.describe "API v3 time_entry resource" do
 
       context "when start and end time were not tracked" do
         let!(:time_entry) do
-          create(:time_entry, project:, work_package:, user: current_user)
+          create(:time_entry, project:, entity: work_package, user: current_user)
         end
 
         it "does not include start and end time fields" do
@@ -434,6 +421,32 @@ RSpec.describe "API v3 time_entry resource" do
           .to be(404)
       end
     end
+
+    context "when allowed to see the time entry but not the linked work package" do
+      let(:permissions) { %i(view_time_entries) }
+
+      it "returns 200 OK" do
+        expect(subject.status).to be(200)
+      end
+
+      it "does not disclose the work package subject, id or attributes" do
+        expect(subject.body)
+          .to be_json_eql(API::V3::URN_UNDISCLOSED.to_json)
+          .at_path("_links/entity/href")
+
+        expect(subject.body)
+          .to be_json_eql(I18n.t(:"api_v3.undisclosed.workPackage").to_json)
+          .at_path("_links/entity/title")
+
+        expect(subject.body).not_to have_json_path("_links/entity/displayId")
+        expect(subject.body).not_to have_json_path("_embedded/entity")
+        expect(subject.body).not_to have_json_path("_embedded/workPackage")
+
+        expect(subject.body)
+          .to be_json_eql(API::V3::URN_UNDISCLOSED.to_json)
+          .at_path("_links/workPackage/href")
+      end
+    end
   end
 
   describe "POST api/v3/time_entries" do
@@ -448,7 +461,7 @@ RSpec.describe "API v3 time_entry resource" do
           activity: {
             href: api_v3_paths.time_entries_activity(activity.id)
           },
-          workPackage: {
+          entity: {
             href: api_v3_paths.work_package(work_package.id)
           }
         },
@@ -491,7 +504,7 @@ RSpec.describe "API v3 time_entry resource" do
       expect(new_entry.activity)
         .to eql activity
 
-      expect(new_entry.work_package)
+      expect(new_entry.entity)
         .to eql work_package
 
       expect(new_entry.hours)
@@ -543,7 +556,7 @@ RSpec.describe "API v3 time_entry resource" do
             activity: {
               href: api_v3_paths.time_entries_activity(activity.id)
             },
-            workPackage: {
+            entity: {
               href: api_v3_paths.work_package(work_package.id + 1)
             }
           },
@@ -556,13 +569,34 @@ RSpec.describe "API v3 time_entry resource" do
         }
       end
 
-      it "returns 422 and complains about work packages" do
+      it "returns 422 and complains about entity being required" do
         expect(subject.status)
           .to be(422)
 
         expect(subject.body)
-          .to be_json_eql("Work package is invalid.".to_json)
+          .to be_json_eql("Logged for can't be blank.".to_json)
           .at_path("message")
+      end
+    end
+
+    context "when starting an ongoing time entry with an ongoing timer already running" do
+      let(:additional_setup) { -> { existing_ongoing_time_entry } }
+
+      let(:existing_ongoing_time_entry) do
+        create(:time_entry, ongoing: true, project:, entity: work_package, user: current_user)
+      end
+
+      let(:params) do
+        super().merge({ ongoing: true })
+      end
+
+      it "returns 422 and remarks that another time entry is ongoing" do
+        expect(subject.status)
+          .to be(422)
+
+        expect(subject.body)
+          .to be_json_eql("Another timer is already running. Only one timer can be active at the same time.".to_json)
+                .at_path("message")
       end
     end
   end
@@ -630,19 +664,19 @@ RSpec.describe "API v3 time_entry resource" do
       let(:params) do
         {
           _links: {
-            workPackage: {
+            entity: {
               href: api_v3_paths.work_package(work_package.id + 1)
             }
           }
         }
       end
 
-      it "returns 422 and complains about work packages" do
+      it "returns 422 and complains about entity being blank" do
         expect(subject.status)
           .to be(422)
 
         expect(subject.body)
-          .to be_json_eql("Work package is invalid.".to_json)
+          .to be_json_eql("Logged for can't be blank.".to_json)
           .at_path("message")
       end
     end

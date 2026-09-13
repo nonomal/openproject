@@ -10,8 +10,7 @@ RSpec.describe "LDAP group sync administration spec", :js do
 
   context "without EE" do
     it "shows upsell" do
-      expect(page).to have_enterprise_upsell_page
-      expect(page).to have_text "Available starting with the Premium enterprise plan"
+      expect(page).to have_enterprise_banner(:premium)
     end
   end
 
@@ -20,7 +19,7 @@ RSpec.describe "LDAP group sync administration spec", :js do
     let!(:auth_source) { create(:ldap_auth_source, name: "ldap") }
 
     it "allows synced group administration flow" do
-      expect(page).not_to have_enterprise_upsell_page
+      expect(page).not_to have_enterprise_banner
       # Open create menu
       page.find_test_selector("op-admin-synchronized-groups--button-new", text: I18n.t(:button_add)).click
       # Create group
@@ -46,11 +45,21 @@ RSpec.describe "LDAP group sync administration spec", :js do
       find("td.dn a").click
       expect(page).to have_css ".generic-table--empty-row"
 
+      # Edit entry
+      click_on "Edit"
+      fill_in "DN", with: "cn=bar,ou=groups,dc=example,dc=com"
+      click_on "Save"
+
+      expect_flash(message: I18n.t(:notice_successful_update))
+
+      visit ldap_groups_synchronized_groups_path
+      expect(page).to have_css("td.dn", text: "cn=bar,ou=groups,dc=example,dc=com")
+
       # Check created group
       sync = LdapGroups::SynchronizedGroup.last
       expect(sync.group_id).to eq(group.id)
       expect(sync.ldap_auth_source_id).to eq(auth_source.id)
-      expect(sync.dn).to eq "cn=foo,ou=groups,dc=example,dc=com"
+      expect(sync.dn).to eq "cn=bar,ou=groups,dc=example,dc=com"
 
       # Assume we have a membership
       sync.users.create user_id: admin.id
@@ -64,10 +73,10 @@ RSpec.describe "LDAP group sync administration spec", :js do
       find(".buttons a", text: "Delete").click
 
       SeleniumHubWaiter.wait
-      find(".danger-zone--verification input").set "cn=foo,ou=groups,dc=example,dc=com"
+      check "I understand that this deletion cannot be reversed."
+      click_on "Delete permanently"
 
       SeleniumHubWaiter.wait
-      click_on "Delete"
 
       expect_flash(message: I18n.t(:notice_successful_delete))
       expect(page).to have_css ".generic-table--empty-row"

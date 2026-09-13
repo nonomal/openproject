@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -35,7 +37,7 @@ module OpenProject
     let(:format) { "%d/%m/%Y" }
     let(:user) { build_stubbed(:user) }
 
-    describe "#format_time_as_date" do
+    describe "#format_date with time" do
       current_user { build_stubbed(:user, preferences: { time_zone: user_time_zone }) }
 
       describe "with user time zone" do
@@ -43,12 +45,12 @@ module OpenProject
 
         it "returns a date string in the user timezone for a utc timestamp" do
           time = ActiveSupport::TimeZone["UTC"].local(2013, 6, 30, 23, 59)
-          expect(format_time_as_date(time, format:)).to eq "01/07/2013"
+          expect(format_date(time, format:)).to eq "01/07/2013"
         end
 
         it "returns a date string in the user timezone for a non-utc timestamp" do
           time = ActiveSupport::TimeZone["Berlin"].local(2013, 6, 30, 23, 59)
-          expect(format_time_as_date(time, format:)).to eq "01/07/2013"
+          expect(format_date(time, format:)).to eq "01/07/2013"
         end
       end
 
@@ -57,12 +59,54 @@ module OpenProject
 
         it "returns a date string in the utc timezone for a utc timestamp" do
           time = ActiveSupport::TimeZone["UTC"].local(2013, 6, 30, 23, 59)
-          expect(format_time_as_date(time, format:)).to eq "30/06/2013"
+          expect(format_date(time, format:)).to eq "30/06/2013"
         end
 
         it "returns a date string in the utc timezone for a non-utc timestamp" do
           time = ActiveSupport::TimeZone["Berlin"].local(2013, 6, 30, 23, 59)
-          expect(format_time_as_date(time, format:)).to eq "30/06/2013"
+          expect(format_date(time, format:)).to eq "30/06/2013"
+        end
+      end
+    end
+
+    describe "#format_date_range" do
+      let(:from) { Date.new(2025, 1, 6) }
+      let(:to) { Date.new(2025, 1, 17) }
+
+      context "with an Array" do
+        it "renders both dates separated by an en-dash" do
+          expected =
+            "<time datetime=\"2025-01-06\">#{helper.format_date(from)}</time>" \
+            "\u00A0\u2013\u00A0" \
+            "<time datetime=\"2025-01-17\">#{helper.format_date(to)}</time>"
+
+          expect(helper.format_date_range([from, to])).to be_html_eql(expected)
+        end
+      end
+
+      context "when both dates are nil" do
+        it "returns nil" do
+          expect(helper.format_date_range([nil, nil])).to be_nil
+        end
+      end
+
+      context "when only the start date is present" do
+        it "renders the start date with an en-dash" do
+          expected =
+            "<time datetime=\"2025-01-06\">#{helper.format_date(from)}</time>" \
+            "\u00A0\u2013\u00A0"
+
+          expect(helper.format_date_range([from, nil])).to be_html_eql(expected)
+        end
+      end
+
+      context "when only the end date is present" do
+        it "renders the end date with an en-dash" do
+          expected =
+            "\u00A0\u2013\u00A0" \
+            "<time datetime=\"2025-01-17\">#{helper.format_date(to)}</time>"
+
+          expect(helper.format_date_range([nil, to])).to be_html_eql(expected)
         end
       end
     end
@@ -184,37 +228,73 @@ module OpenProject
     end
 
     describe "link_translation" do
-      let(:locale) { :en }
       let(:urls) do
-        { url_1: "http://openproject.com/foobar", url_2: "/baz" }
+        { url_1: "http://openproject.com/foo", url_2: "/baz" }
       end
 
       before do
         allow(::I18n)
-          .to receive(:t)
-          .with("translation_with_a_link", locale:)
+          .to receive(:translate)
+          .with("translation_with_a_link", *any_args)
           .and_return("There is a [link](url_1) in this translation! Maybe even [two](url_2)?")
       end
 
       it "allows to insert links into translations" do
-        translated = link_translate :translation_with_a_link, links: urls
+        translated = link_translate :translation_with_a_link, links: urls, external: false
+        fragment = Capybara.string(translated)
 
-        expect(translated).to eq(
-          "There is a <a href=\"http://openproject.com/foobar\">link</a> in this translation!" +
-          " Maybe even <a href=\"/baz\">two</a>?"
-        )
+        links = fragment.all("a")
+        expect(links.size).to eq(2)
+
+        expect(links[0].text).to eq("link")
+        expect(links[0][:href]).to eq("http://openproject.com/foo")
+
+        expect(links[1].text).to eq("two")
+        expect(links[1][:href]).to eq("/baz")
       end
 
-      context "with locale" do
-        let(:locale) { :de }
+      context "when the link text contains an apostrophe" do
+        before do
+          allow(::I18n)
+            .to receive(:translate)
+            .with("translation_with_apostrophe", *any_args)
+            .and_return("Here's [what's new](url) to see.")
+        end
 
-        it "uses the passed locale" do
-          translated = link_translate(:translation_with_a_link, links: urls, locale:)
+        it "does not double-escape the apostrophe in the link text" do
+          translated = link_translate :translation_with_apostrophe,
+                                      links: { url: "https://example.com" },
+                                      external: false
+          fragment = Capybara.string(translated)
 
-          expect(translated).to eq(
-            "There is a <a href=\"http://openproject.com/foobar\">link</a> in this translation!" +
-            " Maybe even <a href=\"/baz\">two</a>?"
-          )
+          link = fragment.find("a")
+          expect(link.text).to eq("what's new")
+        end
+      end
+
+      context "when passing URLs as a list of symbols" do
+        let(:urls) do
+          { url_1: [:a, :b], url_2: [:a, :c] }
+        end
+
+        before do
+          allow(OpenProject::Static::Links).to receive(:url_for).and_return("/no-args")
+          allow(OpenProject::Static::Links).to receive(:url_for).with(:a, :b).and_return("https://example.com/a-b")
+          allow(OpenProject::Static::Links).to receive(:url_for).with(:a, :c).and_return("/a-c")
+        end
+
+        it "resolves the links from static links" do
+          translated = link_translate :translation_with_a_link, links: urls, external: false
+          fragment = Capybara.string(translated)
+
+          links = fragment.all("a")
+          expect(links.size).to eq(2)
+
+          expect(links[0].text).to eq("link")
+          expect(links[0][:href]).to eq("https://example.com/a-b")
+
+          expect(links[1].text).to eq("two")
+          expect(links[1][:href]).to eq("/a-c")
         end
       end
     end
@@ -459,6 +539,20 @@ module OpenProject
                 .to eq 13
             end
           end
+        end
+      end
+    end
+
+    describe "#ordinalize" do
+      it "uses german default ordinal formatting for day numbers" do
+        described_class.with_locale :de do
+          expect(ordinalize(16)).to eq("16.")
+        end
+      end
+
+      it "falls back to inflector output when no locale-specific key exists" do
+        described_class.with_locale :en do
+          expect(ordinalize(16)).to eq("16th")
         end
       end
     end

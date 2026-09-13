@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -51,13 +53,17 @@ RSpec.describe "Authentication Stages" do
     expect(page).to have_current_path(path)
     visit my_account_path
     wait_for_network_idle
-    expect(page).to have_css(".form--field-container", text: user.login)
+
+    within_test_selector "my-account-form" do
+      expect(page).to have_field "user_login", with: user.login
+    end
   end
 
   def expect_not_logged_in
     visit my_account_path
     wait_for_netowrk_idle
-    expect(page).to have_no_css(".form--field-container", text: user.login)
+
+    expect(page).to have_no_test_selector "my-account-form"
   end
 
   before do
@@ -213,14 +219,16 @@ RSpec.describe "Authentication Stages" do
       token = Token::Invitation.last.value
       visit "/account/activate?token=#{token}"
 
-      expect(page).to have_css("h1", text: "Consent header")
+      expect(page).to have_test_selector("registration-form")
+      expect(page).to have_text("Consent header")
       # Cannot create without accepting
       fill_in "user_password", with: user_password
       fill_in "user_password_confirmation", with: user_password
       click_on I18n.t(:button_create)
 
-      expect(page).to have_css("h1", text: "Consent header")
-      check "consent_check"
+      expect(page).to have_test_selector("registration-form")
+      expect(page).to have_text("Consent header")
+      check "user_consent_check"
       click_on I18n.t(:button_create)
 
       expect_flash(message: I18n.t(:notice_account_registered_and_logged_in))
@@ -266,6 +274,15 @@ RSpec.describe "Authentication Stages" do
 
         expect_flash(type: :error, message: "foo@example.org")
       end
+    end
+  end
+
+  context "when calling the consent page outside of the login process" do
+    it "redirects to the login page" do
+      visit "account/consent"
+
+      expect_flash message: "Consent failed, cannot proceed.", type: :error
+      expect(page).to have_current_path "/login"
     end
   end
 end

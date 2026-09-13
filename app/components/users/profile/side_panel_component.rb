@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -37,6 +39,24 @@ module Users
         super()
 
         @user = user
+      end
+
+      # Each entry becomes its own SidePanel section, so headings and separators
+      # are provided consistently by the panel rather than drawn by hand.
+      def sections
+        [
+          *attributes_section_components,
+          Users::Profile::GroupsComponent.new(user: @user),
+          Users::Profile::ProjectsComponent.new(user: @user)
+        ]
+      end
+
+      private
+
+      def attributes_section_components
+        UserCustomFieldSection.includes(:custom_fields).map do |section|
+          Users::Profile::AttributesSectionComponent.new(section:, user: @user)
+        end
       end
     end
   end

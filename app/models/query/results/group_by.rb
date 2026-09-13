@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -49,7 +51,6 @@ module ::Query::Results::GroupBy
       .joins(query.group_by_join_statement)
       .group(group_by_for_count)
       .visible
-      .references(:statuses, :projects)
       .where(query.statement)
       .order(order_for_count)
       .pluck(*pluck_for_count)
@@ -58,7 +59,7 @@ module ::Query::Results::GroupBy
 
   def work_packages_with_includes_for_count
     WorkPackage
-      .includes(all_includes)
+      .eager_load(all_includes)
       .joins(all_filter_joins)
   end
 
@@ -123,7 +124,7 @@ module ::Query::Results::GroupBy
         ->(list) { list },
         ->(error) do
           msg = "#{I18n.t('api_v3.errors.code_500')} #{error}"
-          raise ::API::Errors::InternalError.new(msg)
+          raise ::API::Errors::SafeInternalError.new(msg)
         end
       )
   end
@@ -158,20 +159,39 @@ module ::Query::Results::GroupBy
   end
 
   def transform_property_keys(groups)
-    association = WorkPackage.reflect_on_all_associations.detect { |a| a.name == query.group_by_column.name.to_sym }
+    association = find_association_for_group
 
-    if association
-      transform_association_property_keys(association, groups)
+    if association.nil?
+      transform_declared_class_keys(groups)
+    elsif association.collection?
+      transform_collection_association_property_keys(association, groups)
     else
-      groups
+      transform_record_keys(association.class_name.constantize, groups)
     end
   end
 
-  def transform_association_property_keys(association, groups)
-    ar_keys = association.class_name.constantize.find(groups.keys.compact)
+  def transform_declared_class_keys(groups)
+    klass = query.group_by_column.group_by_class_name&.constantize
+
+    return groups if klass.nil?
+
+    transform_record_keys(klass, groups)
+  end
+
+  def transform_record_keys(klass, groups)
+    ar_keys = klass.find(groups.keys.compact)
 
     groups.transform_keys do |key|
       ar_keys.detect { |ar_key| ar_key.id == key }
+    end
+  end
+
+  def transform_collection_association_property_keys(association, groups)
+    ids = groups.keys.compact.flat_map { |key| key.split(".") }.uniq
+    records = association.klass.where(id: ids).index_by { |record| record.id.to_s }
+
+    groups.transform_keys do |key|
+      Array(key&.split(".")).map { |id| records.fetch(id) }
     end
   end
 
@@ -212,5 +232,18 @@ module ::Query::Results::GroupBy
     order = sort_entry&.last || column.default_order
 
     "#{order} #{column.null_handling(order == 'asc')}"
+  end
+
+  def find_association_for_group
+    WorkPackage.reflect_on_all_associations.detect do |association|
+      matches_group_by_column?(association)
+    end
+  end
+
+  def matches_group_by_column?(association)
+    # Some query columns override their groupable column name, prefer that if given:
+    group_name = query.group_by_column.group_by_column_name || query.group_by_column.name
+
+    association.name == group_name.to_sym
   end
 end

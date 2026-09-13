@@ -1,12 +1,11 @@
-<%= turbo_frame_tag "work_package_progress_modal" do %>
+<%= component_wrapper do %>
   <%= primer_form_with(
         model: work_package,
         url: submit_path,
         class: "progress-form",
         id: "progress-form",
         html: { autocomplete: "off" },
-        data: { "application-target": "dynamic",
-                "work-packages--progress--preview-target": "form",
+        data: { "work-packages--progress--preview-target": "form",
                 controller: "work-packages--progress--preview" }
       ) do |f| %>
     <%= flex_layout do |modal_body| %>

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 
 RSpec.describe "Work Package table configuration modal columns spec", :js do
@@ -35,7 +37,7 @@ RSpec.describe "Work Package table configuration modal columns spec", :js do
       columns.remove "Subject", save_changes: false
       columns.add "Project", save_changes: true
       columns.expect_column_available "Subject"
-      columns.expect_column_not_available "Project"
+      columns.expect_column_not_available /Project\z/
 
       expect(page).to have_css(".wp-table--table-header", text: "ID")
       expect(page).to have_css(".wp-table--table-header", text: "PROJECT")
@@ -46,7 +48,11 @@ RSpec.describe "Work Package table configuration modal columns spec", :js do
   context "When seeing the table" do
     it_behaves_like "add and remove columns"
 
-    context "with three columns", driver: :firefox_de do
+    # Chrome, because reordering the columns is a native HTML5 drag: geckodriver
+    # starts one (dragstart and dragover fire) but never finishes it, so no drop
+    # ever reaches the page and the columns stay put. The German locale this
+    # example has always carried is preserved; nothing here depends on it.
+    context "with three columns", driver: :chrome_de do
       let!(:query) do
         query = build(:query, user:, project:)
         query.column_names = %w[id project subject]
@@ -76,14 +82,11 @@ RSpec.describe "Work Package table configuration modal columns spec", :js do
         sleep 1
 
         columns.apply
-        expect(page).to have_css(".wp-table--table-header", text: "ID")
-        expect(page).to have_css(".wp-table--table-header", text: "PROJECT")
-        expect(page).to have_css(".wp-table--table-header", text: "SUBJECT")
 
-        names = all(".wp-table--table-header").map(&:text)
-        # Depending on what browser is used, subject column may be first or second
-        # it doesn't matter for the outcome of this test
-        expect(names).to eq(%w[SUBJECT ID PROJECT]).or(eq(%w[ID SUBJECT PROJECT]))
+        expect(page).to have_selector :columnheader, text: /.+/, count: 3
+        expect(page).to have_selector :columnheader, "ID"
+        expect(page).to have_selector :columnheader, "Subject"
+        expect(page).to have_selector :columnheader, "Project", colindex: 4
       end
     end
   end

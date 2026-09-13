@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -41,8 +43,8 @@ RSpec.describe Attachments::FinishDirectUploadJob, "integration", type: :job do
 
   let(:job) { described_class.new }
 
-  shared_examples_for "turning pending attachment into a standard attachment" do
-    it do
+  shared_examples_for "completing direct upload of attachment" do |expect_extract_fulltext_job: true|
+    it "turns the pending attachment into a standard attachment" do
       job.perform(pending_attachment.id)
 
       attachment = Attachment.find(pending_attachment.id)
@@ -56,10 +58,8 @@ RSpec.describe Attachments::FinishDirectUploadJob, "integration", type: :job do
       expect(attachment.digest)
         .to eql("9473fdd0d880a43c21b7778d34872157")
     end
-  end
 
-  shared_examples_for "adding a journal to the attachment in the name of the attachment's author" do
-    it do
+    it "adds a journal to the attachment in the name of the attachment's author" do
       job.perform(pending_attachment.id)
 
       journals = Attachment.find(pending_attachment.id).journals
@@ -70,14 +70,60 @@ RSpec.describe Attachments::FinishDirectUploadJob, "integration", type: :job do
       expect(journals.last.user)
         .to eql(pending_attachment.author)
     end
+
+    if expect_extract_fulltext_job
+      it "enqueues the ExtractFulltextJob job" do
+        clear_enqueued_jobs
+
+        job.perform(pending_attachment.id)
+
+        expect(Attachments::ExtractFulltextJob)
+          .to have_been_enqueued
+          .with(pending_attachment.id)
+      end
+    else
+      it "does not enqueue the ExtractFulltextJob job" do
+        clear_enqueued_jobs
+
+        job.perform(pending_attachment.id)
+
+        expect(Attachments::ExtractFulltextJob)
+          .not_to have_been_enqueued
+      end
+    end
+
+    context "when antivirus scan is disabled (default)",
+            with_settings: { antivirus_scan_mode: :disabled } do
+      it "does not enqueue the VirusScanJob job" do
+        clear_enqueued_jobs
+
+        job.perform(pending_attachment.id)
+
+        expect(Attachments::VirusScanJob)
+          .not_to have_been_enqueued
+      end
+    end
+
+    context "when antivirus scan is enabled",
+            with_ee: %i[virus_scanning],
+            with_settings: { antivirus_scan_mode: :clamav_socket } do
+      it "enqueues the VirusScanJob job" do
+        clear_enqueued_jobs
+
+        job.perform(pending_attachment.id)
+
+        expect(Attachments::VirusScanJob)
+          .to have_been_enqueued
+          .with(pending_attachment)
+      end
+    end
   end
 
   context "for a journalized container" do
     let!(:container) { create(:work_package) }
     let!(:container_timestamp) { container.updated_at }
 
-    it_behaves_like "turning pending attachment into a standard attachment"
-    it_behaves_like "adding a journal to the attachment in the name of the attachment's author"
+    it_behaves_like "completing direct upload of attachment"
 
     it "adds a journal to the container in the name of the attachment's author" do
       job.perform(pending_attachment.id)
@@ -123,23 +169,33 @@ RSpec.describe Attachments::FinishDirectUploadJob, "integration", type: :job do
   context "for a non journalized container" do
     let!(:container) { create(:wiki_page) }
 
-    it_behaves_like "turning pending attachment into a standard attachment"
-    it_behaves_like "adding a journal to the attachment in the name of the attachment's author"
+    it_behaves_like "completing direct upload of attachment", expect_extract_fulltext_job: false
   end
 
   context "for a nil container" do
     let!(:container) { nil }
 
-    it_behaves_like "turning pending attachment into a standard attachment"
-    it_behaves_like "adding a journal to the attachment in the name of the attachment's author"
+    it_behaves_like "completing direct upload of attachment"
   end
 
-  context "with an incompatible attachment whitelist",
+  context "for an attachment that has been removed in the meantime" do
+    let!(:container) { create(:work_package) }
+
+    it "logs the error and resolves the job as done" do
+      allow(OpenProject.logger).to receive(:error)
+
+      job.perform(pending_attachment.id + 1)
+
+      expect(OpenProject.logger).to have_received(:error)
+    end
+  end
+
+  context "with an incompatible attachment allowlist",
           with_settings: { attachment_whitelist: %w[image/png] } do
     let!(:container) { create(:work_package) }
     let!(:container_timestamp) { container.updated_at }
 
-    it "Does not save the attachment" do
+    it "does not save the attachment" do
       allow(pending_attachment).to receive(:save!)
       allow(OpenProject.logger).to receive(:error)
 
@@ -154,14 +210,14 @@ RSpec.describe Attachments::FinishDirectUploadJob, "integration", type: :job do
       expect { pending_attachment.reload }.to raise_error(ActiveRecord::RecordNotFound)
     end
 
-    context "when the job is getting a whitelist override" do
-      it "Does save the attachment" do
-        job.perform(pending_attachment.id, whitelist: false)
+    context "when the job is getting a allowlist override" do
+      it "does save the attachment" do
+        job.perform(pending_attachment.id, allowlist: false)
 
         container.reload
 
         expect(container.attachments.count).to eq 1
-        expect { pending_attachment.reload }.not_to raise_error(ActiveRecord::RecordNotFound)
+        expect { pending_attachment.reload }.not_to raise_error
 
         expect(pending_attachment.downloads).to eq 0
       end
@@ -173,7 +229,7 @@ RSpec.describe Attachments::FinishDirectUploadJob, "integration", type: :job do
     shared_let(:user) { create(:user) }
     let!(:container) { create(:work_package) }
 
-    it "Does not save the attachment" do
+    it "does not save the attachment" do
       allow(pending_attachment).to receive(:save!)
 
       job.perform(pending_attachment.id)

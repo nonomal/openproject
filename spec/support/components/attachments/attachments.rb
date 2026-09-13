@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # JavaScript: HTML5 File attachments handling
 # requires a (hidden) input file field
 module Components
@@ -16,7 +18,7 @@ module Components
                            scroll: true)
       # Remove any previous input, if any
       page.execute_script <<-JS
-        jQuery('#temporary_attachment_files').remove()
+        document.getElementById('temporary_attachment_files')?.remove()
       JS
 
       if stopover.is_a?(Array) && !stopover.all?(String)

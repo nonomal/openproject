@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -69,12 +71,15 @@ class WorkPackages::SetAttributesService
     end
 
     def derive_remaining_work?
-      remaining_work_not_provided_by_user? && (work_changed? || percent_complete_changed?)
+      (remaining_work_not_provided_by_user? && (work_changed? || percent_complete_changed?)) \
+        || fixable_remaining_work?
     end
 
     def derive_percent_complete?
-      percent_complete_not_provided_by_user? && (work_changed? || remaining_work_changed?) \
-        && !skip_percent_complete_derivation
+      return false if skip_percent_complete_derivation
+
+      (percent_complete_not_provided_by_user? && (work_changed? || remaining_work_changed?)) \
+        || fixable_percent_complete?
     end
 
     def set_complete
@@ -98,7 +103,7 @@ class WorkPackages::SetAttributesService
         self.work = remaining_work
       else
         set_hint(:estimated_hours, :derived)
-        self.work = work_from_percent_complete_and_remaining_work
+        self.work = calculate_work(remaining_work:, percent_complete:)
         skip_percent_complete_derivation!
       end
     end
@@ -128,7 +133,7 @@ class WorkPackages::SetAttributesService
         self.remaining_work = nil
       else
         set_hint(:remaining_hours, :derived)
-        self.remaining_work = remaining_work_from_percent_complete_and_work
+        self.remaining_work = calculate_remaining_work(work:, percent_complete:)
         skip_percent_complete_derivation!
       end
     end
@@ -145,33 +150,12 @@ class WorkPackages::SetAttributesService
         self.percent_complete = nil
       else
         set_hint(:done_ratio, :derived)
-        self.percent_complete = percent_complete_from_work_and_remaining_work
+        self.percent_complete = calculate_percent_complete(work:, remaining_work:)
       end
     end
 
     def skip_percent_complete_derivation!
       self.skip_percent_complete_derivation = true
-    end
-
-    def percent_complete_from_work_and_remaining_work
-      rounded_work = work.round(2)
-      rounded_remaining_work = remaining_work.round(2)
-      completed_work = rounded_work - rounded_remaining_work
-      completion_ratio = completed_work.to_f / rounded_work
-
-      percentage = (completion_ratio * 100)
-      case percentage
-      in 0 then 0
-      in 0..1 then 1
-      in 99...100 then 99
-      else
-        percentage.round
-      end
-    end
-
-    def work_from_percent_complete_and_remaining_work
-      remaining_percent_complete = 1.0 - (percent_complete / 100.0)
-      remaining_work / remaining_percent_complete
     end
 
     def percent_complete_unparsable?
@@ -188,6 +172,22 @@ class WorkPackages::SetAttributesService
       work_empty? \
         || (remaining_work_came_from_user? && percent_complete_came_from_user?) \
         || (remaining_work_empty? && remaining_work_came_from_user?)
+    end
+
+    def fixable_remaining_work?
+      no_progress_value_provided_by_user? \
+        && correctable_remaining_work_value?(work:, remaining_work:, percent_complete:)
+    end
+
+    def fixable_percent_complete?
+      no_progress_value_provided_by_user? \
+        && correctable_percent_complete_value?(work:, remaining_work:, percent_complete:)
+    end
+
+    def no_progress_value_provided_by_user?
+      work_not_provided_by_user? \
+        && remaining_work_not_provided_by_user? \
+        && percent_complete_not_provided_by_user?
     end
   end
 end

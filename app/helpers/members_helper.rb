@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -36,13 +38,16 @@ module MembersHelper
     if member.roles.length == 1
       link_to("",
               principal_membership_path(member.principal, member),
-              { method: :delete, class: "icon icon-delete", title: t(:button_delete),
-                data: { "test-selector" => "delete-global-role" } })
+              { class: "icon icon-delete", title: t(:button_delete),
+                data: { turbo_method: :delete, "test-selector" => "delete-global-role" } })
     else
       link_to("",
               principal_membership_path(member.principal, member, "membership[role_ids]" => member.roles - [role]),
-              { method: :patch, class: "icon icon-delete", title: t(:button_delete),
-                data: { "test-selector" => "delete-global-role" } })
+              {
+                class: "icon icon-delete",
+                title: t(:button_delete),
+                data: { turbo_method: :patch, "test-selector" => "delete-global-role" }
+              })
     end
   end
 
@@ -61,7 +66,9 @@ module MembersHelper
   end
 
   def principal_membership_path(principal, global_member, options = {})
-    if principal.is_a?(Group)
+    if principal.is_a?(Group) && principal.organizational_unit?
+      membership_of_admin_department_path(principal, global_member, options)
+    elsif principal.is_a?(Group)
       membership_of_group_path(principal, global_member, options)
     else
       user_membership_path(principal, global_member, options)
@@ -69,7 +76,9 @@ module MembersHelper
   end
 
   def principal_memberships_path(principal, options = {})
-    if principal.is_a?(Group)
+    if principal.is_a?(Group) && principal.organizational_unit?
+      memberships_of_admin_department_path(principal, options)
+    elsif principal.is_a?(Group)
       memberships_of_group_path(principal, options)
     else
       user_memberships_path(principal, options)

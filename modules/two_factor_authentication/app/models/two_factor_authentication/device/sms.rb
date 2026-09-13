@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module TwoFactorAuthentication
   class Device::Sms < Device
     validates_presence_of :phone_number

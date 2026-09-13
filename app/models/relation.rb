@@ -101,6 +101,9 @@ class Relation < ApplicationRecord
 
   ORDERED_TYPES = [*TYPES.keys, TYPE_PARENT, TYPE_CHILD].freeze
 
+  MAX_LAG = 2_000
+  MIN_LAG = -MAX_LAG
+
   include ::Scopes::Scoped
 
   scopes :used_for_scheduling_of,
@@ -127,8 +130,8 @@ class Relation < ApplicationRecord
 
   validates :lag, numericality: {
     allow_nil: true,
-    less_than_or_equal_to: 2_147_483_647,
-    greater_than_or_equal_to: 0
+    less_than_or_equal_to: MAX_LAG,
+    greater_than_or_equal_to: MIN_LAG
   }
 
   validates :to, uniqueness: { scope: :from }
@@ -176,7 +179,7 @@ class Relation < ApplicationRecord
   def successor_soonest_start
     if follows? && predecessor_date
       days = WorkPackages::Shared::WorkingDays.new
-      days.add_lag(predecessor_date, lag)
+      days.with_lag(predecessor_date, lag)
     end
   end
 

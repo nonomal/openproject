@@ -34,17 +34,16 @@ RSpec.describe "Calendar drag&dop and resizing",
                :selenium do
   include_context "with calendar full access"
 
-  let!(:other_user) do
-    create(:user,
-           firstname: "Bernd",
-           member_with_permissions: { project => %w[view_work_packages view_calendar] })
-  end
-
-  let!(:work_package) do
+  shared_let(:monday) { Date.current.beginning_of_week(:monday) }
+  shared_let(:tuesday) { monday + 1.day }
+  shared_let(:wednesday) { monday + 2.days }
+  shared_let(:thursday) { monday + 3.days }
+  shared_let(:friday) { monday + 4.days }
+  shared_let(:work_package) do
     create(:work_package,
            project:,
-           start_date: Time.zone.today.beginning_of_week.next_occurring(:tuesday),
-           due_date: Time.zone.today.beginning_of_week.next_occurring(:thursday))
+           start_date: tuesday,
+           due_date: thursday)
   end
 
   before do
@@ -55,11 +54,10 @@ RSpec.describe "Calendar drag&dop and resizing",
 
   context "with full permissions" do
     it "allows to resize to change the dates of a wp" do
-      target = work_package.due_date + 1.day
+      target = friday
       current_start = work_package.start_date
-      retry_block do
-        calendar.resize_date(work_package, target)
-      end
+
+      calendar.resize_end_date(work_package, target)
 
       calendar.expect_and_dismiss_toaster(message: I18n.t("js.notice_successful_update"))
 
@@ -69,12 +67,10 @@ RSpec.describe "Calendar drag&dop and resizing",
     end
 
     it "allows to resize from the start" do
-      target = work_package.start_date - 1.day
+      target = monday
       current_end = work_package.due_date
 
-      retry_block do
-        calendar.resize_date(work_package, target, end_date: false)
-      end
+      calendar.resize_start_date(work_package, target)
 
       calendar.expect_and_dismiss_toaster(message: I18n.t("js.notice_successful_update"))
 
@@ -84,13 +80,9 @@ RSpec.describe "Calendar drag&dop and resizing",
     end
 
     it "allows to drag the work package to another date" do
-      target = Time.zone.today.beginning_of_week
+      target = monday
 
-      retry_block do
-        calendar.drag_event(work_package, target)
-      end
-
-      calendar.expect_and_dismiss_toaster(message: I18n.t("js.notice_successful_update"))
+      calendar.drag_event(work_package, target)
 
       work_package.reload
 
@@ -98,9 +90,39 @@ RSpec.describe "Calendar drag&dop and resizing",
       expect(work_package.start_date).to eq(target - 1.day)
       expect(work_package.due_date).to eq(target + 1.day)
     end
+
+    context "with work packages having only start or due date" do
+      shared_let(:start_only_wp) do
+        create(:work_package,
+               subject: "Start only",
+               project:,
+               start_date: tuesday)
+      end
+      shared_let(:due_only_wp) do
+        create(:work_package,
+               subject: "Due only",
+               project:,
+               due_date: thursday)
+      end
+
+      it "keeps one date set and the other unset when dragging them to another date (Bug #63475)" do
+        # move start_only_wp to wednesday
+        calendar.drag_event(start_only_wp, wednesday)
+        expect(start_only_wp.reload).to have_attributes(start_date: wednesday, due_date: nil)
+
+        # move due_only_wp to wednesday
+        calendar.drag_event(due_only_wp, wednesday)
+        expect(due_only_wp.reload).to have_attributes(start_date: nil, due_date: wednesday)
+      end
+    end
   end
 
   context "without permission to edit" do
+    let(:other_user) do
+      create(:user,
+             firstname: "Bernd",
+             member_with_permissions: { project => %w[view_work_packages view_calendar] })
+    end
     let(:current_user) { other_user }
 
     it "allows neither dragging nor resizing any wp" do

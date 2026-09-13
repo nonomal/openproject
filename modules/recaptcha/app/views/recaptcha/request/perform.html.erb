@@ -6,7 +6,7 @@
       <% input_name = "g-recaptcha-response" %>
       <input type="hidden" name="<%= input_name %>">
       <%= recaptcha_tags(
-            nonce: content_security_policy_script_nonce,
+            nonce: content_security_policy_nonce,
             callback: "submitRecaptchaForm",
             site_key: recaptcha_settings["website_key"]
           ) %>
@@ -29,7 +29,7 @@
       <% end %>
     <% elsif recaptcha_settings['recaptcha_type'] == ::OpenProject::Recaptcha::TYPE_V3 %>
       <%= recaptcha_v3 action: "login",
-                       nonce: content_security_policy_script_nonce,
+                       nonce: content_security_policy_nonce,
                        callback: "submitRecaptchaForm",
                        site_key: recaptcha_settings["website_key"] %>
 

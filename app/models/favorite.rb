@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,8 +30,7 @@
 
 class Favorite < ApplicationRecord
   belongs_to :user
-  belongs_to :favored, polymorphic: true
+  belongs_to :favorited, polymorphic: true
 
-  validates :user, presence: true
-  validates :favored, presence: true
+  validates :favorited_id, uniqueness: { scope: %i[favorited_type user_id], message: :already_favorited }
 end

@@ -58,7 +58,7 @@ module Bim::Bcf
       if attachments.loaded?
         attachments.detect { |a| a.description == "snapshot" }
       else
-        attachments.find_by_description("snapshot")
+        attachments.find_by(description: "snapshot")
       end
     end
 
@@ -73,7 +73,7 @@ module Bim::Bcf
 
     def build_snapshot(file, user: User.current)
       ::Attachments::BuildService
-        .bypass_whitelist(user:)
+        .bypass_allowlist(user:)
         .call(file:, container: self, filename: file.original_filename, description: "snapshot")
         .result
     end

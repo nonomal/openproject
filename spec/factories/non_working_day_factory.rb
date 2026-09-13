@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :non_working_day do
     sequence(:name) { "Non working on #{date} " }

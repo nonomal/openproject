@@ -37,6 +37,10 @@ class DevelopmentDataSeeder < CompositeSeeder
     ]
   end
 
+  def applicable?
+    DevelopmentData::CustomFieldsSeeder.new.applicable?
+  end
+
   def namespace
     "DevelopmentData"
   end

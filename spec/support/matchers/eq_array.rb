@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,7 +31,7 @@
 # Differ is private, so this can break at any moment
 # Example:
 #     expect([1, 2, 3]).to eq_array [2, 3, 4]
-#     expect(actual).to eq_array(expected) { [_1.id, _1.value] }
+#     expect(actual).to eq_array(expected) { [it.id, it.value] }
 RSpec::Matchers.define :eq_array do |expected|
   match { |actual| expected == actual }
 

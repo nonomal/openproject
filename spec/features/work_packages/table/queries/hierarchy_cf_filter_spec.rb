@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,21 +30,22 @@
 
 require "spec_helper"
 
-RSpec.describe "Work package filtering by hierarchy custom field", :js do
+RSpec.describe "Work package filtering by hierarchy custom field", :js, with_ee: [:custom_field_hierarchies] do
   let(:project) { create(:project) }
-  let(:type) { project.types.first }
+  let(:type) { project.enabled_types.first }
   let(:wp_table) { Pages::WorkPackagesTable.new(project) }
   let(:filters) { Components::WorkPackages::Filters.new }
   let(:hierarchy_root) { create(:hierarchy_item) }
   let!(:hierarchy_cf) do
     create(:hierarchy_wp_custom_field, hierarchy_root:).tap do |cf|
-      type.custom_fields << cf
+      type.default_variant.custom_fields << cf
       project.work_package_custom_fields << cf
     end
   end
   let(:service) { CustomFields::Hierarchy::HierarchicalItemService.new }
-  let!(:luke) { service.insert_item(parent: hierarchy_root, label: "luke").value! }
-  let!(:leia) { service.insert_item(parent: hierarchy_root, label: "leia").value! }
+  let(:contract_class) { CustomFields::Hierarchy::InsertListItemContract }
+  let!(:luke) { service.insert_item(contract_class:, parent: hierarchy_root, label: "luke").value! }
+  let!(:leia) { service.insert_item(contract_class:, parent: hierarchy_root, label: "leia").value! }
 
   let!(:wp_luke) do
     create(:work_package, project:, subject: "Luke's wp").tap do |wp|
@@ -73,7 +76,7 @@ RSpec.describe "Work package filtering by hierarchy custom field", :js do
 
         # Filtering by hierarchy (=)
 
-        filters.add_filter_by(hierarchy_cf.name, "is", [luke.label], hierarchy_cf.attribute_name(:camel_case))
+        filters.add_filter_by(hierarchy_cf.name, "is (OR)", [luke.label], hierarchy_cf.attribute_name(:camel_case))
 
         wp_table.ensure_work_package_not_listed!(wp_leia)
         wp_table.expect_work_package_listed(wp_luke)
@@ -94,7 +97,7 @@ RSpec.describe "Work package filtering by hierarchy custom field", :js do
     end
 
     context "when equals with descendants" do
-      let!(:grogu) { service.insert_item(parent: luke, label: "Grogu").value! }
+      let!(:grogu) { service.insert_item(contract_class:, parent: luke, label: "Grogu").value! }
       let!(:wp_grogu) do
         create(:work_package, project:, subject: "Grogu's wp").tap do |wp|
           wp.custom_field_values = { hierarchy_cf.id => grogu.id }

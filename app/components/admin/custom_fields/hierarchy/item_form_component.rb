@@ -35,28 +35,60 @@ module Admin
         include OpTurbo::Streamable
 
         def item_options
-          options = { url:, method: http_verb, data: { test_selector: "op-custom-fields--new-item-form" } }
-          options[:data][:turbo_frame] = ItemsComponent.wrapper_key if model.new_record?
-
-          options
+          {
+            url:,
+            method: http_verb,
+            data: {
+              turbo_frame: ItemsComponent.wrapper_key,
+              test_selector: "op-custom-fields--new-item-form"
+            }
+          }
         end
 
         def http_verb
-          model.new_record? ? :post : :put
+          new_record? ? :post : :put
         end
 
-        def url
-          if model.new_record?
-            new_child_custom_field_item_path(root.custom_field_id, model.parent, position: model.sort_order)
+        def secondary_input_format
+          field_format = root.custom_field.field_format
+          case field_format
+          when "hierarchy"
+            :short
+          when "weighted_item_list"
+            :weight
           else
-            custom_field_item_path(root.custom_field_id, model)
+            raise ArgumentError, "Unsupported field format: #{field_format}"
           end
         end
 
         private
 
         def root
-          @root ||= model.new_record? ? model.parent.root : model.root
+          @root ||= new_record? ? model.parent.root : model.root
+        end
+
+        def project_custom_field_context?
+          root.custom_field.is_a?(ProjectCustomField)
+        end
+
+        def new_record? = model.new_record?
+
+        def custom_field_id = root.custom_field_id
+
+        def url # rubocop:disable Metrics/AbcSize
+          parent = model.parent
+          position = model.sort_order
+          if project_custom_field_context?
+            if new_record?
+              new_child_admin_settings_project_custom_field_item_path(custom_field_id, parent, position:)
+            else
+              admin_settings_project_custom_field_item_path(custom_field_id, model)
+            end
+          elsif new_record?
+            new_child_custom_field_item_path(custom_field_id, parent, position:)
+          else
+            custom_field_item_path(custom_field_id, model)
+          end
         end
       end
     end

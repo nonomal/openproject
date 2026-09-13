@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -32,16 +32,19 @@ import { map } from 'rxjs/operators';
 import { HalResource } from 'core-app/features/hal/resources/hal-resource';
 import { CollectionResource } from 'core-app/features/hal/resources/collection-resource';
 
-export function renderHierarchyItem(item:HalResource):Observable<HTMLDivElement> {
+export function renderHierarchyItem(item:HalResource, multiple = false):Observable<HTMLSpanElement> {
   const customFieldItemLinks = item.$links as { branch:() => HalResource[] };
   return from(customFieldItemLinks.branch())
     .pipe(
       map((ancestors:CollectionResource) => spansFromAncestors(ancestors)),
       map((spans) => {
-        const div = document.createElement('div');
-        div.className = 'path';
-        spans.forEach((span) => div.appendChild(span));
-        return div;
+        const span = document.createElement('span');
+        span.classList.add('path');
+        if (multiple) {
+          span.classList.add('-multiline');
+        }
+        spans.forEach((s) => span.appendChild(s));
+        return span;
       }),
     );
 }
@@ -65,6 +68,11 @@ function spansFromAncestors(ancestors:CollectionResource):HTMLSpanElement[] {
         short.textContent = `(${el.short})`;
         short.className = 'color-fg-subtle';
         spans.push(short);
+      } else if (el.weight !== null) {
+        const weight = document.createElement('span');
+        weight.textContent = `(${el.formattedWeight})`;
+        weight.className = 'color-fg-subtle';
+        spans.push(weight);
       }
     });
 

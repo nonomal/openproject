@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,7 +33,7 @@ require "spec_helper"
 RSpec.describe "Wysiwyg code block macro", :js, :selenium do
   shared_let(:admin) { create(:admin) }
   let(:user) { admin }
-  let(:project) { create(:project, enabled_module_names: %w[wiki]) }
+  let(:project) { create(:project, :with_internal_wiki) }
   let(:editor) { Components::WysiwygEditor.new }
 
   let(:snippet) do
@@ -73,7 +75,7 @@ RSpec.describe "Wysiwyg code block macro", :js, :selenium do
           expect(container).to have_css(".op-uc-code-block--language", text: "ruby", count: 2)
         end
 
-        click_on "Save"
+        click_on "Create"
         expect_and_dismiss_flash(message: "Successful creation.")
 
         # Expect output widget
@@ -105,7 +107,7 @@ RSpec.describe "Wysiwyg code block macro", :js, :selenium do
 
           expect(container).to have_css(".op-uc-code-block", text: "asdf")
 
-          click_on "Save"
+          click_on "Create"
           expect_and_dismiss_flash(message: "Successful creation.")
 
           wp = WikiPage.last
@@ -151,7 +153,7 @@ RSpec.describe "Wysiwyg code block macro", :js, :selenium do
         end
 
         # Save wiki page
-        click_on "Save"
+        click_on "Create"
 
         expect_and_dismiss_flash(message: "Successful creation.")
 

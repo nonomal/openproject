@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -78,6 +80,7 @@ module Queries::Copy
     def build_filter_mappers
       {
         version_id: state_mapper(:version_id_lookup),
+        target_version_id: state_mapper(:version_id_lookup),
         category_id: state_mapper(:category_id_lookup),
         parent: state_mapper(:work_package_id_lookup)
       }

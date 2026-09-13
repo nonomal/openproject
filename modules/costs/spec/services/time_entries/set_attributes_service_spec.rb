@@ -104,7 +104,7 @@ RSpec.describe TimeEntries::SetAttributesService, type: :model do
   context "with params" do
     let(:params) do
       {
-        work_package:,
+        entity: work_package,
         project:,
         activity:,
         spent_on:,
@@ -116,7 +116,8 @@ RSpec.describe TimeEntries::SetAttributesService, type: :model do
     let(:expected) do
       {
         user_id: user.id,
-        work_package_id: work_package.id,
+        entity_type: "WorkPackage",
+        entity_id: work_package.id,
         project_id: project.id,
         activity_id: activity.id,
         spent_on: Date.parse(spent_on),
@@ -135,6 +136,26 @@ RSpec.describe TimeEntries::SetAttributesService, type: :model do
       expect(attributes_of_interest)
         .to eql(expected)
     end
+
+    context "with an existing record and params including an empty user" do
+      let(:params) do
+        {
+          user_id: ""
+        }
+      end
+
+      before do
+        allow(time_entry_instance).to receive(:new_record?).and_return(false)
+      end
+
+      it "runs correctly and not raise an error trying to assign the timezone (Reggression #63843)" do
+        expect do
+          subject
+        end.not_to raise_error
+
+        expect(time_entry_instance.user).to be_nil
+      end
+    end
   end
 
   context "with a user with a defined timezone" do
@@ -152,7 +173,8 @@ RSpec.describe TimeEntries::SetAttributesService, type: :model do
         spent_on: Time.zone.today,
         ongoing: true,
         user_id: user.id,
-        work_package_id: work_package.id,
+        entity_type: "WorkPackage",
+        entity_id: work_package.id,
         activity_id: activity.id
       }
     end
@@ -207,11 +229,11 @@ RSpec.describe TimeEntries::SetAttributesService, type: :model do
   context "with project not specified" do
     let(:params) do
       {
-        work_package:
+        entity: work_package
       }
     end
 
-    it "sets the project to the work_package's project" do
+    it "sets the project to the entity's project" do
       subject
 
       expect(time_entry_instance.project)

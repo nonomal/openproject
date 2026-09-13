@@ -52,7 +52,7 @@ RSpec.describe "My spent time widget with a negative time zone", :js,
   let!(:time_entry) do
     create(:time_entry,
            spent_on: monday,
-           work_package:,
+           entity: work_package,
            project:,
            activity:,
            user:)

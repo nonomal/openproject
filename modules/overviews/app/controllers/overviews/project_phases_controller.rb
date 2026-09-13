@@ -31,7 +31,6 @@
 module ::Overviews
   class ProjectPhasesController < ::ApplicationController
     include OpTurbo::ComponentStream
-    include OpTurbo::DialogStreamHelper
 
     before_action :find_project_phase_and_project
     before_action :authorize
@@ -41,10 +40,10 @@ module ::Overviews
     end
 
     def preview
-      service_call = ::ProjectLifeCycleSteps::SetAttributesService
+      service_call = ::ProjectPhases::SetAttributesService
                 .new(user: current_user,
                      model: @project_phase,
-                     contract_class: ProjectLifeCycleSteps::UpdateContract)
+                     contract_class: ::ProjectPhases::UpdateContract)
                 .call(permitted_params.project_phase)
 
       update_via_turbo_stream(
@@ -57,19 +56,18 @@ module ::Overviews
     end
 
     def update
-      service_call = ::ProjectLifeCycleSteps::UpdateService
+      service_call = ::ProjectPhases::UpdateService
                       .new(user: current_user, model: @project_phase)
                       .call(permitted_params.project_phase)
 
-      component, status =
-        if service_call.success?
-          [Overviews::ProjectPhases::SidePanelComponent.new(project: @project), :ok]
-        else
-          [Overviews::ProjectPhases::EditComponent.new(service_call.result), :unprocessable_entity]
-        end
+      component = if service_call.success?
+                    Overviews::ProjectPhases::SidePanelComponent.new(project: @project)
+                  else
+                    Overviews::ProjectPhases::EditComponent.new(service_call.result)
+                  end
 
       update_via_turbo_stream(component:)
-      respond_to_with_turbo_streams(status:)
+      respond_to_with_turbo_streams(status: service_call)
     end
 
     private

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,7 +31,7 @@
 class Roles::CreateService < BaseServices::Create
   private
 
-  def perform(params)
+  def perform
     copy_workflow_id = params.delete(:copy_workflow_from)
 
     super_call = super

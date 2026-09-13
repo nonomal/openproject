@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -53,7 +55,7 @@ RSpec.describe "backup", :js, :selenium do
   it "can be downloaded" do
     visit "/admin/backups"
 
-    fill_in "backupToken", with: backup_token.plain_value
+    fill_in "backup_token", with: backup_token.plain_value
     click_on "Request backup"
 
     expect(page).to have_content I18n.t("job_status_dialog.generic_messages.in_queue"), wait: 10
@@ -72,7 +74,7 @@ RSpec.describe "backup", :js, :selenium do
     it "shows the error" do
       visit "/admin/backups"
 
-      fill_in "backupToken", with: "foobar"
+      fill_in "backup_token", with: "foobar"
       click_on "Request backup"
 
       expect(page).to have_content I18n.t("backup.error.invalid_token")
@@ -88,7 +90,7 @@ RSpec.describe "backup", :js, :selenium do
 
       expect(page).to have_content /#{I18n.t('backup.reset_token.heading_reset')}/i
 
-      fill_in "login_verification", with: "reset"
+      check "I understand that the existing backup token will be invalidated"
       click_on "Reset"
     end
 

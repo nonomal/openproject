@@ -29,7 +29,7 @@ value:
       title: It's no moon
     type:
       href: urn:openproject-org:api:v3:storages:OneDrive
-      title: OneDrive/SharePoint
+      title: OneDrive
     prepareUpload:
       - href: /api/v3/storages/1337/files/prepare_upload
         method: post

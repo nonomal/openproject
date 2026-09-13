@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class DownloadList
   SHARED_PATH = Pathname.new(
     ENV.fetch("CAPYBARA_DOWNLOADED_FILE_DIR", Rails.root.join("tmp/test/downloads"))

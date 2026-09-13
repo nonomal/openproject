@@ -31,30 +31,23 @@
 module My
   module TimeTracking
     class SubHeaderComponent < ApplicationComponent
+      include My::TimeTrackingHelper
+
       options :date, :mode, :view_mode
 
-      def title # rubocop:disable Metrics/AbcSize
+      def title
         case mode
         when :day
           I18n.l(date, format: :long)
-        when :week
-          bow = date.beginning_of_week
-          eow = date.end_of_week
-
-          if bow.year == eow.year && bow.month == eow.month
-            [I18n.l(bow, format: "%d."), I18n.l(eow, format: "%d. %B %Y")].join(" - ")
-          elsif bow.year == eow.year
-            [I18n.l(bow, format: "%d. %B"), I18n.l(eow, format: "%d. %B %Y")].join(" - ")
-          else
-            [I18n.l(bow, format: "%d. %B %Y"), I18n.l(eow, format: "%d. %B %Y")].join(" - ")
-          end
+        when :week, :workweek
+          week_date_range(date)
         when :month
           I18n.l(date, format: "%B %Y")
         end
       end
 
       def today_href
-        my_time_tracking_path(date: Date.current, view_mode:, mode:)
+        my_time_tracking_path(date: "today", view_mode:, mode:)
       end
 
       def previous_attrs # rubocop:disable Metrics/AbcSize
@@ -62,6 +55,9 @@ module My
         when :day
           { href: my_time_tracking_path(date: date - 1.day, view_mode:, mode:),
             aria: { label: I18n.t(:label_previous_day) } }
+        when :workweek
+          { href: my_time_tracking_path(date: date - 1.week, view_mode:, mode:),
+            aria: { label: I18n.t(:label_previous_workweek) } }
         when :week
           { href: my_time_tracking_path(date: date - 1.week, view_mode:, mode:),
             aria: { label: I18n.t(:label_previous_week) } }
@@ -76,6 +72,9 @@ module My
         when :day
           { href: my_time_tracking_path(date: date + 1.day, view_mode:, mode:),
             aria: { label: I18n.t(:label_next_day) } }
+        when :workweek
+          { href: my_time_tracking_path(date: date + 1.week, view_mode:, mode:),
+            aria: { label: I18n.t(:label_next_workweek) } }
         when :week
           { href: my_time_tracking_path(date: date + 1.week, view_mode:, mode:),
             aria: { label: I18n.t(:label_next_week) } }
@@ -83,6 +82,10 @@ module My
           { href: my_time_tracking_path(date: date + 1.month, view_mode:, mode:),
             aria: { label: I18n.t(:label_next_month) } }
         end
+      end
+
+      def can_create_time_entry?
+        User.current.allowed_in_any_work_package?(:log_own_time) || User.current.allowed_in_any_project?(:log_time)
       end
     end
   end

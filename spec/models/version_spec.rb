@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -335,6 +337,65 @@ RSpec.describe Version do
     end
   end
 
+  describe "aggregations via target versions" do
+    let(:project) { create(:project) }
+    let(:version) { create(:version, project:) }
+    let(:other_version) { create(:version, project:) }
+
+    context "when a work package targets two versions" do
+      let!(:work_package) { create(:work_package, project:, version:, estimated_hours: 3) }
+
+      before do
+        work_package.work_package_versions.create!(version: other_version, kind: "target")
+      end
+
+      it "counts the work package for both versions" do
+        expect(version.issues_count).to eq 1
+        expect(other_version.issues_count).to eq 1
+      end
+
+      it "sums estimated hours for both versions" do
+        expect(version.estimated_hours).to eq 3.0
+        expect(other_version.estimated_hours).to eq 3.0
+      end
+
+      it "sums spent time for both versions" do
+        create(:time_entry, entity: work_package, project:, hours: 2)
+
+        expect(version.spent_hours).to eq 2.0
+        expect(other_version.spent_hours).to eq 2.0
+      end
+    end
+
+    context "when a work package only carries the legacy version_id without a target row" do
+      let!(:work_package) { create(:work_package, project:, version:, estimated_hours: 3) }
+
+      before do
+        create(:time_entry, entity: work_package, project:, hours: 2)
+        WorkPackageVersion.delete_all
+      end
+
+      it "is not counted" do
+        expect(version.issues_count).to eq 0
+        expect(version.estimated_hours).to eq 0.0
+        expect(version.spent_hours).to eq 0.0
+      end
+    end
+
+    context "when a work package only observed the version" do
+      let!(:work_package) { create(:work_package, project:, estimated_hours: 3) }
+
+      before do
+        work_package.work_package_versions.create!(version:, kind: "observed_in")
+      end
+
+      it "is not counted" do
+        expect(version.issues_count).to eq 0
+        expect(version.estimated_hours).to eq 0.0
+      end
+    end
+  end
+
   describe "#start_date" do
     context "with a value saved and a work package with its own start_date" do
       let(:version) { create(:version, start_date: "2010-01-05") }
@@ -487,8 +548,191 @@ RSpec.describe Version do
     end
   end
 
-  it_behaves_like "acts_as_customizable included" do
-    let(:model_instance) { version }
-    let(:custom_field) { create(:version_custom_field) }
+  it_behaves_like "acts_as_customizable included", admin_only_allowed: false, comments: false do
+    let!(:model_instance) { create(:version) }
+    let!(:new_model_instance) { version }
+    let!(:custom_field) { create(:version_custom_field) }
+  end
+
+  describe ".visible scope" do
+    let(:user) { create(:user) }
+    let(:project1) { create(:project) }
+    let(:project2) { create(:project) }
+    let(:role) { create(:project_role, permissions: [:view_work_packages]) }
+    let!(:member) { create(:member, user: user, project: project1, roles: [role]) }
+
+    let!(:version_in_project1) { create(:version, project: project1) }
+    let!(:systemwide_version) { create(:version, project: project2, sharing: "system") }
+    let!(:version_in_project2) { create(:version, project: project2) }
+    let!(:work_package) { create(:work_package, project: project2, version: version_in_project2) }
+
+    before do
+      # Simulate that the user can see the work package in project2 (e.g., via sharing)
+      allow(WorkPackage).to receive(:visible).with(user).and_return(WorkPackage.where(id: work_package.id))
+    end
+
+    it "returns versions from visible projects, systemwide, and referenced by visible work packages" do
+      visible_versions = described_class.visible(user)
+      expect(visible_versions).to include(version_in_project1)
+      expect(visible_versions).to include(systemwide_version)
+      expect(visible_versions).to include(version_in_project2)
+    end
+
+    it "does not return unrelated versions" do
+      unrelated_version = create(:version)
+      expect(described_class.visible(user)).not_to include(unrelated_version)
+    end
+
+    context "when user has the manage_work_packages permission in project" do
+      let(:role) { create(:project_role, permissions: [:manage_versions]) }
+
+      it "returns the version from that project" do
+        visible_versions = described_class.visible(user)
+        expect(visible_versions).to include(version_in_project1)
+      end
+    end
+
+    context "when user has an unrelated permission in project" do
+      let(:role) { create(:project_role, permissions: [:manage_users]) }
+
+      it "does not return the version from that project" do
+        visible_versions = described_class.visible(user)
+        expect(visible_versions).not_to include(version_in_project1)
+      end
+    end
+  end
+
+  describe "shared_via_work_packages scope" do
+    subject { described_class.shared_via_work_packages(user) }
+
+    let(:user) { create(:user) }
+    let(:visible_project) { create(:project, member_with_permissions: { user => [:view_work_packages] }) }
+    let(:invisible_project) { create(:project) }
+    let(:version) { create(:version, project: invisible_project) }
+
+    context "when a visible work package targets the version" do
+      before { create(:work_package, project: visible_project, version:) }
+
+      it { is_expected.to contain_exactly(version) }
+    end
+
+    context "when only an invisible work package targets the version" do
+      before { create(:work_package, project: invisible_project, version:) }
+
+      it { is_expected.to be_empty }
+    end
+  end
+
+  describe "#visible?" do
+    subject { version.visible?(user) }
+
+    let(:user) { create(:user) }
+    let(:project) { create(:project) }
+    let(:role) { create(:project_role, permissions: [:view_work_packages]) }
+    let!(:member) { create(:member, user: user, project: project, roles: [role]) }
+    let(:version) { create(:version, project: project) }
+
+    context "when the user has project access" do
+      it { is_expected.to be_truthy }
+    end
+
+    context "when the user has access to a shared work package but not the project" do
+      let(:other_user) { create(:user) }
+      let(:other_project) { create(:project) }
+      let!(:other_version) { create(:version, project: other_project) }
+      let!(:shared_wp) { create(:work_package, project: other_project, version: other_version) }
+
+      before do
+        # Simulate that the user can see the work package in other_project (e.g., via sharing)
+        allow(WorkPackage).to receive(:visible).with(other_user).and_return(WorkPackage.where(id: shared_wp.id))
+      end
+
+      it "returns true if the user can see a work package of the version" do
+        expect(other_version.visible?(other_user)).to be true
+      end
+    end
+
+    context "when the user has access to manage_versions in the project" do
+      let(:role) { create(:project_role, permissions: [:manage_versions]) }
+
+      it { is_expected.to be_truthy }
+    end
+
+    context "when the user only has access to unrelated permission in the project" do
+      let(:role) { create(:project_role, permissions: [:manage_users]) }
+
+      it { is_expected.to be_falsey }
+    end
+
+    context "when the user has no access to the project or any work package" do
+      let(:version) { create(:version) }
+
+      it { is_expected.to be_falsey }
+    end
+
+    context "when the version is systemwide" do
+      let(:version) { create(:version, sharing: "system") }
+
+      it { is_expected.to be_truthy }
+    end
+  end
+
+  describe "order by name" do
+    shared_let(:project) { create(:project) }
+    shared_let(:ordered_names) do
+      [
+        "1. xxxx",
+        "1.1. aaa",
+        "1.1. zzz",
+        "1.2. mmm",
+        "1.10. aaa",
+        "9",
+        "10.2",
+        "10.10.2",
+        "10.10.10",
+        "aaaaa",
+        "aaaaa 1."
+      ]
+    end
+    shared_let(:versions) { ordered_names.shuffle.map { |name| create(:version, name:, project:) } }
+
+    it "returns the versions in ascending semver order" do
+      expect(described_class.order(:name).pluck(:name)).to eql ordered_names
+    end
+
+    it "returns the versions in descending semver order" do
+      expect(described_class.order(name: :desc).pluck(:name)).to eql ordered_names.reverse
+    end
+  end
+
+  describe "destroying a version referenced by work packages" do
+    shared_let(:owning_project) { create(:project) }
+    shared_let(:other_project) { create(:project) }
+    shared_let(:shared_version) { create(:version, project: owning_project, sharing: "system") }
+    shared_let(:admin) { create(:admin) }
+
+    let!(:work_package) do
+      create(:work_package, project: other_project).tap do |wp|
+        wp.target_version_ids_replacements = [shared_version.id]
+        wp.save!
+      end
+    end
+
+    def update_subject
+      WorkPackages::UpdateService
+        .new(user: admin, model: work_package.reload)
+        .call(subject: "A new subject unrelated to versions")
+    end
+
+    it "is editable while the version's project still exists" do
+      expect(update_subject).to be_success
+    end
+
+    it "leaves the work package editable after its version's project is destroyed" do
+      owning_project.destroy
+
+      result = update_subject
+      expect(result).to be_success, -> { result.errors.full_messages.to_sentence }
+    end
   end
 end

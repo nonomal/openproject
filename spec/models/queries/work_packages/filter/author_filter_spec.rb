@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,6 +31,19 @@
 require "spec_helper"
 
 RSpec.describe Queries::WorkPackages::Filter::AuthorFilter do
+  describe "#autocomplete_options" do
+    let(:instance) { described_class.create!(context: build_stubbed(:query, project: nil)) }
+
+    before do
+      login_as create(:user)
+    end
+
+    it "restricts the candidates to users, mirroring #allowed_values" do
+      expect(instance.autocomplete_options[:filters])
+        .to contain_exactly({ name: "type", operator: "=", values: %w[User] })
+    end
+  end
+
   it_behaves_like "basic query filter" do
     let(:type) { :list }
     let(:class_key) { :author_id }

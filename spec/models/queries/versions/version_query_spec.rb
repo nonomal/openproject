@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -105,44 +107,6 @@ RSpec.describe Queries::Versions::VersionQuery do
           expected = Version.order(name: :desc).order(id: :desc)
 
           expect(instance.results.to_sql).to eql expected.to_sql
-        end
-      end
-    end
-
-    describe "by semver_name" do
-      let(:attribute) { :semver_name }
-
-      describe "ascending" do
-        let(:direction) { :asc }
-
-        it "is the same as handwriting the query" do
-          expected = Version.order(name: :asc).order(id: :desc)
-
-          expect(instance.results.to_sql).to eql expected.to_sql
-        end
-
-        it "warns about being deprecated" do
-          instance.results
-
-          expect(OpenProject::Deprecation)
-            .to have_received(:warn).with("Sorting by semver_name is deprecated, name should be used instead")
-        end
-      end
-
-      describe "descending" do
-        let(:direction) { :desc }
-
-        it "is the same as handwriting the query" do
-          expected = Version.order(name: :desc).order(id: :desc)
-
-          expect(instance.results.to_sql).to eql expected.to_sql
-        end
-
-        it "warns about being deprecated" do
-          instance.results
-
-          expect(OpenProject::Deprecation)
-            .to have_received(:warn).with("Sorting by semver_name is deprecated, name should be used instead")
         end
       end
     end

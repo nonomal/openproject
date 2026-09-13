@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,8 +32,8 @@ module BaseServices
   class Write < BaseContracted
     protected
 
-    def persist(service_result)
-      service_result = super(service_result) # rubocop:disable Style/SuperArguments
+    def persist(_service_result)
+      service_result = super
 
       unless service_result.result.save
         service_result.errors = service_result.result.errors
@@ -47,7 +49,7 @@ module BaseServices
       service_result
     end
 
-    def before_perform(params, _service_result)
+    def before_perform(_service_result)
       set_attributes(params)
     end
 
@@ -65,11 +67,11 @@ module BaseServices
     end
 
     def instance(_params)
-      raise NotImplementedError
+      raise SubclassResponsibilityError
     end
 
     def default_contract_class
-      raise NotImplementedError
+      raise SubclassResponsibilityError
     end
 
     def instance_class

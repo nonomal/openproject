@@ -21,14 +21,16 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
 import { debugLog } from 'core-app/shared/helpers/debug_output';
 import { ErrorReporterBase, ErrorTags, MessageSeverity } from 'core-app/core/errors/error-reporter-base';
-import type { Appsignal, Span } from './appsignal-dependency';
+import type { Appsignal } from './appsignal-dependency';
+import { Span } from '@appsignal/javascript';
+import { getMetaElement } from 'core-app/core/setup/globals/global-helpers';
 
 export class AppsignalReporter extends ErrorReporterBase {
   private client:Appsignal;
@@ -49,7 +51,7 @@ export class AppsignalReporter extends ErrorReporterBase {
 
   constructor() {
     super();
-    const element = document.querySelector('meta[name=openproject_appsignal]') as HTMLElement;
+    const element = getMetaElement('openproject_appsignal')!;
     this.loadAppsignal(element);
   }
 

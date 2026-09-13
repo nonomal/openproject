@@ -21,21 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import {
-  AfterViewInit,
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  Input,
-  OnDestroy,
-  OnInit,
-  ViewChild,
-} from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, Input, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { WorkPackageResource } from 'core-app/features/hal/resources/work-package-resource';
 import { filter, throttleTime } from 'rxjs/operators';
 import { UntilDestroyedMixin } from 'core-app/shared/helpers/angular/until-destroyed.mixin';
@@ -43,32 +34,29 @@ import { ApiV3Service } from 'core-app/core/apiv3/api-v3.service';
 import { WorkPackageRelationsService } from './wp-relations.service';
 import { PathHelperService } from 'core-app/core/path-helper/path-helper.service';
 import { TurboRequestsService } from 'core-app/core/turbo/turbo-requests.service';
-import { renderStreamMessage } from '@hotwired/turbo';
+import { type FrameElement, renderStreamMessage, type TurboSubmitEndEvent } from '@hotwired/turbo';
 import { HalEventsService } from 'core-app/features/hal/services/hal-events.service';
 
 @Component({
   selector: 'wp-relations',
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './wp-relations.template.html',
+  standalone: false,
 })
 export class WorkPackageRelationsComponent extends UntilDestroyedMixin implements OnInit, AfterViewInit, OnDestroy {
+  private wpRelations = inject(WorkPackageRelationsService);
+  private apiV3Service = inject(ApiV3Service);
+  private halEvents = inject(HalEventsService);
+  private PathHelper = inject(PathHelperService);
+  private turboRequests = inject(TurboRequestsService);
+
   @Input() public workPackage:WorkPackageResource;
 
-  @ViewChild('frameElement') readonly relationTurboFrame:ElementRef<HTMLIFrameElement>;
+  @ViewChild('frameElement') readonly relationTurboFrame:ElementRef<FrameElement>;
 
   turboFrameSrc:string;
 
   private turboFrameListener:EventListener = this.updateFrontendData.bind(this);
-
-  constructor(
-    private wpRelations:WorkPackageRelationsService,
-    private apiV3Service:ApiV3Service,
-    private halEvents:HalEventsService,
-    private PathHelper:PathHelperService,
-    private turboRequests:TurboRequestsService,
-) {
-    super();
-  }
 
   ngOnInit() {
     this.turboFrameSrc = `${this.PathHelper.staticBase}/work_packages/${this.workPackage.id}/relations_tab`;
@@ -91,7 +79,7 @@ export class WorkPackageRelationsComponent extends UntilDestroyedMixin implement
         this.untilDestroyed(),
       )
       .subscribe(() => {
-        this.updateRelationsTab();
+        this.updateRelationsTabAndCounter();
       });
 
     /*
@@ -108,19 +96,13 @@ export class WorkPackageRelationsComponent extends UntilDestroyedMixin implement
     document.addEventListener('turbo:submit-end', this.turboFrameListener);
   }
 
-  public updateCounter() {
-    const url = this.PathHelper.workPackageUpdateCounterPath(this.workPackage.id!, 'relations');
-    void this.turboRequests.request(url);
-  }
-
-  private async updateFrontendData(event:CustomEvent) {
+  private async updateFrontendData(event:TurboSubmitEndEvent) {
     if (event) {
-      const form = event.target as HTMLFormElement;
+      const form = event.detail.formSubmission.formElement;
       const updateWorkPackage = !!form.dataset?.updateWorkPackage;
 
       if (updateWorkPackage) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        if (event.detail && event.detail.success) {
+        if (event.detail?.success) {
           // Update the work package
           void this.apiV3Service
             .work_packages
@@ -130,19 +112,18 @@ export class WorkPackageRelationsComponent extends UntilDestroyedMixin implement
           // Refetch relations
           await this.wpRelations.require(this.workPackage.id!, true);
           this.halEvents.push(this.workPackage, { eventType: 'updated' });
-
-          this.updateCounter();
         }
       }
     }
   }
 
-  private updateRelationsTab() {
+  private updateRelationsTabAndCounter() {
     void this.turboRequests.requestStream(this.turboFrameSrc)
       .then((result) => {
         renderStreamMessage(result.html);
       });
 
-    this.updateCounter();
+    const url = this.PathHelper.workPackageUpdateCounterPath(this.workPackage.id!, 'relations');
+    void this.turboRequests.request(url);
   }
 }

@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -40,10 +40,10 @@ export abstract class AbstractFieldService<T extends Field, C extends IFieldType
   public defaultFieldType:string;
 
   /** Registered attribute types => field identifier */
-  protected fields:{ [attributeType:string]:string } = {};
+  protected fields:Record<string, string> = {};
 
   /** Registered field classes */
-  protected classes:{ [type:string]:C } = {};
+  protected classes:Record<string, C> = {};
 
   /**
    * Get the field type for the given attribute type.

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # The comments in the files of this module will try to lift you from a
 # beginner's level to an intermediary level of Ruby on Rails in the context of
 # OpenProject.

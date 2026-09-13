@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -63,8 +65,6 @@ module WatchersHelper
                 object_type: object.class.to_s.underscore.pluralize,
                 object_id: object.id)
 
-    method = watched ? :delete : :post
-
     label = watched ? I18n.t(:button_unwatch) : I18n.t(:button_watch)
 
     {
@@ -73,7 +73,7 @@ module WatchersHelper
       scheme: :default,
       aria: { label: label },
       data: {
-        method:
+        turbo_method: watched ? :delete : :post
       },
       mobile_icon: watched ? "eye-closed" : "eye",
       mobile_label: label

@@ -36,13 +36,13 @@ class Widget::Filters::Date < Widget::Filters::Base
     write(content_tag(:span, class: "advanced-filters--filter-value -binary") do
       label1 = label_tag "#{id_prefix}arg_1_val",
                          value_label,
-                         class: "hidden-for-sighted"
+                         class: "sr-only"
 
       arg1 = content_tag :span, id: "#{id_prefix}arg_1" do
         text1 = angular_component_tag "opce-basic-single-date-picker",
                                       inputs: {
                                         value: filter.operator.forced == :integers ? "" : filter.values.first.to_s,
-                                        inputId: "#{id_prefix}arg_1_val",
+                                        id: "#{id_prefix}arg_1_val",
                                         name:
                                       }
         label1 + text1
@@ -50,13 +50,13 @@ class Widget::Filters::Date < Widget::Filters::Base
 
       label2 = label_tag "#{id_prefix}arg_2_val",
                          value_label,
-                         class: "hidden-for-sighted"
+                         class: "sr-only"
 
       arg2 = content_tag :span, id: "#{id_prefix}arg_2", class: "advanced-filters--filter-value2" do
         text2 = angular_component_tag "opce-basic-single-date-picker",
                                       inputs: {
                                         value: filter.operator.forced == :integers ? "" : filter.values.second.to_s,
-                                        inputId: "#{id_prefix}arg_2_val",
+                                        id: "#{id_prefix}arg_2_val",
                                         name: name.to_s
                                       }
         label2 + text2
@@ -65,7 +65,7 @@ class Widget::Filters::Date < Widget::Filters::Base
       arg3 = content_tag :span, id: "#{id_prefix}arg_1_integers", class: "advanced-filters--integer" do
         label3 = label_tag "#{id_prefix}arg_1_integers_val",
                            value_label,
-                           class: "hidden-for-sighted"
+                           class: "sr-only"
 
         label3 + text_field_tag(name,
                                 filter.operator.forced == :integers ? filter.values.first.to_s : "",

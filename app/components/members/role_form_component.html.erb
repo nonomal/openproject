@@ -27,7 +27,7 @@ See COPYRIGHT and LICENSE files for more details.
 
 ++#%>
 
-<%= form_with model: member.new_record? ? [member.project, member] : member,
+<%= form_with model: [member.project, member],
               builder: TabularFormBuilder,
               html: form_html_options do |f| %>
   <%= hidden_field_tag :page, params[:page].to_i %>

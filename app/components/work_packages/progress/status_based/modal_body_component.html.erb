@@ -1,12 +1,11 @@
-<%= turbo_frame_tag "work_package_progress_modal" do %>
+<%= component_wrapper do %>
   <%= primer_form_with(
         model: work_package,
         url: submit_path,
         class: "progress-form",
         id: "progress-form",
         html: { autocomplete: "off" },
-        data: { "application-target": "dynamic",
-                "work-packages--progress--preview-target": "form",
+        data: { "work-packages--progress--preview-target": "form",
                 controller: "work-packages--progress--preview" }
       ) do |f| %>
     <%= flex_layout do |modal_body| %>
@@ -25,7 +24,7 @@
       <% modal_body.with_row(mt: 3) do |_tooltip| %>
         <%= render(Primer::Beta::Text.new(font_weight: :semibold)) { t("work_package.progress.label_note") } %>
         <%= render(Primer::Beta::Text.new) { t("work_package.progress.modal.status_based_help_text") } %>
-        <%= render(Primer::Beta::Link.new(href: learn_more_href)) { t(:label_learn_more) } %>
+        <%= render(Primer::Beta::Link.new(href: learn_more_href, underline: true)) { t(:label_learn_more) } %>
       <% end %>
 
       <% modal_body.with_row(mt: 3) do |_actions_row| %>

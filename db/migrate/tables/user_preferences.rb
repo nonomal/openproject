@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,13 +33,27 @@ require_relative "base"
 class Tables::UserPreferences < Tables::Base
   def self.table(migration)
     create_table migration do |t|
-      t.integer :user_id, default: 0, null: false
-      t.text :others
-      t.boolean :hide_mail, default: true
-      t.string :time_zone
-      t.boolean :impaired, default: false
+      t.bigint :user_id, null: false
+      t.jsonb :settings, default: {}
+      t.timestamps
+      t.jsonb :dismissed_enterprise_banners, null: false, default: {}
 
-      t.index :user_id, name: "index_user_preferences_on_user_id"
+      t.index :user_id,
+              name: "index_user_preferences_on_user_id"
+      t.index "(settings->'daily_reminders'->'enabled')",
+              using: :gin,
+              name: "index_user_prefs_settings_daily_reminders_enabled"
+      t.index "(settings->'daily_reminders'->'times')",
+              using: :gin,
+              name: "index_user_prefs_settings_daily_reminders_times"
+      t.index "(settings->'time_zone')",
+              using: :gin,
+              name: "index_user_prefs_settings_time_zone"
+      t.index "(settings->'workdays')",
+              using: :gin,
+              name: "index_user_prefs_settings_workdays"
+      t.index "((user_preferences.settings->'pause_reminders'->>'enabled')::boolean)",
+              name: "index_user_prefs_settings_pause_reminders_enabled"
     end
   end
 end

@@ -57,13 +57,12 @@ See COPYRIGHT and LICENSE files for more details.
       render(Primer::OpenProject::SubHeader.new) do |subheader|
         subheader.with_action_button(
           scheme: :primary,
-          aria: { label: I18n.t("ifc_models.label_new_ifc_model") },
+          leading_icon: :plus,
+          label: I18n.t("ifc_models.label_new_ifc_model"),
           data: { test_selector: "ifc-create-button" },
-          title: I18n.t("ifc_models.label_new_ifc_model"),
           tag: :a,
           href: new_bcf_project_ifc_model_path
-        ) do |button|
-          button.with_leading_visual_icon(icon: :plus)
+        ) do
           ::Bim::IfcModels::IfcModel.model_name.human
         end
       end

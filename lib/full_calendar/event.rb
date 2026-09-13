@@ -57,7 +57,7 @@ module FullCalendar
         "title" => title,
         "url" => url,
         "classNames" => class_names
-      }.merge(additional_attributes).compact_blank.as_json
+      }.merge(additional_attributes).compact.as_json
     end
 
     def to_json(*)

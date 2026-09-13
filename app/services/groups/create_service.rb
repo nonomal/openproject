@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -26,4 +28,17 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-class Groups::CreateService < BaseServices::Create; end
+module Groups
+  class CreateService < BaseServices::Create
+    include AncestorMembershipPropagation
+
+    protected
+
+    def after_perform(call)
+      group = call.result
+      propagate_ancestor_memberships(group) if group.parent_id.present?
+
+      call
+    end
+  end
+end

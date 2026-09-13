@@ -93,7 +93,7 @@ RSpec.shared_examples_for "update progress values" do |description:, expected_hi
       expect(work_package).to have_attributes(all_expected_attributes)
       expect(work_package).to have_attributes(set_attributes.except(*all_expected_attributes.keys))
       if expected_hints
-        expected_hints = expected_hints.transform_keys { to_work_package_field(_1) }
+        expected_hints = expected_hints.transform_keys { to_work_package_field(it) }
         expect(compact_progress_hints(work_package)).to eq(expected_hints)
       end
       # work package is not saved and no errors are created

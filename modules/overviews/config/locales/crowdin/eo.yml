@@ -1,4 +1,11 @@
+---
 eo:
+  activerecord:
+    models:
+      grids/overview:
+        one: Overview
+        other: Overviews
   overviews:
-    label: 'Superrigardo'
-  permission_manage_overview: 'Adminsitri antaŭrigardan paĝon'
+    label_dashboard: Paneloj
+    label_home: "%{workspace_type} hejmo"
+    label_overview: Superrigardo

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -39,7 +41,6 @@ module Queries
       def results
         # Filters marked to already check visibility free us from the need
         # to check it here.
-
         if filters.any?(&:visibility_checked?)
           super
         else

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -91,7 +93,7 @@ RSpec.describe Queries::WorkPackages::Filter::MilestoneFilter do
           let(:operator) { "=" }
 
           it "is the same as handwriting the query" do
-            expected = 'type_id IN (SELECT "types"."id" FROM "types" WHERE "types"."is_milestone" = TRUE ORDER BY position ASC)'
+            expected = 'type_id IN (SELECT "types"."id" FROM "types" WHERE "types"."is_milestone" = TRUE)'
 
             expect(instance.where).to eql expected
           end
@@ -101,7 +103,7 @@ RSpec.describe Queries::WorkPackages::Filter::MilestoneFilter do
           let(:operator) { "!" }
 
           it "is the same as handwriting the query" do
-            expected = 'type_id NOT IN (SELECT "types"."id" FROM "types" WHERE "types"."is_milestone" = TRUE ORDER BY position ASC)'
+            expected = 'type_id NOT IN (SELECT "types"."id" FROM "types" WHERE "types"."is_milestone" = TRUE)'
 
             expect(instance.where).to eql expected
           end
@@ -115,7 +117,7 @@ RSpec.describe Queries::WorkPackages::Filter::MilestoneFilter do
           let(:operator) { "=" }
 
           it "is the same as handwriting the query" do
-            expected = 'type_id NOT IN (SELECT "types"."id" FROM "types" WHERE "types"."is_milestone" = TRUE ORDER BY position ASC)'
+            expected = 'type_id NOT IN (SELECT "types"."id" FROM "types" WHERE "types"."is_milestone" = TRUE)'
 
             expect(instance.where).to eql expected
           end
@@ -125,7 +127,7 @@ RSpec.describe Queries::WorkPackages::Filter::MilestoneFilter do
           let(:operator) { "!" }
 
           it "is the same as handwriting the query" do
-            expected = 'type_id IN (SELECT "types"."id" FROM "types" WHERE "types"."is_milestone" = TRUE ORDER BY position ASC)'
+            expected = 'type_id IN (SELECT "types"."id" FROM "types" WHERE "types"."is_milestone" = TRUE)'
 
             expect(instance.where).to eql expected
           end

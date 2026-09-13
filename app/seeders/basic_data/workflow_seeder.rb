@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -26,54 +28,37 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 module BasicData
-  class WorkflowSeeder < Seeder
+  class WorkflowSeeder < ModelSeeder
     self.needs = [
       BasicData::ProjectRoleSeeder,
       BasicData::GlobalRoleSeeder,
       BasicData::StatusSeeder,
       BasicData::TypeSeeder
     ]
+    self.model_class = Workflow
+    self.seed_data_model_key = "workflows"
+    self.attribute_names_for_required_references = %w[statuses type]
 
     def seed_data!
-      if any_types_or_statuses_or_workflows_already_configured?
-        print_status "   *** Skipping types, statuses and workflows as there are already some configured"
-      else
-        seed_statuses
-        seed_types
-        seed_workflows
-      end
+      seed_workflows
     end
 
     private
-
-    def any_types_or_statuses_or_workflows_already_configured?
-      Type.where(is_standard: false).any? || Status.any? || Workflow.any?
-    end
-
-    def seed_statuses
-      print_status "   ↳ Statuses"
-      BasicData::StatusSeeder.new(seed_data).seed!
-    end
-
-    def seed_types
-      print_status "   ↳ Types"
-      BasicData::TypeSeeder.new(seed_data).seed!
-    end
 
     def seed_workflows
       member = seed_data.find_reference(:default_role_member)
       project_admin = seed_data.find_reference(:default_role_project_admin)
       work_package_editor = seed_data.find_reference(:default_role_work_package_editor)
 
-      # Workflow - Each type has its own workflow
-      workflows.each do |type, statuses|
+      # Workflows belong to a type's base variant (the configuration in force by default).
+      workflows.each do |type_variant, statuses|
         statuses.each do |old_status|
           statuses.each do |new_status|
             [member, project_admin, work_package_editor].each do |role|
-              Workflow.create type:,
-                              role:,
-                              old_status:,
-                              new_status:
+              model_class.create type_variant:,
+                                 role:,
+                                 old_status:,
+                                 new_status:
             end
           end
         end
@@ -81,10 +66,10 @@ module BasicData
     end
 
     def workflows
-      seed_data.lookup(:workflows).map do |workflow_data|
+      seed_data.lookup(seed_data_model_key).map do |workflow_data|
         type = seed_data.find_reference(workflow_data["type"])
         statuses = seed_data.find_references(workflow_data["statuses"])
-        [type, statuses]
+        [type.default_variant, statuses]
       end
     end
   end

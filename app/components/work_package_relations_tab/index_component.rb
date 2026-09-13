@@ -1,5 +1,33 @@
 # frozen_string_literal: true
 
+#-- copyright
+# OpenProject is an open source project management software.
+# Copyright (C) the OpenProject GmbH
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License version 3.
+#
+# OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+# Copyright (C) 2006-2013 Jean-Philippe Lang
+# Copyright (C) 2010-2013 the ChiliProject Team
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# See COPYRIGHT and LICENSE files for more details.
+#++
+
 # Component for rendering the relations tab content of a work package
 #
 # This includes:
@@ -9,6 +37,7 @@
 class WorkPackageRelationsTab::IndexComponent < ApplicationComponent
   FRAME_ID = "work-package-relations-tab-content"
   ADD_RELATION_ACTION_MENU = "add-relation-action-menu"
+  ADD_RELATION_SUB_MENU = "add-relation-sub-menu"
   ADD_CHILD_ACTION_MENU = "add-child-action-menu"
   I18N_NAMESPACE = "work_package_relations_tab"
 
@@ -17,12 +46,15 @@ class WorkPackageRelationsTab::IndexComponent < ApplicationComponent
     Relation::TYPE_CHILD
   ].freeze
 
-  ADD_RELATION_MENU_TYPES = [
-    *ADD_CHILD_MENU_TYPES,
+  FIRST_LEVEL_RELATION_MENU_TYPES = [
     Relation::TYPE_RELATES,
     Relation::TYPE_FOLLOWS,
     Relation::TYPE_PRECEDES,
-    Relation::TYPE_PARENT,
+    *ADD_CHILD_MENU_TYPES,
+    Relation::TYPE_PARENT
+  ].freeze
+
+  SECOND_LEVEL_RELATION_MENU_TYPES = [
     Relation::TYPE_DUPLICATES,
     Relation::TYPE_DUPLICATED,
     Relation::TYPE_BLOCKS,
@@ -86,45 +118,37 @@ class WorkPackageRelationsTab::IndexComponent < ApplicationComponent
   end
 
   def render_relation_group(title:, relation_group:, &)
-    render(border_box_container(
-             padding: :condensed,
-             data: { test_selector: "op-relation-group-#{relation_group.type}" }
-           )) do |border_box|
+    render(
+      OpenProject::Common::BorderBoxListComponent.new(
+        container: "op-relation-group-#{relation_group.type}",
+        padding: :condensed,
+        test_selector: "op-relation-group-#{relation_group.type}"
+      )
+    ) do |list|
       if relation_group.type.child? && should_render_add_child?
-        render_children_header(border_box, title, relation_group.count)
+        render_children_header(list, title, relation_group.count)
       else
-        render_header(border_box, title, relation_group.count)
+        render_header(list, title, relation_group.count)
       end
 
-      render_items(border_box, relation_group.all_relation_items, &)
+      render_items(list, relation_group.all_relation_items, &)
     end
   end
 
-  def render_header(border_box, title, count)
-    border_box.with_header(py: 3) do
-      concat render(Primer::Beta::Text.new(mr: 2, font_size: :normal, font_weight: :bold)) { title }
-      concat render(Primer::Beta::Counter.new(count:, round: true, scheme: :primary))
-    end
+  def render_header(list, title, count)
+    list.with_header(title:, count:, py: 3, title_arguments: { font_size: :normal })
   end
 
-  def render_children_header(border_box, title, count) # rubocop:disable Metrics/AbcSize
-    border_box.with_header(py: 3) do
-      flex_layout(justify_content: :space_between, align_items: :center) do |header|
-        header.with_column(mr: 2) do
-          concat render(Primer::Beta::Text.new(mr: 2, font_size: :normal, font_weight: :bold)) { title }
-          concat render(Primer::Beta::Counter.new(count:, round: true, scheme: :primary))
+  def render_children_header(list, title, count)
+    list.with_header(title:, count:, py: 3, title_arguments: { font_size: :normal }) do |header|
+      header.with_menu(menu_id: ADD_CHILD_ACTION_MENU) do |menu|
+        menu.with_show_button do |button|
+          button.with_leading_visual_icon(icon: :plus)
+          button.with_trailing_action_icon(icon: :"triangle-down")
+          t("work_package_relations_tab.label_add_child_button")
         end
-        header.with_column do
-          render(Primer::Alpha::ActionMenu.new(menu_id: ADD_CHILD_ACTION_MENU)) do |menu|
-            menu.with_show_button do |button|
-              button.with_leading_visual_icon(icon: :plus)
-              button.with_trailing_action_icon(icon: :"triangle-down")
-              t("work_package_relations_tab.label_add_child_button")
-            end
 
-            render_add_relations_menu_items(menu, ADD_CHILD_MENU_TYPES)
-          end
-        end
+        render_add_relations_menu_items(menu, ADD_CHILD_MENU_TYPES)
       end
     end
   end
@@ -183,11 +207,11 @@ class WorkPackageRelationsTab::IndexComponent < ApplicationComponent
     I18n.t("#{I18N_NAMESPACE}.relations.#{relation_type}_description")
   end
 
-  def render_items(border_box, relation_items)
+  def render_items(list, relation_items)
     relation_items.each do |relation_item|
       relation = relation_item.relation || relation_item.related
       visibility = relation_item.visibility
-      border_box.with_row(
+      list.with_item(
         test_selector: row_test_selector(relation, visibility),
         data: data_attribute(relation)
       ) do
@@ -200,7 +224,6 @@ class WorkPackageRelationsTab::IndexComponent < ApplicationComponent
     if scroll_to?(item)
       {
         controller: "work-packages--relations-tab--scroll",
-        application_target: "dynamic",
         "work-packages--relations-tab--scroll-target": "scrollToRow"
       }
     end

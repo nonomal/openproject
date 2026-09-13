@@ -21,29 +21,42 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { Inject, Injectable } from '@angular/core';
-import { DOCUMENT } from '@angular/common';
+import { Injectable, DOCUMENT, inject } from '@angular/core';
 import { enterpriseEditionUrl } from 'core-app/core/setup/globals/constants.const';
 import { ConfigurationService } from 'core-app/core/config/configuration.service';
 
 @Injectable({ providedIn: 'root' })
 export class BannersService {
+  protected documentElement = inject<Document>(DOCUMENT);
+  protected configuration = inject(ConfigurationService);
+
   private readonly _bannersHidden:boolean = true;
 
-  constructor(
-    @Inject(DOCUMENT) protected documentElement:Document,
-    protected configuration:ConfigurationService,
-  ) {
+  constructor() {
+    const documentElement = this.documentElement;
+
     this._bannersHidden = documentElement.body.classList.contains('ee-banners-hidden');
   }
 
   public showBannerFor(feature:string):boolean {
-    return !(this._bannersHidden || this.configuration.availableFeatures.includes(feature));
+    if (this._bannersHidden) {
+      return false;
+    }
+
+    return !this.allowsTo(feature) || this.trialling(feature);
+  }
+
+  public allowsTo(feature:string):boolean {
+    return this.configuration.availableFeatures.includes(feature);
+  }
+
+  public trialling(feature:string):boolean {
+    return this.configuration.triallingFeatures.includes(feature);
   }
 
   public getEnterPriseEditionUrl({ referrer, hash }:{ referrer?:string, hash?:string } = {}) {
@@ -59,17 +72,17 @@ export class BannersService {
     return url.toString();
   }
 
-  public async conditional(feature:string, bannersVisible?:() => void, bannersNotVisible?:() => void) {
+  public async conditional(feature:string, featureNotAvailable?:() => void, featureAvailable?:() => void) {
     await this.configuration.initialize();
 
-    if (this.showBannerFor(feature)) {
-      this.callMaybe(bannersVisible);
+    if (this.allowsTo(feature)) {
+      this.callMaybe(featureAvailable);
     } else {
-      this.callMaybe(bannersNotVisible);
+      this.callMaybe(featureNotAvailable);
     }
   }
 
   private callMaybe(func?:() => unknown) {
-    func && func();
+    func?.();
   }
 }

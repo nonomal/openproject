@@ -1,4 +1,4 @@
-<%= render(Primer::Alpha::Dialog.new(title: t("caption_log_time_dialog"), size: :medium_portrait, id: MODAL_ID, data: { "keep-open-on-submit": true, "controller" => "time-entry", "application-target" => "dynamic", "time-entry-id" => time_entry.id, "ongoing" => time_entry.ongoing? })) do |d| %>
+<%= render(Primer::Alpha::Dialog.new(title: t("caption_log_time_dialog"), size: :medium, position: :right, id: MODAL_ID, data: { "keep-open-on-submit": true, "controller" => "time-entry", "time-entry-id" => time_entry.id, "ongoing" => time_entry.ongoing?, **DurationConverter.stimulus_data_values("time-entry") })) do |d| %>
   <% d.with_header(variant: :large) %>
   <% d.with_body do %>
     <%= render(
@@ -11,9 +11,9 @@
         ) %>
   <% end %>
   <% d.with_footer(variant: :large) do %>
-    <% flex_layout(justify_content: :flex_end, classes: "time-entry-dialog-footer-buttons") do |flex| %>
-      <% if time_entry.persisted? %>
-        <% flex.with_column do %>
+    <%= grid_layout("time-entry-dialog-footer", tag: :div) do |grid| %>
+      <% if can_delete_time_entry? %>
+        <% grid.with_area("delete") do %>
           <%= render(
                 Primer::Beta::Button.new(
                   scheme: :danger,
@@ -29,11 +29,12 @@
               ) { t("button_delete") } %>
         <% end %>
       <% end %>
-      <% flex.with_column(classes: "time-entry-button-push") %>
-      <% flex.with_column do %>
+      <% grid.with_area("cancel") do %>
         <%= render(
               Primer::Beta::Button.new(data: { "close-dialog-id": "time-entry-dialog" })
             ) { I18n.t("button_cancel") } %>
+        <% end %>
+        <% grid.with_area("confirm") do %>
         <%= render(
               Primer::Beta::Button.new(
                 scheme: :primary,

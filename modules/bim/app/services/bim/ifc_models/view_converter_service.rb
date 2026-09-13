@@ -131,17 +131,20 @@ module Bim
           # write the default exclude parameter to only exclude
           # IfcOpeningElements.
           # https://github.com/IfcOpenShell/IfcOpenShell/wiki#ifconvert
-          Open3.capture2e("IfcConvert",
-                          "--use-element-guids",
-                          "--no-progress",
-                          "--verbose",
-                          "--threads",
-                          "4",
-                          ifc_filepath,
-                          target_file,
-                          "--exclude",
-                          "entities",
-                          "IfcOpeningElement")
+          Open3.capture2e(
+            "IfcConvert",
+            "--use-element-guids",
+            "--no-progress",
+            "--verbose",
+            "--threads",
+            "4",
+            ifc_filepath,
+            target_file,
+            "--exclude",
+            "entities",
+            "IfcOpeningElement",
+            chdir: working_directory
+          )
         end
       end
 

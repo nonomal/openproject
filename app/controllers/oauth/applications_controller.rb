@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -94,7 +96,7 @@ module OAuth
         flash[:error] = t(:error_can_not_delete_entry)
       end
 
-      redirect_to action: :index
+      redirect_to action: :index, status: :see_other
     end
 
     private

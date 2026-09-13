@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -34,7 +36,7 @@ module Redmine
     include ActionView::Helpers::NumberHelper
 
     IN_CONTEXT_TRANSLATION_CODE = :lol
-    IN_CONTEXT_TRANSLATION_NAME = "In-Context Crowdin Translation".freeze
+    IN_CONTEXT_TRANSLATION_NAME = "In-Context Crowdin Translation"
 
     def self.included(base)
       base.extend Redmine::I18n
@@ -69,10 +71,43 @@ module Redmine
       ("%.2f" % hours.to_f)
     end
 
-    def format_date(date)
-      return nil unless date
+    # Formats the given date or datetime as a date string according to the user's time zone
+    # and optional specified or system default format.
+    #
+    # @param date_or_time [Date|Time] The date or time object to format.
+    # @param time_zone [ActiveSupport::TimeZone] Use a different time zone than the current users's.
+    #   If provided, will output the time zone identifier
+    # @param format [String, nil] The strftime format to use for the date. If nil, the default
+    #   date format from `Setting.date_format` is used.
+    def format_date(date_or_time, time_zone: nil, format: Setting.date_format)
+      return nil unless date_or_time
 
-      Setting.date_format.blank? ? ::I18n.l(date.to_date) : date.strftime(Setting.date_format)
+      local =
+        if time_zone
+          date_or_time.in_time_zone(time_zone).to_date
+        elsif date_or_time.instance_of?(Date) # Important not to use is_a? as it will match DateTime
+          date_or_time
+        else
+          in_user_zone(date_or_time).to_date
+        end
+
+      format.present? ? ::I18n.l(local, format:) : ::I18n.l(local)
+    end
+
+    # Formats the given date pair as an HTML date range with each date
+    # wrapped in a <time> element. Dates are joined by a non-breaking
+    # space, an en-dash, and a non-breaking space.
+    #
+    # @param dates [Array<Date, nil>] A two-element array +[from, to]+;
+    #   either element may be nil.
+    # @return [ActiveSupport::SafeBuffer, nil] The formatted range, or nil
+    #   when both dates are nil.
+    def format_date_range(dates)
+      return nil if dates.all?(&:nil?)
+
+      helpers = ApplicationController.helpers
+      from, to = dates.map { |date| helpers.tag.time(datetime: date.iso8601) { format_date(date) } if date }
+      helpers.safe_join([from, "–", to], " ") # &ndash; and &nbsp;
     end
 
     ##
@@ -93,19 +128,24 @@ module Redmine
     #     link_translate(:logged_out, links: { login: login_url })
     #
     # @param i18n_key [String] The I18n key to translate.
+    # @param i18n_args [Hash] Arguments passed to I18n.t() call
     # @param links [Hash] Link names mapped to URLs.
-    # @param target [String] optional HTML target attribute for the links.
-    def link_translate(i18n_key, links: {}, locale: ::I18n.locale, target: nil)
-      translation = ::I18n.t(i18n_key.to_s, locale:)
-      result = translation.scan(link_regex).inject(translation) do |t, matches|
-        link, text, key = matches
-        href = String(links[key.to_sym])
-        link_tag = content_tag(:a, text, href:, target:)
+    # @param external [Boolean] Whether the links should be opened as external links, i.e. in a new tab (default: true)
+    # @param underline [Boolean] Whether to underline links inserted into the text (default: true)
+    def link_translate(i18n_key, i18n_args: {}, links: {}, external: true, underline: true, **) # rubocop:disable Metrics/AbcSize
+      translation = ApplicationController.helpers.t(i18n_key.to_s, **i18n_args)
+      output = ActiveSupport::SafeBuffer.new
+      last_end = 0
 
-        t.sub(link, link_tag)
+      translation.scan(link_regex) do
+        match = Regexp.last_match
+        output << translation[last_end...match.begin(0)]
+        output << create_link_content(match[3], match[2], external:, links:, underline:, **)
+        last_end = match.end(0)
       end
+      output << translation[last_end..]
 
-      result.html_safe
+      output
     end
 
     ##
@@ -116,25 +156,6 @@ module Redmine
     #   - `name`
     def link_regex
       /(\[(.+?)\]\((.+?)\))/
-    end
-
-    # Formats the given time as a date string according to the user's time zone and
-    # optional specified format.
-    #
-    # @param time [Time] The time to format.
-    # @param format [String, nil] The strftime format to use for the date. If nil, the default
-    #   date format from `Setting.date_format` is used.
-    # @return [String, nil] The formatted date string, or nil if the time is not provided.
-    def format_time_as_date(time, format: nil)
-      return nil unless time
-
-      local_date = in_user_zone(time).to_date
-
-      if format
-        local_date.strftime(format)
-      else
-        format_date(local_date)
-      end
     end
 
     # Formats the given time as a time string according to the user's time zone
@@ -212,6 +233,30 @@ module Redmine
       ::I18n.t("date.month_names")[month]
     end
 
+    # Localized ordinalization with optional context-specific forms.
+    # This allows locales to provide different grammatical forms for the same
+    # ordinal depending on usage (e.g. standalone vs. before weekday name).
+    #
+    # Lookup order:
+    # 1. number.ordinalize.contexts.<context>.<number>
+    # 2. number.ordinalize.contexts.<context>.other
+    # 3. number.ordinalize.contexts.default.<number>
+    # 4. number.ordinalize.contexts.default.other
+    # 5. ActiveSupport fallback (e.g. 1st, 2nd, 3rd, ...)
+    def ordinalize(number, context: :default)
+      value = number.to_i
+      context_key = :"number.ordinalize.contexts.#{context}.#{value}"
+      context_other_key = :"number.ordinalize.contexts.#{context}.other"
+      default_context_key = :"number.ordinalize.contexts.default.#{value}"
+      default_context_other_key = :"number.ordinalize.contexts.default.other"
+
+      ::I18n.t(
+        context_key,
+        default: [context_other_key, default_context_key, default_context_other_key, ActiveSupport::Inflector.ordinalize(value)],
+        number: value
+      )
+    end
+
     def valid_languages
       Redmine::I18n.valid_languages
     end
@@ -230,6 +275,21 @@ module Redmine
       parent_match = valid_languages.detect { |l| l =~ /#{lang}/i }
 
       direct_match || parent_match
+    end
+
+    # Returns the language name in its own language for a given locale
+    #
+    # @param lang_code [String] the locale for the desired language, like `en`,
+    #   `de`, `fil`, `zh-CN`, and so on.
+    # @return [String] the language name translated in its own language
+    def translate_language(lang_code)
+      # rename in-context translation language name for the language select box
+      if lang_code.to_sym == Redmine::I18n::IN_CONTEXT_TRANSLATION_CODE &&
+         ::I18n.locale != Redmine::I18n::IN_CONTEXT_TRANSLATION_CODE
+        [Redmine::I18n::IN_CONTEXT_TRANSLATION_NAME, lang_code.to_s]
+      else
+        [::I18n.t("cldr.language_name", locale: lang_code), lang_code.to_s]
+      end
     end
 
     def set_language_if_valid(lang)
@@ -253,6 +313,37 @@ module Redmine
         end
       end
       @cached_attribute_translations[locale]
+    end
+
+    private
+
+    def create_link_content(key, text, external:, links:, underline:, **link_arguments)
+      link_reference = links.fetch(key.to_sym)
+      href =
+        case link_reference
+        when Array
+          OpenProject::Static::Links.url_for(*link_reference)
+        else
+          String(link_reference)
+        end
+      target = external ? "_blank" : nil
+
+      # Make sure we use AC renderer here to not affect the performed? state
+      # when rendering this in e.g., a before action.
+      # Note: ActionController::Renderer#render does not pass blocks through to
+      # ViewComponent, so slots and content must be set before rendering.
+      link_arguments[:data] ||= {}
+      link_arguments[:data][:allow_external_link] = true
+      component = Primer::Beta::Link.new(
+        **link_arguments,
+        href:,
+        target:,
+        underline:
+      )
+      component.with_trailing_visual_icon(icon: :"link-external") if external
+      component.with_content(text)
+
+      ApplicationController.renderer.render(component, layout: false)
     end
   end
 end

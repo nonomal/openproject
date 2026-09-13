@@ -1,5 +1,8 @@
 ---
 description: |-
+  The custom options endpoints return collections or single entities of type `CustomOption`. The following tables list the different properties
+  of `CustomOption` entities.
+
   ## Linked Properties
 
   |  Link         | Description               | Type          | Constraints | Supported operations |

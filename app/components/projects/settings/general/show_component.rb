@@ -36,7 +36,16 @@ module Projects
         include OpPrimer::ComponentHelpers
         include OpTurbo::Streamable
 
-        options :project
+        attr_reader :project, :current_user
+
+        delegate :parent_allowed?, to: :project
+
+        def initialize(project:, current_user:)
+          super()
+
+          @project = project
+          @current_user = current_user
+        end
       end
     end
   end

@@ -38,10 +38,11 @@ module OpenProject::GitlabIntegration
         @payload = wrap_payload(payload_params)
         return nil unless payload.object_kind == "push"
 
+        user = User.find_by(id: payload.open_project_user_id)
+
         payload.commits.each do |commit|
-          user = User.find_by_id(payload.open_project_user_id)
           text = [commit["title"], commit["message"]]
-            .select(&:present?)
+            .compact_blank
             .join(" - ")
           work_packages = find_mentioned_work_packages(text, user)
           notes = generate_notes(commit, payload)
@@ -56,7 +57,7 @@ module OpenProject::GitlabIntegration
       def generate_notes(commit, payload)
         commit_id = commit["id"]
         I18n.t("gitlab_integration.push_single_commit_comment_with_ref",
-               reference: payload.ref,
+               reference: payload.ref&.delete_prefix("refs/heads/"),
                commit_number: commit_id[0, 8],
                commit_note: commit["message"].presence || commit["title"],
                commit_url: commit["url"],

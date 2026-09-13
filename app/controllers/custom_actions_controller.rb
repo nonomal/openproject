@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,12 +29,13 @@
 #++
 
 class CustomActionsController < ApplicationController
-  include EnterpriseTrialHelper
   before_action :require_admin
-  before_action :require_enterprise_token
 
-  self._model_object = CustomAction
-  before_action :find_model_object, only: %i(edit update destroy)
+  guard_enterprise_feature(:custom_actions, only: %i[new create edit update]) do
+    redirect_to action: :index
+  end
+
+  before_action :find_custom_action, only: %i(edit update destroy)
   before_action :pad_params, only: %i(create update)
 
   layout "admin"
@@ -64,15 +67,19 @@ class CustomActionsController < ApplicationController
   def destroy
     @custom_action.destroy
 
-    redirect_to custom_actions_path
+    redirect_to custom_actions_path, status: :see_other
   end
 
   private
 
+  def find_custom_action
+    @custom_action = CustomAction.find(params[:id])
+  end
+
   def index_or_render(render_action)
     ->(call) {
       call.on_success do
-        redirect_to custom_actions_path
+        redirect_to custom_actions_path, status: :see_other
       end
 
       call.on_failure do
@@ -80,16 +87,6 @@ class CustomActionsController < ApplicationController
         render action: render_action, status: :unprocessable_entity
       end
     }
-  end
-
-  def require_enterprise_token
-    return if EnterpriseToken.allows_to?(:custom_actions)
-
-    if request.get?
-      render template: "custom_actions/upsell"
-    else
-      render_403
-    end
   end
 
   # If no action/condition is set in the view, the

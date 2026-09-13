@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -188,6 +190,25 @@ RSpec.describe API::V3::Activities::ActivitiesAPI, content_type: :json do
         end
       end
     end
+
+    context "with attachments" do
+      let(:attachment1) { create(:attachment, container: nil, author: current_user) }
+      let(:attachment2) { create(:attachment, container: nil, author: current_user) }
+
+      let(:comment) do
+        <<~HTML
+          <img class="op-uc-image op-uc-image_inline" src="/api/v3/attachments/#{attachment1.id}/content">
+          Lorem ipsum dolor sit amet
+          <img class="op-uc-image op-uc-image_inline" src="/api/v3/attachments/#{attachment2.id}/content">
+          consectetur adipiscing elit
+        HTML
+      end
+
+      it "creates attachment claims" do
+        expect(last_response.body).to be_json_eql(comment.to_json).at_path("comment/raw")
+        expect(activity.reload.attachments).to contain_exactly(attachment1, attachment2)
+      end
+    end
   end
 
   describe "#get api" do
@@ -214,6 +235,24 @@ RSpec.describe API::V3::Activities::ActivitiesAPI, content_type: :json do
         end
 
         it_behaves_like "valid activity request", "Activity::Comment"
+
+        context "and an emoji reaction" do
+          let!(:emoji_reaction) do
+            create(:emoji_reaction, reactable: activity, user: current_user)
+          end
+
+          it "returns the emoji reactions" do
+            get get_path
+
+            expect(last_response.body)
+              .to be_json_eql("#{activity.id}-#{emoji_reaction.reaction}".to_json)
+              .at_path("_embedded/emojiReactions/_embedded/elements/0/id")
+
+            expect(last_response.body)
+              .to be_json_eql(emoji_reaction.emoji.to_json)
+              .at_path("_embedded/emojiReactions/_embedded/elements/0/emoji")
+          end
+        end
       end
 
       context "for a internal journal" do
@@ -237,7 +276,7 @@ RSpec.describe API::V3::Activities::ActivitiesAPI, content_type: :json do
       end
 
       context "requesting nonexistent activity" do
-        let(:get_path) { api_v3_paths.activity 9999 }
+        let(:get_path) { api_v3_paths.activity(not_existing_id(Journal)) }
 
         it_behaves_like "not found"
       end

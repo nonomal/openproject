@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -42,23 +44,25 @@ class WorkPackages::CopyService < BaseServices::BaseCallable
     self.contract_class = contract_class
   end
 
-  def perform(send_notifications: nil, copy_attachments: true, copy_share_members: true, **attributes)
-    in_context(work_package, send_notifications:) do
-      copy(attributes, copy_attachments, copy_share_members, send_notifications)
+  def perform
+    attributes = params.except(:send_notifications, :copy_attachments, :copy_share_members)
+
+    in_context(work_package, send_notifications: params[:send_notifications]) do
+      copy(attributes, params[:send_notifications])
     end
   end
 
   protected
 
-  def copy(attribute_override, copy_attachments, copy_share_members, send_notifications)
+  def copy(attribute_override, send_notifications)
     copied = create(work_package,
                     attribute_override,
                     send_notifications)
       .on_success do |copy_call|
         remove_author_watcher(copy_call.result)
         copy_watchers(copy_call.result)
-        copy_work_package_attachments(copy_call.result) if copy_attachments
-        copy_share_members(copy_call.result, send_notifications) if copy_share_members
+        copy_work_package_attachments(copy_call.result) if copy_attachments?
+        copy_share_members(copy_call.result, send_notifications) if copy_share_members?
       end
 
     copied.state.copied_from_work_package_id = work_package&.id
@@ -76,11 +80,13 @@ class WorkPackages::CopyService < BaseServices::BaseCallable
 
   def copied_attributes(work_package, override)
     overwritten_attributes = override.stringify_keys
+    writable_attributes = writable_work_package_attributes(work_package)
 
     attributes = work_package
                    .attributes
-                   .slice(*writable_work_package_attributes(work_package))
+                   .slice(*writable_attributes)
                    .merge("custom_field_values" => work_package.custom_value_attributes)
+                   .merge(version_reference_attributes(work_package, writable_attributes))
                    .merge(overwritten_attributes)
 
     if overwritten_attributes.has_key?("start_date") &&
@@ -94,6 +100,20 @@ class WorkPackages::CopyService < BaseServices::BaseCallable
 
   def writable_work_package_attributes(work_package)
     instantiate_contract(work_package, user).writable_attributes
+  end
+
+  def version_reference_attributes(work_package, writable_attributes)
+    attributes = {}
+
+    if writable_attributes.include?("target_versions")
+      attributes["target_version_ids"] = work_package.target_version_ids.presence
+    end
+
+    if writable_attributes.include?("observed_in_versions")
+      attributes["observed_in_version_ids"] = work_package.observed_in_version_ids.presence
+    end
+
+    attributes.compact
   end
 
   def remove_author_watcher(copied)
@@ -138,5 +158,13 @@ class WorkPackages::CopyService < BaseServices::BaseCallable
     Shares::CreateService
       .new(user: User.current, contract_class: EmptyContract)
       .call(attributes)
+  end
+
+  def copy_attachments?
+    params[:copy_attachments] || params[:copy_attachments].nil?
+  end
+
+  def copy_share_members?
+    params[:copy_share_members] || params[:copy_share_members].nil?
   end
 end

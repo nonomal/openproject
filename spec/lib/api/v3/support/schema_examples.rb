@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -80,6 +82,16 @@ RSpec.shared_examples_for "has basic schema properties" do
       expect(subject).not_to have_json_path("#{path}/description")
     end
   end
+
+  it "indicates if it has a formula" do
+    if defined?(formula)
+      expect(subject)
+        .to be_json_eql(formula.to_json)
+              .at_path("#{path}/formula")
+    else
+      expect(subject).not_to have_json_path("#{path}/formula")
+    end
+  end
 end
 
 RSpec.shared_examples_for "indicates length requirements" do
@@ -103,6 +115,38 @@ RSpec.shared_examples_for "indicates length requirements" do
       expect(subject)
         .not_to have_json_path("#{path}/maxLength")
     end
+  end
+end
+
+RSpec.shared_examples_for "indicates value bounds" do
+  it "indicates its minimum value" do
+    if defined?(minimum)
+      expect(subject)
+        .to be_json_eql(minimum.to_json)
+        .at_path("#{path}/minimum")
+    else
+      expect(subject)
+        .not_to have_json_path("#{path}/minimum")
+    end
+  end
+
+  it "indicates its maximum value" do
+    if defined?(maximum)
+      expect(subject)
+        .to be_json_eql(maximum.to_json)
+        .at_path("#{path}/maximum")
+    else
+      expect(subject)
+        .not_to have_json_path("#{path}/maximum")
+    end
+  end
+end
+
+RSpec.shared_examples_for "defines the placeholder to display" do
+  it "shows the placeholder value" do
+    expect(subject)
+      .to be_json_eql(placeholder.to_json)
+            .at_path("#{path}/placeholder")
   end
 end
 

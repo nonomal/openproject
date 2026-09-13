@@ -20,7 +20,7 @@ If you are currently on a lower plan for the Enterprise cloud and want to test a
 
 ### Can I get a custom domain name instead of example.openproject.com?
 
-Yes, you can create your custom domain name. For this service we charge €100 per month. Please contact us via email (sales@openproject.com) if you are interested.
+Yes, you can create your custom domain name. For this service we charge €100 per month. Please contact us via email [support@openproject.com](mailto:support@openproject.com) if you are interested.
 
 ### How can I change the OpenProject Enterprise cloud creators account?
 
@@ -46,7 +46,6 @@ You can do this in your OpenProject instance in the administration. The number o
 
 Please have a look at [this instruction](../manage-cloud-subscription/) for the Enterprise cloud edition to change your payment details.
 
-
 ## Billing and invoicing 
 
 ### Can we pay the OpenProject Enterprise cloud edition by wire transfer?
@@ -61,7 +60,7 @@ The user may terminate the contract at any time, which will apply by the end of 
 
 ### What shall I do when I run into payment issues with OpenProject?
 
-In case you use the bank transfer payment method please indicate the invoice number. You can find this information in the corresponding invoice (OP…). Otherwise the automatic banking system is not able to detect your payment. Please do not hesitate to contact billing@openproject.com if you have any further questions.
+In case you use the bank transfer payment method please indicate the invoice number. You can find this information in the corresponding invoice (OP…). Otherwise the automatic banking system is not able to detect your payment. Please do not hesitate to contact [billing@openproject.com](mailto:billing@openproject.com) if you have any further questions.
 
 You can find additional questions and answers regarding pricing and booking at the bottom of our [pricing website](https://www.openproject.org/pricing/#faq).
 
@@ -85,7 +84,7 @@ If you are having trouble accessing the files on your server with your browser, 
 
 ### How can I export the documents loaded on OpenProject?
 
-Currently, there is unfortunately no option to export all the documents in OpenProject at once. We could manually export the entire database (including the attachments) for you. Due to the manual effort, we would however need to charge a service fee for this. Please contact sales@openproject.com.
+Currently, there is unfortunately no option to export all the documents in OpenProject at once. We could manually export the entire database (including the attachments) for you. Due to the manual effort, we would however need to charge a service fee for this. Please contact [support@openproject.com](mailto:support@openproject.com).
 
 ### Is it possible to access the PostgreSQL tables (read-only) on a hosted OpenProject instance via ODBC or another protocol (e.g. to extract data for PowerBI)?
 
@@ -123,7 +122,7 @@ Yes. The protection of personal data is for OpenProject more than just a legal r
 
 ### Is the Enterprise cloud certified?
 
-Yes, both data centers AWS and Netways are ISO 27001 certified. For more information please visit the [information regarding security measures](https://www.openproject.org/legal/data-processing-agreement/technical-and-organizational-data-security-measures) on our website.
+Yes, both data centers AWS and Scaleway are ISO 27001 certified. For more information please visit the [information regarding security measures](https://www.openproject.org/legal/data-processing-agreement/technical-and-organizational-data-security-measures) on our website.
 
 ### Does OpenProject employ sub-processors for the OpenProject Enterprise cloud edition from outside the EU?
 
@@ -133,8 +132,18 @@ Please note: For the OpenProject Enterprise cloud we currently have two SaaS inf
 
 **OpenProject.com**
 
-This infrastructure is hosted at AWS in Dublin. For sending transactional emails we use the service Postmark which is based in the US.
+This infrastructure is hosted at AWS in Frankfurt, Germany. For sending transactional emails we use the service Postmark which is based in the US.
 
 **OpenProject.eu**
 
 This hosting infrastructure all sub-processors are located in the EU. There is no transfer to sub-processors outside the EU (e.g. AWS). We send transactional emails with Rapidmail. 
+
+**Old OpenProject.eu Shard (Germany)**
+
+Prior to March 2026, our services were hosted across both Netways and Scaleway data center environments. Starting with March 2026, Scaleway will become our sole data center provider for the EU shard.
+
+All existing customers who did not object to the migration, will be migrated to Scaleway in September 2025. Customers who choose not to transition to Scaleway can opt out. In that case:
+
+- Contracts may be terminated by February 2026, or
+- alternative solutions may be found (including migration global shard in Frankfurt), or
+- Customers may cancel their contracts earlier if they wish.

@@ -9,7 +9,7 @@ RSpec.describe "Cost report saving", :js do
 
   before do
     login_as(user)
-    visit cost_reports_path(project)
+    visit project_reporting_cost_reports_path(project)
   end
 
   it "can save reports privately" do
@@ -21,7 +21,7 @@ RSpec.describe "Cost report saving", :js do
     report_page.save as: "Testreport"
 
     # Check if the category is displayed
-    expect(page).to have_css(".op-submenu--title", text: I18n.t(:label_private_report_plural).upcase)
+    expect(page).to have_css(".op-submenu--title", text: I18n.t(:label_private_report_plural))
     # Check if the new report is displayed
     expect(page).to have_css(".op-submenu--item-title", text: "Testreport")
 
@@ -38,7 +38,7 @@ RSpec.describe "Cost report saving", :js do
     report_page.save as: "Public report", public: true
 
     # Check if the category is displayed
-    expect(page).to have_css(".op-submenu--title", text: I18n.t(:label_public_report_plural).upcase)
+    expect(page).to have_css(".op-submenu--title", text: I18n.t(:label_public_report_plural))
     # Check if the new report is displayed
     expect(page).to have_css(".op-submenu--item-title", text: "Public report")
 

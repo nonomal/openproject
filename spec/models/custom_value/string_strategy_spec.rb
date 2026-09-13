@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,27 +32,24 @@ require "spec_helper"
 
 RSpec.describe CustomValue::StringStrategy do
   let(:instance) { described_class.new(custom_value) }
-  let(:custom_value) do
-    double("CustomValue",
-           value:)
-  end
+  let(:custom_value) { instance_double(CustomValue, value:) }
 
   describe "#typed_value" do
     subject { instance.typed_value }
 
-    context "value is some string" do
+    context "when value is a present string" do
       let(:value) { "foo bar!" }
 
       it { is_expected.to eql(value) }
     end
 
-    context "value is blank" do
+    context "when value is blank" do
       let(:value) { "" }
 
       it { is_expected.to eql(value) }
     end
 
-    context "value is nil" do
+    context "when value is nil" do
       let(:value) { nil }
 
       it { is_expected.to be_nil }
@@ -60,7 +59,7 @@ RSpec.describe CustomValue::StringStrategy do
   describe "#formatted_value" do
     subject { instance.formatted_value }
 
-    context "value is some string" do
+    context "when value is a present string" do
       let(:value) { "foo bar!" }
 
       it "is the string" do
@@ -68,7 +67,7 @@ RSpec.describe CustomValue::StringStrategy do
       end
     end
 
-    context "value is blank" do
+    context "when value is blank" do
       let(:value) { "" }
 
       it "is a blank string" do
@@ -76,7 +75,7 @@ RSpec.describe CustomValue::StringStrategy do
       end
     end
 
-    context "value is nil" do
+    context "when value is nil" do
       let(:value) { nil }
 
       it "is a blank string" do
@@ -88,7 +87,7 @@ RSpec.describe CustomValue::StringStrategy do
   describe "#validate_type_of_value" do
     subject { instance.validate_type_of_value }
 
-    context "value is some string" do
+    context "when value is a present string" do
       let(:value) { "foo bar!" }
 
       it "accepts" do
@@ -96,7 +95,7 @@ RSpec.describe CustomValue::StringStrategy do
       end
     end
 
-    context "value is empty string" do
+    context "when value is empty string" do
       let(:value) { "" }
 
       it "accepts" do

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -46,8 +48,8 @@ module DemoData
     #
     # For instance:
     # - Turns `##sprint:sprint_backlog` into
-    #   `/projects/demo-project/sprints/23/taskboard` given there is a sprint
-    #   referenced with :sprint_backlog and its ID here is 23.
+    #   `/projects/demo-project/backlogs/sprints/23/taskboard` given there is a
+    #   sprint referenced with :sprint_backlog and its ID here is 23.
     #
     #   Alternatively `##sprint.id:sprint_backlog` is translated into just the
     #   id.
@@ -121,7 +123,7 @@ module DemoData
     end
 
     def sprint_link(sprint)
-      url_helpers.backlogs_project_sprint_taskboard_path(
+      url_helpers.project_backlogs_sprint_taskboard_path(
         sprint_id: sprint.id,
         project_id: sprint.project.identifier
       )
@@ -131,7 +133,7 @@ module DemoData
       url_helpers.project_work_package_path(
         id: work_package.id,
         project_id: work_package.project.identifier,
-        state: "activity"
+        tab: "activity"
       )
     end
   end

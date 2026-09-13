@@ -32,12 +32,11 @@ module API::V3::StorageFiles
   class StorageFilesAPI < ::API::OpenProjectAPI
     using Storages::Peripherals::ServiceResultRefinements
     helpers Storages::Peripherals::StorageErrorHelper,
-            Storages::Peripherals::StorageFileInfoConverter,
             Storages::Peripherals::StorageParentFolderExtractor
 
     helpers do
       def validate_upload_request(body)
-        if Storages::Storage::one_drive_without_ee_token?(@storage.provider_type)
+        if @storage.provider_type.constantize.disallowed_by_enterprise_token?
           raise API::Errors::EnterpriseTokenMissing.new
         end
 
@@ -55,20 +54,15 @@ module API::V3::StorageFiles
           Storages::UploadLinkService.call(storage: @storage, upload_data:, user: current_user)
         end
       end
-
-      def auth_strategy
-        Storages::Peripherals::Registry.resolve("#{@storage}.authentication.user_bound")
-                                       .call(user: current_user, storage: @storage)
-      end
     end
 
     resources :files do
       get do
         Storages::StorageFilesService
-          .call(storage: @storage, user: current_user, folder: extract_parent_folder(params))
+          .call(storage: @storage, user: current_user, folder: params.fetch(:parent, "/"))
           .match(
             on_success: ->(files) { API::V3::StorageFiles::StorageFilesRepresenter.new(files, @storage, current_user:) },
-            on_failure: ->(error) { raise_error(error) }
+            on_failure: ->(error) { raise_service_result_error(error) }
           )
       end
 
@@ -76,12 +70,12 @@ module API::V3::StorageFiles
         get do
           Storages::StorageFileService
             .call(storage: @storage, user: current_user, file_id: params[:file_id])
-            .map { |file_info| to_storage_file(file_info) }
+            .map { it.to_storage_file.value! }
             .match(
-              on_success: lambda { |storage_file|
+              on_success: lambda do |storage_file|
                 API::V3::StorageFiles::StorageFileRepresenter.new(storage_file, @storage, current_user:)
-              },
-              on_failure: ->(error) { raise_error(error) }
+              end,
+              on_failure: ->(error) { raise_service_result_error(error) }
             )
         end
       end

@@ -34,6 +34,8 @@ class SearchController < ApplicationController
   before_action :load_and_authorize_in_optional_project,
                 :prepare_tokens
 
+  helper_method :search_types, :search_params
+
   LIMIT = 10
 
   def index
@@ -47,9 +49,9 @@ class SearchController < ApplicationController
       end
     end
 
-    provision_gon
-
-    render layout: layout_non_or_no_menu
+    respond_to do |format|
+      format.html { render "index", locals: { menu_name: project_or_global_menu } }
+    end
   end
 
   private
@@ -137,49 +139,35 @@ class SearchController < ApplicationController
   end
 
   def search_types
-    types = Redmine::Search.available_search_types.dup
+    @search_types ||= begin
+      types = Redmine::Search.available_search_types.dup
 
-    if projects_to_search.is_a? Project
-      # don't search projects
-      types.delete("projects")
-      # only show what the user is allowed to view
-      types = types.select { |o| User.current.allowed_in_project?(:"view_#{o}", projects_to_search) }
+      if projects_to_search.is_a? Project
+        # don't search projects
+        types.delete("projects")
+        # only show what the user is allowed to view
+        types = types.select { |o| User.current.allowed_in_project?(:"view_#{o}", projects_to_search) }
+      end
+
+      types
     end
-
-    types
   end
 
   def search_classes
-    scope = search_types & search_params.keys
+    scope =
+      if search_params[:filter] == "work_packages"
+        [] # work packages are handled in the frontend
+      elsif search_params[:filter].present?
+        [search_params[:filter]] & search_types
+      else
+        search_types
+      end
 
-    scope = if scope.empty?
-              search_types
-            elsif scope & ["work_packages"] == scope
-              []
-            else
-              scope
-            end
-
-    scope.index_with { |s| scope_class(s) }
+    scope
+      .index_with { |s| scope_class(s) }
   end
 
   def scope_class(scope)
     scope.singularize.camelcase.constantize
-  end
-
-  def provision_gon
-    available_search_types = search_types.dup.push("all")
-
-    gon.global_search = {
-      search_term: @question,
-      project_scope: search_params[:scope].to_s,
-      available_search_types: available_search_types.map do |search_type|
-        {
-          id: search_type,
-          name: OpenProject::GlobalSearch.tab_name(search_type)
-        }
-      end,
-      current_tab: available_search_types.detect { |search_type| search_params[search_type] } || "all"
-    }
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -60,13 +62,13 @@ module Components
         # Search the current window in order to avoid within scope restrictions
         within_window(page.current_window) do
           within("wp-relations-tab") do
-            expect(page).to have_no_css("op-content-loader")
+            expect(page).to have_no_css("op-content-loader", wait: 10)
           end
         end
       end
 
       def expect_add_relation_button
-        expect(page).to have_test_selector("add-relation-action-menu")
+        expect(page).to have_test_selector("add-relation-action-menu", wait: 10)
       end
 
       def expect_no_add_relation_button
@@ -76,12 +78,12 @@ module Components
 
       def find_row(relatable)
         actual_relatable = find_relatable(relatable)
-        page.find_test_selector("op-relation-row-visible-#{actual_relatable.id}", wait: 5)
+        page.find_test_selector("op-relation-row-visible-#{actual_relatable.id}", wait: 10)
       end
 
       def find_ghost_row(relatable)
         actual_relatable = find_relatable(relatable)
-        page.find_test_selector("op-relation-row-ghost-#{actual_relatable.id}", wait: 5)
+        page.find_test_selector("op-relation-row-ghost-#{actual_relatable.id}", wait: 10)
       end
 
       def find_some_row(text:)
@@ -97,20 +99,26 @@ module Components
       end
 
       def select_relation_type(relation_type)
-        within_add_relation_action_menu do
+        within_add_relation_action_menu(relation_type:) do
           click_link_or_button relation_type
         end
       end
 
       def expect_new_relation_type(relation_type)
-        within_add_relation_action_menu do
+        within_add_relation_action_menu(relation_type:) do
           expect(page).to have_link(relation_type, wait: 1)
         end
       end
 
       def expect_no_new_relation_type(relation_type)
-        within_add_relation_action_menu do
+        within_add_relation_action_menu(relation_type:) do
           expect(page).to have_no_link(relation_type, wait: 1)
+        end
+      end
+
+      def expect_no_add_menu_sub_menu
+        within(add_relation_action_menu) do
+          expect(page).to have_no_link("add_relation_sub_menu", wait: 1)
         end
       end
 
@@ -120,13 +128,28 @@ module Components
         new_relation_button.click
       end
 
+      def open_relation_sub_menu
+        return if add_relation_sub_menu.visible?
+
+        new_relation_sub_menu_button.click
+      end
+
       def add_relation_action_menu
         action_menu_id = new_relation_button["aria-controls"]
         page.find(id: action_menu_id, visible: :all)
       end
 
+      def add_relation_sub_menu
+        action_menu_id = new_relation_sub_menu_button["aria-controls"]
+        page.find(id: action_menu_id, visible: :all)
+      end
+
       def new_relation_button
-        page.find_test_selector("add-relation-action-menu").find_button
+        page.find(id: "add-relation-action-menu-button", wait: 10)
+      end
+
+      def new_relation_sub_menu_button
+        page.find(id: "add-relation-sub-menu-button")
       end
 
       def remove_relation(relatable)
@@ -284,7 +307,7 @@ module Components
         expect(page).to have_test_selector("no-relations-blankslate", text: "This work package does not have any relations yet.")
       end
 
-      def add_parent(query, work_package)
+      def add_parent(work_package)
         # Open the parent edit
         SeleniumHubWaiter.wait
         find(".wp-relation--parent-change").click
@@ -293,9 +316,8 @@ module Components
         SeleniumHubWaiter.wait
         autocomplete = page.find_test_selector("wp-relations-autocomplete")
         select_autocomplete autocomplete,
-                            query:,
-                            results_selector: ".ng-dropdown-panel-items",
-                            select_text: work_package.id
+                            query: work_package.subject,
+                            results_selector: ".ng-dropdown-panel-items"
       end
 
       def expect_parent(work_package)
@@ -387,14 +409,17 @@ module Components
 
       private
 
-      def within_add_relation_action_menu(&)
+      def within_add_relation_action_menu(relation_type:, &)
         open_add_relation_action_menu
+        open_relation_sub_menu unless first_level_relation?(relation_type)
         within(add_relation_action_menu, &)
       end
 
       def remove_relation_with_work_package(relatable)
         open_action_menu_with_work_package(relatable) do
-          relatable_delete_button(relatable).click
+          accept_confirm do
+            relatable_delete_button(relatable).click
+          end
         end
 
         expect_no_row(relatable)
@@ -408,6 +433,10 @@ module Components
             yield
           end
         end
+      end
+
+      def first_level_relation?(relation_type)
+        ["Related To", "Create new child", "Child", "Parent", "Predecessor (before)", "Successor (after)"].include?(relation_type)
       end
     end
   end

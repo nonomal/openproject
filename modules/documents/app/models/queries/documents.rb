@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,6 +31,8 @@
 module Queries::Documents
   ::Queries::Register.register(DocumentQuery) do
     filter Filters::ProjectFilter
+    filter Filters::TypeFilter
+    filter Filters::TitleFilter
 
     order Orders::DefaultOrder
   end

@@ -58,10 +58,13 @@ module Queries::WorkPackages
     filter Filter::TypeFilter
     filter Filter::UpdatedAtFilter
     filter Filter::VersionFilter
+    filter Filter::TargetVersionsFilter
+    filter Filter::ObservedInVersionsFilter
     filter Filter::WatcherFilter
     filter Filter::DatesIntervalFilter
     filter Filter::ParentFilter
     filter Filter::PrecedesFilter
+    filter Filter::ProjectPhaseFilter
     filter Filter::FollowsFilter
     filter Filter::RelatesFilter
     filter Filter::DuplicatesFilter
@@ -84,11 +87,13 @@ module Queries::WorkPackages
     exclude Filter::RelatableFilter
 
     select Selects::PropertySelect
+    select Selects::ProjectPhaseSelect
     select Selects::CustomFieldSelect
     select Selects::RelationToTypeSelect
     select Selects::RelationOfTypeSelect
     select Selects::RelationChildSelect
     select Selects::ManualSortingSelect
     select Selects::TypeaheadSelect
+    select Selects::ExactMatchSelect
   end
 end

@@ -33,19 +33,20 @@ module Primer
     module Forms
       module Dsl
         class PatternInput < Primer::Forms::Dsl::Input
-          attr_reader :name, :label, :value, :suggestions
+          attr_reader :name, :label, :value, :suggestions, :disabled
 
-          def initialize(name:, label:, value:, suggestions:, **system_arguments)
+          def initialize(name:, label:, value:, suggestions:, disabled: false, **system_arguments)
             @name = name
             @label = label
             @value = value
             @suggestions = suggestions
+            @disabled = disabled
 
             super(**system_arguments)
           end
 
           def to_component
-            WorkPackages::Types::PatternInput.new(input: self, value:, suggestions:)
+            WorkPackageTypes::PatternInput.new(input: self, value:, suggestions:, disabled:)
           end
 
           def type

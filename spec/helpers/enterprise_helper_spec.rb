@@ -34,8 +34,8 @@ RSpec.describe EnterpriseHelper do
   describe "#enterprise_token_plan_name" do
     let(:token) { instance_double(EnterpriseToken, plan: :legacy_enterprise, version: "4.0.0") }
 
-    it "returns the correct string" do
-      expect(helper.enterprise_token_plan_name(token)).to eq("Enterprise Plan (Token Version 4.0.0)")
+    it "returns the plan name" do
+      expect(helper.enterprise_token_plan_name(token)).to eq("Enterprise Plan")
     end
   end
 

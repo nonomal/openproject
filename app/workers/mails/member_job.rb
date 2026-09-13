@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -67,11 +69,11 @@ class Mails::MemberJob < ApplicationJob
   end
 
   def send_for_group_user(_current_user, _member, _group, _message)
-    raise NotImplementedError, "subclass responsibility"
+    raise SubclassResponsibilityError
   end
 
   def send_for_project_user(_current_user, _member, _message)
-    raise NotImplementedError, "subclass responsibility"
+    raise SubclassResponsibilityError
   end
 
   def send_updated_global(current_user, member, member_message)

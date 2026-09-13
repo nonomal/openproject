@@ -216,6 +216,9 @@ RSpec.describe "Progress modal", :js do
                role:)
 
         visit_progress_query_displaying_work_package
+
+        wait_for_reload
+
         progress_popover.open
 
         progress_popover.expect_select_with_options(:status, "open (0%)", "in progress (50%)", "complete (100%)")
@@ -288,8 +291,7 @@ RSpec.describe "Progress modal", :js do
 
           progress_popover.close
 
-          status_field = work_package_create_page.edit_field(:status)
-          status_field.update("in progress")
+          work_package_create_page.set_status("in progress")
 
           progress_popover.open
           progress_popover.expect_value(:status, "in progress (50%)", disabled: true)
@@ -318,8 +320,7 @@ RSpec.describe "Progress modal", :js do
           progress_popover.expect_hints(remaining_work: :derived)
           progress_popover.save
 
-          status_field = work_package_create_page.edit_field(:status)
-          status_field.update("in progress")
+          work_package_create_page.set_status("in progress")
 
           progress_popover.open
           progress_popover.expect_values(work: "14h", remaining_work: "7h")

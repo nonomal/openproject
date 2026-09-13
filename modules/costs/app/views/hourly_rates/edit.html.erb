@@ -34,7 +34,7 @@ See COPYRIGHT and LICENSE files for more details.
                        [{ href: project_overview_path(@project.identifier), text: @project.name },
                         { href: projects_budgets_path(@project.identifier), text: I18n.t(:label_budget_plural) }]
                      else
-                       [{ href: home_path, text: organization_name }]
+                       []
                      end
 %>
 
@@ -55,7 +55,7 @@ See COPYRIGHT and LICENSE files for more details.
 
 <%= labelled_tabular_form_for @user,
                               url: { action: "update", project_id: @project },
-                              data: { controller: "subform", "application-target": "dynamic" },
+                              data: { controller: "subform" },
                               method: :put do |f| %>
   <%= back_url_hidden_field_tag %>
   <%= error_messages_for "user" %>
@@ -105,10 +105,19 @@ See COPYRIGHT and LICENSE files for more details.
     </div>
   </div>
   <div class="wp-inline-create-button">
-    <a href="#" class="add-row-button wp-inline-create--add-link" data-action="subform#addRow">
-      <%= op_icon("icon icon-add") %>
-        <%= t(:button_add_rate) %>
-    </a>
+    <%=
+      render(
+        Primer::Beta::Button.new(
+          scheme: :link,
+          type: :button,
+          classes: "add-row-button wp-inline-create--add-link",
+          data: { action: "subform#addRow" }
+        )
+      ) do |button|
+        button.with_leading_visual_icon(icon: :plus)
+        t(:button_add_rate)
+      end
+    %>
   </div>
   <div class="generic-table--action-buttons">
     <%= styled_button_tag t(:button_save), class: "-with-icon icon-checkmark" %>

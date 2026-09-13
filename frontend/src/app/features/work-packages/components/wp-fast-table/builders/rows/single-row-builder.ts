@@ -1,3 +1,31 @@
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
 import { Injector } from '@angular/core';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { locateTableRowByIdentifier } from 'core-app/features/work-packages/components/wp-fast-table/helpers/wp-table-row-helpers';
@@ -11,9 +39,10 @@ import {
   internalSortColumn,
   sharedUserColumn,
 } from 'core-app/features/work-packages/components/wp-fast-table/builders/internal-sort-columns';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
+import { LazyInject } from 'core-app/shared/helpers/angular/lazy-inject.decorator';
 import { debugLog } from 'core-app/shared/helpers/debug_output';
-import { checkedClassName } from '../ui-state-link-builder';
+import { checkedClassName, pressedClassName } from '../ui-state-link-builder';
+import { WorkPackageViewFocusService } from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-view-focus.service';
 import { RelationCellbuilder } from '../relation-cell-builder';
 import {
   CellBuilder,
@@ -35,13 +64,15 @@ export const commonRowClassName = 'wp--row';
 
 export class SingleRowBuilder {
   // Injections
-  @InjectField() wpTableSelection:WorkPackageViewSelectionService;
+  @LazyInject() wpTableSelection:WorkPackageViewSelectionService;
 
-  @InjectField() wpTableColumns:WorkPackageViewColumnsService;
+  @LazyInject() wpTableFocus:WorkPackageViewFocusService;
 
-  @InjectField() wpTableBaseline:WorkPackageViewBaselineService;
+  @LazyInject() wpTableColumns:WorkPackageViewColumnsService;
 
-  @InjectField() I18n!:I18nService;
+  @LazyInject() wpTableBaseline:WorkPackageViewBaselineService;
+
+  @LazyInject() I18n!:I18nService;
 
   // Cell builder instance
   protected cellBuilder = new CellBuilder(this.injector);
@@ -92,7 +123,7 @@ export class SingleRowBuilder {
     return columns;
   }
 
-  public buildCell(workPackage:WorkPackageResource, column:QueryColumn):HTMLElement|null {
+  public buildCell(workPackage:WorkPackageResource, column:QueryColumn):HTMLTableCellElement|null {
     // handle relation types
     if (isRelationColumn(column)) {
       return this.relationCellBuilder.build(workPackage, column);
@@ -175,23 +206,24 @@ export class SingleRowBuilder {
   /**
    * Refresh a row that is currently being edited, that is, some edit fields may be open
    */
-  public refreshRow(workPackage:WorkPackageResource, jRow:JQuery):JQuery {
+  public refreshRow(workPackage:WorkPackageResource, row:HTMLTableRowElement):HTMLTableRowElement {
     // Detach all current edit cells
-    const cells = jRow.find(`.${tdClassName}`).detach();
+    const cells = Array.from(row.querySelectorAll<HTMLTableCellElement>(`.${tdClassName}`))
+      .map((el) => el.parentNode!.removeChild(el));
 
     // Remember the order of all new edit cells
-    const newCells:HTMLElement[] = [];
+    const newCells:HTMLTableCellElement[] = [];
 
     this.augmentedColumns.forEach((column:QueryColumn) => {
-      const oldTd = cells.filter(`td.${column.id}`);
+      const oldTd = cells.find((cell) => cell.matches(`td.${column.id}`));
 
       // Treat internal columns specially
       // and skip the replacement of the column if this is being edited.
       // But only do that, if the column existed before. Sometimes, e.g. when lacking permissions
       // the column was not correctly created (with the intended classes). This code then
       // increases the robustness.
-      if ((column.id.startsWith('__internal') || this.isColumnBeingEdited(workPackage, column)) && oldTd.length) {
-        newCells.push(oldTd[0]);
+      if ((column.id.startsWith('__internal') || this.isColumnBeingEdited(workPackage, column)) && oldTd) {
+        newCells.push(oldTd);
         return;
       }
 
@@ -203,8 +235,8 @@ export class SingleRowBuilder {
       }
     });
 
-    jRow.prepend(newCells);
-    return jRow;
+    row.prepend(...newCells);
+    return row;
   }
 
   protected isColumnBeingEdited(workPackage:WorkPackageResource, column:QueryColumn) {
@@ -215,24 +247,27 @@ export class SingleRowBuilder {
 
   protected buildEmptyRow(workPackage:WorkPackageResource, row:HTMLTableRowElement):[HTMLTableRowElement, boolean] {
     const change = this.workPackageTable.editing.change(workPackage);
-    const cells:{ [attribute:string]:JQuery } = {};
+    const cells:Record<string, HTMLTableCellElement> = {};
 
     if (change && !change.isEmpty()) {
       // Try to find an old instance of this row
       const oldRow = locateTableRowByIdentifier(this.classIdentifier(workPackage));
 
       change.changedAttributes.forEach((attribute:string) => {
-        cells[attribute] = oldRow.find(`.${tdClassName}.${attribute}`);
+        const oldCell = oldRow?.querySelector<HTMLTableCellElement>(`.${tdClassName}.${attribute}`);
+        if (oldCell) {
+          cells[attribute] = oldCell;
+        }
       });
     }
 
     this.augmentedColumns.forEach((column:QueryColumn) => {
       let cell:Element|null;
-      const oldCell:JQuery|undefined = cells[column.id];
+      const oldCell = cells[column.id];
 
-      if (oldCell && oldCell.length) {
+      if (oldCell) {
         debugLog(`Rendering previous open column ${column.id} on ${workPackage.id}`);
-        jQuery(row).append(oldCell);
+        row.appendChild(oldCell);
       } else {
         cell = this.buildCell(workPackage, column);
 
@@ -245,6 +280,11 @@ export class SingleRowBuilder {
     // Set the row selection state
     if (this.wpTableSelection.isSelected(workPackage.id!)) {
       row.classList.add(checkedClassName);
+    }
+
+    // Mark the currently focused (details-panel) row as pressed
+    if (this.wpTableFocus.isFocused(workPackage.id!)) {
+      row.classList.add(pressedClassName);
     }
 
     return [row, false];

@@ -28,7 +28,6 @@ See COPYRIGHT and LICENSE files for more details.
 ++#%>
 
 <% content_controller "project-storage-form",
-                      dynamic: true,
                       "project-storage-form-folder-mode-value": @project_storage.project_folder_mode,
                       "project-storage-form-placeholder-folder-name-value": t(:"storages.label_no_selected_folder"),
                       "project-storage-form-not-logged-in-validation-value": t(:"storages.instructions.not_logged_into_storage"),
@@ -122,15 +121,17 @@ See COPYRIGHT and LICENSE files for more details.
   <div
     class="form--field-container -with-children-spacing d-none"
     data-project-storage-form-target="projectFolderSection">
-    <%= styled_button_tag class: "button_no-margin",
-                          data: {
-                            "project-storage-form-target": "selectProjectFolderButton",
-                            action: "project-storage-form#selectProjectFolder"
-                          },
-                          type: "button" do %>
-      <%= spot_icon("folder-open") %>
-      <%= content_tag :span, t(:"storages.buttons.select_folder") %>
-    <% end %>
+    <%=
+      render Primer::Beta::Button.new(
+        data: {
+          "project-storage-form-target": "selectProjectFolderButton",
+          action: "project-storage-form#selectProjectFolder"
+        }
+      ) do |button|
+        button.with_leading_visual_icon(icon: :"file-directory-open-fill")
+        t(:"storages.buttons.select_folder")
+      end
+    %>
     <%= angular_component_tag "opce-storage-login-button",
                               inputs: {
                                 input: storage_login_input(@project_storage.storage)
@@ -152,12 +153,19 @@ See COPYRIGHT and LICENSE files for more details.
 </div>
 
 <div class="form--field">
-  <%= styled_button_tag class: "-primary" do %>
-    <%= spot_icon("checkmark") %>
-    <%= content_tag :span, submit_button_label %>
-  <% end %>
-  <%= link_to external_file_storages_project_settings_project_storages_path(@project), class: "button" do %>
-    <%= spot_icon("cancel") %>
-    <%= content_tag :span, t(:button_cancel) %>
-  <% end %>
+  <%=
+    render Primer::Beta::Button.new(scheme: :primary, type: :submit, mr: 2) do |button|
+      button.with_leading_visual_icon(icon: :check)
+      submit_button_label
+    end
+  %>
+  <%=
+    render Primer::Beta::Button.new(
+      tag: :a,
+      href: external_file_storages_project_settings_project_storages_path(@project)
+    ) do |button|
+      button.with_leading_visual_icon(icon: :x)
+      t(:button_cancel)
+    end
+  %>
 </div>

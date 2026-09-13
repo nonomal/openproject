@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,16 +30,16 @@
 
 class MembersController < ApplicationController
   include MemberHelper
-  model_object Member
-  before_action :find_model_object_and_project, except: %i[autocomplete_for_member destroy_by_principal]
-  before_action :find_project_by_project_id, only: %i[autocomplete_for_member destroy_by_principal]
+
+  before_action :find_project_by_project_id
+  before_action :find_member, except: %i[index create autocomplete_for_member destroy_by_principal]
   before_action :authorize
 
   def index
     set_index_data!
   end
 
-  def create
+  def create # rubocop:disable Metrics/AbcSize
     overall_result = []
 
     find_or_create_users(send_notification: true) do |member_params|
@@ -82,8 +84,8 @@ class MembersController < ApplicationController
                                      per_page: params[:per_page])
   end
 
-  def destroy_by_principal
-    principal = Principal.find(params[:principal_id])
+  def destroy_by_principal # rubocop:disable Metrics/AbcSize
+    principal = Principal.visible.find(params[:principal_id])
 
     service_call = Members::DeleteByPrincipalService
                      .new(user: current_user, project: @project, principal:)
@@ -95,26 +97,31 @@ class MembersController < ApplicationController
       display_error(service_call)
     end
 
-    redirect_to project_members_path(project_id: @project)
+    redirect_to project_members_path(project_id: @project), status: :see_other
   end
 
   def autocomplete_for_member
-    @principals = possible_members(params[:q], 100)
+    type = params[:type]
+    @principals = possible_members(params[:q], 100, type:)
 
-    @email = suggest_invite_via_email? current_user,
-                                       params[:q],
-                                       (@principals | @project.principals)
+    if type.nil? || type == "User"
+      @email = suggest_invite_via_email?(current_user, params[:q], @principals | @project.principals)
+    end
 
     respond_to do |format|
       format.json do
-        render json: build_members
+        render json: build_members, escape: true
       end
     end
   end
 
   private
 
-  def authorize_for(controller, action)
+  def find_member
+    @member = @project.memberships.visible.find(params[:id])
+  end
+
+  def authorize_for?(controller, action)
     current_user.allowed_in_project?({ controller:, action: }, @project)
   end
 
@@ -148,8 +155,8 @@ class MembersController < ApplicationController
     {
       project: @project,
       available_roles: roles,
-      authorize_update: authorize_for("members", :update),
-      authorize_delete: authorize_for("members", :destroy),
+      authorize_update: authorize_for?("members", :update),
+      authorize_delete: authorize_for?("members", :destroy),
       authorize_work_package_shares_view: current_user.allowed_in_project?(:view_shared_work_packages, @project),
       authorize_work_package_shares_delete: current_user.allowed_in_project?(:share_work_packages, @project),
       authorize_manage_user: current_user.allowed_globally?(:manage_user),
@@ -159,7 +166,7 @@ class MembersController < ApplicationController
   end
 
   def members_filter_options(roles)
-    groups = Group.all.sort
+    groups = Group.visible.sort
     shares = WorkPackageRole.all
     status = Members::UserFilterComponent.status_param(params)
 
@@ -173,10 +180,11 @@ class MembersController < ApplicationController
     }
   end
 
-  def suggest_invite_via_email?(user, query, principals)
-    user.allowed_globally?(:create_user) &&
-      query =~ mail_regex &&
-      principals.none? { |p| p.mail == query || p.login == query } &&
+  def suggest_invite_via_email?(user, query, visible_principals)
+    return false unless user_allowed_to_invite?(user)
+
+    query =~ mail_regex &&
+      visible_principals.none? { |p| p.mail == query || p.login == query } &&
       query # finally return email
   end
 
@@ -198,9 +206,10 @@ class MembersController < ApplicationController
     @principals_available = possible_members("", 1)
   end
 
-  def possible_members(criteria, limit)
+  def possible_members(criteria, limit, type: nil)
     Principal
-      .possible_member(@project)
+      .visible
+      .possible_member(@project, type:)
       .like(criteria, email: user_allowed_to_view_emails?)
       .limit(limit)
   end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -41,12 +43,42 @@ RSpec.describe "account/login" do
 
   context "with password login disabled" do
     before do
-      allow(OpenProject::Configuration).to receive(:disable_password_login?).and_return(true)
+      allow(Setting).to receive(:password_login).and_return("none")
       render
     end
 
     it "does not show a login field" do
       expect(rendered).not_to include "Password"
+    end
+  end
+
+  context "with password login disabled on the internal login page" do
+    before do
+      allow(Setting).to receive(:password_login).and_return("none")
+      assign(:force_password_login_form, true)
+      render
+    end
+
+    it "shows a login field" do
+      expect(rendered).to include "Password"
+    end
+  end
+
+  context "if user is not logged in" do
+    before do
+      User.anonymous.pref.update(settings: { "theme" => "sync_with_os" })
+    end
+
+    it "uses the OS-synced theme preference by default" do
+      theme_data = view.user_theme_data_attributes
+
+      expect(theme_data[:auto_theme_switcher_theme_value]).to eq("sync_with_os")
+      # Check that contrast flags exist
+      expect(theme_data).to have_key(:auto_theme_switcher_force_light_contrast_value)
+      expect(theme_data).to have_key(:auto_theme_switcher_force_dark_contrast_value)
+      # Check logo classes
+      expect(theme_data[:auto_theme_switcher_desktop_light_high_contrast_logo_class]).to eq("op-logo--link_high_contrast")
+      expect(theme_data[:auto_theme_switcher_mobile_white_logo_class]).to eq("op-logo--icon_white")
     end
   end
 end

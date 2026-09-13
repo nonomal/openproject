@@ -28,7 +28,7 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-class Activities::ItemComponent < ViewComponent::Base # rubocop:disable OpenProject/AddPreviewForViewComponent
+class Activities::ItemComponent < ViewComponent::Base
   with_collection_parameter :event
   strip_trailing_whitespace
 
@@ -45,8 +45,7 @@ class Activities::ItemComponent < ViewComponent::Base # rubocop:disable OpenProj
     return if activity_is_from_current_project?
 
     kind = activity_is_from_subproject? ? "subproject" : "project"
-    suffix = I18n.t("events.title.#{kind}", name: link_to(@event.project.name, @event.project))
-    "(#{suffix})".html_safe # rubocop:disable Rails/OutputSafety
+    helpers.t("events.title.#{kind}_html", name: link_to(@event.project.name, @event.project))
   end
 
   def display_user?
@@ -100,7 +99,7 @@ class Activities::ItemComponent < ViewComponent::Base # rubocop:disable OpenProj
   end
 
   def work_package?
-    data[:work_package]
+    data.key?(:work_package) || data[:entity_type] == "WorkPackage"
   end
 
   def data
@@ -125,16 +124,43 @@ class Activities::ItemComponent < ViewComponent::Base # rubocop:disable OpenProj
     details = @event.journal.details
 
     details.delete(:user_id) if details[:logged_by_id] == details[:user_id]
-    delete_detail(details, :work_package_id)
-    delete_detail(details, :comments)
-    delete_detail(details, :activity_id)
-    delete_detail(details, :spent_on)
+    remove_detail_when_changing_from_empty(details, "work_package_id")
+    remove_detail_when_changing_from_empty(details, "entity_type")
+    remove_detail_when_changing_from_empty(details, "entity_id")
+    remove_detail_when_changing_from_empty(details, "comments")
+    remove_detail_when_changing_from_empty(details, "activity_id")
+    remove_detail_when_changing_from_empty(details, "spent_on")
+
+    build_polymorphic_entity_gid_changeset(details)
 
     details
   end
 
-  def delete_detail(details, field)
+  def build_polymorphic_entity_gid_changeset(details)
+    return if !details.key?("entity_id") && !details.key?("entity_type")
+
+    details["entity_gid"] = [
+      build_gid(*type_and_id_for(details, "entity", index: 0)),
+      build_gid(*type_and_id_for(details, "entity", index: 1))
+    ]
+
+    details.delete("entity_id")
+    details.delete("entity_type")
+  end
+
+  def type_and_id_for(details, field, index:)
+    [
+      details["#{field}_type"]&.at(index) || @event.journal.journable.public_send("#{field}_type"),
+      details["#{field}_id"]&.at(index) || @event.journal.journable.public_send("#{field}_id")
+    ]
+  end
+
+  def remove_detail_when_changing_from_empty(details, field)
     details.delete(field) if details[field] && details[field].first.nil?
+  end
+
+  def build_gid(entity_type, entity_id)
+    "gid://#{GlobalID.app}/#{entity_type}/#{entity_id}"
   end
 
   def render_event_details

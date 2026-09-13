@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -34,15 +36,21 @@ class Reminder < ApplicationRecord
   has_many :notifications, through: :reminder_notifications
 
   # Currently, reminders are personal, meaning
-  # they are only visible to the user who created them.
+  # they are only visible to the user who created them
+  # and who still has access to the remindable.
   def self.visible(user)
     where(creator: user)
+      .where(remindable_type: WorkPackage.name, remindable_id: WorkPackage.visible(user).select(:id))
   end
 
   def self.upcoming_and_visible_to(user)
     visible(user)
       .where(completed_at: nil)
       .where.missing(:reminder_notifications)
+  end
+
+  def visible?(user = User.current)
+    creator == user && remindable.visible?(user)
   end
 
   def unread_notifications?

@@ -35,6 +35,7 @@ Rails.application.routes.draw do
     namespace :openid_connect do
       resources :providers do
         get :confirm_destroy, on: :member
+        post :match_groups, on: :collection
       end
     end
   end

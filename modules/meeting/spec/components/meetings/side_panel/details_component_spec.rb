@@ -30,7 +30,9 @@
 
 require "rails_helper"
 
-RSpec.describe Meetings::SidePanel::DetailsComponent, type: :component do
+RSpec.describe Meetings::SidePanel::DetailsComponent,
+               type: :component,
+               with_settings: { date_format: "%Y-%m-%d" } do
   let(:user) { build_stubbed(:user) }
 
   subject do
@@ -71,6 +73,30 @@ RSpec.describe Meetings::SidePanel::DetailsComponent, type: :component do
 
     it "shows the weekday" do
       expect(subject).to have_text("Wednesday")
+    end
+  end
+
+  context "with a meeting date on the day border" do
+    let(:meeting) do
+      build_stubbed(:meeting, start_time: DateTime.parse("2025-05-09T22:00:00Z"))
+    end
+
+    context "with a user in a +3 time zone" do
+      let(:user) { build_stubbed(:user, preferences: { time_zone: "Africa/Nairobi" }) }
+
+      it "formats the date for the current user" do
+        expect(subject).to have_text("2025-05-10")
+        expect(subject).to have_text("01:00 AM - 02:00 AM")
+      end
+    end
+
+    context "with a user in a UTC time zone" do
+      let(:user) { build_stubbed(:user, preferences: { time_zone: "Etc/UTC" }) }
+
+      it "formats the date for the current user" do
+        expect(subject).to have_text("2025-05-09")
+        expect(subject).to have_text("10:00 PM - 11:00 PM")
+      end
     end
   end
 end

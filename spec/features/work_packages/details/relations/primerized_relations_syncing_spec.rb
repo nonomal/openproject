@@ -92,7 +92,7 @@ RSpec.describe "Primerized work package relations tab syncing with other element
 
   current_user { user }
 
-  it "updates the relation tab when setting a follower relation in Gantt" do
+  it "updates the relation tab when setting a successor relation in Gantt" do
     # Visit timeline query
     wp_timeline.visit_query query_tl
     wp_timeline.expect_timeline!(open: true)
@@ -112,7 +112,7 @@ RSpec.describe "Primerized work package relations tab syncing with other element
     # Create relation in Gantt
     retry_block do
       find(".wp-row-#{work_package_a.id}-timeline").right_click
-      find(".menu-item", text: "Add follower").click
+      find(".menu-item", text: "Add successor").click
 
       # Dismiss the flash for visibility
       expect(page).to have_text "Click on any highlighted work package to create the relation"

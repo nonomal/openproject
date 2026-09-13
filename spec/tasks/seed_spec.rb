@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -57,9 +59,13 @@ RSpec.describe "db:seed" do # rubocop:disable RSpec/DescribeClass
         .to raise_error ArgumentError, "Queries::Queries::QueryQuery is not a seeder"
     end
 
-    it "does not work for all seeders because of missing references" do
+    it "does not raise an error on only invoking the project seeder but also does not create projects" do
+      # The project seeder requires the "project admin" role to be present.
+      # It used to fail hard in the absence of that role.
+      # But since people might completely remove the role from the database and
+      # seeds are run for every deployment, executing the task needs to be stable.
       expect { subject.invoke("DevelopmentData::ProjectsSeeder") }
-        .to raise_error ActiveRecord::RecordNotFound
+        .not_to raise_error ActiveRecord::RecordNotFound
       expect(Project.count).to eq 0
     end
   end

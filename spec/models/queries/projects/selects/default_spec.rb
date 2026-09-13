@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # -- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -39,11 +41,11 @@ RSpec.describe Queries::Projects::Selects::Default do
     end
 
     it "doesn't match any key with prefix" do
-      expect(keys.map { "x#{_1}" }).to all(not_match(described_class.key))
+      expect(keys.map { "x#{it}" }).to all(not_match(described_class.key))
     end
 
     it "doesn't match any key with suffix" do
-      expect(keys.map { "#{_1}x" }).to all(not_match(described_class.key))
+      expect(keys.map { "#{it}x" }).to all(not_match(described_class.key))
     end
   end
 end

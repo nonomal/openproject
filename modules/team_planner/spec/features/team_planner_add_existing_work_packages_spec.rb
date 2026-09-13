@@ -70,6 +70,8 @@ RSpec.describe "Team planner add existing work packages",
 
   let(:add_existing_pane) { Components::AddExistingPane.new }
   let(:filters) { Components::WorkPackages::Filters.new }
+  let(:this_tuesday) { start_of_week.next_occurring(:tuesday) }
+  let(:this_thursday) { start_of_week.next_occurring(:thursday) }
 
   context "with full permissions", with_ee: %i[team_planner_view] do
     before do
@@ -127,9 +129,10 @@ RSpec.describe "Team planner add existing work packages",
 
       # Select work package in add existing
       add_existing_pane.card(second_wp).click
-      split_screen = Pages::SplitWorkPackage.new second_wp
-      split_screen.expect_subject
+      split_screen = Pages::PrimerizedSplitWorkPackage.new second_wp
+      # Wait for navigation to complete before checking the split panel DOM
       expect(page).to have_current_path /\/details\/#{second_wp.id}/
+      split_screen.expect_subject
     end
 
     it "allows to add work packages via drag&drop from the left hand shortlist" do
@@ -137,39 +140,66 @@ RSpec.describe "Team planner add existing work packages",
       add_existing_pane.search "Task"
       add_existing_pane.expect_result second_wp
 
-      sleep 2
-
       # Drag it to the team planner...
-      add_existing_pane.drag_wp_by_pixel second_wp, 800, 0
+      add_existing_pane.drag_wp_to_date(second_wp, this_tuesday)
 
       team_planner.expect_and_dismiss_toaster(message: "Successful update.")
 
       # ... and thus update its attributes. Thereby the duration is maintained
-      second_wp.reload
-      expect(second_wp.start_date).to eq(start_of_week.next_occurring(:tuesday))
-      expect(second_wp.due_date).to eq(start_of_week.next_occurring(:thursday))
-      expect(second_wp.assigned_to_id).to eq(user.id)
+      expect(second_wp.reload).to have_attributes(
+        start_date: this_tuesday,
+        due_date: this_thursday,
+        assigned_to_id: user.id
+      )
 
       # Search for another work package
       add_existing_pane.search "Ta"
       add_existing_pane.expect_result third_wp
 
-      sleep 2
-
       # Drag it to the team planner...
-      add_existing_pane.drag_wp_by_pixel third_wp, 800, 100
+      add_existing_pane.drag_wp_to_date(third_wp, this_tuesday)
 
       team_planner.expect_and_dismiss_toaster(message: "Successful update.")
 
       # ... and thus update its attributes. Since no dates were set before, start and end date are set to the same day
-      third_wp.reload
-      expect(third_wp.start_date).to eq(start_of_week.next_occurring(:tuesday))
-      expect(third_wp.due_date).to eq(start_of_week.next_occurring(:tuesday))
-      expect(third_wp.assigned_to_id).to eq(user.id)
+      expect(third_wp.reload).to have_attributes(
+        start_date: this_tuesday,
+        due_date: this_tuesday,
+        assigned_to_id: user.id
+      )
 
       # New events are directly clickable
-      split_view = team_planner.open_split_view_by_info_icon(third_wp)
-      split_view.expect_open
+      split_view = wait_for_turbo_frame do
+        team_planner.open_split_view_by_info_icon(third_wp)
+      end
+      expect(page).to have_current_path /\/details\/#{third_wp.id}/
+      split_view.expect_subject
+    end
+
+    context "with non-working days" do
+      shared_let(:working_days) { week_with_saturday_and_sunday_as_weekend }
+
+      it "keeps duration when adding work packages via drag&drop from the left hand shortlist" do
+        # add initial duration to task 3
+        third_wp.update!(duration: 11)
+
+        # Search for a work package
+        add_existing_pane.search third_wp.subject
+        add_existing_pane.expect_result third_wp
+
+        # Drag it to the team planner...
+        add_existing_pane.drag_wp_to_date third_wp, this_tuesday
+        team_planner.expect_and_dismiss_toaster(message: "Successful update.")
+
+        # ... and thus update its attributes. Thereby the duration is maintained
+        # and the due date is set to 15 days from the start date (11 days of
+        # duration + 2x2 non-working days for the weekends)
+        expect(third_wp.reload).to have_attributes(
+          start_date: this_tuesday,
+          due_date: this_tuesday + 14.days,
+          assigned_to_id: user.id
+        )
+      end
     end
 
     it "the search applies the filter from the team planner" do

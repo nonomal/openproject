@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,23 +30,23 @@
 
 require "spec_helper"
 
-RSpec.describe EnterprisesController do
+RSpec.describe EnterpriseTokensController do
   context "when `ee_manager_visible`" do
-    it "connects GET /admin/enterprise to enterprises#show" do
-      allow(OpenProject::Configuration).to receive(:ee_manager_visible?).and_return(true)
-      expect(get("/admin/enterprise")).to route_to(controller: "enterprises",
-                                                   action: "show")
+    it "GET /admin/enterprise_tokens routes to enterprise_tokens#index",
+       with_config: { ee_manager_visible: true } do
+      expect(get("/admin/enterprise_tokens")).to route_to(controller: "enterprise_tokens",
+                                                          action: "index")
     end
   end
 
   context "when NOT `ee_manager_visible`" do
-    it "GET /admin/enterprise should not route to enterprise#show" do
-      # With such a configuration and in case a token is present, the might be a
-      # good reason not to reveal the enterpise token to the admin.
-      # Think of cloud solutions for instance.
-      allow(OpenProject::Configuration).to receive(:ee_manager_visible?).and_return(false)
-      expect(get("/admin/enterprise")).not_to route_to(controller: "enterprises",
-                                                       action: "show")
+    it "GET /admin/enterprise_tokens should not route to enterprise_tokens#index",
+       with_config: { ee_manager_visible: false } do
+      # With such a configuration and in case a token is present, there might be
+      # a good reason not to reveal the enterprise token to the admin. Think of
+      # cloud solutions for instance.
+      expect(get("/admin/enterprise_tokens")).not_to route_to(controller: "enterprise_tokens",
+                                                              action: "index")
     end
   end
 end

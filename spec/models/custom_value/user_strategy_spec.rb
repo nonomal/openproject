@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,15 +32,14 @@ require "spec_helper"
 
 RSpec.describe CustomValue::UserStrategy do
   let(:instance) { described_class.new(custom_value) }
-  let(:custom_value) do
-    double("CustomValue",
-           value:,
-           custom_field:,
-           customized:)
-  end
-  let(:customized) { double("customized") }
+  let(:custom_value) { instance_double(CustomValue, value:, custom_field:, customized:) }
+  let(:customized) { instance_double(Project) }
   let(:custom_field) { build(:custom_field) }
   let(:user) { build_stubbed(:user) }
+
+  before do
+    allow(Principal).to receive(:find_by)
+  end
 
   describe "#parse_value/#typed_value" do
     subject { instance }
@@ -47,12 +48,11 @@ RSpec.describe CustomValue::UserStrategy do
       let(:value) { user }
 
       it "returns the user and sets it for later retrieval" do
-        expect(Principal)
-          .not_to receive(:find_by)
-
         expect(subject.parse_value(value)).to eql user.id.to_s
 
         expect(subject.typed_value).to eql value
+
+        expect(Principal).not_to have_received(:find_by)
       end
     end
 
@@ -71,29 +71,27 @@ RSpec.describe CustomValue::UserStrategy do
       end
     end
 
-    context "value is blank" do
+    context "when value is blank" do
       let(:value) { "" }
 
       it "is nil and does not look for the user" do
-        expect(Principal)
-          .not_to receive(:find_by)
-
         expect(subject.parse_value(value)).to be_nil
 
         expect(subject.typed_value).to be_nil
+
+        expect(Principal).not_to have_received(:find_by)
       end
     end
 
-    context "value is nil" do
+    context "when value is nil" do
       let(:value) { nil }
 
       it "is nil and does not look for the user" do
-        expect(Principal)
-          .not_to receive(:find_by)
-
         expect(subject.parse_value(value)).to be_nil
 
         expect(subject.typed_value).to be_nil
+
+        expect(Principal).not_to have_received(:find_by)
       end
     end
   end
@@ -107,10 +105,9 @@ RSpec.describe CustomValue::UserStrategy do
       it "is the user to_s (without db access)" do
         instance.parse_value(value)
 
-        expect(Principal)
-          .not_to receive(:find_by)
-
         expect(subject).to eql value.to_s
+
+        expect(Principal).not_to have_received(:find_by)
       end
     end
 
@@ -127,7 +124,7 @@ RSpec.describe CustomValue::UserStrategy do
       end
     end
 
-    context "value is blank" do
+    context "when value is blank" do
       let(:value) { "" }
 
       it "is blank and does not look for the user" do
@@ -135,7 +132,7 @@ RSpec.describe CustomValue::UserStrategy do
       end
     end
 
-    context "value is nil" do
+    context "when value is nil" do
       let(:value) { nil }
 
       it "is blank and does not look for the user" do
@@ -153,7 +150,7 @@ RSpec.describe CustomValue::UserStrategy do
       allow(custom_field).to receive(:possible_values).with(customized).and_return(allowed_ids)
     end
 
-    context "value is id of included element" do
+    context "when value is an id of included element" do
       let(:value) { "12" }
 
       it "accepts" do
@@ -161,7 +158,7 @@ RSpec.describe CustomValue::UserStrategy do
       end
     end
 
-    context "value is id of non included element" do
+    context "when value is an id of non included element" do
       let(:value) { "10" }
 
       it "rejects" do

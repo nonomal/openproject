@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,6 +34,7 @@ require_relative "concerns/work_package_by_button_creator"
 module Pages
   class WorkPackagesTable < Page
     include ::Pages::WorkPackages::Concerns::WorkPackageByButtonCreator
+    include ::Components::Autocompleter::NgSelectAutocompleteHelpers
 
     attr_reader :project
 
@@ -80,9 +83,23 @@ module Pages
     def expect_work_package_with_attributes(work_package, attr_value_hash)
       within(table_container) do
         attr_value_hash.each do |column, value|
+          # Use exact_text when value is empty so Capybara actually asserts the cell
+          # is empty. With text: "", Capybara treats the constraint as absent and
+          # will happily match cells that contain text.
+          text_options = value.to_s.empty? ? { exact_text: "" } : { text: value.to_s }
           expect(page).to have_css(
-            ".wp-row-#{work_package.id} td.#{column}", text: value.to_s, wait: 20
+            ".wp-row-#{work_package.id} td.#{column.to_s.camelize(:lower)}", **text_options, wait: 20
           )
+        end
+      end
+    end
+
+    # Expects a collection of groups and the count of their grouped items in the table.
+    # @param group_hash [Hash] Group names mapped to the count of their items, e.g. "first group" => 3
+    def expect_groups(group_hash)
+      within(table_container) do
+        group_hash.each do |group_name, count|
+          expect(page).to have_test_selector("op-group--value", text: "#{group_name} (#{count})")
         end
       end
     end
@@ -208,9 +225,16 @@ module Pages
     # Opens the split view for the specified work package.
     #
     # @param work_package [WorkPackage] The work package object.
-    # @return [Pages::SplitWorkPackage] The split work package page object.
-    def open_split_view(work_package)
-      split_page = SplitWorkPackage.new(work_package, project)
+    # @param primerized [Boolean] Whether to return a Pages::PrimerizedSplitWorkPackage
+    #   (the split view now rendered for work packages/gantt, the default) instead of
+    #   the legacy Pages::SplitWorkPackage.
+    # @return [Pages::SplitWorkPackage, Pages::PrimerizedSplitWorkPackage] The split work package page object.
+    def open_split_view(work_package, primerized: true)
+      split_page = if primerized
+                     PrimerizedSplitWorkPackage.new(work_package, project)
+                   else
+                     SplitWorkPackage.new(work_package, project)
+                   end
 
       # Hover row to show split screen button
       row_element = row(work_package)
@@ -356,7 +380,12 @@ module Pages
     end
 
     def progress_popover(work_package)
-      Components::WorkPackages::ProgressPopover.new(container: work_package_container(work_package))
+      Components::WorkPackages::ProgressPopover.new(container: -> { work_package_container(work_package) })
+    end
+
+    def expect_no_column_add_option(column_name)
+      completer = find(".wp-table--configuration-modal .op-draggable-autocomplete--input")
+      expect_no_ng_option(completer, column_name, results_selector: "body")
     end
 
     protected
@@ -372,6 +401,8 @@ module Pages
         DateEditField.new container, key, is_milestone: work_package.milestone?, is_table: true
       when :estimatedTime, :remainingTime
         ProgressEditField.new container, key
+      when :project
+        InlineProjectEditField.new container, key
       else
         EditField.new container, key
       end

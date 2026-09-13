@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,16 +30,16 @@
 
 class StatusesController < ApplicationController
   include PaginationHelper
+  include OpTurbo::ComponentStream
 
   layout "admin"
 
   before_action :require_admin
 
   def index
-    @statuses = Status.page(page_param)
-                .per_page(per_page_param)
-
-    render action: "index", layout: false if request.xhr?
+    @query = load_query
+    @statuses = paginated_statuses
+    @page_args = page_args
   end
 
   def new
@@ -63,7 +65,7 @@ class StatusesController < ApplicationController
     if @status.update(permitted_params.status)
       recompute_progress_values
       flash[:notice] = I18n.t(:notice_successful_update)
-      redirect_to action: "index"
+      redirect_to action: "index", status: :see_other
     else
       render action: :edit, status: :unprocessable_entity
     end
@@ -77,13 +79,59 @@ class StatusesController < ApplicationController
       status.destroy
       flash[:notice] = I18n.t(:notice_successful_delete)
     end
-    redirect_to action: "index"
+    redirect_to action: "index", status: :see_other
   rescue StandardError
     flash[:error] = I18n.t(:error_unable_delete_status)
-    redirect_to action: "index"
+    redirect_to action: "index", status: :see_other
+  end
+
+  def move
+    status = Status.find(params.expect(:id))
+
+    if status.update(move_params)
+      render_success_flash_message_via_turbo_stream(message: I18n.t(:notice_successful_update))
+    else
+      render_error_flash_message_via_turbo_stream(message: I18n.t("statuses.index.could_not_be_moved"))
+    end
+
+    @query = load_query
+    replace_via_turbo_stream(component: index_component)
+
+    respond_with_turbo_streams
   end
 
   protected
+
+  def index_component
+    Statuses::IndexComponent.new(statuses: paginated_statuses, query: @query, page_args:)
+  end
+
+  def load_query
+    ParamsToQueryService.new(Status, current_user).call(params)
+  end
+
+  def paginated_statuses
+    @query.results.page(page_param).per_page(per_page_param)
+  end
+
+  def page_args
+    { page: page_param, per_page: per_page_param }
+  end
+
+  def move_params
+    move_to = params[:move_to]
+    position = Integer(params[:position], exception: false)
+
+    if move_to.in?(%w[highest higher lower lowest])
+      { move_to: }
+    elsif position
+      # The dropped position is an index within the rendered page, while
+      # acts_as_list positions run across the whole list.
+      { position: position + ((page_param - 1) * per_page_param) }
+    else
+      {}
+    end
+  end
 
   def recompute_progress_values
     attributes_triggering_recomputing = ["excluded_from_totals"]

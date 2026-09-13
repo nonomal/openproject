@@ -28,6 +28,11 @@
 
 # This file is used by Rack-based servers to start the application.
 
+if ENV["OPENPROJECT_PROMETHEUS_EXPORT"] == "true"
+  require "yabeda/prometheus/mmap"
+  use Yabeda::Prometheus::Exporter
+end
+
 require File.expand_path("config/environment", __dir__)
 
 subdir = OpenProject::Configuration.rails_relative_url_root.presence

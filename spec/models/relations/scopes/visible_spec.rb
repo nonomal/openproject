@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -85,6 +87,29 @@ RSpec.describe Relations::Scopes::Visible do
       it "does not return any relation (as the relation points outside the project)" do
         expect(Relation.visible(user))
           .to be_empty
+      end
+    end
+
+    context "when multiple relations exists between 3 work packages" do
+      # In this setup, each work package has a related_to relation to the 2 other work packages
+      let_work_packages(<<~TABLE)
+        subject | related to
+        red     | green
+        green   | blue
+        blue    | red
+      TABLE
+
+      it "returns only the relations directly related to the work package (Bug #62587)" do
+        expect(red.relations.visible).to be_empty
+        expect(green.relations.visible).to be_empty
+        expect(blue.relations.visible).to be_empty
+
+        admin = create(:admin)
+        User.execute_as(admin) do
+          expect(red.relations.visible).to match_array(red.relations)
+          expect(green.relations.visible).to match_array(green.relations)
+          expect(blue.relations.visible).to match_array(blue.relations)
+        end
       end
     end
   end

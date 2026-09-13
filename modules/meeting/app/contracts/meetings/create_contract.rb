@@ -31,6 +31,7 @@
 module Meetings
   class CreateContract < BaseContract
     attribute :recurring_meeting_id
+    attribute :uid
 
     validate :user_allowed_to_add
     validate :recurring_meeting_visible

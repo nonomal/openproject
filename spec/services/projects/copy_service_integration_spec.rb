@@ -40,8 +40,9 @@ RSpec.describe(
   shared_let(:status_locked) { create(:status, is_readonly: true) }
   shared_let(:source) do
     create(:project,
+           :with_internal_wiki,
            name: "Source Project Name",
-           enabled_module_names: %i[wiki work_package_tracking storages])
+           enabled_module_names: %i[work_package_tracking storages])
   end
   shared_let(:source_wp) { create(:work_package, project: source, subject: "source wp") }
   shared_let(:source_wp_locked) do
@@ -55,8 +56,18 @@ RSpec.describe(
   shared_let(:source_child_wiki_page) { create(:wiki_page, wiki: source.wiki, parent: source_wiki_page) }
   shared_let(:source_forum) { create(:forum, project: source) }
   shared_let(:source_topic) { create(:message, forum: source_forum) }
+  shared_let(:source_project_phase) do
+    create(:project_phase,
+           project: source,
+           start_date: Time.zone.today,
+           finish_date: Time.zone.today + 5.days)
+  end
 
   let(:current_user) do
+    create(:user,
+           member_with_roles: { source => role })
+  end
+  let(:other_user) do
     create(:user,
            member_with_roles: { source => role })
   end
@@ -78,35 +89,39 @@ RSpec.describe(
                            manage_files_in_project
                            manage_file_links
                            view_project_attributes
-                           edit_project_attributes])
+                           edit_project_attributes
+                           select_project_custom_fields])
   end
-  shared_let(:new_project_role) { create(:project_role, permissions: %i[]) }
+  shared_let(:new_project_role) { create(:project_creator_role) }
 
   before do
     allow(Setting)
       .to receive(:new_project_user_role_id)
-            .and_return(new_project_role.id.to_s)
+            .and_return(new_project_role&.id&.to_s)
   end
 
   describe ".copyable_dependencies" do
     it "includes the list of dependencies" do
-      expect(described_class.copyable_dependencies.pluck(:identifier)).to eq(
+      expect(described_class.copyable_dependencies.pluck(:identifier)).to match_array(
         %w(
-          members
-          versions
+          backlog_buckets
+          boards
           categories
-          work_packages
-          work_package_attachments
-          work_package_shares
+          file_links
+          forums
+          members
+          overview
+          phases
+          queries
+          sprints
+          storage_project_folders
+          storages
+          versions
           wiki
           wiki_page_attachments
-          forums
-          queries
-          boards
-          overview
-          storages
-          storage_project_folders
-          file_links
+          work_package_attachments
+          work_package_shares
+          work_packages
         )
       )
     end
@@ -117,6 +132,50 @@ RSpec.describe(
 
     let(:all_modules) { described_class.copyable_dependencies.pluck(:identifier) }
     let(:project_copy) { subject.result }
+
+    def copy_of(original_work_package)
+      copied_work_package = project_copy.work_packages.find_by(subject: original_work_package.subject)
+      expect(copied_work_package).not_to be_nil,
+                                         "Expected work package '#{original_work_package.subject}' to be copied to " \
+                                         "project '#{project_copy.name}' but was not"
+      copied_work_package
+    end
+
+    describe "the variant a type resolves to" do
+      shared_let(:root_type) { create(:type, name: "Copied root") }
+      shared_let(:variant) { create(:type_variant, type: root_type, variant_name: "Copied variant") }
+
+      before { source.project_types.create!(type: root_type, variant:) }
+
+      it "copies the resolved variant, not just the root the project uses" do
+        expect(subject).to be_success
+
+        copied = project_copy.project_types.find_by(type: root_type)
+
+        expect(copied.variant).to eq(variant)
+        expect(copied.variant).to eq(variant)
+      end
+
+      it "keeps the copy pointing at its own project" do
+        expect(subject).to be_success
+
+        expect(project_copy.project_types.pluck(:project_id).uniq).to eq([project_copy.id])
+      end
+
+      context "when the caller names the types itself" do
+        shared_let(:other_type) { create(:type, name: "Chosen type") }
+
+        let(:target_project_params) do
+          { "name" => "Copy", "identifier" => "copy", "project_types" => [ProjectType.new(type: other_type)] }
+        end
+
+        it "uses the caller's types instead of the source's" do
+          expect(subject).to be_success
+
+          expect(project_copy.enabled_types).to contain_exactly(other_type)
+        end
+      end
+    end
 
     shared_examples_for "copies public attribute" do
       describe "#public" do
@@ -202,6 +261,131 @@ RSpec.describe(
           end
         end
 
+        context "with project custom field mapping creation_wizard flag" do
+          let(:text_custom_field) { create(:text_project_custom_field) }
+
+          before do
+            source.custom_values << CustomValue.new(custom_field: text_custom_field, value: "test value")
+            source.save!
+          end
+
+          context "when creation_wizard is true" do
+            before do
+              mapping = source.project_custom_field_project_mappings.find_by(custom_field_id: text_custom_field.id)
+              mapping.update!(creation_wizard: true)
+            end
+
+            it "copies the creation_wizard flag as true" do
+              expect(subject).to be_success
+
+              source_mapping = source.project_custom_field_project_mappings.find_by(custom_field_id: text_custom_field.id)
+              copied_mapping = project_copy.project_custom_field_project_mappings.find_by(custom_field_id: text_custom_field.id)
+
+              expect(copied_mapping).to be_present
+              expect(copied_mapping.creation_wizard).to be true
+              expect(copied_mapping.creation_wizard).to eq(source_mapping.creation_wizard)
+            end
+          end
+
+          context "when creation_wizard is false" do
+            before do
+              mapping = source.project_custom_field_project_mappings.find_by(custom_field_id: text_custom_field.id)
+              mapping.update!(creation_wizard: false)
+            end
+
+            it "copies the creation_wizard flag as false" do
+              expect(subject).to be_success
+
+              source_mapping = source.project_custom_field_project_mappings.find_by(custom_field_id: text_custom_field.id)
+              copied_mapping = project_copy.project_custom_field_project_mappings.find_by(custom_field_id: text_custom_field.id)
+
+              expect(copied_mapping).to be_present
+              expect(copied_mapping.creation_wizard).to be false
+              expect(copied_mapping.creation_wizard).to eq(source_mapping.creation_wizard)
+            end
+          end
+        end
+
+        context "with calculated custom fields", with_ee: %i[calculated_values] do
+          using CustomFieldFormulaReferencing
+          let(:integer_custom_field) { create(:integer_project_custom_field, projects: [source]) }
+          let(:calculated_custom_field) do
+            create(:calculated_value_project_custom_field, :skip_validations,
+                   projects: [source],
+                   formula: "#{integer_custom_field} * 2")
+          end
+
+          before do
+            source.custom_field_values = { integer_custom_field.id => 5 }
+            source.save!
+            source.calculate_custom_fields([calculated_custom_field])
+            source.save!
+          end
+
+          it "copies the custom fields and recalculates values" do
+            expect(subject).to be_success
+
+            expect(project_copy.project_custom_fields).to contain_exactly(integer_custom_field, calculated_custom_field)
+
+            integer_cv = project_copy.custom_values.reload.find_by(custom_field: integer_custom_field)
+            expect(integer_cv).to be_present
+            expect(integer_cv.value).to eq "5"
+
+            calculated_cv = project_copy.custom_values.reload.find_by(custom_field: calculated_custom_field)
+            expect(calculated_cv).to be_present
+            expect(calculated_cv.value).to eq "10"
+          end
+
+          it "recalculates values when referenced custom field is changed during copy" do
+            target_project_params[:custom_field_values] = { integer_custom_field.id => 8 }
+
+            expect(subject).to be_success
+
+            expect(project_copy.project_custom_fields).to contain_exactly(integer_custom_field, calculated_custom_field)
+
+            integer_cv = project_copy.custom_values.reload.find_by(custom_field: integer_custom_field)
+            expect(integer_cv).to be_present
+            expect(integer_cv.value).to eq "8"
+
+            calculated_cv = project_copy.custom_values.reload.find_by(custom_field: calculated_custom_field)
+            expect(calculated_cv).to be_present
+            expect(calculated_cv.value).to eq "16"
+          end
+
+          context "with calculation errors", with_ee: %i[calculated_values] do
+            let(:calculated_custom_field) do
+              create(:calculated_value_project_custom_field, :skip_validations,
+                     projects: [source],
+                     formula: "#{integer_custom_field.id} / 0")
+            end
+
+            it "copies the custom fields and errors are recreated during recalculation" do
+              expect(subject).to be_success
+
+              expect(project_copy.project_custom_fields).to contain_exactly(
+                integer_custom_field,
+                calculated_custom_field
+              )
+
+              integer_cv = project_copy.custom_values.reload.find_by(custom_field: integer_custom_field)
+              expect(integer_cv).to be_present
+              expect(integer_cv.value).to eq "5"
+
+              calculated_cv = project_copy.custom_values.reload.find_by(custom_field: calculated_custom_field)
+              expect(calculated_cv).to be_present
+              # The calculated value remains blank as it cannot be calculated (division by zero)
+              expect(calculated_cv.value).to be_blank
+
+              error = project_copy.calculated_value_errors.find_by(custom_field: calculated_custom_field)
+              expect(error).to be_present
+
+              expect(error.error_code).to eq("ERROR_MATHEMATICAL")
+            end
+          end
+        end
+      end
+
+      describe "work_package_custom_fields" do
         context "with disabled work package custom field" do
           it "is still disabled in the copy" do
             custom_field = create(:text_wp_custom_field)
@@ -229,6 +413,20 @@ RSpec.describe(
             expect(project_copy.work_package_custom_fields).to match_array(source.work_package_custom_fields)
           end
         end
+      end
+    end
+
+    context "when source project has a non-zero wp_sequence_counter",
+            with_settings: { work_packages_identifier: "semantic" } do
+      let(:target_project_params) { { name: "Target Project Name", identifier: "COPY1" } }
+
+      before do
+        source.update_column(:wp_sequence_counter, 5)
+      end
+
+      it "succeeds and resets wp_sequence_counter to 0 on the copy" do
+        expect(subject).to be_success
+        expect(project_copy.wp_sequence_counter).to eq(0)
       end
     end
 
@@ -267,6 +465,7 @@ RSpec.describe(
         expect(project_copy.wiki.pages.root.text).to eq source_wiki_page.text
         expect(project_copy.wiki.pages.leaves.first.text).to eq source_child_wiki_page.text
         expect(project_copy.wiki.start_page).to eq "Wiki"
+        expect(project_copy.phases.count).to eq 1
 
         # Cleared attributes
         expect(project_copy).to be_persisted
@@ -276,14 +475,14 @@ RSpec.describe(
         # Duplicated attributes
         expect(project_copy.description).to eq source.description
         expect(source.enabled_module_names.sort - %w[repository]).to eq project_copy.enabled_module_names.sort
-        expect(project_copy.types).to eq source.types
+        expect(project_copy.enabled_types.to_a).to eq source.enabled_types.to_a
 
         # Default attributes
         expect(project_copy).to be_active
 
         # Default role being assigned according to setting
         #  merged with the role the user already had.
-        member = project_copy.members.last
+        member = project_copy.members.reload.last
         expect(member.principal).to eql(current_user)
         expect(member.roles.reload).to contain_exactly(role, new_project_role)
 
@@ -304,6 +503,28 @@ RSpec.describe(
       end
       # rubocop:enable RSpec/ExampleLength
       # rubocop:enable RSpec/MultipleExpectations
+
+      context "with project_creation_wizard_artifact_export_storage set" do
+        before do
+          source.project_creation_wizard_artifact_export_storage = source_automatic_project_storage.id.to_s
+          source.save!
+        end
+
+        it "updates the reference to the copied project storage" do
+          expect(subject).to be_success
+
+          automatic_project_storage_copy = project_copy.project_storages.find_by(storage: storage1)
+          expect(project_copy.project_creation_wizard_artifact_export_storage).to eq(automatic_project_storage_copy.id.to_s)
+          expect(project_copy.project_creation_wizard_artifact_export_storage).not_to eq(source.project_creation_wizard_artifact_export_storage)
+        end
+      end
+
+      context "without project_creation_wizard_artifact_export_storage set" do
+        it "does not set project_creation_wizard_artifact_export_storage in the copy" do
+          expect(subject).to be_success
+          expect(project_copy.project_creation_wizard_artifact_export_storage).to be_nil
+        end
+      end
 
       it_behaves_like "copies public attribute"
       it_behaves_like "copies custom fields"
@@ -344,7 +565,7 @@ RSpec.describe(
 
           it "produces a valid query that is mapped in the new project" do
             expect(subject).to be_success
-            copied_wp = project_copy.work_packages.find_by(subject: "source wp")
+            copied_wp = copy_of(source_wp)
             copied = project_copy.queries.find_by(name: query.name)
             expect(copied.filters[1].values).to eq [copied_wp.id.to_s]
           end
@@ -381,7 +602,7 @@ RSpec.describe(
         end
       end
 
-      context "with memeber" do
+      context "with member" do
         let(:only_args) { %w[members] }
 
         let!(:user) { create(:user) }
@@ -397,11 +618,11 @@ RSpec.describe(
           expect(source.users).to include current_user
           expect(source.users).to include user
           expect(project_copy.groups).to include group
-          expect(source.member_principals.count).to eq 3
+          expect(source.members.count).to eq 3
 
           expect(subject).to be_success
 
-          expect(project_copy.member_principals.count).to eq 3
+          expect(project_copy.members.count).to eq 3
           expect(project_copy.groups).to include group
           expect(project_copy.users).to include current_user
           expect(project_copy.users).to include user
@@ -414,6 +635,61 @@ RSpec.describe(
           expect(member).to be_present
           expect(member.roles.map(&:id)).to eq [another_role.id]
           expect(member.member_roles.first.inherited_from).to eq group_member.member_roles.first.id
+        end
+      end
+
+      context "with member having an excluded role" do
+        let(:only_args) { %w[members] }
+
+        let!(:user_with_excluded_role) { create(:user) }
+        let!(:user_with_kept_role) { create(:user) }
+        let!(:excluded_role) { create(:project_role, name: "Template Manager") }
+        let!(:kept_role) { create(:project_role, name: "Developer") }
+
+        before do
+          source.update!(excluded_role_ids_on_copy: [excluded_role.id])
+
+          Members::CreateService
+            .new(user: current_user, contract_class: EmptyContract)
+            .call(principal: user_with_excluded_role, roles: [excluded_role], project: source)
+
+          Members::CreateService
+            .new(user: current_user, contract_class: EmptyContract)
+            .call(principal: user_with_kept_role, roles: [kept_role], project: source)
+        end
+
+        it "excludes members with the excluded role" do
+          expect(source.users).to include(user_with_excluded_role, user_with_kept_role)
+
+          expect(subject).to be_success
+
+          # User with excluded role should not be copied
+          expect(project_copy.users).not_to include(user_with_excluded_role)
+
+          # User with kept role should be copied
+          expect(project_copy.users).to include(user_with_kept_role)
+          member = Member.find_by(user_id: user_with_kept_role.id, project_id: project_copy.id)
+          expect(member.roles).to contain_exactly(kept_role)
+        end
+
+        context "when a member has multiple roles, one excluded and one not" do
+          let!(:user_with_both_roles) { create(:user) }
+
+          before do
+            Members::CreateService
+              .new(user: current_user, contract_class: EmptyContract)
+              .call(principal: user_with_both_roles, roles: [excluded_role, kept_role], project: source)
+          end
+
+          it "copies the member but only with the non-excluded role" do
+            expect(subject).to be_success
+
+            # User should be copied but only with the kept role
+            expect(project_copy.users).to include(user_with_both_roles)
+            member = Member.find_by(user_id: user_with_both_roles.id, project_id: project_copy.id)
+            expect(member.roles).to contain_exactly(kept_role)
+            expect(member.roles).not_to include(excluded_role)
+          end
         end
       end
 
@@ -434,8 +710,7 @@ RSpec.describe(
           expect(subject).to be_success
 
           expect(source.work_packages.count).to eq(project_copy.work_packages.count)
-          copied_wp = project_copy.work_packages.find_by(subject: "source wp")
-          expect(copied_wp.budget).to be_nil
+          expect(copy_of(source_wp).budget).to be_nil
         end
 
         context "if categories are copied" do
@@ -446,7 +721,7 @@ RSpec.describe(
 
             expect(subject).to be_success
 
-            wp = project_copy.work_packages.find_by(subject: source_wp.subject)
+            wp = copy_of(source_wp)
             expect(wp.category.name).to eq "Stock management"
             # Category got copied
             expect(wp.category.id).not_to eq source_category.id
@@ -458,17 +733,102 @@ RSpec.describe(
           let!(:assigned_version) { create(:version, name: "Assigned Issues", project: source, status: "open") }
 
           before do
-            source_wp.update!(version: assigned_version)
+            source_wp.target_versions = [assigned_version]
             assigned_version.update!(status: "closed")
           end
 
           it "updates the version" do
             expect(subject).to be_success
 
-            wp = project_copy.work_packages.find_by(subject: source_wp.subject)
-            expect(wp.version.name).to eq "Assigned Issues"
-            expect(wp.version).to be_closed
-            expect(wp.version.id).not_to eq assigned_version.id
+            wp = copy_of(source_wp)
+            expect(wp.target_versions.first.name).to eq "Assigned Issues"
+            expect(wp.target_versions.first).to be_closed
+            expect(wp.target_versions.first.id).not_to eq assigned_version.id
+          end
+        end
+
+        context "with target_versions" do
+          let(:only_args) { %i[work_packages versions] }
+          let(:version_one) { create(:version, name: "Target One", project: source, status: "open") }
+          let(:version_two) { create(:version, name: "Target Two", project: source, status: "open") }
+
+          before do
+            source_wp.target_versions = [version_one, version_two]
+          end
+
+          it "copies the target_versions remapped to the copied project's versions" do
+            expect(subject).to be_success
+
+            wp = copy_of(source_wp)
+            copied_names = wp.target_versions.map(&:name).sort
+            expect(copied_names).to eq(["Target One", "Target Two"])
+            wp.target_versions.each do |v|
+              expect(v.project_id).to eq(project_copy.id)
+              expect([version_one.id, version_two.id]).not_to include(v.id)
+            end
+          end
+        end
+
+        context "with observed_in_versions" do
+          let(:only_args) { %i[work_packages versions] }
+          let(:observed_one) { create(:version, name: "Observed One", project: source, status: "open") }
+          let(:observed_two) { create(:version, name: "Observed Two", project: source, status: "open") }
+
+          before do
+            source_wp.observed_in_versions = [observed_one, observed_two]
+          end
+
+          it "copies the observed_in_versions remapped to the copied project's versions" do
+            expect(subject).to be_success
+
+            wp = copy_of(source_wp)
+            copied_names = wp.observed_in_versions.map(&:name).sort
+            expect(copied_names).to eq(["Observed One", "Observed Two"])
+            wp.observed_in_versions.each do |v|
+              expect(v.project_id).to eq(project_copy.id)
+              expect([observed_one.id, observed_two.id]).not_to include(v.id)
+            end
+          end
+        end
+
+        context "when a referenced version is not among the copied versions" do
+          let(:only_args) { %i[work_packages versions] }
+          let(:other_project) { create(:project, name: "Other Project") }
+          let(:foreign_version) { create(:version, name: "Foreign", project: other_project, status: "open") }
+
+          before do
+            source_wp.work_package_versions.delete_all
+            source_wp.work_package_versions.create!(version_id: foreign_version.id, kind: "target")
+            source_wp.work_package_versions.create!(version_id: foreign_version.id, kind: "observed_in")
+          end
+
+          it "drops the unmapped versions instead of copying dangling ids" do
+            expect(subject).to be_success
+
+            wp = copy_of(source_wp)
+            expect(wp.target_versions).to be_empty
+            expect(wp.observed_in_versions).to be_empty
+          end
+        end
+
+        context "when versions are not copied along" do
+          let(:only_args) { %i[work_packages] }
+          let(:assigned_version) { create(:version, name: "Assigned", project: source, status: "open") }
+          let(:observed_version) { create(:version, name: "Observed", project: source, status: "open") }
+
+          before do
+            source_wp.work_package_versions.delete_all
+            source_wp.target_versions = [assigned_version]
+            source_wp.observed_in_versions = [observed_version]
+          end
+
+          it "copies the work package without any version assignments" do
+            expect(subject).to be_success
+
+            wp = copy_of(source_wp)
+            expect(wp).not_to be_nil
+            expect(wp.target_versions).to be_empty
+            expect(wp.observed_in_versions).to be_empty
           end
         end
 
@@ -485,7 +845,7 @@ RSpec.describe(
               expect(subject).to be_success
               expect(project_copy.work_packages.count).to eq(3)
 
-              wp = project_copy.work_packages.find_by(subject: work_package.subject)
+              wp = copy_of(work_package)
               expect(wp.attachments.count).to eq(1)
               expect(wp.attachments.first.author).to eql(current_user)
             end
@@ -496,7 +856,7 @@ RSpec.describe(
               expect(subject).to be_success
               expect(project_copy.work_packages.count).to eq(3)
 
-              wp = project_copy.work_packages.find_by(subject: work_package.subject)
+              wp = copy_of(work_package)
               expect(wp.attachments.count).to eq(0)
             end
           end
@@ -575,9 +935,9 @@ RSpec.describe(
           it do
             expect(subject).to be_success
 
-            grandparent_wp_copy = project_copy.work_packages.find_by(subject: work_package3.subject)
-            parent_wp_copy = project_copy.work_packages.find_by(subject: work_package2.subject)
-            child_wp_copy = project_copy.work_packages.find_by(subject: work_package.subject)
+            grandparent_wp_copy = copy_of(work_package3)
+            parent_wp_copy = copy_of(work_package2)
+            child_wp_copy = copy_of(work_package)
 
             expect([grandparent_wp_copy, parent_wp_copy, child_wp_copy]).to all be_present
             expect(child_wp_copy.parent).to eq(parent_wp_copy)
@@ -598,7 +958,7 @@ RSpec.describe(
 
           it do
             expect(subject).to be_success
-            wp = project_copy.work_packages.find_by(subject: work_package.subject)
+            wp = copy_of(work_package)
             expect(cat = wp.category).not_to be_nil
             expect(cat.project).to eq(project_copy)
           end
@@ -620,7 +980,7 @@ RSpec.describe(
 
             it "does copy active watchers but does not add the copying user as a watcher" do
               expect(subject).to be_success
-              expect(project_copy.work_packages[0].watcher_users)
+              expect(copy_of(work_package).watcher_users)
                 .to contain_exactly(watcher)
             end
           end
@@ -639,7 +999,7 @@ RSpec.describe(
 
             it "does not copy locked watchers and does not add the copying user as a watcher" do
               expect(subject).to be_success
-              expect(project_copy.work_packages[0].watcher_users).to be_empty
+              expect(copy_of(work_package).watcher_users).to be_empty
             end
           end
         end
@@ -681,8 +1041,7 @@ RSpec.describe(
               expect(shared_wp_member.principal).to eq(source_wp_shared_with_user)
               expect(shared_wp_member.roles).to contain_exactly(wp_role)
 
-              copied_wp = project_copy.work_packages.find_by(subject: "source wp")
-              expect(shared_wp_member.entity).to eq(copied_wp)
+              expect(shared_wp_member.entity).to eq(copy_of(source_wp))
             end
           end
 
@@ -712,29 +1071,6 @@ RSpec.describe(
           end
         end
 
-        context "with versions" do
-          let(:version) { create(:version, project: source) }
-          let(:version2) { create(:version, project: source) }
-
-          let(:only_args) { %w[versions work_packages] }
-
-          before do
-            work_package.update_column(:version_id, version.id)
-            work_package2.update_column(:version_id, version2.id)
-            work_package3
-          end
-
-          it "assigns the work packages to copies of the versions" do
-            expect(subject).to be_success
-            expect(project_copy.work_packages.detect { |wp| wp.subject == work_package.subject }.version.name)
-              .to eql version.name
-            expect(project_copy.work_packages.detect { |wp| wp.subject == work_package2.subject }.version.name)
-              .to eql version2.name
-            expect(project_copy.work_packages.detect { |wp| wp.subject == work_package3.subject }.version)
-              .to be_nil
-          end
-        end
-
         context "when work_package is assigned to somebody" do
           let(:assigned_user) do
             create(:user,
@@ -750,8 +1086,7 @@ RSpec.describe(
 
             it "copies the assigned_to" do
               expect(subject).to be_success
-              expect(project_copy.work_packages[0].assigned_to)
-                .to eql assigned_user
+              expect(copy_of(work_package).assigned_to).to eq(assigned_user)
               # The assignee of the new work package receives a notification
               expect { perform_enqueued_jobs }
                 .to change(Notification.where(recipient: assigned_user), :count)
@@ -765,8 +1100,7 @@ RSpec.describe(
 
             it "nils the assigned_to" do
               expect(subject).to be_success
-              expect(project_copy.work_packages[0].assigned_to)
-                .to be_nil
+              expect(copy_of(work_package).assigned_to).to be_nil
               # No notification is sent out
               expect { perform_enqueued_jobs }
                 .not_to change(Notification.where(recipient: assigned_user), :count)
@@ -789,8 +1123,7 @@ RSpec.describe(
 
             it "copies the responsible" do
               expect(subject).to be_success
-              expect(project_copy.work_packages[0].responsible)
-                .to eql responsible_user
+              expect(copy_of(work_package).responsible).to eq(responsible_user)
               # The responsible of the new work package receives a notification
               expect { perform_enqueued_jobs }
                 .to change(Notification.where(recipient: responsible_user), :count)
@@ -802,9 +1135,9 @@ RSpec.describe(
           context "with the member being not copied" do
             let(:only_args) { %w[work_packages] }
 
-            it "nils the assigned_to" do
+            it "nils the responsible" do
               expect(subject).to be_success
-              expect(project_copy.work_packages[0].responsible).to be_nil
+              expect(copy_of(work_package).responsible).to be_nil
               # No notification is sent out
               expect { perform_enqueued_jobs }
                 .not_to change(Notification.where(recipient: responsible_user), :count)
@@ -816,7 +1149,7 @@ RSpec.describe(
           let(:custom_field) do
             create(:user_wp_custom_field).tap do |cf|
               source.work_package_custom_fields << cf
-              work_package.type.custom_fields << cf
+              work_package.type.default_variant.custom_fields << cf
             end
           end
 
@@ -824,7 +1157,7 @@ RSpec.describe(
             custom_field
             # Void the custom field caching
             RequestStore.clear!
-            work_package.send(custom_field.attribute_setter, current_user.id)
+            work_package.send(custom_field.attribute_setter, other_user.id)
             work_package.save!(validate: false)
           end
 
@@ -833,8 +1166,7 @@ RSpec.describe(
 
             it "copies the custom_field" do
               expect(subject).to be_success
-              wp = project_copy.work_packages.find_by(subject: work_package.subject)
-              expect(wp.send(custom_field.attribute_getter)).to eql current_user
+              expect(copy_of(work_package).send(custom_field.attribute_getter)).to eql other_user
             end
           end
 
@@ -843,8 +1175,7 @@ RSpec.describe(
 
             it "nils the custom_field" do
               expect(subject).to be_success
-              wp = project_copy.work_packages.find_by(subject: work_package.subject)
-              expect(wp.send(custom_field.attribute_getter)).to be_nil
+              expect(copy_of(work_package).send(custom_field.attribute_getter)).to be_nil
             end
           end
         end
@@ -862,8 +1193,8 @@ RSpec.describe(
             expect(subject).to be_success
 
             expect(source.work_packages.count).to eq(project_copy.work_packages.count)
-            copied_wp = project_copy.work_packages.find_by(subject: "source wp")
-            copied_wp2 = project_copy.work_packages.find_by(subject: "source wp2")
+            copied_wp = copy_of(source_wp)
+            copied_wp2 = copy_of(source_wp2)
 
             # First issue with a relation on project
             # copied relation + reflexive relation
@@ -877,6 +1208,23 @@ RSpec.describe(
             duplicates_relation = copied_wp.relations.find { |r| r.relation_type == "duplicates" }
             expect(duplicates_relation.from_id).to eq copied_wp.id
             expect(duplicates_relation.to_id).to eq other_wp.id
+          end
+        end
+
+        context "with project phases associated" do
+          before do
+            source_wp.update_column(:project_phase_definition_id, source_project_phase.definition_id)
+          end
+
+          it "copies the project phase (regardless of the phase not being copied itself)" do
+            expect(subject).to be_success
+            expect(project_copy.work_packages.count).to eq(2)
+
+            expect(copy_of(source_wp).project_phase_definition_id).to eq(source_project_phase.definition_id)
+
+            [source_wp, source_wp_locked].each do |wp|
+              expect(copy_of(wp).project_phase_definition_id).to eq(wp.project_phase_definition_id)
+            end
           end
         end
       end
@@ -920,6 +1268,29 @@ RSpec.describe(
           end
         end
       end
+
+      context "with project phases" do
+        let(:only_args) { %i[phases] }
+
+        let!(:inactive_source_project_phase) do
+          create(:project_phase,
+                 project: source,
+                 active: false,
+                 start_date: Time.zone.today + 10.days,
+                 finish_date: Time.zone.today + 15.days)
+        end
+
+        it "copies the phases" do
+          expect(subject).to be_success
+          expect(project_copy.phases.count).to eq 2
+
+          [source_project_phase, inactive_source_project_phase].each do |source_phase|
+            copied_phase = project_copy.phases.find_by(definition_id: source_phase.definition_id)
+            expect(copied_phase.attributes.slice("definition_id", "active", "start_date", "finish_date", "duration"))
+              .to eql source_phase.attributes.slice("definition_id", "active", "start_date", "finish_date", "duration")
+          end
+        end
+      end
     end
 
     context "without anything selected" do
@@ -936,10 +1307,11 @@ RSpec.describe(
         expect(project_copy.forums.count).to eq 0
         # Default wiki page
         expect(project_copy.wiki).to be_present
+        expect(project_copy.wiki.enabled?).to eq(source.wiki.enabled?)
         expect(project_copy.wiki.pages.count).to eq 0
-        expect(project_copy.wiki.wiki_menu_items.count).to eq 1
         expect(project_copy.queries.count).to eq 0
         expect(project_copy.versions.count).to eq 0
+        expect(project_copy.phases.count).to eq 0
 
         # Cleared attributes
         expect(project_copy).to be_persisted
@@ -950,7 +1322,7 @@ RSpec.describe(
         # Duplicated attributes
         expect(project_copy.description).to eq source.description
         expect(source.enabled_module_names.sort - %w[repository]).to eq project_copy.enabled_module_names.sort
-        expect(project_copy.types).to eq source.types
+        expect(project_copy.enabled_types.to_a).to eq source.enabled_types.to_a
 
         # Default attributes
         expect(project_copy).to be_active
@@ -981,11 +1353,11 @@ RSpec.describe(
           expect(source.users).to include current_user
           expect(source.users).to include user
           expect(project_copy.groups).to be_empty
-          expect(source.member_principals.count).to eq 4
+          expect(source.members.count).to eq 4
 
           expect(subject).to be_success
 
-          expect(project_copy.member_principals.count).to eq 1
+          expect(project_copy.members.count).to eq 1
           expect(project_copy.groups).to be_empty
           expect(project_copy.users).to contain_exactly current_user
 

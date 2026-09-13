@@ -58,6 +58,7 @@ module Storages::Admin::ManagedProjectFolders
       render(
         Primer::Beta::Link.new(
           href: Storages::UrlBuilder.url(@storage.uri, "settings/admin/openproject"),
+          underline: true,
           target: "_blank"
         )
       ) { I18n.t("storages.instructions.#{@storage}.integration") }

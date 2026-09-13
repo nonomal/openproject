@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Copied from https://gitlab.com/gitlab-org/ruby/gems/gitlab-chronic-duration
 # version 0.12.0
 #
@@ -109,6 +111,57 @@ RSpec.describe ChronicDuration do
 
     it "is able to parse minutes by default" do
       expect(described_class.parse("5", default_unit: "minutes")).to eq(300)
+    end
+
+    # Tests for intelligent unit inference
+    context "when using intelligent unit inference" do
+      it "interprets subsequent numbers without units as next smaller unit" do
+        expect(described_class.parse("2 hours 15", default_unit: "hours")).to eq(8100) # 2h 15m = 8100s
+      end
+
+      it "handles multiple numbers without units in descending order" do
+        expect(described_class.parse("2 hours 15 30", default_unit: "hours")).to eq(8130) # 2h 15m 30s = 8130s
+      end
+
+      it "works with different starting units" do
+        expect(described_class.parse("1 day 5", default_unit: "days")).to eq(104400) # 1d 5h = 104400s
+        expect(described_class.parse("3 minutes 45", default_unit: "minutes")).to eq(225) # 3m 45s = 225s
+        expect(described_class.parse("1 week 2", default_unit: "weeks")).to eq(777600) # 1w 2d = 777600s
+      end
+
+      it "falls back to default unit when no previous unit exists" do
+        expect(described_class.parse("5", default_unit: "minutes")).to eq(300) # 5m = 300s
+        expect(described_class.parse("10", default_unit: "hours")).to eq(36000) # 10h = 36000s
+      end
+
+      it "handles mixed explicit and implicit units" do
+        expect(described_class.parse("1 hour 30 20 seconds", default_unit: "hours")).to eq(5420) # 1h 30m 20s = 5420s
+      end
+
+      it "keeps using smallest unit when already at seconds" do
+        expect(described_class.parse("3 minutes 45 10", default_unit: "minutes")).to eq(235) # 3m 45s 10s = 235s
+      end
+
+      it "works with fractional numbers" do
+        expect(described_class.parse("2.5 hours 30", default_unit: "hours")).to eq(10800) # 2.5h 30m = 10800s
+        expect(described_class.parse("1 hour 15.5", default_unit: "hours")).to eq(4530) # 1h 15.5m = 4530s
+      end
+
+      it "maintains backward compatibility with existing formats" do
+        expect(described_class.parse("2 hours 20 minutes")).to eq(8400) # Explicit units should still work
+        expect(described_class.parse("1 day 5 hours 30 minutes")).to eq(106200) # Multiple explicit units
+      end
+
+      it "handles edge cases correctly" do
+        # Multiple numbers without units at the beginning (should use default)
+        expect(described_class.parse("5 10", default_unit: "minutes")).to eq(900) # 5m + 10m = 900s
+
+        # Unit at the end with numbers before - first number uses default, then intelligent inference kicks in
+        expect(described_class.parse("2 15 minutes")).to eq(902) # 2s (default) + 15m = 902s
+
+        # Unit at beginning gets implicit "1", then intelligent inference
+        expect(described_class.parse("minutes 2 15")).to eq(77) # 1m + 2s + 15s = 77s
+      end
     end
 
     exemplars.each do |k, v|

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -51,6 +53,10 @@ module Components
 
     def toggle_include_all_subprojects
       page.find("[data-qa-project-include-all-subprojects]").click
+    end
+
+    def expect_include_all_subprojects_unchecked
+      expect(page.find("[data-qa-project-include-all-subprojects]")).not_to be_checked
     end
 
     def toggle_checkbox(project_id)

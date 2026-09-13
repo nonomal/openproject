@@ -70,9 +70,9 @@ The configuration of the “view all projects” page now enables better project
 
 ## Harmonization of the time and costs modules
 
-Tracking spent time and costs is now much easier with the improved and harmonized modules for time and cost reporting. The modules *Time tracking* and *Cost reporting* have been combined. Whenever you want to track time and/or costs in a project, the new module *Time and costs* needs to be activated in the project settings. It automatically adds the time tracking and cost reporting functionality to the project.
+Tracking spent time and costs is now much easier with the improved and harmonized modules for time and cost reporting. The modules _Time tracking_ and _Cost reporting_ have been combined. Whenever you want to track time and/or costs in a project, the new module _Time and costs_ needs to be activated in the project settings. It automatically adds the time tracking and cost reporting functionality to the project.
 
-The *Budgets* module will remain unchanged and additionally enables project budgets to be tracked.
+The _Budgets_ module will remain unchanged and additionally enables project budgets to be tracked.
 
 ![time-and-costs-module](time-and-costs-module.png)
 
@@ -94,7 +94,7 @@ We have now also expanded the attribute help texts for projects. You can define 
 
 Boards and project dashboards can now also be copied when copying a project. This enables you to set up a default project and copy it to set up a new project.
 
-## As always,…… there’s much more!
+## As always, there’s much more
 
 There are lots and lots of new things we packed into 11.0 to tell you about.
 
@@ -291,7 +291,7 @@ There are lots and lots of new things we packed into 11.0 to tell you about.
 - Changed: Improve board creation modal \[[#34070](https://community.openproject.org/wp/34070)\]
 - Changed: Hide derived (Start/Finish) Date from work package forms \[[#34122](https://community.openproject.org/wp/34122)\]
 - Changed: Extend search autocompleter with useful information \[[#34132](https://community.openproject.org/wp/34132)\]
-- Changed: [all projects overview] (Add option to) show status-text in expanded view. \[[#34191](https://community.openproject.org/wp/34191)\]
+- Changed: \[all projects overview\] \(Add option to\) show status-text in expanded view. \[[#34191](https://community.openproject.org/wp/34191)\]
 - Changed: Map board subtasks columns when copying projects \[[#34238](https://community.openproject.org/wp/34238)\]
 - Changed: Having meetings as a linkable resource \[[#34256](https://community.openproject.org/wp/34256)\]
 - Changed: What's new teaser OpenProject BIM 11.0 \[[#34514](https://community.openproject.org/wp/34514)\]
@@ -311,7 +311,7 @@ Prefer to run OpenProject 11.0 in your own infrastructure?
 Here you can find the [Installation guidelines](../../../installation-and-operations) for OpenProject.
 
 Want to upgrade from your self-managed Community version to try out the Enterprise Enterprise add-ons? [Get a 14 days free trial token directly out of your current Community installation.](https://www.openproject.org/blog/enterprise-edition-upgrade-test-free/)
-Navigate to the -> *Administration*-> *Enterprise edition* and request your trial token.
+Navigate to the -> _Administration_-> _Enterprise edition_ and request your trial token.
 
 ## Migrating to OpenProject 11.0
 

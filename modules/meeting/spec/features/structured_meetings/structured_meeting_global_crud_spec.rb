@@ -110,7 +110,7 @@ RSpec.describe "Meetings global CRUD", :js do
     meetings_page.click_create
     wait_for_network_idle
 
-    expect(page).to have_css("h1", text: "Some title")
+    expect(page).to have_heading "Some title"
     meeting = Meeting.last
     expect(meeting.title).to eq "Some title"
     expect(meeting.project).to eq project

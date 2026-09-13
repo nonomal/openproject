@@ -29,6 +29,6 @@ See COPYRIGHT and LICENSE files for more details.
 
 <%=
   primer_form_with(**item_options) do |f|
-    render(CustomFields::Hierarchy::ItemForm.new(f, target_item: model))
+    render(CustomFields::Hierarchy::ItemForm.new(f, target_item: model, secondary_input_format:))
   end
 %>

@@ -21,27 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import {
-  AfterViewInit,
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-  ElementRef,
-  EventEmitter,
-  forwardRef,
-  Injector,
-  Input,
-  OnDestroy,
-  OnInit,
-  Output,
-  ViewChild,
-  ViewEncapsulation,
-} from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, forwardRef, Injector, Input, OnDestroy, OnInit, Output, ViewChild, ViewEncapsulation, inject } from '@angular/core';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { onDayCreate, validDate } from 'core-app/shared/components/datepicker/helpers/date-modal.helpers';
@@ -64,8 +49,16 @@ import { DeviceService } from 'core-app/core/browser/device.service';
       multi: true,
     },
   ],
+  standalone: false,
 })
 export class OpBasicSingleDatePickerComponent implements ControlValueAccessor, OnInit, AfterViewInit, OnDestroy {
+  readonly I18n = inject(I18nService);
+  readonly timezoneService = inject(TimezoneService);
+  readonly injector = inject(Injector);
+  readonly cdRef = inject(ChangeDetectorRef);
+  readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly deviceService = inject(DeviceService);
+
   @Output() valueChange = new EventEmitter();
 
   @Output() picked = new EventEmitter();
@@ -80,31 +73,15 @@ export class OpBasicSingleDatePickerComponent implements ControlValueAccessor, O
     return this._value;
   }
 
-  // Having an `@Input() id;` property breaks the turbo morphing with idiomorph.
-  // The reason is, the `id` set by angular will override the `id` set as html attribute on
-  // the component.
-  // This is problematic, because new elements from the response template
-  // will not have angular initialized on them, and calling `element.id` will return the html
-  // id attribute, while calling `element.id` on existing elements will return the angular
-  // defined `id` property.
-  // It also means, when idiomorph compares the new elements with the old ones,
-  // the same element will have a different id set, and it will not be matched. The old element
-  // will have the angular `@Input id` property, while new one will have the html id attribute.
-  //
-  // The solution is to rename the `id` to `inputId`. The component would still get an id
-  // attribute assigned if provided when declaring the component, but angular will not
-  // programatically overwrite the `id` getter.
-  //
-  // This comment can be removed once the https://github.com/bigskysoftware/idiomorph/pull/131
-  // is accepted.
-
-  @Input() inputId = `flatpickr-input-${+(new Date())}`;
+  @Input() id = `flatpickr-input-${+(new Date())}`;
 
   @Input() name = '';
 
   @Input() required = false;
 
   @Input() disabled = false;
+
+  @Input() placeholder = '';
 
   @Input() minimalDate:Date|null = null;
 
@@ -116,7 +93,14 @@ export class OpBasicSingleDatePickerComponent implements ControlValueAccessor, O
 
   @Input() dataAction = '';
 
-  @ViewChild('input') input:ElementRef;
+  @Input() set inputAttrs(attrs:Record<string, string> | null) {
+    this._inputAttrs = attrs ?? {};
+    this.applyInputAttrs();
+  }
+
+  private _inputAttrs:Record<string, string> = {};
+
+  @ViewChild('input') input:ElementRef<HTMLInputElement>;
 
   mobile = false;
 
@@ -127,14 +111,7 @@ export class OpBasicSingleDatePickerComponent implements ControlValueAccessor, O
 
   public datePickerInstance:DatePicker;
 
-  constructor(
-    readonly I18n:I18nService,
-    readonly timezoneService:TimezoneService,
-    readonly injector:Injector,
-    readonly cdRef:ChangeDetectorRef,
-    readonly elementRef:ElementRef,
-    readonly deviceService:DeviceService,
-  ) {
+  constructor() {
     populateInputsFromDataset(this);
   }
 
@@ -145,6 +122,15 @@ export class OpBasicSingleDatePickerComponent implements ControlValueAccessor, O
   ngAfterViewInit():void {
     if (!this.mobile) {
       this.initializeDatePicker();
+    }
+    this.applyInputAttrs();
+  }
+
+  private applyInputAttrs():void {
+    const el = this.input?.nativeElement
+      ?? this.elementRef.nativeElement.querySelector<HTMLInputElement>(`input[id="${this.id}"]`);
+    if (el) {
+      Object.entries(this._inputAttrs).forEach(([key, val]) => el.setAttribute(key, val));
     }
   }
 
@@ -172,7 +158,7 @@ export class OpBasicSingleDatePickerComponent implements ControlValueAccessor, O
   private initializeDatePicker() {
     this.datePickerInstance = new DatePicker(
       this.injector,
-      this.inputId,
+      this.id,
       this.value || '',
       {
         allowInput: true,
@@ -208,7 +194,7 @@ export class OpBasicSingleDatePickerComponent implements ControlValueAccessor, O
         static: false,
         appendTo: this.appendToBodyOrDialog(),
       },
-      this.input.nativeElement as HTMLInputElement,
+      this.input.nativeElement,
     );
   }
 
@@ -250,7 +236,7 @@ export class OpBasicSingleDatePickerComponent implements ControlValueAccessor, O
 
   private appendToBodyOrDialog():HTMLElement|undefined {
     if (this.inDialog) {
-      return document.querySelector(`#${this.inDialog}`) as HTMLElement;
+      return document.querySelector<HTMLElement>(`#${this.inDialog}`)!;
     }
 
     return undefined;

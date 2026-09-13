@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -61,7 +63,7 @@ RSpec.shared_examples "work package relations tab", :js, :with_cuprite do
 
     it "allows to manage hierarchy" do
       # Add parent
-      relations.add_parent(parent.id, parent)
+      relations.add_parent(parent)
       wp_page.expect_and_dismiss_toaster(message: "Successful update.")
       relations.expect_parent(parent)
       tabs.expect_counter(relations_tab, 1)
@@ -148,7 +150,7 @@ RSpec.shared_examples "work package relations tab", :js, :with_cuprite do
 
         it "is able to link parent and children" do
           # Add parent
-          relations.add_parent(parent.id, parent)
+          relations.add_parent(parent)
           wp_page.expect_and_dismiss_toaster(message: "Successful update.")
           relations.expect_parent(parent)
           tabs.expect_counter(relations_tab, 3)
@@ -179,15 +181,6 @@ RSpec.shared_examples "work package relations tab", :js, :with_cuprite do
       end
     end
   end
-end
-
-RSpec.context "within a split screen" do
-  let(:wp_page) { Pages::SplitWorkPackage.new(work_package) }
-  let(:tabs) { Components::WorkPackages::Tabs.new(work_package) }
-
-  let(:relations_tab) { find(".op-tab-row--link_selected", text: "RELATIONS") }
-
-  it_behaves_like "work package relations tab"
 end
 
 RSpec.context "within a primerized split screen" do

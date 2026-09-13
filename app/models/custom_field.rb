@@ -30,7 +30,10 @@
 
 class CustomField < ApplicationRecord
   include CustomField::OrderStatements
-  scope :required, -> { where(is_required: true) }
+  include CustomField::CalculatedValue
+
+  normalizes :name, with: OpenProject::RemoveInvisibleCharacters
+
   has_many :custom_values, dependent: :delete_all
   # WARNING: the inverse_of option is also required in order
   # for the 'touch: true' option on the custom_field association in CustomOption
@@ -48,41 +51,56 @@ class CustomField < ApplicationRecord
           dependent: :destroy,
           inverse_of: "custom_field"
 
+  attr_readonly :field_format
+
+  has_many :calculated_value_errors, dependent: :delete_all, inverse_of: "custom_field"
+  has_many :comments, class_name: "CustomComment", dependent: :delete_all, inverse_of: "custom_field"
+
+  include Scopes::Scoped
+
   scope :hierarchy_root_and_children, -> { includes(hierarchy_root: { children: :children }) }
+  scope :required, -> { where(is_required: true).where.not(field_format: "calculated_value") }
+
+  scope :field_format_calculated_value, -> { where(field_format: "calculated_value") }
+
+  scopes :visible
 
   acts_as_list scope: [:type]
 
   validates :field_format, presence: true
-  validates :custom_options,
-            presence: { message: ->(*) { I18n.t(:"activerecord.errors.models.custom_field.at_least_one_custom_option") } },
-            if: ->(*) { field_format == "list" }
-  validates :name, presence: true, length: { maximum: 256 }
+  validates :name,
+            presence: true,
+            length: { maximum: 256 },
+            uniqueness: { case_sensitive: false, scope: :type }
 
-  validate :uniqueness_of_name_with_scope
-
-  def uniqueness_of_name_with_scope
-    taken_names = CustomField.where(type:)
-    taken_names = taken_names.where.not(id:) if id
-    taken_names = taken_names.pluck(:name)
-
-    errors.add(:name, :taken) if name.in?(taken_names)
-  end
-
-  validates :field_format, inclusion: { in: -> { OpenProject::CustomFieldFormat.available_formats } }
-
+  validate :validate_field_format_inclusion
+  validate :validate_value_bounds
   validate :validate_default_value
   validate :validate_regex
 
   validates :min_length, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :max_length, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
-  validates :min_length, numericality: { less_than_or_equal_to: :max_length, message: :smaller_than_or_equal_to_max_length },
-                         unless: Proc.new { |cf| cf.max_length.blank? }
+  validates :min_length,
+            numericality: { less_than_or_equal_to: :max_length, message: :smaller_than_or_equal_to_max_length },
+            if: -> { max_length.to_i.positive? }
+
+  validates :min_value, :max_value, absence: true, unless: :numeric_bounds_possible?
+  validates :min_value, :max_value,
+            numericality: true,
+            allow_nil: true,
+            if: :numeric_bounds_possible?
 
   validates :multi_value, absence: true, unless: :multi_value_possible?
   validates :allow_non_open_versions, absence: true, unless: :allow_non_open_versions_possible?
+  validates :has_comment, absence: true, unless: :can_have_comment?
 
   before_validation :check_searchability
+
   after_destroy :destroy_help_text
+
+  def visible?(usr = User.current, **)
+    self.class.visible(usr).exists?(id: id)
+  end
 
   # make sure int, float, date, and bool are not searchable
   def check_searchability
@@ -90,9 +108,15 @@ class CustomField < ApplicationRecord
     true
   end
 
-  def default_value
+  def default_value # rubocop:disable Metrics/AbcSize,Metrics/PerceivedComplexity
     if list?
-      ids = custom_options.where(default_value: true).pluck(:id).map(&:to_s)
+      # Use loaded association data when available to avoid N+1 queries.
+      # .where().pluck() always hits the database, bypassing eager-loaded data.
+      ids = if custom_options.loaded?
+              custom_options.select(&:default_value).map { |o| o.id.to_s }
+            else
+              custom_options.where(default_value: true).pluck(:id).map(&:to_s)
+            end
 
       if multi_value?
         ids
@@ -103,6 +127,39 @@ class CustomField < ApplicationRecord
       val = read_attribute :default_value
       cast_value val
     end
+  end
+
+  def validate_field_format_inclusion
+    # When creating a new custom field, only the available formats are allowed.
+    # But you can edit and update existing custom fields, even if they have a field format that is disabled.
+    allowed = if new_record?
+                OpenProject::CustomFieldFormat.available_formats
+              else
+                OpenProject::CustomFieldFormat.registered_formats
+              end
+
+    unless allowed.include?(field_format)
+      errors.add(:field_format, :inclusion)
+    end
+  end
+
+  def validate_value_bounds
+    return unless numeric_bounds_possible?
+
+    validate_integer_value_bounds if field_format == "int"
+    validate_value_bound_order
+  end
+
+  def validate_integer_value_bounds
+    { min_value:, max_value: }.each do |attribute, bound|
+      errors.add(attribute, :not_an_integer) if bound.present? && (bound % 1) != 0
+    end
+  end
+
+  def validate_value_bound_order
+    return unless min_value.present? && max_value.present?
+
+    errors.add(:min_value, :smaller_than_or_equal_to_max_value) if min_value > max_value
   end
 
   def validate_default_value
@@ -171,6 +228,8 @@ class CustomField < ApplicationRecord
       possible_versions(obj).pluck(:id).map(&:to_s)
     when "list"
       custom_options
+    when "hierarchy", "weighted_item_list"
+      custom_field_hierarchy_items
     else
       read_attribute(:possible_values)
     end
@@ -194,6 +253,17 @@ class CustomField < ApplicationRecord
     custom_options.where("position > ?", max_position).destroy_all
   end
 
+  def custom_field_hierarchy_items
+    return [] if hierarchy_root.nil?
+
+    items = CustomFields::Hierarchy::HierarchicalItemService
+              .new
+              .get_descendants(item: hierarchy_root, include_self: false)
+              .fmap { |items| items.map { |item| [item.ancestry_path(include_shorts_and_weights: true), item.id] } }
+
+    items.value_or([])
+  end
+
   def cast_value(value)
     return if value.blank?
 
@@ -210,10 +280,14 @@ class CustomField < ApplicationRecord
       ActiveRecord::Type::Boolean.new.cast(value)
     when "int"
       value.to_i
-    when "float"
+    when "float", "calculated_value"
       value.to_f
-    when "user", "version"
-      field_format.classify.constantize.find_by(id: value.to_i)
+    when "user"
+      Principal.find_by(id: value.to_i)
+    when "version"
+      Version.find_by(id: value.to_i)
+    when "hierarchy", "weighted_item_list"
+      CustomField::Hierarchy::Item.find_by(id: value.to_i)
     end
   end
 
@@ -229,13 +303,13 @@ class CustomField < ApplicationRecord
     name =~ /\A(.+)CustomField\z/
     begin
       $1.constantize
-    rescue StandardError
+    rescue NameError
       nil
     end
   end
 
   def self.custom_field_attribute?(attribute_name)
-    attribute_name.to_s =~ /custom_field_\d+/
+    /custom_field_\d+/.match?(attribute_name.to_s)
   end
 
   # to move in project_custom_field
@@ -248,6 +322,14 @@ class CustomField < ApplicationRecord
     where(is_filter: true)
   end
 
+  def all_attribute_names
+    if has_comment?
+      [attribute_name, comment_attribute_name]
+    else
+      [attribute_name]
+    end
+  end
+
   def attribute_name(format = nil)
     return "customField#{id}" if format == :camel_case
     return "custom-field-#{id}" if format == :kebab_case
@@ -255,17 +337,23 @@ class CustomField < ApplicationRecord
     "custom_field_#{id}"
   end
 
-  def attribute_getter
-    attribute_name.to_sym
+  def comment_attribute_name(format = nil)
+    return "customComment#{id}" if format == :camel_case
+
+    "custom_comment_#{id}"
   end
 
-  def attribute_setter
-    :"#{attribute_name}="
-  end
+  def attribute_getter = attribute_name.to_sym
 
-  def column_name
-    "cf_#{id}"
-  end
+  def comment_attribute_getter = comment_attribute_name.to_sym
+
+  def attribute_setter = :"#{attribute_name}="
+
+  def comment_attribute_setter = :"#{comment_attribute_name}="
+
+  def column_name = "cf_#{id}"
+
+  def comment_column_name = "cfc_#{id}"
 
   def type_name
     nil
@@ -299,13 +387,43 @@ class CustomField < ApplicationRecord
     field_format == "hierarchy"
   end
 
-  def multi_value_possible?
-    OpenProject::CustomFieldFormat.find_by(name: field_format)&.multi_value_possible?
+  def field_format_weighted_item_list?
+    field_format == "weighted_item_list"
   end
+
+  def field_format_calculated_value?
+    field_format == "calculated_value"
+  end
+
+  def calculated_value? = field_format_calculated_value?
+
+  def hierarchical_list?
+    field_format_hierarchy? || field_format_weighted_item_list?
+  end
+
+  def multi_value_possible?
+    format_definition&.multi_value_possible?
+  end
+
+  def numeric_bounds_possible?
+    format_definition&.numeric_bounds_possible? || false
+  end
+
+  def length_limits_possible?
+    format_definition&.length_limits_possible? || false
+  end
+
+  def min_bound = typed_bound(min_value)
+
+  def max_bound = typed_bound(max_value)
 
   def allow_non_open_versions_possible?
     version?
   end
+
+  def self.can_have_comment? = customized_class&.can_have_custom_comments?
+
+  delegate :can_have_comment?, to: :class
 
   ##
   # Overrides cache key so that a custom field's representation
@@ -316,6 +434,24 @@ class CustomField < ApplicationRecord
     "#{super}/#{tag}"
   end
 
+  # If this custom field is a calculated value, return an existing calculation error.
+  # For non-calculated value custom fields, always returns `nil`.
+  #
+  # When there is at least one calculation error, will return the first one - or `nil` if there are none.
+  # Use this method when you want to present a calculation error to the user.
+  def first_calculation_error(customized)
+    return nil unless calculated_value?
+
+    # Use a ruby finder to avoid hitting the database with N+1 queries on the project list page,
+    # the errors are eager loaded via the Projects::TableComponent
+    customized.calculated_value_errors.find { it.custom_field_id == id }
+  end
+
+  def comment_for(customized)
+    # Use a ruby finder following same logic as in first_calculation_error
+    comments.find { it.customized == customized }
+  end
+
   private
 
   def possible_versions(obj, options: {})
@@ -324,9 +460,10 @@ class CustomField < ApplicationRecord
   end
 
   def possible_version_values_options(obj, options: {})
-    possible_versions(obj, options:).references(:project)
-                          .sort
-                          .map { |u| [u.name, u.id.to_s, u.project.name] }
+    possible_versions(obj, options:)
+      .references(:project)
+      .sort
+      .map { |u| [u.name, u.id.to_s, u.project.name] }
   end
 
   def possible_users(obj)
@@ -352,21 +489,26 @@ class CustomField < ApplicationRecord
     end
   end
 
-  def deduce_project(project)
-    if project.is_a?(Project)
-      project
-    elsif project.respond_to?(:project)
-      project.project
+  def deduce_project(candidate)
+    if candidate.is_a?(Project)
+      candidate
+    elsif candidate.respond_to?(:project)
+      candidate.project
     end
   end
 
   def deduce_principals(project)
-    if project&.persisted?
+    if user_field_with_role_assignment?
+      Principal.visible
+    elsif project&.persisted?
       project.principals
     else
-      Principal
-        .in_visible_project_or_me(User.current)
+      Principal.in_visible_project_or_me(User.current)
     end
+  end
+
+  def user_field_with_role_assignment?
+    is_a?(ProjectCustomField) && user? && custom_fields_role.present?
   end
 
   def deduce_versions(project, options: {})
@@ -390,5 +532,15 @@ class CustomField < ApplicationRecord
     AttributeHelpText
       .where(attribute_name:)
       .destroy_all
+  end
+
+  def format_definition
+    OpenProject::CustomFieldFormat.find_by(name: field_format)
+  end
+
+  def typed_bound(bound)
+    return if bound.nil?
+
+    field_format == "int" ? bound.to_i : bound
   end
 end

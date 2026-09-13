@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -39,9 +41,10 @@ end
 class RepositoriesController < ApplicationController
   include PaginationHelper
   include RepositoriesHelper
+  include OpTurbo::ComponentStream
 
   menu_item :repository
-  menu_item :settings, only: %i[edit destroy_info]
+  menu_item :settings, only: [:edit]
   default_search_scope :changesets
 
   before_action :find_project_by_project_id
@@ -117,7 +120,7 @@ class RepositoriesController < ApplicationController
 
   def destroy_info
     @repository = @project.repository
-    project_settings_repository_path(@project)
+    respond_with_dialog Repositories::DestroyDialogComponent.new(project: @project, repository: @repository)
   end
 
   def destroy
@@ -127,7 +130,8 @@ class RepositoriesController < ApplicationController
     else
       flash[:error] = repository.errors.full_messages
     end
-    redirect_to project_settings_repository_path(@project)
+    redirect_to project_settings_repository_path(@project),
+                status: :see_other
   end
 
   alias_method :browse, :show
@@ -230,7 +234,7 @@ class RepositoriesController < ApplicationController
       end
 
       filename = "changeset_r#{@rev}"
-      filename << "_r#{@rev_to}" if @rev_to
+      filename += "_r#{@rev_to}" if @rev_to
       send_data @diff.join,
                 filename: "#{filename}.diff",
                 type: "text/x-patch",
@@ -255,8 +259,7 @@ class RepositoriesController < ApplicationController
   end
 
   def stats
-    # allow object_src self to be able to load dynamic stats SVGs from ./graph
-    override_content_security_policy_directives object_src: %w('self')
+    append_content_security_policy_directives object_src: %w('self') # rubocop:disable Lint/PercentStringArray
 
     @show_commits_per_author = current_user.allowed_in_project?(:view_commit_author_statistics, @project)
   end
@@ -444,11 +447,11 @@ class RepositoriesController < ApplicationController
   end
 
   def send_raw(content, path)
-    # Force the download
-    send_opt = { filename: filename_for_content_disposition(path.split("/").last) }
-    send_type = OpenProject::MimeType.of(path)
-    send_opt[:type] = send_type.to_s if send_type
-    send_data content, send_opt
+    # Force the download as binary to prevent CSP bypass
+    send_data content,
+              filename: filename_for_content_disposition(path.split("/").last),
+              type: "application/octet-stream",
+              disposition: :attachment
   end
 
   def render_text_entry

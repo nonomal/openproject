@@ -79,17 +79,15 @@ module Statuses
         label: attribute_name(:is_readonly),
         name: :is_readonly,
         disabled: readonly_disabled?,
-        caption: I18n.t("statuses.edit.status_readonly_html").html_safe,
+        caption: helpers.t("statuses.edit.status_readonly_html"),
         data: {
           "admin--statuses-target": "isReadonlyCheckbox",
           restricted: readonly_work_packages_restricted?
         }
       )
 
-      if readonly_work_packages_restricted?
-        statuses_form.html_content do
-          render(EnterpriseEdition::BannerComponent.new(:readonly_work_packages))
-        end
+      statuses_form.html_content do
+        render(EnterpriseEdition::BannerComponent.new(:readonly_work_packages))
       end
 
       statuses_form.check_box(
@@ -117,8 +115,8 @@ module Statuses
     end
 
     def percent_complete_field_caption
-      I18n.t("statuses.edit.status_percent_complete_text",
-             href: url_helpers.admin_settings_progress_tracking_path).html_safe
+      helpers.link_translate("statuses.edit.status_percent_complete_text_html",
+                             links: { setting_url: url_helpers.admin_settings_progress_tracking_path })
     end
 
     def already_default_status?

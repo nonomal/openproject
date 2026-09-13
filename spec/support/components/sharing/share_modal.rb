@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # -- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -367,20 +369,20 @@ module Components
         select_autocomplete page.find('[data-test-selector="op-share-dialog-invite-autocomplete"]'),
                             query: user.firstname,
                             select_text: user.name,
-                            results_selector: "body"
+                            results_selector: "#sharing-modal"
       end
 
       def select_not_existing_user_option(email)
         select_autocomplete page.find('[data-test-selector="op-share-dialog-invite-autocomplete"]'),
                             query: email,
                             select_text: "Send invite to\"#{email}\"",
-                            results_selector: "body"
+                            results_selector: "#sharing-modal"
       end
 
       def expect_upsell_banner
         within_modal do
           expect(page)
-            .to have_text(I18n.t(:"ee.upsell.title"))
+            .to have_text(I18n.t(:"ee.upsell.work_package_sharing.description"))
         end
       end
 

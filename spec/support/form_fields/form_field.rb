@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module FormFields
   class FormField
     include Capybara::DSL
@@ -8,11 +10,15 @@ module FormFields
 
     def initialize(property, selector: nil)
       @property = property
-      @selector = selector || "[data-qa-field-name='#{property_name}']"
+      @selector = selector || "[data-test-selector='#{property_name}']"
     end
 
     def expect_visible
       raise NotImplementedError
+    end
+
+    def expect_not_visible
+      expect(page).to have_no_selector(selector)
     end
 
     def expect_required

@@ -21,24 +21,23 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import {
-  ChangeDetectionStrategy,
-  Component,
-  HostBinding,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostBinding, inject } from '@angular/core';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 
 @Component({
   selector: 'op-baseline-modal',
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './baseline-modal.component.html',
+  standalone: false,
 })
 export class OpBaselineModalComponent {
+  readonly I18n = inject(I18nService);
+
   @HostBinding('class.op-baseline-modal') className = true;
 
   public opened = false;
@@ -50,10 +49,6 @@ export class OpBaselineModalComponent {
     apply: this.I18n.t('js.baseline.apply'),
 
   };
-
-  constructor(
-    readonly I18n:I18nService,
-  ) {}
 
   public toggleOpen():void {
     this.opened = !this.opened;

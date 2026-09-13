@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -37,7 +39,7 @@ RSpec.describe CustomActionsController, with_ee: %i[custom_actions] do
                        actions: { assigned_to: 1 } } }
   end
 
-  shared_examples_for "read requires enterprise token" do
+  shared_examples_for "requires enterprise token" do
     context "without an enterprise token", with_ee: false do
       before do
         login_as(admin)
@@ -45,23 +47,8 @@ RSpec.describe CustomActionsController, with_ee: %i[custom_actions] do
         call
       end
 
-      it "renders enterprise_token" do
-        expect(response).to render_template "custom_actions/upsell"
-      end
-    end
-  end
-
-  shared_examples_for "write requires enterprise token" do
-    context "without an enterprise token", with_ee: false do
-      before do
-        login_as(admin)
-
-        call
-      end
-
-      it "renders enterprise_token" do
-        expect(response.response_code)
-          .to be 403
+      it "redirects to index" do
+        expect(response).to redirect_to action: :index
       end
     end
   end
@@ -113,8 +100,19 @@ RSpec.describe CustomActionsController, with_ee: %i[custom_actions] do
       end
     end
 
+    context "without an enterprise token", with_ee: false do
+      before do
+        login_as(admin)
+
+        call
+      end
+
+      it "renders ok" do
+        expect(response.response_code).to be 200
+      end
+    end
+
     it_behaves_like "403 for non admins"
-    it_behaves_like "read requires enterprise token"
   end
 
   describe "#new" do
@@ -148,7 +146,7 @@ RSpec.describe CustomActionsController, with_ee: %i[custom_actions] do
     end
 
     it_behaves_like "403 for non admins"
-    it_behaves_like "read requires enterprise token"
+    it_behaves_like "requires enterprise token"
   end
 
   describe "#create" do
@@ -212,7 +210,7 @@ RSpec.describe CustomActionsController, with_ee: %i[custom_actions] do
     end
 
     it_behaves_like "403 for non admins"
-    it_behaves_like "write requires enterprise token"
+    it_behaves_like "requires enterprise token"
   end
 
   describe "#edit" do
@@ -272,7 +270,7 @@ RSpec.describe CustomActionsController, with_ee: %i[custom_actions] do
     end
 
     it_behaves_like "403 for non admins"
-    it_behaves_like "read requires enterprise token"
+    it_behaves_like "requires enterprise token"
   end
 
   describe "#update" do
@@ -366,7 +364,7 @@ RSpec.describe CustomActionsController, with_ee: %i[custom_actions] do
     end
 
     it_behaves_like "403 for non admins"
-    it_behaves_like "write requires enterprise token"
+    it_behaves_like "requires enterprise token"
   end
 
   describe "#destroy" do
@@ -418,7 +416,23 @@ RSpec.describe CustomActionsController, with_ee: %i[custom_actions] do
       end
     end
 
+    context "for admins without an enterprise token", with_ee: false do
+      before do
+        allow(action)
+          .to receive(:destroy)
+          .and_return(true)
+
+        login_as(admin)
+
+        call
+      end
+
+      it "redirects to index" do
+        expect(response).to redirect_to action: :index
+        expect(action).to have_received(:destroy)
+      end
+    end
+
     it_behaves_like "403 for non admins"
-    it_behaves_like "write requires enterprise token"
   end
 end

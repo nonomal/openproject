@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -49,7 +51,7 @@ RSpec.describe Query::Results, "Filtering custom fields" do
     end
   end
 
-  shared_let(:type) { create(:type_standard, custom_fields: [custom_field]) }
+  shared_let(:type) { create(:type_task, custom_fields: [custom_field]) }
   shared_let(:project) do
     create(:project,
            types: [type],

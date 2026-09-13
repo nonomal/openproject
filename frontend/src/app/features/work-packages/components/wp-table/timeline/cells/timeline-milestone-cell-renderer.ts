@@ -1,4 +1,32 @@
-import * as moment from 'moment';
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
+import moment, { Moment } from 'moment';
 import { WorkPackageResource } from 'core-app/features/hal/resources/work-package-resource';
 import { WorkPackageChangeset } from 'core-app/features/work-packages/components/wp-edit/work-package-changeset';
 import {
@@ -23,7 +51,6 @@ import {
   MouseDirection,
 } from './timeline-cell-renderer';
 import { WorkPackageCellLabels } from './wp-timeline-cell-labels';
-import Moment = moment.Moment;
 
 export class TimelineMilestoneCellRenderer extends TimelineCellRenderer {
   public get type():string {
@@ -31,8 +58,8 @@ export class TimelineMilestoneCellRenderer extends TimelineCellRenderer {
   }
 
   public isEmpty(wp:WorkPackageResource) {
-    const date = moment(wp.date as any);
-    return _.isNaN(date.valueOf());
+    const date = moment(wp.date);
+    return Number.isNaN(date.valueOf());
   }
 
   public canMoveDates(wp:WorkPackageResource) {
@@ -121,11 +148,11 @@ export class TimelineMilestoneCellRenderer extends TimelineCellRenderer {
     const date = moment(renderInfo.change.projectedResource.date);
 
     // abort if no date
-    if (_.isNaN(date.valueOf())) {
+    if (Number.isNaN(date.valueOf())) {
       return false;
     }
 
-    const diamond = jQuery('.diamond', element)[0];
+    const diamond = element.querySelector<HTMLElement>('.diamond')!;
 
     diamond.style.width = `${15}px`;
     diamond.style.height = `${15}px`;

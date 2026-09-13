@@ -1,32 +1,37 @@
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
 /* We just forward the ng-select outputs without renaming */
 /* eslint-disable @angular-eslint/no-output-native */
-import {
-  AfterViewInit,
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-  ContentChild,
-  ElementRef,
-  EventEmitter,
-  forwardRef,
-  HostBinding,
-  Injector,
-  Input,
-  NgZone,
-  OnChanges,
-  OnInit,
-  Output,
-  SimpleChanges,
-  TemplateRef,
-  Type,
-  ViewChild,
-  ViewContainerRef,
-  ViewEncapsulation,
-} from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ContentChild, ElementRef, EventEmitter, forwardRef, HostBinding, Injector, Input, OnChanges, OnInit, Output, SimpleChanges, TemplateRef, Type, ViewChild, ViewContainerRef, ViewEncapsulation, inject } from '@angular/core';
 import { DropdownPosition, NgSelectComponent } from '@ng-select/ng-select';
 import { BehaviorSubject, merge, NEVER, Observable, of, Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, filter, switchMap, tap } from 'rxjs/operators';
-import { AddTagFn, GroupValueFn } from '@ng-select/ng-select/lib/ng-select.component';
+import { catchError, debounceTime, distinctUntilChanged, filter, switchMap, tap } from 'rxjs/operators';
 
 import { HalResource } from 'core-app/features/hal/resources/hal-resource';
 import {
@@ -71,6 +76,11 @@ export interface IAutocompleterTemplateComponent {
   footerTemplate?:TemplateRef<Element>;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-redundant-type-constituents
+type AddTagFn = (term:string) => any | Promise<any>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-redundant-type-constituents
+type GroupValueFn = (key:string | any, children:any[]) => string | any;
+
 @Component({
   selector: 'op-autocompleter',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -84,6 +94,7 @@ export interface IAutocompleterTemplateComponent {
       multi: true,
     },
   ],
+  standalone: false,
 })
 // It is component that you can use whenever you need an autocompleter
 // it has all inputs and outputs of ng-select
@@ -92,6 +103,16 @@ export interface IAutocompleterTemplateComponent {
 export class OpAutocompleterComponent<T extends IAutocompleteItem = IAutocompleteItem>
   extends UntilDestroyedMixin
   implements OnInit, AfterViewInit, OnChanges, ControlValueAccessor {
+  readonly injector = inject(Injector);
+  readonly elementRef = inject<ElementRef<HTMLElement & { ngSelectComponentInstance?:NgSelectComponent }>>(ElementRef);
+  readonly http = inject(HttpClient);
+  readonly apiV3Service = inject(ApiV3Service);
+  readonly cdRef = inject(ChangeDetectorRef);
+  readonly vcRef = inject(ViewContainerRef);
+  readonly I18n = inject(I18nService);
+  readonly halResourceService = inject(HalResourceService);
+  readonly pathHelperService = inject(PathHelperService);
+
   @HostBinding('class.op-autocompleter') className = true;
 
   @Input() public filters?:IAPIFilter[] = [];
@@ -167,7 +188,8 @@ export class OpAutocompleterComponent<T extends IAutocompleteItem = IAutocomplet
 
   @Input() public placeholder:string = this.I18n.t('js.autocompleter.placeholder');
   @Input() public notFoundText:string = this.I18n.t('js.autocompleter.notFoundText');
-  @Input() public addTagText?:string;
+  @Input() public addTagText?:string = this.I18n.t('js.autocomplete_ng_select.add_tag');
+  @Input() public ariaLabel?:string = this.I18n.t('js.autocompleter.search');
 
   @Input() public loadingText:string = this.I18n.t('js.ajax.loading');
 
@@ -177,7 +199,7 @@ export class OpAutocompleterComponent<T extends IAutocompleteItem = IAutocomplet
 
   @Input() public dropdownPosition?:DropdownPosition = 'auto';
 
-  @Input() public appendTo?:string;
+  @Input() public appendTo = 'body';
 
   @Input() public closeOnSelect?:boolean = true;
 
@@ -211,7 +233,7 @@ export class OpAutocompleterComponent<T extends IAutocompleteItem = IAutocomplet
 
   @Input() public labelForId?:string;
 
-  @Input() public inputAttrs?:{ [key:string]:string } = {};
+  @Input() public inputAttrs?:Record<string, string> = {};
 
   @Input() public tabIndex?:number;
 
@@ -234,7 +256,7 @@ export class OpAutocompleterComponent<T extends IAutocompleteItem = IAutocomplet
 
   @Input() public url:string;
 
-  @Input() public debounceTimeMs:number = 250;
+  @Input() public debounceTimeMs = 250;
 
   @Output() public open = new EventEmitter<unknown>();
 
@@ -292,22 +314,7 @@ export class OpAutocompleterComponent<T extends IAutocompleteItem = IAutocomplet
 
   footerTemplate:TemplateRef<Element>;
 
-  readonly opAutocompleterService = new OpAutocompleterService(this.apiV3Service, this.halResourceService);
-
-  constructor(
-    readonly injector:Injector,
-    readonly elementRef:ElementRef,
-    readonly http:HttpClient,
-    readonly apiV3Service:ApiV3Service,
-    readonly cdRef:ChangeDetectorRef,
-    readonly ngZone:NgZone,
-    readonly vcRef:ViewContainerRef,
-    readonly I18n:I18nService,
-    readonly halResourceService:HalResourceService,
-    readonly pathHelperService:PathHelperService,
-  ) {
-    super();
-  }
+  readonly opAutocompleterService = inject(OpAutocompleterService);
 
   ngOnInit() {
     populateInputsFromDataset(this);
@@ -328,6 +335,9 @@ export class OpAutocompleterComponent<T extends IAutocompleteItem = IAutocomplet
   }
 
   ngAfterViewInit():void {
+    // Store ng-select instance on the host element for access from Stimulus controllers
+    this.elementRef.nativeElement.ngSelectComponentInstance = this.ngSelectInstance;
+
     if (this.inputName && this.model) {
       this.syncHiddenField(this.mappedInputValue);
     }
@@ -354,8 +364,12 @@ export class OpAutocompleterComponent<T extends IAutocompleteItem = IAutocomplet
       }
 
       if (this.openDirectly) {
-        this.ngSelectInstance.open();
-        this.ngSelectInstance.focus();
+        // Autocompleters within dialogs need longer to be visible, which is why we have to delay the opening further
+        const timeout = this.ngSelectInstance.element.closest('dialog') ? 200 : 0;
+        setTimeout(() => {
+          this.ngSelectInstance.open();
+          this.ngSelectInstance.focus();
+        }, timeout);
       } else if (this.focusDirectly) {
         this.ngSelectInstance.focus();
       }
@@ -367,20 +381,19 @@ export class OpAutocompleterComponent<T extends IAutocompleteItem = IAutocomplet
   public get mappedInputValue():string|string[] {
     if (!this.model) {
       return '';
+    } else if (Array.isArray(this.model)) {
+      const mappedValues = this.model.map((el) => ((typeof el === 'object' && el !== null) ? el[this.inputBindValue as 'id'] : el) as string);
+      return mappedValues.length > 0 ? mappedValues : [''];
+    } else {
+      return this.model[this.inputBindValue as 'id'] as string || '';
     }
-
-    if (Array.isArray(this.model)) {
-      return this.model.map((el) => (_.isObject(el) ? el[this.inputBindValue as 'id'] : el) as string);
-    }
-
-    return this.model[this.inputBindValue as 'id'] as string;
   }
 
   public repositionDropdown() {
     repositionDropdownBugfix(this.ngSelectInstance);
   }
 
-  public opened():void { // eslint-disable-line no-unused-vars
+  public opened():void {
     this.repositionDropdown();
     this.open.emit();
   }
@@ -398,11 +411,9 @@ export class OpAutocompleterComponent<T extends IAutocompleteItem = IAutocomplet
   }
 
   public focusSelect():void {
-    this.ngZone.runOutsideAngular(() => {
-      setTimeout(() => {
-        this.ngSelectInstance.focus();
-      }, 25);
-    });
+    setTimeout(() => {
+      this.ngSelectInstance.focus();
+    }, 25);
   }
 
   public closed():void {
@@ -474,24 +485,27 @@ export class OpAutocompleterComponent<T extends IAutocompleteItem = IAutocomplet
     }
 
     return this.typeahead.pipe(
-      filter(() => !!(this.defaultData || this.url || this.getOptionsFn)),
+      filter(() => [this.defaultData, this.url, this.getOptionsFn].some(Boolean)),
       distinctUntilChanged(),
       tap(() => this.loading$.next(true)),
       debounceTime(this.debounceTimeForCurrentEnvironment),
       switchMap((queryString:string) => {
+        let source$:Observable<unknown> = NEVER;
+
         if (this.getOptionsFn) {
-          return this.getOptionsFn(queryString);
+          source$ = this.getOptionsFn(queryString);
+        } else if (this.url) {
+          source$ = this.opAutocompleterService.loadFromUrl(this.url, queryString, this.resource, this.filters, this.searchKey);
+        } else if (this.defaultData) {
+          source$ = this.opAutocompleterService.loadData(queryString, this.resource, this.filters, this.searchKey);
         }
 
-        if (this.url) {
-          return this.opAutocompleterService.loadFromUrl(this.url, queryString, this.resource, this.filters, this.searchKey);
-        }
-
-        if (this.defaultData) {
-          return this.opAutocompleterService.loadData(queryString, this.resource, this.filters, this.searchKey);
-        }
-
-        return NEVER;
+        return source$.pipe(
+          catchError((error) => {
+            console.error(error);
+            return of([]);
+          }),
+        );
       }),
       tap({
         next: () => this.loading$.next(false),
@@ -501,18 +515,16 @@ export class OpAutocompleterComponent<T extends IAutocompleteItem = IAutocomplet
   }
 
   private get debounceTimeForCurrentEnvironment():number {
-    return (window.OpenProject.environment === 'test') ? 0 : this.debounceTimeMs;
+    return (window.OpenProject?.environment === 'test') ? 0 : this.debounceTimeMs;
   }
 
   writeValue(value:T|T[]|null):void {
     this.model = value;
   }
 
-  onChange = (_:T|T[]|null):void => {
-  };
+  onChange = (_:T|T[]|null):void => undefined;
 
-  onTouched = (_:T|T[]|null):void => {
-  };
+  onTouched = (_:T|T[]|null):void => undefined;
 
   registerOnChange(fn:(_:T|T[]|null) => void):void {
     this.onChange = fn;
@@ -530,7 +542,7 @@ export class OpAutocompleterComponent<T extends IAutocompleteItem = IAutocomplet
    * @param inputs Initial inputs to the templating component
    * @protected
    */
-  protected applyTemplates(component:Type<IAutocompleterTemplateComponent>, inputs:{ [key:string]:unknown } = {}) {
+  protected applyTemplates(component:Type<IAutocompleterTemplateComponent>, inputs:Record<string, unknown> = {}) {
     const componentRef = this.vcRef.createComponent(component, { injector: this.templateInjector });
     Object.keys(inputs).forEach((key) => {
       const value = inputs[key];
@@ -581,7 +593,7 @@ export class OpAutocompleterComponent<T extends IAutocompleteItem = IAutocomplet
 
   protected defaultCompareWithFunction():null|((a:unknown, b:unknown) => boolean) {
     return (a, b) => {
-      if (this.bindValue && !_.isObject(b)) {
+      if (this.bindValue && !(typeof b === 'object' && b !== null)) {
         return (a as Record<string, unknown>)[this.bindValue] === b;
       }
 

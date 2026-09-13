@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -103,6 +105,47 @@ RSpec.describe "API v3 Work package resource",
 
       it_behaves_like "API V3 collection response", 2, 2, "WorkPackage", "WorkPackageCollection" do
         let(:elements) { [lorem_ipsum_work_package, ipsum_work_package] }
+      end
+    end
+
+    context "when filtering by typeahead and sorting by exact_match to rank an identifier match first" do
+      let(:com_project) { create(:project, members: { current_user => role }) }
+      let(:prefix_match) do
+        create(:work_package, project: com_project, updated_at: 1.minute.ago, skip_semantic_id_allocation: true)
+      end
+      let(:exact_match) do
+        create(:work_package, project: com_project, updated_at: 2.days.ago, skip_semantic_id_allocation: true)
+      end
+      let(:prefix_alias) do
+        create(:work_package_semantic_alias, work_package: prefix_match, identifier: "COM-50")
+      end
+      let(:exact_alias) do
+        create(:work_package_semantic_alias, work_package: exact_match, identifier: "COM-5")
+      end
+
+      let(:filters) do
+        [
+          {
+            typeahead: {
+              operator: "**",
+              values: "#COM-5"
+            }
+          }
+        ]
+      end
+      let(:path) do
+        api_v3_paths.path_for :work_packages, filters:, sort_by: [["exact_match", "desc"], ["updatedAt", "desc"]]
+      end
+
+      before do
+        prefix_alias
+        exact_alias
+
+        get path
+      end
+
+      it_behaves_like "API V3 collection response", 2, 2, "WorkPackage", "WorkPackageCollection" do
+        let(:elements) { [exact_match, prefix_match] }
       end
     end
 
@@ -240,6 +283,17 @@ RSpec.describe "API v3 Work package resource",
 
         it_behaves_like "param validation error"
       end
+
+      context "with a decompression bomb payload exceeding the size limit" do
+        let(:props) do
+          # 11MB of null bytes compresses to a few KB but decompresses beyond the 10MB limit
+          bomb_data = "\x00" * (11 * 1024 * 1024)
+          compressed = Zlib::Deflate.deflate(bomb_data)
+          { eprops: Base64.encode64(compressed) }.to_query
+        end
+
+        it_behaves_like "param validation error"
+      end
     end
 
     context "when providing timestamps", with_ee: %i[baseline_comparison] do
@@ -269,7 +323,7 @@ RSpec.describe "API v3 Work package resource",
       let(:custom_field) do
         create(:string_wp_custom_field,
                name: "String CF",
-               types: project.types,
+               types: project.enabled_types,
                projects: [project])
       end
 
@@ -395,7 +449,7 @@ RSpec.describe "API v3 Work package resource",
         let(:custom_field) do
           create(:user_wp_custom_field,
                  name: "User CF",
-                 types: project.types,
+                 types: project.enabled_types,
                  projects: [project])
         end
 
@@ -899,6 +953,10 @@ RSpec.describe "API v3 Work package resource",
         before do
           work_package.update_column(:project_id, project2.id)
           current_journal.data.update_column(:project_id, project2.id)
+
+          allow(project2)
+            .to receive(:visible?)
+                  .and_return(true)
         end
 
         it "finds the work package" do
@@ -1051,7 +1109,7 @@ RSpec.describe "API v3 Work package resource",
               .to be_json_eql("The original work package".to_json)
                     .at_path("_embedded/elements/0/_embedded/attributesByTimestamp/0/subject")
             expect(subject.body)
-              .to be_json_eql(project2.name.to_json)
+              .to be_json_eql(I18n.t(:"api_v3.undisclosed.project").to_json)
                     .at_path("_embedded/elements/0/_embedded/attributesByTimestamp/0/_links/project/title")
           end
         end

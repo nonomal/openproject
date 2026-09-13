@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # -- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -36,7 +38,7 @@ module Projects::Scopes
       def allowed_to(user, permission)
         permissions = allowed_to_permissions(permission)
 
-        return none if user.locked?
+        return none if user.locked? || user.deleted?
         return none if permissions.empty?
 
         if user.admin? && permissions.all?(&:grant_to_admin?)
@@ -46,6 +48,24 @@ module Projects::Scopes
         else
           allowed_to_member(user, permissions)
         end
+      end
+
+      # Turning this public as it is also used in WorkPackages.allowed_to.
+      def allowed_to_member_union(user, permissions, entity_types: []) # rubocop:disable Metrics/AbcSize
+        membership_selects = if entity_types.any?
+                               [arel_table[:id], "members.entity_id"]
+                             else
+                               [arel_table[:id]]
+                             end
+
+        non_member_selects = if entity_types.any?
+                               [arel_table[:id], "null AS entity_id"]
+                             else
+                               [arel_table[:id]]
+                             end
+
+        Arel::Nodes::UnionAll.new(allowed_to_member_relation(user, permissions, entity_types).select(*membership_selects).arel,
+                                  allowed_to_non_member_relation(user, permissions).select(*non_member_selects).arel)
       end
 
       private
@@ -103,10 +123,7 @@ module Projects::Scopes
       end
 
       def allowed_to_member(user, permissions)
-        allowed_via_membership = allowed_to_member_relation(user, permissions).select(arel_table[:id]).arel
-        allowed_via_non_member = allowed_to_non_member_relation(user, permissions).select(:id).arel
-
-        where(arel_table[:id].in(Arel::Nodes::UnionAll.new(allowed_via_membership, allowed_via_non_member)))
+        where(arel_table[:id].in(allowed_to_member_union(user, permissions)))
       end
 
       def allowed_to_admin_relation(permissions)
@@ -114,9 +131,9 @@ module Projects::Scopes
           .where(Project.arel_table[:active].eq(true))
       end
 
-      def allowed_to_member_relation(user, permissions)
+      def allowed_to_member_relation(user, permissions, entity_types = [])
         Member
-          .where(member_conditions(user))
+          .where(member_conditions(user, entity_types))
           .joins(allowed_to_member_in_active_project_join)
           .joins(allowed_to_enabled_module_join(permissions))
           .joins(:roles)
@@ -169,10 +186,13 @@ module Projects::Scopes
                .join_sources
       end
 
-      def member_conditions(user)
+      def member_conditions(user, entity_types = [])
+        entity_condition = entity_types.reduce(Member.arel_table[:entity_type].eq(nil)) do |acc, entity_type|
+          acc.or(Member.arel_table[:entity_type].eq(entity_type))
+        end
+
         Member.arel_table[:user_id].eq(user.id)
-        .and(Member.arel_table[:entity_id].eq(nil))
-        .and(Member.arel_table[:entity_type].eq(nil))
+          .and(entity_condition)
       end
 
       def allowed_to_permissions(permission)

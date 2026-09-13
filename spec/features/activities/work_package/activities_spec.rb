@@ -31,7 +31,7 @@
 require "spec_helper"
 require "support/flash/expectations"
 
-RSpec.describe "Work package activity", :js, :with_cuprite do
+RSpec.describe "Work package activity", :js, :with_cuprite, with_ee: %i[internal_comments] do
   include Flash::Expectations
 
   let(:project) { create(:project, enabled_internal_comments: true) }
@@ -236,8 +236,7 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
       end
     end
 
-    context "when a user cannot see internal comments",
-            with_flag: { internal_comments: true } do
+    context "when a user cannot see internal comments" do
       current_user { member }
 
       before do
@@ -257,8 +256,7 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
       end
     end
 
-    context "when a user can see internal comments",
-            with_flag: { internal_comments: true } do
+    context "when a user can see internal comments" do
       current_user { admin }
 
       before do
@@ -275,6 +273,17 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
         wp_page.wait_for_activity_tab
 
         activity_tab.expect_journal_notes(text: "First comment by admin")
+      end
+
+      it "highlights the comment specified in the URL until the user clicks anywhere" do
+        visit project_work_package_path(project, work_package.id, "activity", anchor: "activity-2")
+        wp_page.wait_for_activity_tab
+
+        highlighted_comment = page.find(".--anchor-highlighted")
+        expect(highlighted_comment).to have_content("First comment by admin")
+        # click anything (without triggering navigation or something else)
+        page.find(:xpath, "//*[text()='First comment by admin']").click
+        expect(page).to have_no_css(".--anchor-highlighted")
       end
     end
   end
@@ -420,15 +429,13 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
   end
 
   context "when multiple users are commenting on a workpackage" do
-    context "when the user has permissions to see internal comments" do
+    # speed up the polling interval to 1s for the test duration
+    context "when the user has permissions to see internal comments",
+            with_settings: { work_packages_activities_tab_polling_interval_in_ms: 1000 } do
       current_user { admin }
       let(:work_package) { create(:work_package, project:, author: admin) }
 
       before do
-        # set WORK_PACKAGES_ACTIVITIES_TAB_POLLING_INTERVAL_IN_MS to 1000
-        # to speed up the polling interval for test duration
-        ENV["WORK_PACKAGES_ACTIVITIES_TAB_POLLING_INTERVAL_IN_MS"] = "1000"
-
         # for some reason the journal is set to the "Anonymous"
         # although the work_package is created by the admin
         # so we need to update the journal to the admin manually to simulate the real world case
@@ -436,10 +443,6 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
 
         wp_page.visit!
         wp_page.wait_for_activity_tab
-      end
-
-      after do
-        ENV.delete("WORK_PACKAGES_ACTIVITIES_TAB_POLLING_INTERVAL_IN_MS")
       end
 
       it "shows the comment of another user without browser reload" do
@@ -475,15 +478,13 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
       end
     end
 
-    context "when the user does not have permissions to see internal comments" do
+    # speed up the polling interval to 1s for the test duration
+    context "when the user does not have permissions to see internal comments",
+            with_settings: { work_packages_activities_tab_polling_interval_in_ms: 1000 } do
       current_user { member }
       let(:work_package) { create(:work_package, project:, author: admin) }
 
       before do
-        # set WORK_PACKAGES_ACTIVITIES_TAB_POLLING_INTERVAL_IN_MS to 1000
-        # to speed up the polling interval for test duration
-        ENV["WORK_PACKAGES_ACTIVITIES_TAB_POLLING_INTERVAL_IN_MS"] = "1000"
-
         # for some reason the journal is set to the "Anonymous"
         # although the work_package is created by the admin
         # so we need to update the journal to the admin manually to simulate the real world case
@@ -491,10 +492,6 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
 
         wp_page.visit!
         wp_page.wait_for_activity_tab
-      end
-
-      after do
-        ENV.delete("WORK_PACKAGES_ACTIVITIES_TAB_POLLING_INTERVAL_IN_MS")
       end
 
       it "does not show the comment of another user if they don't have permissions to see it" do
@@ -584,15 +581,18 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
     end
 
     context "when the work package has comments and changesets" do
+      let(:work_package) do
+        create(:work_package,
+               project:,
+               author: admin,
+               journals: {
+                 5.days.ago => { user: admin },
+                 4.days.ago => { user: admin, notes: "First comment by admin" },
+                 3.days.ago => { user: admin, notes: "Second comment by admin" }
+               }).tap(&:reload)
+      end
+
       before do
-        # for some reason the journal is set to the "Anonymous"
-        # although the work_package is created by the admin
-        # so we need to update the journal to the admin manually to simulate the real world case
-        work_package.journals.first.update!(user: admin)
-
-        create(:work_package_journal, user: admin, notes: "First comment by admin", journable: work_package, version: 2)
-        create(:work_package_journal, user: admin, notes: "Second comment by admin", journable: work_package, version: 3)
-
         wp_page.visit!
         wp_page.wait_for_activity_tab
       end
@@ -664,6 +664,9 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
       end
 
       it "resets an only_changes filter if a comment is added by the user" do
+        activity_tab.expect_journal_notes(text: "First comment by admin")
+        activity_tab.expect_journal_notes(text: "Second comment by admin")
+
         activity_tab.filter_journals(:only_changes)
 
         # expect only the changes
@@ -841,14 +844,14 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
       create(:work_package_journal, user: member, notes: "First comment by member", journable: work_package, version: 3)
     end
 
+    current_user { admin }
+
+    before do
+      wp_page.visit!
+      wp_page.wait_for_activity_tab
+    end
+
     context "when admin is visiting the work package" do
-      current_user { admin }
-
-      before do
-        wp_page.visit!
-        wp_page.wait_for_activity_tab
-      end
-
       it "can edit own comments" do
         # edit own comment
         activity_tab.edit_comment(first_comment_by_admin, text: "First comment by admin edited")
@@ -863,6 +866,19 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
 
         activity_tab.within_journal_entry(first_comment_by_member) do
           activity_tab.expect_journal_notes(text: "First comment by member edited")
+        end
+      end
+    end
+
+    context "when editing a comment included in the polling update" do
+      it "preserves the edit state" do
+        activity_tab.type_comment_in_edit(first_comment_by_admin, "Editing comment")
+        first_comment_by_admin.update_column(:updated_at, Time.current)
+
+        activity_tab.trigger_update_streams_poll
+
+        activity_tab.within_journal_entry(first_comment_by_admin) do
+          activity_tab.expect_journal_notes(text: "Editing comment")
         end
       end
     end
@@ -933,10 +949,13 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
       # navigate to another tab and back
       page.find("li[data-tab-id=\"relations\"]").click
       page.find("li[data-tab-id=\"activity\"]").click
+      wp_page.wait_for_activity_tab
 
       # expect the editor content to be rescued on the client side
       within_test_selector("op-work-package-journal-form-element") do
         editor = FormFields::Primerized::EditorFormField.new("notes", selector: "#work-package-journal-form-element")
+        # Wait for CKEditor to be fully initialized and have the rescued content
+        expect(page).to have_css(".ck-editor__editable_inline", text: "First comment by admin", wait: 10)
         editor.expect_value("First comment by admin")
         # save the comment, which was rescued on the client side
         page.find_test_selector("op-submit-work-package-journal-form").click
@@ -994,7 +1013,7 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
       logout
       login_as(admin)
 
-      # navigate to the same workpackage, but as a different user
+      # navigate to the same workpackage, as the same user
       wp_page.visit!
       wp_page.wait_for_activity_tab
       # expect the editor to be opened and content to be rescued for the correct user
@@ -1010,7 +1029,7 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
     let(:work_package) { create(:work_package, project:, author: admin) }
 
     # create enough comments to make the journal container scrollable
-    20.times do |i|
+    25.times do |i|
       let!(:"comment_#{i + 1}") do
         create(:work_package_journal, user: admin, notes: "Comment #{i + 1}", journable: work_package, version: i + 2)
       end
@@ -1028,15 +1047,32 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
             wp_page.wait_for_activity_tab
           end
 
-          it "scrolls to the comment specified in the URL" do
+          it "scrolls to the activity specified in the URL" do
             wait_for_auto_scrolling_to_finish
             activity_tab.expect_journal_container_at_position(50) # would be at the bottom if no anchor would be provided
 
-            activity_tab.expect_activity_anchor_link(text: "#1")
+            activity_tab.expect_activity_anchor_link(text: format_time(comment_1.updated_at))
+          end
+
+          it "highlights the activity specified in the URL until the user clicks anywhere" do
+            highlighted_comment = page.find(".--anchor-highlighted")
+            expect(highlighted_comment).to have_content("created this on")
+            # click anything (without triggering navigation or something else)
+            page.find(:xpath, "//*[text()='created this on']").click
+            expect(page).to have_no_css(".--anchor-highlighted")
+          end
+
+          it "rewrites the legacy activity anchor to the resolved comment in the URL" do
+            wait_for_auto_scrolling_to_finish
+
+            initial_journal = work_package.journals.order(:version).first
+            expect(page.evaluate_script("window.location.hash")).to eq("#comment-#{initial_journal.id}")
+            # The rewrite must keep the work package path, not collapse it to "/".
+            expect(page.evaluate_script("window.location.pathname")).to include("/work_packages/#{work_package.id}")
           end
         end
 
-        context "with #comment- anchor", with_flag: { work_package_comment_id_url: true } do
+        context "with #comment- anchor" do
           before do
             visit project_work_package_path(project, work_package.id, "activity", anchor: "comment-#{comment_1.id}")
             wp_page.wait_for_activity_tab
@@ -1052,9 +1088,17 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
 
             activity_tab.expect_activity_anchor_link(text: format_time(comment_1.updated_at))
           end
+
+          it "highlights the comment specified in the URL until the user clicks anywhere" do
+            highlighted_comment = page.find(".Box.--anchor-highlighted")
+            expect(highlighted_comment).to have_content("Comment 1")
+            # click anything (without triggering navigation or something else)
+            page.find(:xpath, "//*[text()='Comment 1']").click
+            expect(page).to have_no_css(".Box.--anchor-highlighted")
+          end
         end
 
-        context "when on mobile screen size", with_flag: { work_package_comment_id_url: true } do
+        context "when on mobile screen size" do
           before do
             page.current_window.resize_to(500, 1000)
 
@@ -1088,11 +1132,11 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
             wait_for_auto_scrolling_to_finish
             activity_tab.expect_journal_container_at_bottom # would be at the top if no anchor would be provided
 
-            activity_tab.expect_activity_anchor_link(text: "#2")
+            activity_tab.expect_activity_anchor_link(text: format_time(comment_2.updated_at))
           end
         end
 
-        context "with #comment- anchor", with_flag: { work_package_comment_id_url: true } do
+        context "with #comment- anchor" do
           before do
             visit project_work_package_path(project, work_package.id, "activity", anchor: "comment-#{comment_1.id}")
             wp_page.wait_for_activity_tab
@@ -1110,14 +1154,64 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
       def wait_for_auto_scrolling_to_finish = sleep(1)
     end
 
-    context "when sorting set to asc" do
+    describe "when the comment anchor changes without reloading the page" do
       let!(:admin_preferences) { create(:user_preference, user: admin, others: { comments_sorting: :asc }) }
 
       before do
-        # set WORK_PACKAGES_ACTIVITIES_TAB_POLLING_INTERVAL_IN_MS to 1000
-        # to speed up the polling interval for test duration
-        ENV["WORK_PACKAGES_ACTIVITIES_TAB_POLLING_INTERVAL_IN_MS"] = "1000"
+        visit project_work_package_path(project, work_package.id, "activity", anchor: "comment-#{comment_1.id}")
+        wp_page.wait_for_activity_tab
+      end
 
+      it "moves the highlight to the comment newly referenced in the URL hash" do
+        expect(page).to have_css(".Box.--anchor-highlighted", text: "Comment 1")
+
+        # As clicking an in-page comment link or editing the comment id by hand would:
+        # the URL hash changes but the page is not reloaded.
+        page.execute_script("window.location.hash = '#comment-#{comment_2.id}'")
+
+        expect(page).to have_css(".Box.--anchor-highlighted", text: "Comment 2")
+        expect(page).to have_no_css(".Box.--anchor-highlighted", text: "Comment 1")
+      end
+    end
+
+    describe "when clicking an in-content link to another comment on the same page" do
+      let!(:admin_preferences) { create(:user_preference, user: admin, others: { comments_sorting: :asc }) }
+
+      before do
+        visit project_work_package_path(project, work_package.id, "activity", anchor: "comment-#{comment_1.id}")
+        wp_page.wait_for_activity_tab
+      end
+
+      it "scrolls to and highlights the comment instead of letting Turbo drop the fragment" do
+        expect(page).to have_css(".Box.--anchor-highlighted", text: "Comment 1")
+
+        # Comment bodies render plain links. Inject one (so this stays independent of
+        # the rich-text formatter) pointing to another comment on this same activity
+        # page, as a pasted comment link would, then click it through a real browser
+        # click so Turbo's own handlers run. Turbo must not swallow it.
+        page.execute_script(<<~JS)
+          const root = document.querySelector('[data-controller~="work-packages--activities-tab--auto-scrolling"]');
+          const link = document.createElement('a');
+          link.href = window.location.pathname + '#comment-#{comment_2.id}';
+          link.textContent = 'jump to the other comment';
+          link.id = 'injected-comment-link';
+          root.prepend(link);
+        JS
+
+        find_by_id("injected-comment-link").click
+
+        expect(page).to have_css(".Box.--anchor-highlighted", text: "Comment 2")
+        expect(page).to have_no_css(".Box.--anchor-highlighted", text: "Comment 1")
+        expect(page.evaluate_script("window.location.hash")).to eq("#comment-#{comment_2.id}")
+      end
+    end
+
+    # speed up the polling interval to 1s for the test duration
+    context "when sorting set to asc",
+            with_settings: { work_packages_activities_tab_polling_interval_in_ms: 1000 } do
+      let!(:admin_preferences) { create(:user_preference, user: admin, others: { comments_sorting: :asc }) }
+
+      before do
         wp_page.visit!
         wp_page.wait_for_activity_tab
       end
@@ -1231,7 +1325,9 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
     end
   end
 
-  describe "work package attribute updates" do
+  # speed up the polling interval to 1s for the test duration
+  describe "work package attribute updates",
+           with_settings: { work_packages_activities_tab_polling_interval_in_ms: 1000 } do
     let(:work_package) { create(:work_package, project:, author: admin) }
 
     let!(:first_comment_by_member) do
@@ -1242,13 +1338,6 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
 
     before do
       work_package.update!(subject: "Subject before update")
-      # set WORK_PACKAGES_ACTIVITIES_TAB_POLLING_INTERVAL_IN_MS to 1000
-      # to speed up the polling interval for test duration
-      ENV["WORK_PACKAGES_ACTIVITIES_TAB_POLLING_INTERVAL_IN_MS"] = "1000"
-    end
-
-    after do
-      ENV.delete("WORK_PACKAGES_ACTIVITIES_TAB_POLLING_INTERVAL_IN_MS")
     end
 
     it "shows the updated work package attribute without reload" do
@@ -1326,18 +1415,10 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
     end
   end
 
-  describe "conflict handling" do
+  # speed up the polling interval to 1s for the test duration
+  describe "conflict handling",
+           with_settings: { work_packages_activities_tab_polling_interval_in_ms: 1000 } do
     let(:work_package) { create(:work_package, project:, author: admin) }
-
-    before do
-      # set WORK_PACKAGES_ACTIVITIES_TAB_POLLING_INTERVAL_IN_MS to 1000
-      # to speed up the polling interval for test duration
-      ENV["WORK_PACKAGES_ACTIVITIES_TAB_POLLING_INTERVAL_IN_MS"] = "1000"
-    end
-
-    after do
-      ENV.delete("WORK_PACKAGES_ACTIVITIES_TAB_POLLING_INTERVAL_IN_MS")
-    end
 
     it "raises a conflict warning when the work package is updated by another user while the current user is editing" do
       using_session(:admin) do
@@ -1504,8 +1585,8 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
     context "when adding a comment" do
       context "when the creation call raises an unknown server error" do
         before do
-          allow_any_instance_of(WorkPackages::ActivitiesTabController) # rubocop:disable RSpec/AnyInstance
-            .to receive(:create_journal_service_call)
+          allow_any_instance_of(WorkPackages::ActivitiesTab::CommentService) # rubocop:disable RSpec/AnyInstance
+            .to receive(:add)
                   .and_raise(StandardError.new("Test error"))
         end
 
@@ -1553,7 +1634,7 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
       context "when the work package is invalid due to a required custom field" do
         let!(:custom_field) do
           create(:integer_wp_custom_field, is_required: true, is_for_all: true, default_value: nil) do |cf|
-            project.types.first.custom_fields << cf
+            project.enabled_variants.first.custom_fields << cf
             project.work_package_custom_fields << cf
           end
         end
@@ -1580,8 +1661,8 @@ RSpec.describe "Work package activity", :js, :with_cuprite do
 
       context "when the update call raises an unknown server error" do
         before do
-          allow_any_instance_of(WorkPackages::ActivitiesTabController) # rubocop:disable RSpec/AnyInstance
-            .to receive(:update_journal_service_call)
+          allow_any_instance_of(WorkPackages::ActivitiesTab::CommentService) # rubocop:disable RSpec/AnyInstance
+            .to receive(:update)
                   .and_raise(StandardError.new("Test error"))
         end
 

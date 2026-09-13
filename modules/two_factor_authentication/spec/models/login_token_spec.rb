@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "../spec_helper"
 
 RSpec.describe TwoFactorAuthentication::LoginToken, :with_2fa_ee do

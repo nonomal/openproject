@@ -36,7 +36,7 @@ module Overviews
       ::Redmine::MenuManager.map(:project_menu) do |menu|
         menu.push(:overview,
                   { controller: "/overviews/overviews", action: "show" },
-                  caption: :"overviews.label",
+                  caption: ->(project) { I18n.t("overviews.label_home", workspace_type: project.workspace_label) },
                   first: true,
                   icon: "info")
       end
@@ -47,26 +47,28 @@ module Overviews
         OpenProject::AccessControl.permission(:view_project)
           .controller_actions
           .push(
-            "overviews/overviews/show"
+            "overviews/overviews/show",
+            "overviews/overviews/dashboard"
           )
 
         OpenProject::AccessControl.permission(:view_project_attributes)
           .controller_actions
           .push(
+            "overviews/project_custom_fields/show",
             "overviews/overviews/project_custom_fields_sidebar"
           )
 
         OpenProject::AccessControl.permission(:edit_project_attributes)
           .controller_actions
           .push(
-            "overviews/overviews/project_custom_field_section_dialog",
-            "overviews/overviews/update_project_custom_values"
+            "overviews/project_custom_fields/edit",
+            "overviews/project_custom_fields/update"
           )
 
         OpenProject::AccessControl.permission(:view_project_phases)
           .controller_actions
           .push(
-            "overviews/overviews/project_life_cycles_sidebar"
+            "overviews/overviews/project_life_cycle_sidebar"
           )
 
         OpenProject::AccessControl.permission(:edit_project_phases)
@@ -85,11 +87,8 @@ module Overviews
 
         OpenProject::AccessControl.map do |ac_map|
           ac_map.project_module nil do |map|
-            map.permission :manage_overview,
-                           { "overviews/overviews":
-                              [
-                                "show"
-                              ] },
+            map.permission :manage_dashboards,
+                           { "overviews/overviews": %i[show dashboard] },
                            permissible_on: :project,
                            require: :member
           end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -187,7 +189,7 @@ RSpec.describe "API v3 capabilities resource", content_type: :json do
           .at_path("total")
 
         expect(subject.body)
-          .to be_json_eql("activities/read/p#{project.id}-#{other_user.id}".to_json)
+          .to be_json_eql("activities/read/w#{project.id}-#{other_user.id}".to_json)
           .at_path("_embedded/elements/0/id")
       end
     end
@@ -218,7 +220,7 @@ RSpec.describe "API v3 capabilities resource", content_type: :json do
           .at_path("total")
 
         expect(subject.body)
-          .to be_json_eql("activities/read/p#{project.id}-#{other_user.id}".to_json)
+          .to be_json_eql("activities/read/w#{project.id}-#{other_user.id}".to_json)
           .at_path("_embedded/elements/0/id")
       end
     end
@@ -272,6 +274,14 @@ RSpec.describe "API v3 capabilities resource", content_type: :json do
 
     context "when filtering by project context" do
       let(:other_project) { create(:project) }
+      let(:empty_role) { create(:project_role, permissions: []) }
+      # Necessary so that the current user is allowed to see the project
+      let(:current_user_other_member) do
+        create(:member,
+               principal: current_user,
+               roles: [empty_role],
+               project: other_project)
+      end
       let(:other_user_other_member) do
         create(:member,
                principal: other_user,
@@ -282,11 +292,12 @@ RSpec.describe "API v3 capabilities resource", content_type: :json do
       let(:filters) do
         [{ "context" => {
           "operator" => "=",
-          "values" => ["p#{other_project.id}"]
+          "values" => ["w#{other_project.id}"]
         } }]
       end
 
       let(:setup) do
+        current_user_other_member
         other_user_global_member
         other_user_member
         other_user_other_member
@@ -294,7 +305,7 @@ RSpec.describe "API v3 capabilities resource", content_type: :json do
 
       it "contains only the filtered capabilities in the response" do
         expect(subject.body)
-          .to be_json_eql("4")
+          .to be_json_eql("5")
           .at_path("total")
 
         expect(subject.body)
@@ -337,16 +348,16 @@ RSpec.describe "API v3 capabilities resource", content_type: :json do
           _embedded: {
             elements: [
               {
-                id: "activities/read/p#{project.id}-#{current_user.id}"
+                id: "activities/read/w#{project.id}-#{current_user.id}"
               },
               {
-                id: "memberships/create/p#{project.id}-#{current_user.id}"
+                id: "memberships/create/w#{project.id}-#{current_user.id}"
               },
               {
-                id: "memberships/destroy/p#{project.id}-#{current_user.id}"
+                id: "memberships/destroy/w#{project.id}-#{current_user.id}"
               },
               {
-                id: "memberships/update/p#{project.id}-#{current_user.id}"
+                id: "memberships/update/w#{project.id}-#{current_user.id}"
               }
             ]
           }
@@ -380,6 +391,43 @@ RSpec.describe "API v3 capabilities resource", content_type: :json do
       end
     end
 
+    context "with permissions in one project but not in the other and filtering for that invisible project" do
+      let(:other_project) { create(:project) }
+      let(:other_user_other_member) do
+        create(:member,
+               principal: other_user,
+               roles: [role],
+               project: other_project)
+      end
+
+      let(:setup) do
+        other_project
+        other_user_member
+        other_user_other_member
+      end
+
+      let(:filters) do
+        [
+          {
+            "context" => {
+              "operator" => "=",
+              "values" => ["p#{other_project.id}"]
+            }
+          }
+        ]
+      end
+
+      it "is empty and includes an empty element set", :aggregate_failures do
+        expect(subject.body)
+          .to be_json_eql("0")
+                .at_path("total")
+
+        expect(subject.body)
+          .to be_json_eql([].to_json)
+                .at_path("_embedded/elements")
+      end
+    end
+
     context "when filtering by action" do
       let(:filters) do
         [{ "action" => {
@@ -402,14 +450,14 @@ RSpec.describe "API v3 capabilities resource", content_type: :json do
           .at_path("total")
 
         expect(subject.body)
-          .to be_json_eql("memberships/create/p#{project.id}-#{other_user.id}".to_json)
+          .to be_json_eql("memberships/create/w#{project.id}-#{other_user.id}".to_json)
           .at_path("_embedded/elements/0/id")
       end
     end
   end
 
   describe "GET /api/v3/capabilities/:id" do
-    let(:path) { api_v3_paths.capability("memberships/create/p#{project.id}-#{other_user.id}") }
+    let(:path) { api_v3_paths.capability("memberships/create/w#{project.id}-#{other_user.id}") }
 
     let(:setup) do
       other_user_member
@@ -432,12 +480,12 @@ RSpec.describe "API v3 capabilities resource", content_type: :json do
         .at_path("_type")
 
       expect(subject.body)
-        .to be_json_eql("memberships/create/p#{project.id}-#{other_user.id}".to_json)
+        .to be_json_eql("memberships/create/w#{project.id}-#{other_user.id}".to_json)
         .at_path("id")
     end
 
     context "if querying a non existing capability" do
-      let(:path) { api_v3_paths.capability("foo/bar/p#{project.id}-#{other_user.id}") }
+      let(:path) { api_v3_paths.capability("foo/bar/w#{project.id}-#{other_user.id}") }
 
       it "returns 404 NOT FOUND" do
         expect(subject.status)
@@ -457,6 +505,28 @@ RSpec.describe "API v3 capabilities resource", content_type: :json do
     context "if querying for an invisible user" do
       current_user do
         create(:user)
+      end
+
+      it "returns 404 NOT FOUND" do
+        expect(subject.status)
+          .to be 404
+      end
+    end
+
+    context "with permissions in one project but querying for the project where permissions are lacking" do
+      let(:path) { api_v3_paths.capability("memberships/create/w#{other_project.id}-#{other_user.id}") }
+      let(:other_project) { create(:project) }
+      let(:other_user_other_member) do
+        create(:member,
+               principal: other_user,
+               roles: [role],
+               project: other_project)
+      end
+
+      let(:setup) do
+        other_project
+        other_user_member
+        other_user_other_member
       end
 
       it "returns 404 NOT FOUND" do

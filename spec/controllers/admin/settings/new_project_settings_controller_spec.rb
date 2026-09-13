@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -40,8 +42,8 @@ RSpec.describe Admin::Settings::NewProjectSettingsController do
     render_views
 
     describe "default project modules" do
-      it "contains a check box for the activity module on the projects tab" do
-        get "show", params: { tab: "projects" }
+      it "contains a check box for the activity module on the settings tab" do
+        get "show", params: { tab: "settings" }
 
         expect(response).to be_successful
         expect(response).to render_template "admin/settings/new_project_settings/show"
@@ -54,7 +56,7 @@ RSpec.describe Admin::Settings::NewProjectSettingsController do
         end
 
         it "contains an unchecked checkbox for activity" do
-          get "show", params: { tab: "projects" }
+          get "show", params: { tab: "settings" }
 
           expect(response).to be_successful
           expect(response).to render_template "admin/settings/new_project_settings/show"
@@ -70,13 +72,56 @@ RSpec.describe Admin::Settings::NewProjectSettingsController do
         end
 
         it "contains a checked checkbox for activity" do
-          get "show", params: { tab: "projects" }
+          get "show", params: { tab: "settings" }
 
           expect(response).to be_successful
           expect(response).to render_template "admin/settings/new_project_settings/show"
           expect(response.body)
             .to have_css "input[@name='settings[default_projects_modules][]'][@value='activity'][@checked='checked']"
         end
+      end
+    end
+
+    describe "default role for new projects" do
+      let!(:qualifying_role) { create(:project_creator_role, name: "Project lead") }
+      let!(:non_qualifying_role) do
+        create(:project_role, name: "Reader", permissions: %i[view_work_packages])
+      end
+
+      it "lists only roles with the required permissions" do
+        get "show", params: { tab: "settings" }
+
+        expect(response.body)
+          .to have_css("select[name='settings[new_project_user_role_id]'] option",
+                       text: qualifying_role.name)
+        expect(response.body)
+          .to have_no_css("select[name='settings[new_project_user_role_id]'] option",
+                          text: non_qualifying_role.name)
+      end
+
+      context "when the configured role no longer has the required permissions" do
+        before do
+          Setting.new_project_user_role_id = non_qualifying_role.id
+        end
+
+        it "still lists the configured role, marked as missing required permissions, and selected" do
+          get "show", params: { tab: "settings" }
+
+          expect(response.body)
+            .to have_css("select[name='settings[new_project_user_role_id]'] " \
+                         "option[selected][value='#{non_qualifying_role.id}']",
+                         text: "#{non_qualifying_role.name} (missing required permissions)")
+        end
+      end
+    end
+
+    describe "project creation notifications" do
+      it "contains a checkbox for sending confirmation emails in the notifications tab" do
+        get "show", params: { tab: "notifications" }
+
+        expect(response).to be_successful
+        expect(response).to render_template "admin/settings/new_project_settings/show"
+        expect(response.body).to have_css "input[@name='settings[new_project_send_confirmation_email]']"
       end
     end
   end
@@ -88,14 +133,14 @@ RSpec.describe Admin::Settings::NewProjectSettingsController do
       it "does not store the activity in the default_projects_modules if unchecked" do
         patch "update",
               params: {
-                tab: "projects",
+                tab: "settings",
                 settings: {
                   default_projects_modules: ["wiki"]
                 }
               }
 
         expect(response).to be_redirect
-        expect(response).to redirect_to action: "show", tab: "projects"
+        expect(response).to redirect_to action: "show", tab: "settings"
 
         expect(Setting.default_projects_modules).to eq(["wiki"])
       end
@@ -103,16 +148,49 @@ RSpec.describe Admin::Settings::NewProjectSettingsController do
       it "stores the activity in the default_projects_modules if checked" do
         patch "update",
               params: {
-                tab: "projects",
+                tab: "settings",
                 settings: {
                   default_projects_modules: ["activity", "wiki"]
                 }
               }
 
         expect(response).to be_redirect
-        expect(response).to redirect_to action: "show", tab: "projects"
+        expect(response).to redirect_to action: "show", tab: "settings"
 
         expect(Setting.default_projects_modules).to eq(["activity", "wiki"])
+      end
+    end
+
+    describe "project creation notifications" do
+      it "enables confirmation emails when checked" do
+        expect(Setting.new_project_send_confirmation_email).to be false
+
+        patch "update",
+              params: {
+                tab: "notifications",
+                settings: {
+                  new_project_send_confirmation_email: "1"
+                }
+              }
+
+        expect(response).to be_redirect
+        expect(response).to redirect_to action: "show", tab: "notifications"
+
+        expect(Setting.new_project_send_confirmation_email).to be true
+      end
+
+      it "stores the notification text" do
+        patch "update",
+              params: {
+                tab: "notifications",
+                settings: {
+                  new_project_send_confirmation_email: "1",
+                  new_project_notification_text: "Custom notification message"
+                }
+              }
+
+        expect(response).to be_redirect
+        expect(Setting.new_project_notification_text).to eq("Custom notification message")
       end
     end
 
@@ -121,7 +199,6 @@ RSpec.describe Admin::Settings::NewProjectSettingsController do
         {
           password_min_length: 42,
           password_active_rules: %w(uppercase lowercase),
-          password_min_adhered_rules: 7,
           password_days_valid: 13,
           password_count_former_banned: 80,
           lost_password: false
@@ -132,7 +209,6 @@ RSpec.describe Admin::Settings::NewProjectSettingsController do
         old_settings = {
           password_min_length: 10,
           password_active_rules: [],
-          password_min_adhered_rules: 0,
           password_days_valid: 365,
           password_count_former_banned: 2,
           lost_password: true
@@ -145,7 +221,7 @@ RSpec.describe Admin::Settings::NewProjectSettingsController do
 
       context "with password login enabled" do
         before do
-          allow(OpenProject::Configuration).to receive(:disable_password_login?).and_return(false)
+          allow(Users::PasswordLogin).to receive(:none?).and_return(false)
 
           patch "update", params: { tab: "authentication", settings: new_settings }
         end
@@ -160,10 +236,6 @@ RSpec.describe Admin::Settings::NewProjectSettingsController do
 
         it "sets the active character classes to lowercase and uppercase" do
           expect(Setting[:password_active_rules]).to eq %w[uppercase lowercase]
-        end
-
-        it "sets the required number of classes to 7" do
-          expect(Setting[:password_min_adhered_rules]).to eq 7
         end
 
         it "sets passwords to expire after 13 days" do
@@ -181,7 +253,7 @@ RSpec.describe Admin::Settings::NewProjectSettingsController do
 
       describe "with password login disabled" do
         before do
-          allow(OpenProject::Configuration).to receive(:disable_password_login?).and_return(true)
+          allow(Users::PasswordLogin).to receive(:none?).and_return(true)
 
           patch "update", params: { tab: "authentication", settings: new_settings }
         end
@@ -196,10 +268,6 @@ RSpec.describe Admin::Settings::NewProjectSettingsController do
 
         it "does not set the active character classes to lowercase and uppercase" do
           expect(Setting[:password_active_rules]).to eq []
-        end
-
-        it "does not set the required number of classes to 7" do
-          expect(Setting[:password_min_adhered_rules]).to eq 0
         end
 
         it "does not set passwords to expire after 13 days" do

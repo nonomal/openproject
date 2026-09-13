@@ -30,14 +30,9 @@ See COPYRIGHT and LICENSE files for more details.
 <%= call_hook(:view_repositories_show_contextual, { repository: @repository, project: @project }) %>
 <%= render partial: "repository_header", locals: { empty: false } %>
 
-<div class="repository-breadcrumbs">
-  <%= render partial: "breadcrumbs",
-             locals: { path: @path, revision: @rev }.merge(kind: (@entry ? @entry.kind : nil)) %>
-</div>
-
 <p><%= render partial: "link_to_functions" %></p>
 
-<%= render_properties(@properties) %>
+<%= render partial: "properties" %>
 
 <%= unless @changesets.empty?
       render(

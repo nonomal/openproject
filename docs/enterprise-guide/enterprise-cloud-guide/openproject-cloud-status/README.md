@@ -8,4 +8,4 @@ keywords: enterprise cloud, status, incidents
 
 # OpenProject cloud status page
 
-The following status page provides updates on outages, maintenance announcements, and service degradations for our Enterprise cloud customers: https://status.openproject.com/
+The following status page provides updates on outages, maintenance announcements, and service degradations for our Enterprise cloud customers: [status.openproject.com](https://status.openproject.com/).

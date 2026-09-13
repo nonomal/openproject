@@ -46,21 +46,47 @@ class AddWorkPackageNoteService
 
   def call(notes, send_notifications: nil, internal: false)
     in_context(work_package, send_notifications:) do
-      work_package.add_journal(user:, notes:, internal:)
+      add_journal_to_work_package(notes, internal)
+      success, errors = save_journal_with_validation
 
-      success, errors = validate_and_yield(work_package, user) do
-        work_package.save_journals
-      end
+      journal = fetch_latest_journal if success
 
-      if success
-        # In test environment, because of the difference in the way of handling transactions,
-        # the journal needs to be actively loaded without SQL caching in place.
-        journal = Journal.connection.uncached do
-          work_package.journals.last
-        end
-      end
-
-      ServiceResult.new(success:, result: journal, errors:)
+      build_service_result(success, journal, errors)
     end
+  end
+
+  private
+
+  def add_journal_to_work_package(notes, internal)
+    work_package.add_journal(user:, notes:, internal:)
+  end
+
+  def save_journal_with_validation
+    validate_and_yield(work_package, user) do
+      work_package.save_journals
+    end
+  end
+
+  def fetch_latest_journal
+    # In test environment, because of the difference in the way of handling transactions,
+    # the journal needs to be actively loaded without SQL caching in place.
+    Journal.connection.uncached do
+      work_package.journals.last
+    end
+  end
+
+  def build_service_result(success, result, errors)
+    ServiceResult.new(success:, result:, errors:).on_success { add_attachment_claims_to(it) }
+  end
+
+  def add_attachment_claims_to(service_result)
+    attachments_claims = claim_attachments_for(service_result.result)
+    service_result.add_dependent!(attachments_claims)
+  end
+
+  def claim_attachments_for(journal)
+    WorkPackages::ActivitiesTab::CommentAttachmentsClaims::ClaimsService
+      .new(user: User.current, model: journal)
+      .call
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -141,6 +143,40 @@ RSpec.describe API::V3::Utilities::CustomFieldInjector do
         it_behaves_like "indicates length requirements" do
           let(:max_length) { 5 }
         end
+      end
+
+      # meaning they won't as a string field cannot carry them
+      it_behaves_like "indicates value bounds"
+    end
+
+    describe "int custom field" do
+      let(:path) { cf_path }
+      let(:custom_field) { build(:custom_field, field_format: "int", min_value: -5, max_value: 10) }
+
+      it_behaves_like "indicates value bounds" do
+        let(:minimum) { -5 }
+        let(:maximum) { 10 }
+      end
+
+      it "does not advertise character lengths" do
+        expect(subject).not_to have_json_path("#{cf_path}/minLength")
+        expect(subject).not_to have_json_path("#{cf_path}/maxLength")
+      end
+
+      context "without bounds" do
+        let(:custom_field) { build(:custom_field, field_format: "int") }
+
+        it_behaves_like "indicates value bounds"
+      end
+    end
+
+    describe "float custom field" do
+      let(:path) { cf_path }
+      let(:custom_field) { build(:custom_field, field_format: "float", min_value: 0.1234, max_value: 10.25) }
+
+      it_behaves_like "indicates value bounds" do
+        let(:minimum) { 0.1234 }
+        let(:maximum) { 10.25 }
       end
     end
 
@@ -292,6 +328,47 @@ RSpec.describe API::V3::Utilities::CustomFieldInjector do
       end
     end
 
+    {
+      hierarchy: { with_ee: [:custom_field_hierarchies] },
+      weighted_item_list: { with_ee: [:weighted_item_lists] }
+    }.each do |format, tags|
+      describe "#{format} custom field", **tags do
+        let(:custom_field) do
+          create(
+            :"#{format}_wp_custom_field",
+            is_required: true
+          )
+        end
+
+        it_behaves_like "has basic schema properties" do
+          let(:path) { cf_path }
+          let(:type) { "CustomField::Hierarchy::Item" }
+          let(:name) { custom_field.name }
+          let(:required) { true }
+          let(:writable) { true }
+          let(:location) { "_links" }
+        end
+
+        context "with schema not writable" do
+          let(:schema_writable) { false }
+
+          it_behaves_like "has basic schema properties" do
+            let(:path) { cf_path }
+            let(:type) { "CustomField::Hierarchy::Item" }
+            let(:name) { custom_field.name }
+            let(:required) { true }
+            let(:writable) { false }
+            let(:location) { "_links" }
+          end
+        end
+
+        it_behaves_like "links to allowed values via collection link" do
+          let(:path) { cf_path }
+          let(:href) { api_v3_paths.custom_field_items(custom_field.id) }
+        end
+      end
+    end
+
     describe "user custom field on new project" do
       let(:schema) do
         instance_double(API::V3::WorkPackages::Schema::SpecificWorkPackageSchema,
@@ -317,6 +394,40 @@ RSpec.describe API::V3::Utilities::CustomFieldInjector do
           query = CGI.escape(JSON.dump(params))
 
           "#{api_v3_paths.principals}?filters=#{query}&pageSize=-1"
+        end
+      end
+    end
+
+    describe "custom comment schema" do
+      let(:path) { custom_field.comment_attribute_name(:camel_case) }
+
+      context "when not allowed to have comment" do
+        let(:custom_field) { build_stubbed(:custom_field) }
+
+        it { is_expected.not_to have_json_path(path) }
+      end
+
+      context "when allowed to have comment" do
+        let(:custom_field) { build_stubbed(:custom_field, :has_comment) }
+
+        it_behaves_like "has basic schema properties" do
+          let(:type) { "String" }
+          let(:name) { I18n.t(:label_custom_comment, name: custom_field.name) }
+          let(:required) { false }
+          let(:writable) { true }
+          let(:has_default) { false }
+        end
+
+        context "with schema not writable" do
+          let(:schema_writable) { false }
+
+          it_behaves_like "has basic schema properties" do
+            let(:type) { "String" }
+            let(:name) { I18n.t(:label_custom_comment, name: custom_field.name) }
+            let(:required) { false }
+            let(:writable) { false }
+            let(:has_default) { false }
+          end
         end
       end
     end
@@ -466,6 +577,54 @@ RSpec.describe API::V3::Utilities::CustomFieldInjector do
       end
     end
 
+    %w[hierarchy weighted_item_list].each do |format|
+      context "for #{format} custom field" do
+        let(:value) { build_stubbed(:hierarchy_item) }
+        let(:raw_value) { value.id.to_s }
+        let(:typed_value) { value }
+        let(:field_format) { format }
+        let(:formatted_value) { value.to_s }
+
+        before do
+          allow(custom_value).to receive_messages(formatted_value:)
+        end
+
+        it_behaves_like "has a titled link" do
+          let(:link) { cf_path }
+          let(:href) { api_v3_paths.custom_field_item(value.id) }
+          let(:title) { formatted_value }
+        end
+
+        context "when value is nil" do
+          let(:value) { nil }
+          let(:raw_value) { "" }
+          let(:typed_value) { "" }
+
+          it_behaves_like "has an empty link" do
+            let(:link) { cf_path }
+          end
+        end
+
+        context "when value is some invalid string" do
+          let(:value) { "some invalid string" }
+          let(:raw_value) { "some invalid string" }
+          let(:typed_value) { "some invalid string not found" }
+
+          it "has an empty href" do
+            expect(subject)
+              .to be_json_eql(nil.to_json)
+              .at_path("_links/#{cf_path}/href")
+          end
+
+          it "has the invalid value as title" do
+            expect(subject)
+              .to be_json_eql(formatted_value.to_json)
+              .at_path("_links/#{cf_path}/title")
+          end
+        end
+      end
+    end
+
     context "for string custom field" do
       it_behaves_like "injects property custom field" do
         let(:field_format) { "string" }
@@ -523,6 +682,52 @@ RSpec.describe API::V3::Utilities::CustomFieldInjector do
           }
         end
         let(:expected_setter) { value }
+      end
+    end
+
+    describe "custom comment" do
+      let(:path) { custom_field.comment_attribute_name(:camel_case) }
+
+      before do
+        allow(represented).to receive(:custom_comment_for).with(custom_field) { text && build(:custom_comment, text:) }
+      end
+
+      context "when not allowed to have comment" do
+        let(:custom_field) { build_stubbed(:custom_field) }
+
+        it { is_expected.not_to have_json_path(path) }
+      end
+
+      context "when allowed to have comment" do
+        let(:custom_field) { build_stubbed(:custom_field, :has_comment) }
+
+        context "when comment is not set" do
+          let(:text) { nil }
+
+          it "is read as nil" do
+            expect(subject).to be_json_eql(nil.to_json).at_path(path)
+          end
+        end
+
+        context "when comment is set" do
+          let(:text) { "hello, world!" }
+
+          it "is read as string" do
+            expect(subject).to be_json_eql("hello, world!".to_json).at_path(path)
+          end
+        end
+
+        it "can be assigned" do
+          allow(represented).to receive(:custom_comments=)
+
+          modified_class
+            .new(represented, current_user: nil)
+            .from_json({ path => "foo bar" }.to_json)
+
+          expect(represented)
+            .to have_received(:custom_comments=)
+            .with({ custom_field.id => "foo bar" })
+        end
       end
     end
   end

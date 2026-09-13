@@ -19,10 +19,19 @@
             menu.with_show_button do |button|
               button.with_leading_visual_icon(icon: :plus)
               button.with_trailing_action_icon(icon: :"triangle-down")
-              t(:label_relation)
+              Relation.model_name.human
             end
 
-            render_add_relations_menu_items(menu, ADD_RELATION_MENU_TYPES)
+            render_add_relations_menu_items(menu, FIRST_LEVEL_RELATION_MENU_TYPES)
+
+            if should_render_add_relations?
+              menu.with_sub_menu_item(
+                label: t("#{I18N_NAMESPACE}.relations.label_other_relations"),
+                menu_id: ADD_RELATION_SUB_MENU
+              ) do |sub_menu|
+                render_add_relations_menu_items(sub_menu, SECOND_LEVEL_RELATION_MENU_TYPES)
+              end
+            end
           end
         end
       end

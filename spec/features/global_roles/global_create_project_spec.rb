@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,8 +30,7 @@
 
 require "spec_helper"
 
-RSpec.describe "Global role: Global Create project",
-               :js do
+RSpec.describe "Global role: Global Create project", :js do
   shared_let(:admin) { create(:admin) }
   shared_let(:user) { create(:user) }
   shared_let(:project) { create(:project) }
@@ -72,6 +73,7 @@ RSpec.describe "Global role: Global Create project",
   describe "for a user with the global permission to add projects" do
     let!(:global_role) { create(:global_role, name: "Global", permissions: %i[add_project]) }
     let!(:member_role) { create(:project_role, name: "Member", permissions: %i[view_project]) }
+    let!(:default_project_role) { create(:project_creator_role) }
 
     let!(:global_member) do
       create(:global_member,
@@ -79,19 +81,25 @@ RSpec.describe "Global role: Global Create project",
              roles: [global_role])
     end
 
-    let(:name_field) { FormFields::InputFormField.new :name }
-
     current_user { user }
+
+    before do
+      allow(Setting).to receive(:new_project_user_role_id).and_return(default_project_role.id.to_s)
+    end
 
     it 'allows creating projects via the "+ Project" button' do
       projects_page.visit!
-      projects_page.navigate_to_new_project_page_from_toolbar_items
+      projects_page.create_new_workspace :project
 
-      name_field.set_value "New project name"
+      # Step 1: Select workspace type (blank project)
+      click_on "Continue"
 
-      find("button:not([disabled])", text: "Save").click
+      # Step 2: Fill in project details
+      fill_in "Name", with: "New project name"
 
-      expect(page).to have_current_path "/projects/new-project-name/"
+      click_on "Complete"
+
+      expect(page).to have_current_path "/projects/new-project-name"
     end
   end
 
@@ -101,6 +109,19 @@ RSpec.describe "Global role: Global Create project",
     it "does show the button for project creation" do
       projects_page.visit!
       projects_page.expect_no_project_create_button
+    end
+  end
+
+  describe "projects menu" do
+    let(:projects_menu) { Components::Projects::TopMenu.new }
+
+    current_user { admin }
+
+    it "does not show the button for project creation and list" do
+      projects_page.visit!
+      projects_menu.toggle!
+      projects_menu.expect_no_project_create_button
+      projects_menu.expect_no_project_list_button
     end
   end
 end

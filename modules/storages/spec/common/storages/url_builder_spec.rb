@@ -87,7 +87,7 @@ RSpec.describe Storages::UrlBuilder do
       end
     end
 
-    context "if storage is of OneDrive/SharePoint provider type" do
+    context "if storage is of OneDrive provider type" do
       let(:storage) { create(:one_drive_storage) }
 
       it "returns the correct request URL" do

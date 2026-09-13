@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -58,7 +60,8 @@ module DemoData
         name: config["name"],
         status: config["status"],
         sharing: config["sharing"],
-        project:
+        project:,
+        **date_attributes
       )
       seed_data.store_reference(config["reference"], version)
 
@@ -67,8 +70,23 @@ module DemoData
       version
     end
 
+    def date_attributes
+      return {} if config["start"].nil?
+
+      start_date = Date.current.monday + config["start"].days
+
+      {
+        start_date:,
+        effective_date: WorkPackages::Shared::AllDays.new.due_date(start_date, config["duration"])
+      }
+    end
+
     def set_wiki!(version, config)
       return unless config
+
+      unless Wiki.exists?(project: version.project)
+        version.project.create_wiki(start_page: "Wiki")
+      end
 
       version.wiki_page_title = config["title"]
 

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -26,11 +28,14 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-class Groups::DeleteService < BaseServices::Delete
-  protected
+module Groups
+  class DeleteService < BaseServices::Delete
+    protected
 
-  def destroy(group)
-    ::Principals::DeleteJob.perform_later(group)
-    true
+    def destroy(group) # rubocop:disable Naming/PredicateMethod
+      group.update_column(:status, Group.statuses[:deleted])
+      ::Principals::DeleteJob.perform_later(group)
+      true
+    end
   end
 end

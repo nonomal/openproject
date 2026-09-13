@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -36,6 +38,18 @@ RSpec.describe Setting do
 
   after do
     described_class.destroy_all
+  end
+
+  describe "validations" do
+    describe "password_min_length" do
+      subject { described_class.new(name: "password_min_length", value:) }
+
+      context "with a value above the maximum of 128" do
+        let(:value) { "129" }
+
+        it { is_expected.not_to be_valid }
+      end
+    end
   end
 
   describe "OpenProject's default settings" do
@@ -177,7 +191,7 @@ RSpec.describe Setting do
 
     it "raises an error for a non writable setting" do
       expect { described_class.smtp_openssl_verify_mode = "none" }
-        .to raise_error NoMethodError
+        .to raise_error Setting::NotWritableError
     end
 
     context "for a setting with an environment specific default value", :settings_reset do
@@ -265,65 +279,10 @@ RSpec.describe Setting do
     end
   end
 
-  describe ".installation_uuid" do
-    after do
-      described_class.find_by(name: "installation_uuid")&.destroy
-    end
-
-    it "returns unknown if the settings table isn't available yet" do
-      allow(described_class)
-        .to receive(:settings_table_exists_yet?)
-        .and_return(false)
-      expect(described_class.installation_uuid).to eq("unknown")
-    end
-
-    context "with settings table ready" do
-      it "resets the value if blank" do
-        described_class.create!(name: "installation_uuid", value: "")
-        expect(described_class.installation_uuid).not_to be_blank
-      end
-
-      it "returns the existing value if any" do
-        # can't use with_settings since described_class.installation_uuid has a custom implementation
-        allow(described_class).to receive(:installation_uuid).and_return "abcd1234"
-
-        expect(described_class.installation_uuid).to eq("abcd1234")
-      end
-
-      context "with no existing value" do
-        context "in test environment" do
-          before do
-            expect(Rails.env).to receive(:test?).and_return(true)
-          end
-
-          it "returns 'test' as the UUID" do
-            expect(described_class.installation_uuid).to eq("test")
-          end
-        end
-
-        it "returns a random UUID" do
-          expect(Rails.env).to receive(:test?).and_return(false)
-          installation_uuid = described_class.installation_uuid
-          expect(installation_uuid).not_to eq("test")
-          expect(installation_uuid.size).to eq(36)
-          expect(described_class.installation_uuid).to eq(installation_uuid)
-        end
-      end
-    end
-  end
-
   # Check that when reading certain setting values that they get overwritten if needed.
   describe "filter saved settings" do
-    describe "with EE token", with_ee: %i[conditional_highlighting] do
-      it "returns the value for 'work_package_list_default_highlighting_mode' without changing it" do
-        expect(described_class.work_package_list_default_highlighting_mode).to eq("inline")
-      end
-    end
-
-    describe "without EE" do
-      it "return 'none' as 'work_package_list_default_highlighting_mode'" do
-        expect(described_class.work_package_list_default_highlighting_mode).to eq("none")
-      end
+    it "returns the value for 'work_package_list_default_highlighting_mode' without changing it" do
+      expect(described_class.work_package_list_default_highlighting_mode).to eq("inline")
     end
   end
 
@@ -499,7 +458,7 @@ RSpec.describe Setting do
            smtp_timeout: 1234
          } do
         described_class.reload_mailer_settings!
-        expect(ActionMailer::Base).to have_received(:perform_deliveries=).with(true)
+        expect(ActionMailer::Base).not_to have_received(:perform_deliveries=).with(true)
         expect(ActionMailer::Base).to have_received(:delivery_method=).with(:smtp)
         expect(ActionMailer::Base.smtp_settings[:smtp_authentication]).to be_nil
         expect(ActionMailer::Base.smtp_settings).to eq(address: "smtp.example.com",
@@ -527,7 +486,7 @@ RSpec.describe Setting do
            smtp_ssl: 1
          } do
         described_class.reload_mailer_settings!
-        expect(ActionMailer::Base).to have_received(:perform_deliveries=).with(true)
+        expect(ActionMailer::Base).not_to have_received(:perform_deliveries=).with(true)
         expect(ActionMailer::Base).to have_received(:delivery_method=).with(:smtp)
         expect(ActionMailer::Base.smtp_settings[:smtp_authentication]).to be_nil
         expect(ActionMailer::Base.smtp_settings).to eq(address: "smtp.example.com",
@@ -554,7 +513,7 @@ RSpec.describe Setting do
            smtp_ssl: 0
          } do
         described_class.reload_mailer_settings!
-        expect(ActionMailer::Base).to have_received(:perform_deliveries=).with(true)
+        expect(ActionMailer::Base).not_to have_received(:perform_deliveries=).with(true)
         expect(ActionMailer::Base).to have_received(:delivery_method=).with(:smtp)
         expect(ActionMailer::Base.smtp_settings[:smtp_authentication]).to be_nil
         expect(ActionMailer::Base.smtp_settings).to eq(address: "smtp.example.com",
@@ -584,7 +543,7 @@ RSpec.describe Setting do
            smtp_ssl: 1
          } do
         described_class.reload_mailer_settings!
-        expect(ActionMailer::Base).to have_received(:perform_deliveries=).with(true)
+        expect(ActionMailer::Base).not_to have_received(:perform_deliveries=).with(true)
         expect(ActionMailer::Base).to have_received(:delivery_method=).with(:smtp)
         expect(ActionMailer::Base.smtp_settings[:smtp_authentication]).to be_nil
         expect(ActionMailer::Base.smtp_settings).to eq(address: "smtp.example.com",
@@ -599,6 +558,163 @@ RSpec.describe Setting do
                                                        read_timeout: 5,
                                                        ssl: true)
       end
+    end
+  end
+
+  describe "default_projects_modules conditional default" do
+    shared_examples "base modules unchanged" do
+      it "includes the base modules" do
+        base_modules = %w[calendar board_view work_package_tracking gantt news costs]
+        expect(Settings::Definition[:default_projects_modules].default).to include(*base_modules)
+      end
+    end
+
+    context "when real_time_text_collaboration is enabled",
+            with_settings: { real_time_text_collaboration_enabled: true } do
+      it "includes documents in the default modules" do
+        expect(Settings::Definition[:default_projects_modules].default).to include("documents")
+      end
+
+      it_behaves_like "base modules unchanged"
+    end
+
+    context "when real_time_text_collaboration is disabled",
+            with_settings: { real_time_text_collaboration_enabled: false } do
+      it "does not include documents in the default modules" do
+        expect(Settings::Definition[:default_projects_modules].default).not_to include("documents")
+      end
+
+      it_behaves_like "base modules unchanged"
+    end
+  end
+
+  describe "settings with persist_on_first_read", :settings_reset do
+    let(:setting_name) { "auto_init_setting" }
+
+    before do
+      Settings::Definition.add(
+        setting_name,
+        default: -> { "generated_value_#{SecureRandom.hex(4)}" },
+        format: :string,
+        persist_on_first_read: true
+      )
+    end
+
+    after do
+      described_class.find_by(name: setting_name)&.destroy
+    end
+
+    context "when no value exists in the database" do
+      it "auto-initializes the value" do
+        value = described_class[setting_name]
+        expect(value).to start_with("generated_value_")
+      end
+
+      it "persists the generated value to the database" do
+        value = described_class[setting_name]
+        expect(described_class.find_by(name: setting_name).value).to eq(value)
+      end
+
+      it "returns the same value on subsequent calls" do
+        first_value = described_class[setting_name]
+        second_value = described_class[setting_name]
+        expect(first_value).to eq(second_value)
+      end
+    end
+
+    context "when a value already exists in the database" do
+      before do
+        described_class.create!(name: setting_name, value: "existing_value")
+        described_class.clear_cache
+      end
+
+      it "returns the existing value" do
+        expect(described_class[setting_name]).to eq("existing_value")
+      end
+
+      it "can set the value to persist it and override the default" do
+        described_class[setting_name] = "another value"
+        read_value = described_class[setting_name]
+        expect(read_value).to eq("another value")
+      end
+    end
+
+    context "when settings table does not exist" do
+      before do
+        allow(described_class).to receive(:settings_table_exists_yet?).and_return(false)
+      end
+
+      it "returns the definition default value" do
+        value = described_class[setting_name]
+        expect(value).to start_with("generated_value_")
+      end
+    end
+  end
+
+  describe ".persist_default_value", :settings_reset do
+    let(:setting_name) { "auto_init_test" }
+    let(:format) { :string }
+    let(:default) { -> { "test_value" } }
+
+    before do
+      Settings::Definition.add(
+        setting_name,
+        default:,
+        format:,
+        persist_on_first_read: true
+      )
+    end
+
+    after do
+      described_class.find_by(name: setting_name)&.destroy
+    end
+
+    it "generates and persists the value" do
+      result = described_class.persist_default_value(setting_name)
+      expect(result).to eq("test_value")
+      expect(described_class.find_by(name: setting_name).value).to eq("test_value")
+    end
+
+    it "clears the cache after initialization" do
+      allow(described_class).to receive(:clear_cache).and_call_original
+      described_class.persist_default_value(setting_name)
+      expect(described_class).to have_received(:clear_cache).at_least(:once)
+    end
+
+    context "when value already exists" do
+      before do
+        described_class.create!(name: setting_name, value: "pre_existing")
+      end
+
+      it "returns the existing value" do
+        result = described_class.persist_default_value(setting_name)
+        expect(result).to eq("pre_existing")
+      end
+    end
+
+    context "with a more complex hash value" do
+      let(:format) { :hash }
+      let(:default) do
+        -> { { foo: :bar } }
+      end
+
+      it "returns the existing value" do
+        result = described_class.persist_default_value(setting_name)
+        expect(result).to eq({ foo: :bar })
+      end
+    end
+  end
+
+  describe ".persist_default_value with nil default", :settings_reset do
+    it "raises an error if persist_default_value is called without a default value" do
+      expect do
+        Settings::Definition.add(
+          :my_test_setting,
+          default: nil,
+          persist_on_first_read: true,
+          format: :string
+        )
+      end.to raise_error(ArgumentError)
     end
   end
 end

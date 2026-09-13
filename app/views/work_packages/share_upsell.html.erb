@@ -1,6 +1,7 @@
 <% html_title t(:label_work_package_plural) %>
 
-<%= render EnterpriseEdition::UpsellPageComponent.new(
+<%= render EnterpriseEdition::BannerComponent.new(
   :work_package_sharing,
+  variant: :large,
   video: "enterprise/share-work-package.mp4"
 ) %>

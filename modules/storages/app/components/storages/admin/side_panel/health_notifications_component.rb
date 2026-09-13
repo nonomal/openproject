@@ -35,9 +35,10 @@ module Storages
       include OpTurbo::Streamable
       include OpPrimer::ComponentHelpers
 
-      def initialize(storage:)
+      def initialize(storage:, sync_pending: false)
         super
         @storage = storage
+        @sync_pending = sync_pending
       end
 
       def render?
@@ -45,18 +46,6 @@ module Storages
       end
 
       private
-
-      def notification_status
-        if @storage.health_notifications_should_be_sent?
-          { icon: :"bell-slash",
-            label: I18n.t("storages.health_email_notifications.unsubscribe"),
-            description: I18n.t("storages.health_email_notifications.description_subscribed") }
-        else
-          { icon: :bell,
-            label: I18n.t("storages.health_email_notifications.subscribe"),
-            description: I18n.t("storages.health_email_notifications.description_unsubscribed") }
-        end
-      end
 
       def health_status_indicator
         case @storage.health_status
@@ -67,6 +56,10 @@ module Storages
         else
           { scheme: :attention, label: I18n.t("storages.health.label_pending") }
         end
+      end
+
+      def sync_pending?
+        @sync_pending
       end
 
       # This method returns the health identifier, description and the time since when the error occurs in a

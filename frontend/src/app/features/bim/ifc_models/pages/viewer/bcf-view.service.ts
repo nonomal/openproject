@@ -21,15 +21,14 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { WorkPackageQueryStateService } from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-view-base.service';
-import { IsolatedQuerySpace } from 'core-app/features/work-packages/directives/query-space/isolated-query-space';
 import { QueryResource } from 'core-app/features/hal/resources/query-resource';
 import { ViewerBridgeService } from 'core-app/features/bim/bcf/bcf-viewer-bridge/viewer-bridge.service';
 
@@ -43,7 +42,10 @@ export type BcfViewState = 'cards'|'viewer'|'splitTable'|'splitCards'|'table';
 
 @Injectable()
 export class BcfViewService extends WorkPackageQueryStateService<BcfViewState> {
-  public text:{ [key:string]:string } = {
+  private readonly I18n = inject(I18nService);
+  private readonly viewerBridgeService = inject(ViewerBridgeService);
+
+  public text:Record<string, string> = {
     cards: this.I18n.t('js.views.card'),
     viewer: this.I18n.t('js.ifc_models.views.viewer'),
     splitTable: this.I18n.t('js.ifc_models.views.split'),
@@ -51,7 +53,7 @@ export class BcfViewService extends WorkPackageQueryStateService<BcfViewState> {
     table: this.I18n.t('js.views.list'),
   };
 
-  public icon:{ [key:string]:string } = {
+  public icon:Record<string, string> = {
     cards: 'icon-view-card',
     viewer: 'icon-view-model',
     splitTable: 'icon-view-split-viewer-table',
@@ -59,20 +61,11 @@ export class BcfViewService extends WorkPackageQueryStateService<BcfViewState> {
     table: 'icon-view-list',
   };
 
-  constructor(
-    private readonly I18n:I18nService,
-    private readonly viewerBridgeService:ViewerBridgeService,
-    protected readonly querySpace:IsolatedQuerySpace,
-  ) {
-    super(querySpace);
-  }
-
   hasChanged(query:QueryResource):boolean {
     return this.current !== query.displayRepresentation;
   }
 
   applyToQuery(query:QueryResource):boolean {
-    // eslint-disable-next-line no-param-reassign
     query.displayRepresentation = this.current;
     return true;
   }

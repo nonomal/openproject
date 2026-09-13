@@ -67,9 +67,9 @@ RSpec.describe "project menu" do
         end
 
         it "leads to cost reports" do
-          find("#main-menu #{test_selector('op-menu--item-action')}", text: "Time and costs").click
+          find("#main-menu .costs-menu-item", text: "Time and costs").click
 
-          expect(page).to have_current_path("/projects/ponyo/cost_reports")
+          expect(page).to have_current_path("/projects/ponyo/reporting/cost_reports")
         end
       end
 
@@ -83,35 +83,6 @@ RSpec.describe "project menu" do
         let(:current_path) { "/projects/ponyo/calendars" }
 
         it_behaves_like "it leads to the project costs reports"
-      end
-    end
-
-    describe "link to global cost reports" do
-      shared_examples "it leads to the cost reports" do
-        before do
-          visit current_path
-        end
-
-        it "leads to cost reports" do
-          # doing what no human can - click on invisible items.
-          # This way, we avoid having to use selenium and by that increase stability.
-          find("#main-menu #{test_selector('op-menu--item-action')}", text: "Time and costs").click
-
-          # to make sure we're not seeing the project cost reports:
-          expect(page).to have_no_text("Ponyo")
-        end
-      end
-
-      context "when on the project's activity page" do
-        let(:current_path) { "/projects/ponyo/activity" }
-
-        it_behaves_like "it leads to the cost reports"
-      end
-
-      context "when on the project's calendar" do
-        let(:current_path) { "/projects/ponyo/calendars" }
-
-        it_behaves_like "it leads to the cost reports"
       end
     end
   end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,8 +30,6 @@
 
 module Cron
   class ClearOldSessionsJob < ApplicationJob
-    include ::RakeJob
-
     def perform
       Sessions::ClearOldSessionsService.call!
     end

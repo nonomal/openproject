@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -54,7 +56,9 @@ RSpec.describe "my", :js do
   end
 
   before do
-    login_as user
+    # Use a fresh AR instance to avoid leaking virtual attributes (e.g. password accessors)
+    # between examples into RequestStore.current_user.
+    login_as User.find(user.id)
 
     # Create dangling session
     session = Sessions::SqlBypass.new data: { user_id: user.id }, session_id: "other"
@@ -64,20 +68,74 @@ RSpec.describe "my", :js do
   end
 
   shared_examples "common tests for normal and LDAP user" do
-    describe "settings" do
-      context "with a default time zone", with_settings: { user_default_timezone: "Asia/Tokyo" } do
-        it "can override a time zone" do
-          expect(user.pref.time_zone).to eq "Asia/Tokyo"
-          visit my_settings_path
+    describe "Language and Region" do
+      before do
+        visit my_locale_path
+      end
 
-          expect(page).to have_select "pref_time_zone", selected: "(UTC+09:00) Tokyo"
-          select "(UTC+01:00) Paris", from: "pref_time_zone"
+      context "with a default time zone", with_settings: { user_default_timezone: "Asia/Tokyo" } do
+        it "override user time zone" do
+          expect(user.pref.time_zone).to eq "Asia/Tokyo"
+          expect(page).to have_heading "Language and region"
+
+          expect(page).to have_select "Time zone", selected: "(UTC+09:00) Tokyo"
+          select "(UTC+01:00) Paris", from: "Time zone"
           click_on "Save"
 
-          expect(page).to have_select "pref_time_zone", selected: "(UTC+01:00) Paris"
+          expect_and_dismiss_flash type: :success, message: "Account was successfully updated."
+
+          user.reload
+          expect(page).to have_select "Time zone", selected: "(UTC+01:00) Paris"
           expect(user.pref.time_zone).to eq "Europe/Paris"
         end
       end
+
+      it "updates user language" do
+        expect(user.language).to eq "en"
+        expect(page).to have_heading "Language and region"
+
+        expect(page).to have_select "Language", selected: "English"
+        select "Español", from: "Language"
+        click_on "Save"
+
+        expect_and_dismiss_flash type: :success, message: "Cuenta se actualizó correctamente."
+
+        user.reload
+        expect(page).to have_select "Idioma", selected: "Español"
+        expect(user.language).to eq "es"
+      end
+
+      it "updates user language with change visible on navigating to other settings (regression #66951)" do
+        expect(user.language).to eq "en"
+        expect(page).to have_heading "Language and region"
+
+        expect(page).to have_select "Language", selected: "English"
+        select "Português do brasil", from: "Language"
+        click_on "Save"
+
+        expect_and_dismiss_flash type: :success, message: "Conta foi atualizada com sucesso."
+
+        expect(page).to have_select "Idioma", selected: "Português do brasil"
+
+        within "#main-menu" do
+          click_on "Tokens de acesso"
+        end
+
+        expect(page).to have_heading "Tokens de acesso"
+        expect(page).to have_heading "iCalendar para reuniões"
+      end
+    end
+  end
+
+  describe "non-editable custom fields" do
+    let!(:readonly_cf) do
+      create(:user_custom_field, :string, name: "Employee ID", editable: false)
+    end
+
+    it "renders them read-only on the account page" do
+      visit my_account_path
+
+      expect(page).to have_field("Employee ID", disabled: true)
     end
   end
 
@@ -85,350 +143,114 @@ RSpec.describe "my", :js do
     describe "#account" do
       let(:dialog) { Components::PasswordConfirmationDialog.new }
 
-      before do
-        visit my_account_path
+      context "when updating profile fields" do
+        before do
+          visit my_account_path
 
-        fill_in "user[mail]", with: "foo@mail.com"
-        fill_in "user[firstname]", with: "Foo"
-        fill_in "user[lastname]", with: "Bar"
-        click_on "Save"
-      end
-
-      context "when confirmation disabled",
-              with_config: { internal_password_confirmation: false } do
-        it "does not request confirmation" do
-          expect_changed!
-        end
-      end
-
-      context "when confirmation required",
-              with_config: { internal_password_confirmation: true } do
-        it "requires the password for a regular user" do
-          dialog.confirm_flow_with(user_password)
-          expect_changed!
+          fill_in "user[mail]", with: "foo@mail.com"
+          fill_in "user[firstname]", with: "Foo"
+          fill_in "user[lastname]", with: "Bar"
+          click_on "Update profile"
         end
 
-        it "declines the change when invalid password is given" do
-          dialog.confirm_flow_with(user_password + "INVALID", should_fail: true)
-
-          user.reload
-          expect(user.mail).to eq("old@mail.com")
-        end
-
-        context "as admin" do
-          shared_let(:admin) { create(:admin) }
-          let(:user) { admin }
-
-          it "requires the password" do
-            dialog.confirm_flow_with("adminADMIN!")
+        context "when confirmation disabled",
+                with_config: { internal_password_confirmation: false } do
+          it "does not request confirmation" do
             expect_changed!
           end
         end
+
+        context "when confirmation required",
+                with_config: { internal_password_confirmation: true } do
+          it "requires the password for a regular user" do
+            dialog.confirm_flow_with(user_password)
+            expect_changed!
+          end
+
+          it "declines the change when invalid password is given" do
+            dialog.confirm_flow_with("#{user_password}INVALID", should_fail: true)
+
+            user.reload
+            expect(user.mail).to eq("old@mail.com")
+          end
+
+          it "allows submitting again after cancelling the confirmation dialog" do
+            dialog.cancel
+
+            click_on "Update profile"
+            dialog.confirm_flow_with(user_password)
+            expect_changed!
+          end
+
+          context "as admin" do
+            shared_let(:admin) { create(:admin) }
+            let(:user) { admin }
+
+            it "requires the password" do
+              dialog.confirm_flow_with("adminADMIN!")
+              expect_changed!
+            end
+          end
+        end
+      end
+
+      # CKEditor-augmented text custom fields also intercept submit (to flush
+      # editor → textarea). With turboMode they used to call Turbo's
+      # navigator.submitForm, which bypassed password confirmation and POSTed
+      # immediately — flashing notice_password_confirmation_failed.
+      context "with a long text custom field",
+              with_config: { internal_password_confirmation: true } do
+        let!(:text_cf) { create(:user_custom_field, :text, name: "Biography") }
+        let(:editor) { Components::WysiwygEditor.new("[data-test-selector='#{text_cf.attribute_name(:kebab_case)}']") }
+
+        it "still requires password confirmation and does not submit without it" do
+          visit my_account_path
+
+          editor.expect_value("")
+          editor.set_markdown("Loves hiking")
+
+          fill_in "user[mail]", with: "foo@mail.com"
+          fill_in "user[firstname]", with: "Foo"
+          fill_in "user[lastname]", with: "Bar"
+          click_on "Update profile"
+
+          dialog.expect_open
+          expect(page).to have_no_text(I18n.t(:notice_password_confirmation_failed))
+
+          dialog.confirm_flow_with(user_password)
+          expect_changed!
+
+          user.reload
+          expect(user.typed_custom_value_for(text_cf)).to include("Loves hiking")
+        end
+      end
+    end
+
+    describe "#account when users may not change their email",
+             with_config: { internal_password_confirmation: false },
+             with_settings: { user_can_change_email: false } do
+      before do
+        visit my_account_path
+      end
+
+      it "renders the email read-only but still allows changing the name" do
+        expect(page).to have_field("user[mail]", readonly: true)
+        expect(page).to have_text(I18n.t("user.text_change_mail_disabled_by_administrator"))
+        expect(page).to have_no_text(I18n.t("user.text_change_disabled_for_provider_login"))
+
+        fill_in "user[firstname]", with: "Foo"
+        fill_in "user[lastname]", with: "Bar"
+        click_on "Update profile"
+
+        expect(page).to have_text I18n.t(:notice_account_updated)
+
+        user.reload
+        expect(user.name).to eq "Foo Bar"
+        expect(user.mail).to eq "old@mail.com"
       end
     end
 
     include_examples "common tests for normal and LDAP user"
-
-    describe "API tokens" do
-      context "when API access is disabled via global settings", with_settings: { rest_api_enabled: false } do
-        it "shows notice about disabled token" do
-          visit my_access_token_path
-
-          within "#api-token-section" do
-            expect(page).to have_content("API tokens are not enabled by the administrator.")
-            expect(page).not_to have_test_selector("api-token-add", text: "API token")
-          end
-        end
-      end
-
-      context "when API access is enabled via global settings", with_settings: { rest_api_enabled: true } do
-        it "API tokens can be generated and revoked" do
-          visit my_access_token_path
-
-          expect(page).to have_no_content("API tokens are not enabled by the administrator.")
-
-          within "#api-token-section" do
-            expect(page).to have_test_selector("api-token-add", text: "API token")
-            find_test_selector("api-token-add").click
-          end
-
-          expect(page).to have_test_selector("new-access-token-dialog")
-
-          # create API token
-          fill_in "token_api[token_name]", with: "Testing Token"
-          find_test_selector("create-api-token-button").click
-
-          within("dialog#access-token-created-dialog") do
-            expect(page).to have_content "The API token has been generated"
-            click_on "Close"
-          end
-          expect(page).to have_content("Testing Token")
-
-          User.current.reload
-          visit my_access_token_path
-
-          # multiple API tokens can be created
-          within "#api-token-section" do
-            expect(page).to have_test_selector("api-token-add", text: "API token")
-          end
-
-          # revoke API token
-          within "#api-token-section" do
-            accept_confirm do
-              find_test_selector("api-token-revoke").click
-            end
-          end
-
-          expect(page).to have_content "The API token has been deleted."
-
-          User.current.reload
-          visit my_access_token_path
-
-          # API token can be created again
-          within "#api-token-section" do
-            expect(page).to have_test_selector("api-token-add", text: "API token")
-          end
-        end
-      end
-    end
-
-    describe "RSS tokens" do
-      context "when RSS access is disabled via global settings", with_settings: { feeds_enabled: false } do
-        it "shows notice about disabled token" do
-          visit my_access_token_path
-
-          within "#rss-token-section" do
-            expect(page).to have_content("RSS tokens are not enabled by the administrator.")
-            expect(page).not_to have_test_selector("rss-token-add", text: "RSS token")
-          end
-        end
-      end
-
-      context "when RSS access is enabled via global settings", with_settings: { feeds_enabled: true } do
-        it "in Access Tokens they can generate and revoke their RSS key" do
-          visit my_access_token_path
-
-          expect(page).to have_no_content("RSS tokens are not enabled by the administrator.")
-
-          within "#rss-token-section" do
-            expect(page).to have_test_selector("rss-token-add", text: "RSS token")
-            find_test_selector("rss-token-add").click
-          end
-
-          expect(page).to have_content "A new RSS token has been generated. Your access token is"
-
-          User.current.reload
-          visit my_access_token_path
-
-          # only one RSS token can be created
-          within "#rss-token-section" do
-            expect(page).not_to have_test_selector("rss-token-add", text: "RSS token")
-          end
-
-          # revoke RSS token
-          within "#rss-token-section" do
-            accept_confirm do
-              find_test_selector("rss-token-revoke").click
-            end
-          end
-
-          expect(page).to have_content "The RSS token has been deleted."
-
-          User.current.reload
-          visit my_access_token_path
-
-          # RSS token can be created again
-          within "#rss-token-section" do
-            expect(page).to have_test_selector("rss-token-add", text: "RSS token")
-          end
-        end
-      end
-    end
-
-    describe "iCalendar tokens" do
-      context "when iCalendar access is disabled via global settings", with_settings: { ical_enabled: false } do
-        it "shows notice about disabled token" do
-          visit my_access_token_path
-
-          within "#icalendar-token-section" do
-            expect(page).to have_content("iCalendar subscriptions are not enabled by the administrator.")
-          end
-        end
-      end
-
-      context "when iCalendar access is enable via global settings", with_settings: { ical_enabled: true } do
-        context "when no iCalendar token exists" do
-          it "shows notice about how to use iCalendar tokens" do
-            visit my_access_token_path
-
-            within "#icalendar-token-section" do
-              expect(page).to have_content("To add an iCalendar token") # ...
-            end
-          end
-        end
-
-        context "when multiple iCalendar tokens exist" do
-          let!(:project) { create(:project) }
-          let!(:query) { create(:query, project:) }
-          let!(:another_query) { create(:query, project:) }
-          let!(:ical_token_for_query) { create(:ical_token, user:, query:, name: "First Token Name") }
-          let!(:ical_token_for_another_query) { create(:ical_token, user:, query: another_query, name: "Second Token Name") }
-          let!(:second_ical_token_for_query) { create(:ical_token, user:, query:, name: "Third Token Name") }
-
-          it "shows iCalendar tokens with their calender and project info" do
-            visit my_access_token_path
-
-            expect(page).to have_no_content("To add an iCalendar token") # ...
-
-            within "#icalendar-token-section" do
-              [
-                ical_token_for_query,
-                ical_token_for_another_query,
-                second_ical_token_for_query
-              ].each do |ical_token|
-                token_name = ical_token.ical_token_query_assignment.name
-                query = ical_token.ical_token_query_assignment.query
-
-                expect(page).to have_test_selector("ical-token-row-#{ical_token.id}-name", text: token_name)
-                expect(page).to have_test_selector("ical-token-row-#{ical_token.id}-query-name", text: query.name)
-                expect(page).to have_test_selector("ical-token-row-#{ical_token.id}-project-name",
-                                                   text: query.project.name)
-              end
-            end
-          end
-
-          it "single iCalendar tokens can be deleted" do
-            visit my_access_token_path
-
-            within "#icalendar-token-section" do
-              accept_confirm do
-                find_test_selector("ical-token-row-#{ical_token_for_query.id}-revoke").click
-              end
-            end
-
-            expect(page).to have_content "The iCalendar URL with this token is now invalid."
-
-            User.current.reload
-            visit my_access_token_path
-
-            within "#icalendar-token-section" do
-              expect(page).not_to have_test_selector('ical-token-row-#{ical_token_for_query.id}-revoke')
-            end
-          end
-        end
-      end
-    end
-
-    describe "OAuth tokens" do
-      context "when no OAuth access is configured" do
-        it "shows notice about no existing tokens" do
-          visit my_access_token_path
-
-          within "#oauth-token-section" do
-            expect(page).to have_content("There is no third-party application access configured and active for you")
-          end
-        end
-      end
-
-      context "when OAuth access is configured" do
-        let!(:app) do
-          create(:oauth_application,
-                 name: "Some App",
-                 confidential: false)
-        end
-        let!(:token_for_app) do
-          create(:oauth_access_token,
-                 application: app,
-                 resource_owner: user)
-        end
-        let!(:second_app) do
-          create(:oauth_application,
-                 name: "Some Second App",
-                 uid: "56789",
-                 confidential: false)
-        end
-        let!(:token_for_second_app) do
-          create(:oauth_access_token,
-                 application: second_app,
-                 resource_owner: user)
-        end
-
-        context "when single OAuth token per app is configured" do
-          it "shows token for granted applications" do
-            visit my_access_token_path
-
-            [app, second_app].each do |app|
-              within "#oauth-token-section" do
-                expect(page).to have_test_selector("oauth-token-row-#{app.id}-name", text: app.name)
-                expect(page).to have_test_selector("oauth-token-row-#{app.id}-name", text: "(one active token)")
-              end
-            end
-          end
-
-          it "can revoke tokens" do
-            visit my_access_token_path
-
-            [app, second_app].each do |app|
-              within "#oauth-token-section" do
-                accept_confirm do
-                  find_test_selector("oauth-token-row-#{app.id}-revoke").click
-                end
-              end
-            end
-
-            User.current.reload
-            visit my_access_token_path
-
-            [app, second_app].each do |app|
-              within "#oauth-token-section" do
-                expect(page).not_to have_test_selector("oauth-token-row-#{app.id}-revoke")
-              end
-            end
-          end
-        end
-
-        context "when multiple OAuth tokens per app are configured" do
-          let!(:second_token_for_app) do
-            create(:oauth_access_token,
-                   application: app,
-                   resource_owner: user)
-          end
-          let!(:second_token_for_second_app) do
-            create(:oauth_access_token,
-                   application: second_app,
-                   resource_owner: user)
-          end
-
-          it "shows token for granted applications" do
-            visit my_access_token_path
-
-            [app, second_app].each do |app|
-              within "#oauth-token-section" do
-                expect(page).to have_test_selector("oauth-token-row-#{app.id}-name", text: app.name)
-                expect(page).to have_test_selector("oauth-token-row-#{app.id}-name", text: "(2 active token)")
-              end
-            end
-          end
-
-          it "can revoke mutliple tokens per app" do
-            visit my_access_token_path
-
-            within "#oauth-token-section" do
-              accept_confirm do
-                find_test_selector("oauth-token-row-#{app.id}-revoke").click
-              end
-            end
-
-            User.current.reload
-            visit my_access_token_path
-
-            within "#oauth-token-section" do
-              expect(page).not_to have_test_selector("oauth-token-row-#{app.id}-revoke")
-            end
-          end
-        end
-      end
-    end
   end
 
   # Without password confirmation the test doesn't try to connect to the LDAP:
@@ -447,18 +269,14 @@ RSpec.describe "my", :js do
       end
 
       it "does not allow change of name and email but other fields can be changed" do
-        email_field = find_field("user[mail]", disabled: true)
-        firstname_field = find_field("user[firstname]", disabled: true)
-        lastname_field = find_field("user[lastname]", disabled: true)
+        expect(page).to have_field("user[mail]", readonly: true)
+        expect(page).to have_field("user[firstname]", readonly: true)
+        expect(page).to have_field("user[lastname]", readonly: true)
 
-        expect(email_field).to be_disabled
-        expect(firstname_field).to be_disabled
-        expect(lastname_field).to be_disabled
-
-        expect(page).to have_text(I18n.t("user.text_change_disabled_for_ldap_login"), count: 3)
+        expect(page).to have_text(I18n.t("user.text_change_disabled_for_provider_login"), count: 3)
 
         fill_in "Hobbies", with: "Ruby, DCS"
-        click_on "Save"
+        click_on "Update profile"
 
         expect(page).to have_content I18n.t(:notice_account_updated)
 

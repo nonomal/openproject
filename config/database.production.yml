@@ -27,7 +27,7 @@
 #++
 
 <%
-DATABASE_OPTIONS = %w[
+database_options = %w[
   url
   database
   encoding
@@ -54,34 +54,34 @@ DATABASE_OPTIONS = %w[
   keepalives_count
   gssencmode
   replication
-].freeze
+]
 
-DATABASE_VARIABLES = %w[
+database_variables = %w[
   statement_timeout
 ]
 
-DATABASE_DEFAULTS = {
+database_defaults = {
   # Fallback to unprefixed DATABASE_URL if present
   'url' => ENV['DATABASE_URL'],
   'statement_timeout' => ENV.fetch("POSTGRES_STATEMENT_TIMEOUT", "90s"),
   'encoding' => 'unicode',
   'application_name' => 'openproject',
-}.freeze
+}
 %>
 
 production:
   adapter: postgresql
-  <% DATABASE_OPTIONS.each do |option| %>
+  <% database_options.each do |option| %>
   <% env_name = "OPENPROJECT_DB_#{option.upcase}" %>
-  <% value = ENV.fetch(env_name, DATABASE_DEFAULTS[option]) %>
+  <% value = ENV.fetch(env_name, database_defaults[option]) %>
   <% unless value.nil? %>
   <%= option %>: <%= value %>
   <% end %>
   <% end %>
   variables:
-    <% DATABASE_VARIABLES.each do |option| %>
+    <% database_variables.each do |option| %>
     <% env_name = "OPENPROJECT_DB_#{option.upcase}" %>
-    <% value = ENV.fetch(env_name, DATABASE_DEFAULTS[option]) %>
+    <% value = ENV.fetch(env_name, database_defaults[option]) %>
     <% unless value.nil? %>
     <%= option %>: <%= value %>
     <% end %>

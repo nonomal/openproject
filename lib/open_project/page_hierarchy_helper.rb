@@ -39,7 +39,7 @@ module OpenProject
             concat render_page_hierarchy(pages, page.id, options) if is_parent
           end
         end
-        chunks.join.html_safe
+        safe_join(chunks)
       end
     end
 
@@ -82,7 +82,7 @@ module OpenProject
       content_tag(:span, tabindex: 0, class: "tree-menu--leaf-indicator") do
         content_tag(:span,
                     ::I18n.t(:label_hierarchy_leaf),
-                    class: "hidden-for-sighted")
+                    class: "sr-only")
       end
     end
 
@@ -94,10 +94,10 @@ module OpenProject
                                 class: "tree-menu--hierarchy-indicator-icon")
       icon_spans << content_tag(:span,
                                 ::I18n.t(:label_expanded_click_to_collapse),
-                                class: "tree-menu--hierarchy-indicator-expanded hidden-for-sighted")
+                                class: "tree-menu--hierarchy-indicator-expanded sr-only")
       icon_spans << content_tag(:span,
                                 ::I18n.t(:label_collapsed_click_to_show),
-                                class: "tree-menu--hierarchy-indicator-collapsed hidden-for-sighted")
+                                class: "tree-menu--hierarchy-indicator-collapsed sr-only")
       content_tag(
         :a,
         safe_join(icon_spans),

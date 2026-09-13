@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -74,7 +76,7 @@ RSpec.describe "random password generation", :js do
       fill_in "password", with: old_password
       fill_in "new_password", with: new_password
       fill_in "new_password_confirmation", with: new_password
-      click_on "Save"
+      click_button "Change password"
 
       expect(page).to have_content "Invalid user or password"
 
@@ -89,7 +91,7 @@ RSpec.describe "random password generation", :js do
 
       expect(Sessions::UserSession.for_user(user.id).count).to be >= 1
 
-      click_on "Save"
+      click_button "Change password"
       wait_for_network_idle
       expect_flash(type: :info, message: I18n.t(:notice_account_password_updated))
 
@@ -113,29 +115,23 @@ RSpec.describe "random password generation", :js do
     end
 
     it "can configure and enforce password rules" do
-      visit admin_settings_authentication_path
-      expect_angular_frontend_initialized
+      visit admin_settings_authentication_path(tab: :passwords)
 
-      # Enforce rules
-      # 3 of 'lowercase, uppercase, special'
-      find(".form--check-box[value=uppercase]").set true
-      find(".form--check-box[value=lowercase]").set true
-      find(".form--check-box[value=numeric]").set false
-      find(".form--check-box[value=special]").set true
+      # Enforce rules: lowercase, uppercase, special (all required)
+      check "Lowercase"
+      check "Uppercase"
+      check "Special"
+      uncheck "Numeric"
 
       # Set min length to 4
-      find_by_id("settings_password_min_length").set 4
+      fill_in "Minimum length", with: 4
 
-      # Set min classes to 3
-      find_by_id("settings_password_min_adhered_rules").set 3
-
-      scroll_to_and_click(find(".button", text: "Save"))
+      click_on "Save"
       expect_flash(message: "Successful update.")
 
       Setting.clear_cache
 
       expect(Setting.password_min_length).to eq(4)
-      expect(Setting.password_min_adhered_rules).to eq(3)
       expect(Setting.password_active_rules).to eq(%w(uppercase lowercase special))
 
       # Go to user page
@@ -147,25 +143,25 @@ RSpec.describe "random password generation", :js do
       # And I try to set my new password to "adminADMIN"
       fill_in "user_password", with: "adminADMIN"
       fill_in "user_password_confirmation", with: "adminADMIN"
-      scroll_to_and_click(find(".button", text: "Save"))
-      expect_flash(type: :error, message: "Password Must contain characters of the following classes")
+      scroll_to_and_click(find_button("Save"))
+      expect_flash(type: :error, message: "Password Must include characters of the following types")
 
-      # 2 of 3 classes
+      # Has numeric but still missing special
       fill_in "user_password", with: "adminADMIN123"
       fill_in "user_password_confirmation", with: "adminADMIN123"
-      scroll_to_and_click(find(".button", text: "Save"))
-      expect_flash(type: :error, message: "Password Must contain characters of the following classes")
+      scroll_to_and_click(find_button("Save"))
+      expect_flash(type: :error, message: "Password Must include characters of the following types")
 
       # All classes
-      fill_in "user_password", with: "adminADMIN!"
-      fill_in "user_password_confirmation", with: "adminADMIN!"
-      scroll_to_and_click(find(".button", text: "Save"))
+      fill_in "user_password", with: "adminADMIN1!"
+      fill_in "user_password_confirmation", with: "adminADMIN1!"
+      scroll_to_and_click(find_button("Save"))
       expect_flash(message: I18n.t(:notice_successful_update))
     end
   end
 
   context "as a user on his my page" do
-    let(:user_page) { Pages::My::PasswordPage.new }
+    let(:user_page) { Pages::My::Password.new }
     let(:third_password) { "third_Password!123" }
 
     before do
@@ -173,17 +169,16 @@ RSpec.describe "random password generation", :js do
       user_page.visit!
     end
 
-    context "with 2 of lowercase, uppercase, and numeric characters", :js, with_settings: {
-      password_active_rules: %w(lowercase uppercase numeric),
-      password_min_adhered_rules: 2,
+    context "with lowercase and uppercase required", :js, with_settings: {
+      password_active_rules: %w(lowercase uppercase),
       password_min_length: 4
     } do
       it "enforces those rules" do
-        # Change to valid password according to spec
+        # Only lowercase, missing uppercase
         user_page.change_password(old_password, "password")
         user_page.expect_password_weak_error_message
 
-        # Change to valid password according to spec
+        # Successfuly when both lowercase and uppercase
         user_page.change_password(old_password, "Password")
         user_page.expect_password_updated_message
       end

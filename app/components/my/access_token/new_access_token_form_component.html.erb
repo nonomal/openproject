@@ -31,26 +31,28 @@ See COPYRIGHT and LICENSE files for more details.
   component_wrapper do
     primer_form_with(
       model: @token,
-      url: my_generate_api_key_path,
+      url: generate_api_key_my_access_tokens_path,
       data: { turbo: true },
       method: :post
     ) do |form|
       component_collection do |collection|
         collection.with_component(
           Primer::Alpha::Dialog::Body.new(
-            aria: { label: I18n.t("my.access_token.new_access_token_dialog_title") }
+            aria: { label: I18n.t(:dialog_title, scope: i18n_scope) }
           )
         ) do
           flex_layout(mb: 3) do |body|
-            body.with_row do
-              render(Primer::Alpha::Banner.new(scheme: :warning)) do
-                I18n.t("my.access_token.new_access_token_dialog_attention_text")
+            if I18n.t(:attention_text, scope: i18n_scope, default: nil).present?
+              body.with_row(mb: 3) do
+                render(Primer::Alpha::Banner.new(scheme: :warning)) do
+                  I18n.t(:attention_text, scope: i18n_scope)
+                end
               end
             end
 
-            body.with_row(mt: 3) do
+            body.with_row do
               render(Primer::Beta::Text.new(tag: :p)) do
-                I18n.t("my.access_token.new_access_token_dialog_text")
+                I18n.t(:dialog_body, scope: i18n_scope)
               end
             end
 
@@ -62,12 +64,12 @@ See COPYRIGHT and LICENSE files for more details.
 
         collection.with_component(Primer::Alpha::Dialog::Footer.new) do
           component_collection do |footer|
-            footer.with_component(Primer::Beta::Button.new(data: { "close-dialog-id": "new-access-token-dialog" })) do
+            footer.with_component(Primer::Beta::Button.new(data: { "close-dialog-id": My::AccessToken::NewAccessTokenDialogComponent::DIALOG_ID })) do
               I18n.t("button_cancel")
             end
 
             footer.with_component(Primer::Beta::Button.new(scheme: :primary, type: :submit, test_selector: "create-api-token-button")) do
-              I18n.t("my.access_token.new_access_token_dialog_submit_button_text")
+              I18n.t(:create_button, scope: i18n_scope)
             end
           end
         end

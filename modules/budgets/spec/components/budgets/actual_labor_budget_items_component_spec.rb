@@ -53,7 +53,7 @@ RSpec.describe Budgets::ActualLaborBudgetItemsComponent, type: :component do
   end
 
   describe "with time entries" do
-    let!(:time_entry) { create :time_entry, work_package:, user: }
+    let!(:time_entry) { create :time_entry, entity: work_package, user: }
 
     it "renders the link to the time entry's user's avatar" do
       rendered = render_inline(subject)

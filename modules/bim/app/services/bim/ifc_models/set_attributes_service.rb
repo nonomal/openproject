@@ -78,7 +78,7 @@ module Bim
 
       def build_ifc_attachment(ifc_attachment)
         ::Attachments::BuildService
-          .bypass_whitelist(user:)
+          .bypass_allowlist(user:)
           .call(file: ifc_attachment, container: model, filename: ifc_attachment.original_filename, description: "ifc")
           .on_failure do |build_attachment_result|
             build_attachment_result.errors.each do |error|

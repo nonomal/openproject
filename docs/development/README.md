@@ -10,7 +10,7 @@ We are pleased that you are thinking about contributing to OpenProject! This gui
 
 ## Get in touch
 
-Please get in touch with us using our [development forum](https://community.openproject.org/projects/openproject/forums/7) or send us an email to info@openproject.org.
+Please get in touch with us using our [development forum](https://community.openproject.org/projects/openproject/forums/7) or send us an email to [info@openproject.org](mailto:info@openproject.org).
 
 ## Issue tracking and coordination
 
@@ -28,7 +28,7 @@ We eat our own ice cream so we use OpenProject for roadmap planning and team col
 
 ## Development Environment
 
-Take a look at the bottom under Additional resources to see how to setup your development environment.
+Take a look at the bottom under Additional resources to see how to set up your development environment.
 
 ## Highlighting Development Environment
 
@@ -42,7 +42,7 @@ Please see this separate guide for the [git branching model and core development
 
 ## Development concepts
 
-We prepared a set of documentation concepts for an introduction into various backend and frontend related topics of OpenProject. Please see the [concepts main page](concepts/) for more.
+We prepared a set of documentation concepts for an introduction to various backend and frontend related topics of OpenProject. Please see the [concepts main page](concepts/) for more.
 
 ## Translations
 
@@ -58,9 +58,9 @@ Please see this separate guide for the [process of building packages of OpenProj
 
 Please add tests to your code to verify functionality, especially if it is a new feature.
 
-Pull requests will be verified by TravisCI as well, but please run them locally as well and make sure they are green before creating your pull request. We have a lot of pull requests coming in and it takes some time to run the complete suite for each one.
+Pull requests will be verified by the Continuous Integration system (CI) as well, but please run them locally as well and make sure they are green before creating your pull request. We have a lot of pull requests coming in and it takes some time to run the complete suite for each one.
 
-If you push to your branch in quick succession, please consider stopping the associated Travis builds, as Travis will run for each commit. This is especially true if you force push to the branch.
+If you push to your branch in quick succession, please consider stopping the associated CI builds, as they will run for each commit. This is especially true if you force push to the branch.
 
 Please also use `[ci skip]` in your commit message to suppress builds which are not necessary (e.g. after fixing a typo in the `README`).
 
@@ -70,7 +70,7 @@ We want to keep the Pull request list as cleaned up as possible - we will aim cl
 
 ## Security
 
-If you notice a security issue in OpenProject, please send us a GPG encrypted email to security@openproject.com and describe the issue you found. Download our public GPG key BDCF E01E DE84 EA19 9AE1 72CE 7D66 9C6D 4753 3958 [here](https://keys.openpgp.org/vks/v1/by-fingerprint/BDCFE01EDE84EA199AE172CE7D669C6D47533958).
+If you notice a security issue in OpenProject, please send us a GPG encrypted email to [security@openproject.com](mailto:security@openproject.com) and describe the issue you found. Download our public GPG key BDCF E01E DE84 EA19 9AE1 72CE 7D66 9C6D 4753 3958 [here](https://keys.openpgp.org/vks/v1/by-fingerprint/BDCFE01EDE84EA199AE172CE7D669C6D47533958).
 
 Please include a description on how to reproduce the issue if possible. Our security team will get your email and will attempt to reproduce and fix the issue as soon as possible.
 
@@ -90,14 +90,14 @@ This code of conduct is adapted from the [Contributor Covenant](https://www.cont
 
 ## OpenProject Contributor License Agreement (CLA)
 
-If you want to contribute to OpenProject, please make sure to accept our Contributor License Agreement first. The contributor license agreement documents the rights granted by contributors to OpenProject.
+If you want to contribute to OpenProject, please make sure to accept our Contributor License Agreement. The contributor license agreement documents the rights granted by contributors to OpenProject.
 
-[Read and accept the Contributor License Agreement here.](https://www.openproject.org/legal/contributor-license-agreement/)
+A GitHub action will enforce the [CLA](https://www.openproject.org/legal/contributor-license-agreement/) has been read and accepted by every new contributor. You will only be asked once, the document is short, and signing is easy.
 
 ## Additional resources
 
-* [Development environment](development-environment)
-* [Developing Plugins](create-openproject-plugin)
-* [Running Tests](running-tests)
-* [API Documentation](../api)
-* [Report a Bug](report-a-bug)
+- [Development environment](development-environment)
+- [Developing Plugins](create-openproject-plugin)
+- [Running Tests](testing)
+- [API Documentation](../api)
+- [Report a Bug](report-a-bug)

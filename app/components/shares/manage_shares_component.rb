@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,7 +29,7 @@
 #++
 
 module Shares
-  class ManageSharesComponent < ApplicationComponent # rubocop:disable OpenProject/AddPreviewForViewComponent
+  class ManageSharesComponent < ApplicationComponent
     include ApplicationHelper
     include MemberHelper
     include OpPrimer::ComponentHelpers
@@ -106,7 +108,7 @@ module Shares
 
       return false if role_filter_value.nil?
 
-      selected_role = strategy.available_roles.find { _1[:value] == option[:value] }
+      selected_role = strategy.available_roles.find { it[:value] == option[:value] }
 
       selected_role[:value] == role_filter_value.to_i
     end

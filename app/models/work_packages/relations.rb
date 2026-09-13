@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #  OpenProject is an open source project management software.
 #  Copyright (C) the OpenProject GmbH
 #
@@ -42,8 +44,16 @@ module WorkPackages::Relations
         # Since the method looks for relations on the current work package, only work packages
         # that are on either end of a relation with the current work package need to be considered.
         # The number should be quite small compared to the total number of work packages.
-        merge(Relation.visible(user,
-                               work_package_focus_scope: Arel::Nodes::UnionAll.new(select(:from_id).arel, select(:to_id).arel)))
+
+        # merge() method that we will be using below will be overriding all where conditions with the
+        # ones coming in from the other relation. This is not what we want. We want to keep the old constraints
+        # and add the new ones to it.
+        old_constraints = arel.constraints
+
+        work_package_focus_scope = Arel::Nodes::UnionAll.new(select(:from_id).arel, select(:to_id).arel)
+        visible_relations = Relation.visible(user, work_package_focus_scope:)
+
+        merge(visible_relations).where(old_constraints)
       end
     end
     # rubocop:enable Rails/InverseOf

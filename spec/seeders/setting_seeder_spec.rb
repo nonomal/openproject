@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -67,7 +69,7 @@ RSpec.describe BasicData::SettingSeeder do
   it "does not seed settings whose default value is undefined" do
     setting_seeder.seed!
 
-    names_of_undefined_settings = Settings::Definition.all.values.select { _1.value == nil }.map(&:name)
+    names_of_undefined_settings = Settings::Definition.all.values.select { it.value == nil }.map(&:name)
     # these ones are special as their value is set based on database ids
     names_of_undefined_settings -= ["new_project_user_role_id", "commit_fix_status_id"]
     expect(Setting.where(name: names_of_undefined_settings).pluck(:name)).to be_empty

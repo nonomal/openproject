@@ -41,7 +41,7 @@ class OAuthApplicationsSeeder < Seeder
   end
 
   def applicable?
-    Doorkeeper::Application.find_by(id: OPENPROJECT_MOBILE_APP_UID).nil?
+    Doorkeeper::Application.find_by(uid: OPENPROJECT_MOBILE_APP_UID).nil?
   end
 
   def not_applicable_message

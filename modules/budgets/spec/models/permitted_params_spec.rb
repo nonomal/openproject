@@ -57,28 +57,34 @@ RSpec.describe PermittedParams do
     end
   end
 
-  describe "#budget" do
+  describe "budget" do
     let(:attribute) { :budget }
 
-    context "subject" do
+    describe "#subject" do
       let(:hash) { { "subject" => "subject_test" } }
 
       it_behaves_like "allows params"
     end
 
-    context "description" do
+    describe "#description" do
       let(:hash) { { "description" => "description_test" } }
 
       it_behaves_like "allows params"
     end
 
-    context "fixed_date" do
+    describe "#fixed_date" do
       let(:hash) { { "fixed_date" => "2017-03-01" } }
 
       it_behaves_like "allows params"
     end
 
-    context "project_id" do
+    describe "#base_amount" do
+      let(:hash) { { "base_amount" => "250000.00" } }
+
+      it_behaves_like "allows params"
+    end
+
+    describe "#project_id" do
       let(:hash) { { "project_id" => 42 } }
 
       it_behaves_like "allows params" do
@@ -86,7 +92,7 @@ RSpec.describe PermittedParams do
       end
     end
 
-    context "existing material budget item" do
+    describe "#existing_material_budget_item" do
       let(:hash) do
         { "existing_material_budget_item_attributes" => { "1" => {
           "units" => "100.0",
@@ -99,7 +105,7 @@ RSpec.describe PermittedParams do
       it_behaves_like "allows params"
     end
 
-    context "new material budget item" do
+    describe "#new_material_budget_item" do
       let(:hash) do
         { "new_material_budget_item_attributes" => { "1" => {
           "units" => "20",
@@ -112,7 +118,7 @@ RSpec.describe PermittedParams do
       it_behaves_like "allows params"
     end
 
-    context "existing labor budget item" do
+    describe "#existing_labor_budget_item" do
       let(:hash) do
         { "existing_labor_budget_item_attributes" => { "1" => {
           "hours" => "20.0",
@@ -125,7 +131,7 @@ RSpec.describe PermittedParams do
       it_behaves_like "allows params"
     end
 
-    context "new labor budget item" do
+    describe "#new_labor_budget_item" do
       let(:hash) do
         { "new_labor_budget_item_attributes" => { "1" => {
           "hours" => "5.0",

@@ -21,35 +21,34 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
-import * as moment from 'moment';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import moment from 'moment';
 import { EditFieldComponent } from 'core-app/shared/components/fields/edit/edit-field.component';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
 import { TimezoneService } from 'core-app/core/datetime/timezone.service';
 
 @Component({
   template: `
-    <op-basic-single-date-picker
-      [(ngModel)]="value"
+    <op-basic-single-date-picker [(ngModel)]="value"
       (keydown.escape)="onCancel()"
       (keydown.enter)="handler.handleUserSubmit()"
       (picked)="handler.handleUserSubmit()"
       class="inline-edit--field"
-      [inputId]="handler.htmlId"
+      [id]="handler.htmlId"
       [required]="required"
       [disabled]="inFlight"
       [opAutofocus]="autofocus"
-    ></op-basic-single-date-picker>
+     />
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
 export class DateEditFieldComponent extends EditFieldComponent implements OnInit {
-  @InjectField() readonly timezoneService:TimezoneService;
+  readonly timezoneService = inject(TimezoneService);
 
   autofocus = false;
 

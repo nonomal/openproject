@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -38,5 +40,11 @@ class Queries::WorkPackages::Filter::AuthorFilter <
 
   def self.key
     :author_id
+  end
+
+  private
+
+  def autocomplete_principal_types
+    %w[User]
   end
 end

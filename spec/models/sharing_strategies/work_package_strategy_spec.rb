@@ -71,7 +71,13 @@ RSpec.describe SharingStrategies::WorkPackageStrategy do
         end
       end
 
-      it { expect(strategy).to be_manageable }
+      context "when feature is available", with_ee: %i[work_package_sharing] do
+        it { expect(strategy.manageable?).to be(true) }
+      end
+
+      context "when feature is not available" do
+        it { expect(strategy.manageable?).to be(false) }
+      end
     end
 
     context "without permissions to share the work package" do

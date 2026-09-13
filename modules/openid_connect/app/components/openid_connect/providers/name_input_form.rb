@@ -35,7 +35,7 @@ module OpenIDConnect
         f.hidden(name: :oidc_provider, value: provider.oidc_provider)
         f.text_field(
           name: :display_name,
-          label: I18n.t("activerecord.attributes.openid_connect/provider.display_name"),
+          label: OpenIDConnect::Provider.human_attribute_name(:display_name),
           required: true,
           disabled: provider.seeded_from_env?,
           caption: I18n.t("openid_connect.instructions.display_name"),

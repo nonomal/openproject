@@ -36,15 +36,19 @@ module WorkPackages
       include OpPrimer::ComponentHelpers
 
       FORM_ID = "reminder-form"
+      DEFAULT_TIME = "09:00"
 
-      attr_reader :remindable, :reminder, :errors
+      attr_reader :remindable, :reminder, :errors, :preset
 
-      def initialize(remindable:, reminder:, errors: nil)
+      def initialize(remindable:, reminder:, errors: nil, preset: nil, remind_at_date: nil, remind_at_time: nil)
         super
 
         @remindable = remindable
         @reminder = reminder
         @errors = errors
+        @preset = preset
+        @remind_at_date = remind_at_date
+        @remind_at_time = remind_at_time
       end
 
       class << self
@@ -55,9 +59,9 @@ module WorkPackages
 
       def submit_path
         if @reminder.persisted?
-          work_package_reminder_path(@remindable, @reminder)
+          url_helpers.work_package_reminder_path(@remindable, @reminder)
         else
-          work_package_reminders_path(@remindable)
+          url_helpers.work_package_reminders_path(@remindable)
         end
       end
 
@@ -74,7 +78,6 @@ module WorkPackages
           scheme: :secondary,
           data: {
             controller: "primer-to-angular-modal",
-            application_target: "dynamic",
             action: "click->primer-to-angular-modal#close",
             test_selector: "op-reminder-modal-close-button"
           }
@@ -82,11 +85,47 @@ module WorkPackages
       end
 
       def remind_at_date_initial_value
-        format_time_as_date(@reminder.remind_at, format: "%Y-%m-%d")
+        if attribute_blank?(:remind_at_time) && @remind_at_date.present?
+          # If the time is not set, we return the date that was passed in
+          return @remind_at_date
+        end
+
+        return time_as_date(@reminder.remind_at) if @reminder.remind_at
+        return calculate_preset_date if @preset
+
+        nil
       end
 
       def remind_at_time_initial_value
-        format_time(@reminder.remind_at, include_date: false, format: "%H:%M")
+        if attribute_blank?(:remind_at_date) && @remind_at_time.present?
+          # If the date is not set, we return the time that was passed in
+          return @remind_at_time
+        end
+
+        return format_time(@reminder.remind_at, include_date: false, format: "%H:%M") if @reminder.remind_at
+
+        DEFAULT_TIME
+      end
+
+      private
+
+      def calculate_preset_date
+        case @preset
+        when "tomorrow" then time_as_date(1.day.from_now)
+        when "three_days" then time_as_date(3.days.from_now)
+        when "week" then time_as_date(7.days.from_now)
+        when "month" then time_as_date(1.month.from_now)
+        when "custom" then nil
+        end
+      end
+
+      def time_as_date(time)
+        format_date(time, format: "%Y-%m-%d")
+      end
+
+      def attribute_blank?(attribute)
+        @errors.present? &&
+          @errors.any? { |error| error.attribute == attribute && error.type == :blank }
       end
     end
   end

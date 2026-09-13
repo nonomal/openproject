@@ -37,8 +37,7 @@ class CostQuery::Filter::LoggedById < Report::Filter::Base
 
   def transformed_values
     # Map the special 'me' value
-    super
-        .filter_map { |val| replace_me_value(val) }
+    super.filter_map { |val| replace_me_value(val) }
   end
 
   def replace_me_value(value)
@@ -49,19 +48,7 @@ class CostQuery::Filter::LoggedById < Report::Filter::Base
     end
   end
 
-  # rubocop:disable Metrics/AbcSize
   def self.available_values(*)
-    # All users which are members in projects the user can see.
-    # Excludes the anonymous user
-    users = User.joins(members: :project)
-                .merge(Project.visible)
-                .human
-                .select(User::USER_FORMATS_STRUCTURE[Setting.user_format].map(&:to_s) << :id)
-                .distinct
-
-    values = users.map { |u| [u.name, u.id] }
-    values.unshift [::I18n.t(:label_me), me_value] if User.current.logged?
-    values
+    []
   end
-  # rubocop:enable Metrics/AbcSize
 end

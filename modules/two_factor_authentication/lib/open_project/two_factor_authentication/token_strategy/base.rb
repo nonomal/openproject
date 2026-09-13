@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module OpenProject::TwoFactorAuthentication
   module TokenStrategy
     class Base
@@ -61,7 +63,7 @@ module OpenProject::TwoFactorAuthentication
       end
 
       def self.identifier
-        raise NotImplementedError
+        raise SubclassResponsibilityError
       end
 
       def self.device_type

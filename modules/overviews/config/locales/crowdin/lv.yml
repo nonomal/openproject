@@ -1,4 +1,12 @@
+---
 lv:
+  activerecord:
+    models:
+      grids/overview:
+        zero: Overviews
+        one: Overview
+        other: Overviews
   overviews:
-    label: 'Pārskats'
-  permission_manage_overview: 'Pārvaldīt pārskata lapu'
+    label_dashboard: Informācijas panelis
+    label_home: "%{workspace_type} home"
+    label_overview: Pārskats

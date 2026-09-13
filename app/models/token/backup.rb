@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,6 +30,8 @@
 
 module Token
   class Backup < HashedToken
+    prefix :opbk
+
     def ready?
       return false if created_at.nil?
 

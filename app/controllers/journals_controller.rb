@@ -32,6 +32,7 @@ class JournalsController < ApplicationController
   before_action :load_and_authorize_in_optional_project, only: [:index]
   before_action :find_journal,
                 :ensure_permitted,
+                :ensure_valid_for_diffing,
                 only: [:diff]
   authorization_checked! :diff
 
@@ -62,9 +63,8 @@ class JournalsController < ApplicationController
   end
 
   def diff
-    return render_404 unless valid_field_for_diffing?
-
-    unless @journal.details[field_param] in [from, to]
+    from, to = diff_values
+    unless from || to
       return render_400 message: I18n.t(:error_journal_attribute_not_present, attribute: field_param)
     end
 
@@ -88,30 +88,74 @@ class JournalsController < ApplicationController
   end
 
   def ensure_permitted
-    permission = case @journal.journable_type
-                 when "WorkPackage" then :view_work_packages
-                 when "Project" then :view_project
-                 when "Meeting" then :view_meetings
-                 end
+    deny_access unless @journal.visible?(User.current)
+  end
 
-    do_authorize(permission)
-  rescue Authorization::UnknownPermissionError
-    deny_access
+  def diff_values
+    if @journal.details[field_param] in [from, to]
+      [from, to]
+    elsif @journal.cause_type == "import"
+      imported_cause_diff_values
+    end
+  end
+
+  def imported_cause_diff_values
+    entries = @journal.cause_import_history
+    return unless entries.is_a?(Array)
+
+    item = entries.flat_map { |e| e["items"] || [] }
+                  .find { |i| i["field"]&.parameterize&.underscore == field_param }
+    return unless item
+
+    [item["fromString"], item["toString"]]
   end
 
   def field_param
     @field_param ||= params[:field].parameterize.underscore
   end
 
-  def valid_field_for_diffing?
+  def ensure_valid_for_diffing
     case field_param
     when "description",
          "status_explanation",
          /\Aagenda_items_\d+_notes\z/
-      true
-    when /\Acustom_fields_(?<id>\d+)\z/
-      ::CustomField.exists?(id: Regexp.last_match[:id], field_format: "text")
+      # no additional checks
+    when /\Acustom_fields_(?<cf_id>\d+)\z/
+      ensure_custom_value_valid_for_diffing(Regexp.last_match(:cf_id))
+    when /\Acustom_comment_(?<cf_id>\d+)\z/
+      ensure_custom_comment_valid_for_diffing(Regexp.last_match(:cf_id))
+    else
+      render_404
     end
+  end
+
+  def ensure_custom_value_valid_for_diffing(cf_id)
+    custom_field = CustomField.find_by(id: cf_id)
+    # Even if the custom field is deleted
+    # we will need to return 403 if the custom field class allows admin-only fields
+    return render_403 if deleted_cf_forbidden?(custom_field)
+
+    # If no admin-only field, we can allow deleted custom fields to be rendered now
+    return if custom_field.nil?
+    return render_403 unless custom_field.visible?(User.current, project: @journable.project)
+
+    render_404 if custom_field.field_format != "text"
+  end
+
+  def ensure_custom_comment_valid_for_diffing(cf_id)
+    custom_field = CustomField.find_by(id: cf_id)
+    return render_403 if deleted_cf_forbidden?(custom_field)
+    return if custom_field.nil?
+
+    render_403 unless custom_field.visible?(User.current, project: @journable.project)
+  end
+
+  # When a CF is deleted we can no longer call visible? on it. For journables that support
+  # admin-only CFs (e.g. Project), block non-admins because the deleted CF could have been admin-only.
+  def deleted_cf_forbidden?(custom_field)
+    custom_field.nil? &&
+      @journable.admin_only_custom_fields_allowed? &&
+      !User.current.admin?
   end
 
   def journals_index_title

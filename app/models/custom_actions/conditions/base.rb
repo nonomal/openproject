@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -65,7 +67,7 @@ class CustomActions::Conditions::Base
   end
 
   def self.key
-    raise NotImplementedError
+    raise SubclassResponsibilityError
   end
 
   def validate(errors)

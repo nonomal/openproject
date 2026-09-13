@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,7 +34,7 @@ RSpec.describe "default query" do
   let(:query) { Query.new_default }
 
   describe "highlighting mode" do
-    context "with highlighting mode setting", with_ee: %i[conditional_highlighting] do
+    context "with highlighting mode setting" do
       describe "not set" do
         it "is inline" do
           expect(query.highlighting_mode).to eq :inline

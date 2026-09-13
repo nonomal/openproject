@@ -21,10 +21,11 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
+
 import { WorkPackageResource } from 'core-app/features/hal/resources/work-package-resource';
 import { States } from 'core-app/core/states/states.service';
 import { Injector } from '@angular/core';
@@ -33,7 +34,7 @@ import { LoadingIndicatorService } from 'core-app/core/loading-indicator/loading
 import { HalResourceEditingService } from 'core-app/shared/components/fields/edit/services/hal-resource-editing.service';
 import { HalEventsService } from 'core-app/features/hal/services/hal-events.service';
 import { WorkPackageNotificationService } from 'core-app/features/work-packages/services/notifications/work-package-notification.service';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
+import { LazyInject } from 'core-app/shared/helpers/angular/lazy-inject.decorator';
 import { SchemaCacheService } from 'core-app/core/schemas/schema-cache.service';
 import { registerWorkPackageMouseHandler } from './wp-timeline-cell-mouse-handler';
 import { TimelineMilestoneCellRenderer } from './timeline-milestone-cell-renderer';
@@ -43,17 +44,17 @@ import { RenderInfo } from '../wp-timeline';
 import { WorkPackageTimelineTableController } from '../container/wp-timeline-container.directive';
 
 export class WorkPackageTimelineCell {
-  @InjectField() halEditing:HalResourceEditingService;
+  @LazyInject() halEditing:HalResourceEditingService;
 
-  @InjectField() halEvents:HalEventsService;
+  @LazyInject() halEvents:HalEventsService;
 
-  @InjectField() notificationService:WorkPackageNotificationService;
+  @LazyInject() notificationService:WorkPackageNotificationService;
 
-  @InjectField() states:States;
+  @LazyInject() states:States;
 
-  @InjectField() loadingIndicator:LoadingIndicatorService;
+  @LazyInject() loadingIndicator:LoadingIndicatorService;
 
-  @InjectField() schemaCache:SchemaCacheService;
+  @LazyInject() schemaCache:SchemaCacheService;
 
   private wpElement:HTMLDivElement|null = null;
 
@@ -92,14 +93,17 @@ export class WorkPackageTimelineCell {
   canConnectRelations():boolean {
     const wp = this.latestRenderInfo.workPackage;
     if (this.schemaCache.of(wp).isMilestone) {
-      return !_.isNil(wp.date);
+      return wp.date != null;
     }
 
-    return !_.isNil(wp.startDate) || !_.isNil(wp.dueDate);
+    return wp.startDate != null || wp.dueDate != null;
   }
 
   public clear() {
-    this.cellElement.html('');
+    if (this.cellElement) {
+      this.cellElement.innerHTML = '';
+    }
+
     this.wpElement = null;
   }
 
@@ -107,15 +111,15 @@ export class WorkPackageTimelineCell {
     return this.workPackageTimeline.timelineBody;
   }
 
-  private get cellElement():JQuery {
-    return this.cellContainer.find(`.${this.classIdentifier}`);
+  private get cellElement() {
+    return this.cellContainer.querySelector<HTMLTableCellElement>(`.${this.classIdentifier}`);
   }
 
   private lazyInit(renderer:TimelineCellRenderer, renderInfo:RenderInfo):Promise<void> {
-    const body = this.workPackageTimeline.timelineBody[0];
+    const body = this.workPackageTimeline.timelineBody;
     const cell = this.cellElement;
 
-    if (!cell.length) {
+    if (!cell) {
       return Promise.reject('uninitialized');
     }
 
@@ -151,7 +155,7 @@ export class WorkPackageTimelineCell {
         this.halEvents,
         this.notificationService,
         this.loadingIndicator,
-        cell[0],
+        cell,
         this.wpElement,
         this.labels,
         renderer,
@@ -180,7 +184,7 @@ export class WorkPackageTimelineCell {
       .then(() => {
         // Render the upgrade from renderInfo
         const shouldBeDisplayed = renderer.update(
-          this.wpElement as HTMLDivElement,
+          this.wpElement!,
           this.labels,
           renderInfo,
         );

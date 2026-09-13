@@ -41,6 +41,8 @@ module RecurringMeetings
 
     columns :start_time, :relative_time, :status, :create
 
+    mobile_columns :start_time, :status
+
     def has_actions?
       true
     end
@@ -60,14 +62,6 @@ module RecurringMeetings
         max_count: options[:max_count],
         count:
       )
-    end
-
-    def header_args(column)
-      if column == :title
-        { style: "grid-column: span 2" }
-      else
-        super
-      end
     end
 
     def mobile_title

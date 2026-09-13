@@ -2,20 +2,19 @@
   [name]="widgetName"
   [editable]="isEditable">
 
-  <widget-time-entries-current-user-menu
-    slot="menu"
+  <widget-time-entries-current-user-menu slot="menu"
     [resource]="resource"
-    (onConfigured)="updateConfiguration($event)">
-  </widget-time-entries-current-user-menu>
+    (onConfigured)="updateConfiguration($event)" />
 </widget-header>
 
-<op-time-entries-calendar
-  (entries)="updateEntries($event)"
-  [displayedDays]="displayedDays"
-></op-time-entries-calendar>
+<div class="op-widget-box--body">
+  <op-time-entries-calendar (entries)="updateEntries($event)"
+    [displayedDays]="displayedDays"
+   />
 
-<ng-container>
-  <div class="total-hours">
-    <p>Total: <span [textContent]="total"></span></p>
-  </div>
-</ng-container>
+  <ng-container>
+    <div class="total-hours">
+      <p><span [textContent]="total"></span></p>
+    </div>
+  </ng-container>
+</div>

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -50,7 +52,9 @@ RSpec.describe PaginationHelper do
     let(:total_entries) { 55 }
     let(:offset) { 1 }
     let(:current_page) { 1 }
-    let(:pagination) { helper.pagination_links_full(paginator) }
+    let(:pages) { (1..(total_entries / per_page)) }
+
+    subject(:pagination) { helper.pagination_links_full(paginator) }
 
     before do
       # setup the helpers environment as if the helper is rendered after having called
@@ -69,36 +73,56 @@ RSpec.describe PaginationHelper do
       expect(pagination).to have_css("div.op-pagination")
     end
 
-    it "has a next_page reference" do
-      expect(pagination).to have_css(".op-pagination--item_next")
+    it "renders a labelled nav element" do
+      expect(pagination).to have_element "nav", aria: { label: "Pagination" }
     end
 
-    it "does not have a previous_page reference" do
-      expect(pagination).to have_no_css(".op-pagination--item_prev")
+    it "renders the main pagination nav" do
+      expect(pagination).to have_css("nav[aria-label='Pagination']")
+    end
+
+    it "renders the per-page options list" do
+      expect(pagination).to have_css(".op-pagination--options")
+      expect(pagination).to have_css("nav", accessible_name: "Items per page selection")
+      expect(pagination).to have_css(".op-pagination--label", text: "Per page")
+      expect(pagination).to have_css("a.Page", minimum: 1)
+    end
+
+    it "has a next page link" do
+      expect(pagination).to have_link "Next" do |link|
+        expect(link).to have_octicon :"chevron-right"
+        expect(link["rel"]).to eq "next"
+      end
+    end
+
+    it "does not have a previous page link" do
+      expect(pagination).to have_no_link "Previous"
     end
 
     it "has links to every page except the current one" do
-      (1..(total_entries / per_page)).each do |i|
-        next if i == current_page
-
-        expect(pagination).to have_css("a[href='#{work_packages_path(page: i)}']",
-                                       text: Regexp.new("^#{i}$"))
+      pages.excluding(current_page).each do |page|
+        path = work_packages_path(page:)
+        expect(pagination).to have_link(page.to_s, href: path) do |link|
+          expect(link["aria-label"]).to eq "Page #{page}"
+          expect(link["aria-current"]).to be_nil
+        end
       end
     end
 
     it "does not have a link to the current page" do
-      expect(pagination).to have_no_css("a", text: Regexp.new("^#{current_page}$"))
+      expect(pagination).to have_no_link text: current_page, exact_text: true, current: "page"
     end
 
-    it "has an element for the current page" do
-      expect(pagination).to have_css(".op-pagination--item_current",
-                                     text: Regexp.new("^#{current_page}$"))
+    it "renders the current page with aria-current" do
+      expect(pagination).to have_element(aria: { current: "page" }, text: current_page.to_s) do |element|
+        expect(element["aria-label"]).to eq "Page #{current_page}"
+      end
     end
 
     it "shows the range of the entries displayed" do
       range = "(#{(current_page * per_page) - per_page + 1} - " +
               "#{current_page * per_page}/#{total_entries})"
-      expect(pagination).to have_css(".op-pagination--range", text: range)
+      expect(pagination).to have_css(".op-pagination--range", text: range, aria: { live: "polite" })
     end
 
     it "has different urls if the params are specified as options" do
@@ -111,33 +135,66 @@ RSpec.describe PaginationHelper do
 
         href = work_packages_path({ page: i }.merge(params))
 
-        expect(pagination).to have_css("a[href='#{href}']", text: Regexp.new("^#{i}$"))
+        expect(pagination).to have_link(i.to_s, href:) do |link|
+          expect(link["aria-label"]).to eq "Page #{i}"
+          expect(link["aria-current"]).to be_nil
+        end
       end
     end
 
-    it "shows the available per page options" do
-      allow(Setting)
-        .to receive(:per_page_options)
-        .and_return("#{per_page},#{per_page * 10}")
+    describe "per page options" do
+      context "with multiple per page", with_settings: { per_page_options: "10,50,100" } do
+        it "renders per page options" do
+          expect(pagination).to have_css ".op-pagination--options"
+        end
 
-      expect(pagination).to have_css(".op-pagination--options")
+        it "renders a labelled nav element" do
+          expect(pagination).to have_element "nav", aria: { label: "Items per page selection" }
+        end
 
-      expect(pagination).to have_css(".op-pagination--options .op-pagination--item_current", text: per_page)
+        it "has a link to every per page option" do
+          expect(pagination).to have_css(".op-pagination--options") do |pagination_options|
+            [10, 50, 100].each do |other_per_page|
+              path = work_packages_path(page: current_page, per_page: other_per_page)
+              expect(pagination_options).to have_link href: path do |link|
+                expect(link["aria-label"]).to eq "Show #{other_per_page} per page"
+              end
+            end
+          end
+        end
 
-      path = work_packages_path(page: current_page, per_page: Setting.per_page_options_array.last)
-      expect(pagination).to have_css(".op-pagination--options a[href='#{path}']")
+        it "marks the current per page option with aria-current" do
+          expect(pagination).to have_css(".op-pagination--options") do |pagination_options|
+            expect(pagination_options).to have_link(per_page.to_s) do |link|
+              expect(link["aria-label"]).to eq "Show #{per_page} per page"
+              expect(link["aria-current"]).to eq "page"
+              expect(link["class"]).to include("Page")
+            end
+          end
+        end
+      end
+
+      context "with no per page", with_settings: { per_page_options: "" } do
+        it "renders per page options" do
+          expect(pagination).to have_no_css ".op-pagination--options"
+        end
+
+        it "does not render a labelled nav element" do
+          expect(pagination).to have_no_element "nav", aria: { label: "Items per page selection" }
+        end
+      end
     end
 
     describe "WHEN the first page is the current" do
       let(:current_page) { 1 }
 
       it "deactivates the previous page link" do
-        expect(pagination).to have_no_css(".op-pagination--item_prev")
+        expect(pagination).to have_no_link "Previous"
       end
 
       it "has a link to the next page" do
         path = work_packages_path(page: current_page + 1)
-        expect(pagination).to have_css(".op-pagination--item_next a[href='#{path}']")
+        expect(pagination).to have_link "Next", href: path
       end
     end
 
@@ -145,12 +202,12 @@ RSpec.describe PaginationHelper do
       let(:current_page) { (total_entries / per_page) + 1 }
 
       it "deactivates the next page link" do
-        expect(pagination).to have_no_css(".op-pagination--item_next")
+        expect(pagination).to have_no_link "Next"
       end
 
       it "has a link to the previous page" do
         path = work_packages_path(page: current_page - 1)
-        expect(pagination).to have_css(".op-pagination--item_prev a[href='#{path}']")
+        expect(pagination).to have_link "Previous", href: path
       end
     end
 
@@ -163,6 +220,10 @@ RSpec.describe PaginationHelper do
 
       it "shows no pagination" do
         expect(pagination).to have_no_css(".op-pagination")
+      end
+
+      it "does not render a labelled nav element" do
+        expect(pagination).to have_no_element "nav", aria: { label: "Pagination" }
       end
     end
   end

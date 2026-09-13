@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,22 +34,23 @@ RSpec.describe "Wiki page external link", :js, :selenium do
   shared_let(:admin) { create(:admin) }
   current_user { admin }
 
-  let(:project) { create(:project, enabled_module_names: %w[wiki]) }
+  let(:external_url) { "https://www.openprojet.org/" }
+  let(:project) { create(:project, :with_internal_wiki) }
   let!(:wiki_page) do
     create(:wiki_page,
            wiki: project.wiki,
            author: admin,
            title: "Wiki Page No. 55",
-           text: 'A link to <a href="http://0.0.0.0:3001/">OpenProject</a>.')
+           text: "A link to <a href='#{external_url}'>OpenProject</a>.")
   end
 
   it "opens that link in a new window or tab" do
     visit project_wiki_path(project, wiki_page)
 
-    link = page.find('a[href^="http://0.0.0.0:3001/"]')
+    link = page.find_link("OpenProject", href: external_url)
     new_window = window_opened_by { link.click }
     within_window new_window do
-      expect(page.current_url).to start_with "http://0.0.0.0:3001/"
+      expect(page.current_url).to start_with external_url
     end
     new_window.close
   end

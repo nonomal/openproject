@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -135,7 +137,7 @@ RSpec.describe Groups::SetAttributesService, type: :model do
 
       let(:call_attributes) do
         {
-          user_ids: [second_user.id, third_user.id]
+          replace_user_ids: [second_user.id, third_user.id]
         }
       end
 
@@ -171,7 +173,7 @@ RSpec.describe Groups::SetAttributesService, type: :model do
       context "with a persisted record and integer values" do
         let(:call_attributes) do
           {
-            user_ids: [second_user.id, third_user.id]
+            replace_user_ids: [second_user.id, third_user.id]
           }
         end
 
@@ -181,7 +183,40 @@ RSpec.describe Groups::SetAttributesService, type: :model do
       context "with a persisted record and string values" do
         let(:call_attributes) do
           {
-            user_ids: [second_user.id.to_s, third_user.id.to_s]
+            replace_user_ids: [second_user.id.to_s, third_user.id.to_s]
+          }
+        end
+
+        it_behaves_like "updates the users"
+      end
+
+      context "with add_user_ids and remove_user_ids as integer values" do
+        let(:call_attributes) do
+          {
+            remove_user_ids: [first_user.id],
+            add_user_ids: [third_user.id]
+          }
+        end
+
+        it_behaves_like "updates the users"
+      end
+
+      context "with add_user_ids and remove_user_ids as string values" do
+        let(:call_attributes) do
+          {
+            remove_user_ids: [first_user.id.to_s],
+            add_user_ids: [third_user.id.to_s]
+          }
+        end
+
+        it_behaves_like "updates the users"
+      end
+
+      context "with add_user_ids and remove_user_ids, adding an existing user id" do
+        let(:call_attributes) do
+          {
+            remove_user_ids: [first_user.id],
+            add_user_ids: [second_user.id, third_user.id]
           }
         end
 
@@ -199,8 +234,7 @@ RSpec.describe Groups::SetAttributesService, type: :model do
         end
 
         it "does not persist the association" do
-          expect(service_call.result.group_users.all(&:new_record?))
-            .to be_truthy
+          expect(service_call.result.group_users).to all(be_new_record)
         end
       end
     end

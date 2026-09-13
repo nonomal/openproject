@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,12 +32,13 @@ class MeetingAgendaItem::Duration < ApplicationForm
   form do |agenda_item_form|
     agenda_item_form.text_field(
       name: :duration_in_minutes,
-      placeholder: I18n.t("activerecord.attributes.meeting_agenda_item.duration_in_minutes"),
+      placeholder: I18n.t("datetime.units.minute_abbreviated", count: 2),
       label: MeetingAgendaItem.human_attribute_name(:duration_in_minutes),
       leading_visual: { icon: :stopwatch },
       visually_hide_label: true,
       max: 1440,
       type: :number,
+      autocomplete: "off",
       disabled: @disabled
     )
   end

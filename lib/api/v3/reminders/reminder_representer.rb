@@ -33,6 +33,31 @@ module API
         include API::Decorators::DateProperty
         include API::Decorators::LinkedResource
 
+        def self.associated_remindable_getter
+          ->(*) {
+            next unless embed_links && remindable_representer
+
+            remindable_representer
+              .create(represented.remindable, current_user:)
+          }
+        end
+
+        def self.associated_remindable_link
+          ->(*) {
+            return nil unless v3_remindable_name == "nil_class" || api_v3_paths.respond_to?(v3_remindable_name)
+
+            ::API::Decorators::LinkObject
+              .new(represented,
+                   path: v3_remindable_name,
+                   property_name: :remindable)
+              .to_hash
+          }
+        end
+
+        link :self do
+          { href: api_v3_paths.reminder(represented.id) }
+        end
+
         property :id
 
         date_time_property :remind_at
@@ -42,6 +67,28 @@ module API
         associated_resource :creator,
                             v3_path: :user,
                             representer: ::API::V3::Users::UserRepresenter
+
+        associated_resource :remindable,
+                            getter: associated_remindable_getter,
+                            link: associated_remindable_link
+
+        def _type
+          "Reminder"
+        end
+
+        def remindable_representer
+          name = v3_remindable_name.camelcase
+
+          "::API::V3::#{name.pluralize}::#{name}Representer".constantize
+        rescue NameError
+          nil
+        end
+
+        def v3_remindable_name
+          ar_name = represented.remindable_type.underscore
+
+          ::API::Utilities::PropertyNameConverter.from_ar_name(ar_name).underscore
+        end
       end
     end
   end

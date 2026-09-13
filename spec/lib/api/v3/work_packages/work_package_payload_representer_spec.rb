@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -144,12 +146,7 @@ RSpec.describe API::V3::WorkPackages::WorkPackagePayloadRepresenter do
       describe "startDate" do
         before do
           allow(work_package)
-            .to receive(:milestone?)
-            .and_return(false)
-
-          allow(work_package)
-            .to receive(:leaf?)
-            .and_return(true)
+            .to receive_messages(milestone?: false, leaf?: true)
         end
 
         it_behaves_like "has ISO 8601 date only" do
@@ -181,12 +178,7 @@ RSpec.describe API::V3::WorkPackages::WorkPackagePayloadRepresenter do
       describe "dueDate" do
         before do
           allow(work_package)
-            .to receive(:milestone?)
-            .and_return(false)
-
-          allow(work_package)
-            .to receive(:leaf?)
-            .and_return(true)
+            .to receive_messages(milestone?: false, leaf?: true)
         end
 
         it_behaves_like "has ISO 8601 date only" do
@@ -218,12 +210,7 @@ RSpec.describe API::V3::WorkPackages::WorkPackagePayloadRepresenter do
       describe "date" do
         before do
           allow(work_package)
-            .to receive(:milestone?)
-            .and_return(true)
-
-          allow(work_package)
-            .to receive(:leaf?)
-            .and_return(true)
+            .to receive_messages(milestone?: true, leaf?: true)
         end
 
         it_behaves_like "has ISO 8601 date only" do
@@ -329,11 +316,11 @@ RSpec.describe API::V3::WorkPackages::WorkPackagePayloadRepresenter do
         end
       end
 
-      describe "version" do
+      describe "version", with_settings: { work_package_multiple_versions: false } do
         let(:version) { build_stubbed(:version) }
 
         before do
-          work_package.version = version
+          allow(work_package).to receive(:target_versions).and_return([version])
         end
 
         it_behaves_like "linked property" do
@@ -341,7 +328,12 @@ RSpec.describe API::V3::WorkPackages::WorkPackagePayloadRepresenter do
           let(:link) { "/api/v3/versions/#{version.id}" }
         end
 
-        it_behaves_like "linked property with 0 value", :version, :version
+        context "when multiple versions is active", with_settings: { work_package_multiple_versions: true } do
+          it "does not offer the deprecated property as writable" do
+            expect(representer.writable_attributes).not_to include("version")
+            expect(subject).not_to have_json_path("_links/version")
+          end
+        end
       end
 
       describe "category" do
@@ -610,17 +602,6 @@ RSpec.describe API::V3::WorkPackages::WorkPackagePayloadRepresenter do
       end
     end
 
-    describe "version" do
-      before do
-        work_package.version_id = 1
-      end
-
-      it_behaves_like "linked resource" do
-        let(:attribute_name) { "version" }
-        let(:association_name) { "version_id" }
-      end
-    end
-
     describe "type" do
       it_behaves_like "linked resource" do
         let(:attribute_name) { "type" }
@@ -688,12 +669,11 @@ RSpec.describe API::V3::WorkPackages::WorkPackagePayloadRepresenter do
     describe "parent" do
       let(:parent) { build_stubbed(:work_package) }
       let(:new_parent) do
-        wp = build_stubbed(:work_package)
-        allow(WorkPackage)
-          .to receive(:find_by)
-          .with(id: wp.id.to_s)
-          .and_return(wp)
-        wp
+        build_stubbed(:work_package).tap do |wp|
+          visible_relation = instance_double(ActiveRecord::Relation)
+          allow(WorkPackage).to receive(:visible).and_return(visible_relation)
+          allow(visible_relation).to receive(:find_by).with(id: wp.id.to_s).and_return(wp)
+        end
       end
       let(:path) { api_v3_paths.work_package(new_parent.id) }
       let(:links) do
@@ -725,6 +705,99 @@ RSpec.describe API::V3::WorkPackages::WorkPackagePayloadRepresenter do
 
         it "leaves attribute unchanged" do
           expect(subject.parent).to eql(parent)
+        end
+      end
+    end
+
+    describe "_meta property" do
+      let(:meta) { OpenStruct.new } # rubocop:disable Style/OpenStructUse
+      let(:representer) do
+        described_class.create(work_package, meta:, current_user: user)
+      end
+
+      describe "generation" do
+        subject { representer.to_json }
+
+        it "has a _meta property without validateCustomFields when not set" do
+          expect(subject).to have_json_path "_meta"
+          expect(subject).not_to have_json_path("_meta/validateCustomFields")
+        end
+
+        context "with validate_custom_fields set to true" do
+          let(:meta) { OpenStruct.new validate_custom_fields: true } # rubocop:disable Style/OpenStructUse
+
+          it "renders validate_custom_fields as true" do
+            expect(subject)
+              .to be_json_eql(true.to_json)
+              .at_path("_meta/validateCustomFields")
+          end
+        end
+
+        context "with validate_custom_fields set to false" do
+          let(:meta) { OpenStruct.new validate_custom_fields: false } # rubocop:disable Style/OpenStructUse
+
+          it "renders validate_custom_fields as false" do
+            expect(subject)
+              .to be_json_eql(false.to_json)
+              .at_path("_meta/validateCustomFields")
+          end
+        end
+      end
+
+      describe "parsing" do
+        let(:representer) do
+          described_class.create(
+            OpenStruct.new(available_custom_fields: []), # rubocop:disable Style/OpenStructUse
+            meta: OpenStruct.new, # rubocop:disable Style/OpenStructUse
+            current_user: user
+          )
+        end
+
+        subject { representer.from_hash(parsed_hash) }
+
+        context "with validate_custom_fields set to true in meta" do
+          let(:parsed_hash) do
+            {
+              "subject" => "Updated subject",
+              "_meta" => {
+                "validateCustomFields" => true
+              }
+            }
+          end
+
+          it "sets validate_custom_fields to true" do
+            expect(subject.subject).to eq "Updated subject"
+            expect(subject.meta.validate_custom_fields).to be true
+          end
+        end
+
+        context "with validate_custom_fields set to false in meta" do
+          let(:parsed_hash) do
+            {
+              "subject" => "Updated subject",
+              "_meta" => {
+                "validateCustomFields" => false
+              }
+            }
+          end
+
+          it "sets validate_custom_fields to false" do
+            expect(subject.subject).to eq "Updated subject"
+            expect(subject.meta.validate_custom_fields).to be false
+          end
+        end
+
+        context "with no meta property" do
+          let(:parsed_hash) do
+            {
+              "subject" => "Updated subject"
+            }
+          end
+
+          it "does not set meta" do
+            expect(subject.subject).to eq "Updated subject"
+            expect(subject.meta).to be_nil
+          end
         end
       end
     end

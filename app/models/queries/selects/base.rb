@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,7 +32,7 @@ class Queries::Selects::Base
   include ActiveModel::Validations
 
   def self.key
-    raise NotImplementedError
+    raise SubclassResponsibilityError
   end
 
   def self.available?
@@ -58,5 +60,15 @@ class Queries::Selects::Base
 
   def available?
     true
+  end
+
+  def apply_to(query_scope)
+    includes ? query_scope.includes(includes) : query_scope
+  end
+
+  private
+
+  def includes
+    nil
   end
 end

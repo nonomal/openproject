@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -363,7 +365,7 @@ RSpec.describe "Primerized work package relations tab",
 
       wait_for_network_idle
 
-      expect(page).to have_text "Related work package not found or not visible"
+      expect(page).to have_text "The selected work package could not be found."
 
       relations_tab.search_in_autocompleter(wp_blocks)
 
@@ -594,6 +596,26 @@ RSpec.describe "Primerized work package relations tab",
         relations_tab.expect_relatable_action_menu(child_wp)
         relations_tab.relatable_action_menu(child_wp).click
         relations_tab.expect_relatable_delete_button(child_wp)
+      end
+
+      it "does not show the option add new relations except for child" do
+        scroll_to_element relations_panel
+
+        wait_for_network_idle
+
+        tabs.expect_counter("relations", 8)
+
+        # The menu is shown as the user can add a child
+        relations_tab.expect_add_relation_button
+        relations_tab.open_add_relation_action_menu
+
+        # Expect options to add children
+        relations_tab.expect_new_relation_type("Parent")
+        relations_tab.expect_new_relation_type("Child")
+        relations_tab.expect_no_new_relation_type("Related To")
+
+        # .. but no sub menu for further relations
+        relations_tab.expect_no_add_menu_sub_menu
       end
     end
   end

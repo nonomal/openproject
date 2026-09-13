@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,5 +30,6 @@
 
 class Queries::Projects::Filters::CustomFieldFilter < Queries::Projects::Filters::Base
   include Queries::Filters::Shared::CustomFieldFilter
-  self.custom_field_context = ::Queries::Projects::Filters::CustomFieldContext
+
+  self.custom_field_context = ::Queries::Projects::CustomFieldContext
 end

@@ -27,8 +27,9 @@
 #++
 
 module CostlogHelper
-  def cost_types_collection_for_select_options(selected_type = nil)
-    cost_types = CostType.active.sort
+  def cost_types_collection_for_select_options(selected_type = nil, project: nil)
+    scope = project ? CostType.available_for_project(project).active : CostType.active
+    cost_types = scope.sort
 
     if selected_type && !cost_types.include?(selected_type)
       cost_types << selected_type
@@ -45,6 +46,7 @@ module CostlogHelper
   end
 
   def extended_progress_bar(pcts, options = {})
+    options.reverse_merge!(hide_total_progress: true)
     return progress_bar(pcts, options) unless pcts.is_a?(Numeric) && pcts > 100
 
     closed = ((100.0 / pcts) * 100).round

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -40,11 +42,11 @@ module Queries::Filters::Strategies
     private
 
     def numeric_class
-      raise NotImplementedError
+      raise SubclassResponsibilityError
     end
 
     def error_message
-      raise NotImplementedError
+      raise SubclassResponsibilityError
     end
 
     def validate_values_all_numeric

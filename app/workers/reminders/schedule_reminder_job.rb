@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -36,6 +38,11 @@ module Reminders
 
     def perform(reminder)
       return if reminder.unread_notifications?
+
+      unless reminder.visible?(reminder.creator)
+        reminder.update_column(:completed_at, Time.current)
+        return
+      end
 
       create_notification_service = create_notification_from_reminder(reminder)
 

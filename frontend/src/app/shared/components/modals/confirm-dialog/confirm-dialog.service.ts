@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -32,29 +32,15 @@ import {
 } from 'core-app/shared/components/modals/confirm-dialog/confirm-dialog.modal';
 import { OpModalService } from 'core-app/shared/components/modal/modal.service';
 import {
+  inject,
   Injectable,
   Injector,
 } from '@angular/core';
 
 @Injectable()
 export class ConfirmDialogService {
-  constructor(
-    readonly opModalService:OpModalService,
-    readonly injector:Injector,
-  ) {
-    document.addEventListener('submit', (evt:Event) => {
-      const target = evt.target as HTMLFormElement;
-      const options = target.dataset.augmentedConfirmDialog;
-      if (options) {
-        this.augmentFormSubmit(target, JSON.parse(options));
-
-        evt.preventDefault();
-        return false;
-      }
-
-      return true;
-    });
-  }
+  readonly opModalService = inject(OpModalService);
+  readonly injector = inject(Injector);
 
   /**
    * Confirm an action with an ng dialog with the given options
@@ -69,26 +55,9 @@ export class ConfirmDialogService {
         if (modal.confirmed) {
           resolve();
         } else {
-          reject();
+          reject(new Error('Dialog cancelled'));
         }
       }));
     });
-  }
-
-  /**
-   * Augment a Rails form submit with a confirmation dialog
-   *
-   * @param target
-   * @param options
-   * @private
-   */
-  private augmentFormSubmit(target:HTMLFormElement, options:ConfirmDialogOptions) {
-    void this
-      .confirm(options)
-      .then(() => {
-        target.removeAttribute('data-augmented-confirm-dialog');
-        target.submit();
-      })
-      .catch(() => undefined /* Dialog cancelled, nothing to do */);
   }
 }

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #  OpenProject is an open source project management software.
 #  Copyright (C) the OpenProject GmbH
 #
@@ -77,17 +79,22 @@ RSpec.describe Settings::WorkingDaysAndHoursUpdateService do
     shared_examples "successful working days settings call" do
       include_examples "successful call"
 
-      it "calls the WorkPackages::ApplyWorkingDaysChangeJob" do
-        previous_working_days = Setting[:working_days]
-        previous_non_working_days = NonWorkingDay.pluck(:date)
+      [
+        Projects::Phases::ApplyWorkingDaysChangeJob,
+        WorkPackages::ApplyWorkingDaysChangeJob
+      ].each do |job_class|
+        it "schedules #{job_class}" do
+          previous_working_days = Setting[:working_days]
+          previous_non_working_days = NonWorkingDay.pluck(:date)
 
-        allow(WorkPackages::ApplyWorkingDaysChangeJob).to receive(:perform_later)
+          allow(job_class).to receive(:perform_later)
 
-        subject
+          subject
 
-        expect(WorkPackages::ApplyWorkingDaysChangeJob)
-          .to have_received(:perform_later)
-                .with(user_id: user.id, previous_working_days:, previous_non_working_days:)
+          expect(job_class)
+            .to have_received(:perform_later)
+                  .with(user_id: user.id, previous_working_days:, previous_non_working_days:)
+        end
       end
     end
 
@@ -98,11 +105,17 @@ RSpec.describe Settings::WorkingDaysAndHoursUpdateService do
         expect { subject }.not_to change(NonWorkingDay, :count)
       end
 
-      it "does not calls the WorkPackages::ApplyWorkingDaysChangeJob" do
-        allow(WorkPackages::ApplyWorkingDaysChangeJob).to receive(:perform_later)
-        subject
+      [
+        Projects::Phases::ApplyWorkingDaysChangeJob,
+        WorkPackages::ApplyWorkingDaysChangeJob
+      ].each do |job_class|
+        it "does not schedule #{job_class}" do
+          allow(job_class).to receive(:perform_later)
 
-        expect(WorkPackages::ApplyWorkingDaysChangeJob).not_to have_received(:perform_later)
+          subject
+
+          expect(job_class).not_to have_received(:perform_later)
+        end
       end
     end
 

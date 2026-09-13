@@ -103,4 +103,4 @@ We're very interested in providing a smooth upgrade at all times, and would like
 
 **Permission errors when trying to start the OP7 container**
 
-If you run into permission errors trying to start the OP7 container, you might have advanced tmpfs protections in place. Disable them temporarily with `sudo sysctl fs.protected_regular=0` (https://askubuntu.com/questions/1250974)
+If you run into permission errors trying to start the OP7 container, you might have advanced tmpfs protections in place. Disable them temporarily with `sudo sysctl fs.protected_regular=0`, [see](https://askubuntu.com/questions/1250974).

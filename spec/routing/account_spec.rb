@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -35,6 +37,14 @@ RSpec.describe "account routes" do
 
   it "/account/lost_password POST routes to account#lost_password" do
     expect(post("/account/lost_password")).to route_to("account#lost_password")
+  end
+
+  it "/account/password_recovery GET routes to account#password_recovery" do
+    expect(get("/account/password_recovery")).to route_to("account#password_recovery")
+  end
+
+  it "/account/set_recovered_password POST routes to account#set_recovered_password" do
+    expect(post("/account/set_recovered_password")).to route_to("account#set_recovered_password")
   end
 
   it "/accounts/register GET routes to account#register" do

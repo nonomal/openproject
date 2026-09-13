@@ -36,6 +36,11 @@ RSpec.describe "Meetings participants",
                :js do
   include Components::Autocompleter::NgSelectAutocompleteHelpers
 
+  def perform_debounced_meeting_notification_jobs
+    perform_enqueued_jobs(only: Meetings::NotificationDebounceJob, at: 2.minutes.from_now)
+    perform_enqueued_jobs
+  end
+
   shared_let(:project) { create(:project, enabled_module_names: %w[meetings work_package_tracking]) }
   shared_let(:user) do
     create(:user,
@@ -56,11 +61,22 @@ RSpec.describe "Meetings participants",
     create(:user,
            lastname: "Third")
   end
+  shared_let(:member_without_meeting_permission) do
+    create(:user,
+           lastname: "Fourth",
+           member_with_permissions: { project => %i[view_work_packages] })
+  end
+  shared_let(:invited_user) do
+    create(:invited_user,
+           lastname: "Fifth",
+           member_with_permissions: { project => %i[view_meetings] })
+  end
 
   shared_let(:meeting) do
     create(:meeting,
            :author_participates,
            project:,
+           state: :in_progress,
            author: user)
   end
 
@@ -77,15 +93,57 @@ RSpec.describe "Meetings participants",
 
     show_page.open_participant_form
     show_page.in_participant_form do
-      show_page.expect_participant(user, invited: true, attended: false)
-      show_page.expect_participant(other_user, invited: false, attended: false)
-      show_page.expect_available_participants(count: 2)
-      expect(page).to have_button("Save")
+      show_page.expect_participant(user)
+      show_page.expect_available_participants(count: 1)
 
-      check(id: "checkbox_invited_#{other_user.id}")
-      click_on("Save")
+      show_page.toggle_attendance(user)
+      show_page.expect_participant(user, attended: true)
+
+      show_page.select_participant(other_user)
+      show_page.expect_participant(other_user)
+      show_page.expect_available_participants(count: 2)
     end
 
     expect(page).to have_css("#meetings-side-panel-participants-component", text: 2)
+  end
+
+  it "sends emails when adding and removing participants" do
+    meeting.update!(notify: true)
+    show_page.visit!
+
+    show_page.open_participant_form
+    show_page.in_participant_form do
+      show_page.select_participant(other_user)
+      show_page.expect_participant(other_user)
+    end
+
+    wait_for_network_idle
+
+    perform_debounced_meeting_notification_jobs
+    expect(ActionMailer::Base.deliveries.size).to eq 2
+    ActionMailer::Base.deliveries.clear
+
+    show_page.in_participant_form do
+      show_page.remove_participant(other_user)
+    end
+
+    wait_for_network_idle
+
+    perform_debounced_meeting_notification_jobs
+    expect(ActionMailer::Base.deliveries.size).to eq 2
+  end
+
+  it "does not show members without view_meetings permission in the autocompleter (Bug #70467)" do
+    show_page.open_participant_form
+    show_page.in_participant_form do
+      show_page.expect_no_participant(member_without_meeting_permission)
+    end
+  end
+
+  it "does not show invited users in the autocompleter (Bug #70127)" do
+    show_page.open_participant_form
+    show_page.in_participant_form do
+      show_page.expect_no_participant(invited_user)
+    end
   end
 end

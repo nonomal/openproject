@@ -27,11 +27,14 @@ See COPYRIGHT and LICENSE files for more details.
 
 ++#%>
 <%= component_wrapper(tag: "turbo-frame") do %>
-  <div class="project-list-page--table" data-controller="table-action-menu" data-application-target="dynamic">
+  <div class="project-list-page--table" data-controller="table-action-menu">
     <div class="generic-table--flex-container">
       <div class="generic-table--container <%= container_class %>">
         <div class="generic-table--results-container">
-          <table class="generic-table" data-controller="table-highlighting" <%= table_id ? "id=\"#{table_id}\"".html_safe : "" %>>
+          <%= content_tag :table,
+                          id: table_id,
+                          class: "generic-table",
+                          data: { controller: "table-highlighting" } do %>
             <colgroup>
               <% columns.each do |column| %>
                 <col <%= "opHighlightCol" unless column.attribute == :hierarchy %>>
@@ -84,7 +87,7 @@ See COPYRIGHT and LICENSE files for more details.
               <% end %>
               <%= render_collection rows %>
             </tbody>
-          </table>
+          <% end %>
           <% if inline_create_link && show_inline_create %>
             <div class="wp-inline-create-button">
               <%= inline_create_link %>
@@ -95,6 +98,6 @@ See COPYRIGHT and LICENSE files for more details.
     </div>
   </div>
   <% if paginated? %>
-    <%= helpers.pagination_links_full(model, pagination_options) %>
+    <%= helpers.pagination_links_full(model, **pagination_options) %>
   <% end %>
 <% end %>

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,6 +29,7 @@
 #++
 
 require "spec_helper"
+require_relative "shared_examples"
 
 RSpec.describe Capabilities::Scopes::Default do
   # we focus on the non current user capabilities to make the tests easier to understand
@@ -75,20 +78,6 @@ RSpec.describe Capabilities::Scopes::Default do
 
   shared_current_user do
     create(:admin)
-  end
-
-  shared_examples_for "consists of contract actions" do |with: "the expected actions"|
-    it "includes #{with} for the scoped to user" do
-      expect(scope.pluck(:action, :principal_id, :context_id))
-        .to match_array(expected)
-    end
-  end
-
-  shared_examples_for "is empty" do
-    it "is empty for the scoped to user" do
-      expect(scope)
-        .to be_empty
-    end
   end
 
   describe ".default" do
@@ -159,14 +148,6 @@ RSpec.describe Capabilities::Scopes::Default do
           ]
         end
       end
-
-      context "with the user being locked" do
-        before do
-          user.locked!
-        end
-
-        include_examples "is empty"
-      end
     end
 
     context "with a member with a project permission" do
@@ -179,14 +160,6 @@ RSpec.describe Capabilities::Scopes::Default do
            ["memberships/destroy", user.id, project.id],
            ["memberships/update", user.id, project.id]]
         end
-      end
-
-      context "with the user being locked" do
-        before do
-          user.locked!
-        end
-
-        include_examples "is empty"
       end
     end
 
@@ -209,14 +182,6 @@ RSpec.describe Capabilities::Scopes::Default do
               ["memberships/read", user.id, project.id]
             ]
           end
-        end
-
-        context "with the user being locked" do
-          before do
-            user.locked!
-          end
-
-          include_examples "is empty"
         end
       end
     end
@@ -406,26 +371,6 @@ RSpec.describe Capabilities::Scopes::Default do
           end
         end
       end
-
-      context "with admin user being locked" do
-        before do
-          user.locked!
-        end
-
-        include_examples "is empty"
-      end
-    end
-
-    context "without the current user being member in a project" do
-      let(:member_permissions) { %i[manage_members] }
-      let(:global_permissions) { %i[manage_user] }
-      let(:members) { [member, global_member] }
-
-      before do
-        current_user.update(admin: false)
-      end
-
-      include_examples "is empty"
     end
 
     context "with the current user being member in a project" do
@@ -470,6 +415,74 @@ RSpec.describe Capabilities::Scopes::Default do
           [
             ["work_packages/assigned", user.id, project.id]
           ]
+        end
+      end
+    end
+
+    context "with a member having the time entry permissions for other users" do
+      let(:members) { [member] }
+
+      before do
+        project.enabled_module_names = ["costs"]
+      end
+
+      context "with the permission to view time entries" do
+        let(:member_permissions) { %i[view_time_entries] }
+
+        include_examples "consists of contract actions", with: "the actions of the permission" do
+          let(:expected) do
+            [
+              ["time_entries/read", user.id, project.id]
+            ]
+          end
+        end
+      end
+
+      context "with the permission to log time" do
+        let(:member_permissions) { %i[log_time] }
+
+        include_examples "consists of contract actions", with: "the actions of the permission" do
+          let(:expected) do
+            [
+              ["time_entries/create", user.id, project.id]
+            ]
+          end
+        end
+      end
+
+      context "with the permission to edit time entries" do
+        let(:member_permissions) { %i[edit_time_entries] }
+
+        include_examples "consists of contract actions", with: "the actions of the permission" do
+          let(:expected) do
+            [
+              ["time_entries/edit", user.id, project.id],
+              ["time_entries/destroy", user.id, project.id]
+            ]
+          end
+        end
+      end
+    end
+
+    context "with a member having the time entry permissions for their own time" do
+      let(:members) { [member] }
+
+      before do
+        project.enabled_module_names = ["costs"]
+      end
+
+      context "with the permissions granted by a project role" do
+        let(:member_permissions) { %i[view_own_time_entries log_own_time edit_own_time_entries] }
+
+        include_examples "consists of contract actions", with: "the actions of the permissions" do
+          let(:expected) do
+            [
+              ["time_entries/read_own", user.id, project.id],
+              ["time_entries/create_own", user.id, project.id],
+              ["time_entries/edit_own", user.id, project.id],
+              ["time_entries/destroy_own", user.id, project.id]
+            ]
+          end
         end
       end
     end

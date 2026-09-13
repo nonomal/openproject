@@ -48,17 +48,24 @@ module Meetings
       def create_model!(model_data)
         series = super
         create_meeting_template!(series, model_data)
-        RecurringMeetings::InitNextOccurrenceJob.perform_later(series, series.first_occurrence)
       end
 
       def create_meeting_template!(series, model_data)
-        template = Meeting.new(template_attributes(model_data))
-        template.template = true
-        template.recurring_meeting = series
+        params = template_attributes(model_data)
+        params[:template] = true
+        params[:recurring_meeting] = series
 
-        template.save!
+        user = seed_data.find_reference(model_data["author"])
+        call = Meetings::CreateService
+          .new(user:)
+          .call(params)
+
+        call.on_failure do |error|
+          raise "Failed to seed meeting template for series #{series.id}: #{error.message}"
+        end
+
         reference = :"#{model_data['reference']}_template"
-        seed_data.store_reference(reference, template)
+        seed_data.store_reference(reference, call.result)
       end
 
       def model_attributes(meeting_data)
@@ -67,6 +74,7 @@ module Meetings
           author: seed_data.find_reference(meeting_data["author"]),
           duration: minutes_to_hours(meeting_data["duration"]),
           start_time: Time.current.next_weekday + 10.hours,
+          current_schedule_start: Time.current.next_weekday + 10.hours,
           frequency: meeting_data["frequency"],
           interval: meeting_data["interval"],
           time_zone: meeting_data["time_zone"],

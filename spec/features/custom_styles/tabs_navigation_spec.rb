@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -38,8 +40,7 @@ RSpec.describe "Tabs navigation and content switching on the admin/design page" 
     end
 
     it "redirects to upsell page" do
-      expect(page).to have_enterprise_upsell_page
-      expect(page).to have_text "Available starting with the Basic enterprise plan"
+      expect(page).to have_enterprise_banner(:basic)
     end
   end
 
@@ -56,34 +57,70 @@ RSpec.describe "Tabs navigation and content switching on the admin/design page" 
     it "shows interface tab" do
       expect(page).to have_current_path custom_style_path(tab: "interface")
       expect(page).to have_text I18n.t(:label_interface_colors)
+      %i[base_colors top_header_colors main_menu].each do |group_name|
+        expect(page).to have_test_selector("design-color-group-#{group_name}")
+      end
+      %w[
+        primary-button-color
+        accent-color
+        header-bg-color
+        main-menu-bg-color
+        main-menu-bg-selected-background
+      ].each do |variable|
+        expect(page).to have_test_selector("edit-design-color-#{variable}")
+      end
     end
 
-    it "selects a color theme and redirect to the interface tab" do
+    it "renders an auto-submitting theme selector on the interface tab" do
+      selector = find_test_selector("color-theme-select")
+
+      expect(selector["data-action"]).to eq("auto-submit#submit")
+      expect(selector.find(:xpath, "ancestor::form")["data-controller"]).to eq("auto-submit")
+    end
+
+    it "selects a color theme", :js do
       select("OpenProject Gray", from: "theme")
-      find("[data-test-selector='color-theme-button']").click
+
       expect_flash(message: I18n.t(:notice_successful_update))
+      expect(page).to have_select("theme", selected: "OpenProject Gray")
       expect(page).to have_current_path custom_style_path(tab: "interface")
+      expect(custom_style.reload.theme).to eq("OpenProject Gray")
     end
 
-    it "changes accent color and redirects to interface tab" do
+    it "changes accent color and redirects to interface tab", :js do
+      find_test_selector("edit-design-color-accent-color").click
       fill_in "design_colors[]accent-color", with: "#333333"
-      find("[data-test-selector='interface-colors-button']").click
-      expect(page).to have_css("#design_colors_accent-color", value: "#333333")
+      find_test_selector("save-design-color-accent-color").click
+
+      expect(page).to have_text("#333333")
+      expect(DesignColor.find_by(variable: "accent-color").hexcode).to eq("#333333")
       expect(page).to have_current_path custom_style_path(tab: "interface")
     end
 
-    it "redirects to branding tab" do
+    it "restores the inherited color by clearing an override", :js do
+      create(:design_color, variable: "accent-color", hexcode: "#333333")
+      visit custom_style_path(tab: "interface")
+
+      find_test_selector("edit-design-color-accent-color").click
+      fill_in "design_colors[]accent-color", with: ""
+      find_test_selector("save-design-color-accent-color").click
+
+      expect(DesignColor.find_by(variable: "accent-color")).to be_nil
+      expect(page).to have_current_path custom_style_path(tab: "interface")
+    end
+
+    it "redirects to branding tab", :js do
       click_on "Branding"
       expect(page).to have_current_path custom_style_path(tab: "branding")
+      expect(page).to have_test_selector("color-theme-select")
 
       # select a color theme and redirect to the branding tab
       select("OpenProject Navy Blue", from: "theme")
-      find("[data-test-selector='color-theme-button']").click
       expect_flash(message: I18n.t(:notice_successful_update))
       expect(page).to have_current_path custom_style_path(tab: "branding")
 
       # remove the logo and redirect to the branding tab
-      custom_style.send :remove_logo
+      custom_style.send :remove_logo!
       expect(File.exist?(file_path)).to be false
       expect(page).to have_current_path custom_style_path(tab: "branding")
     end
@@ -92,15 +129,9 @@ RSpec.describe "Tabs navigation and content switching on the admin/design page" 
       click_on "PDF export styles"
       expect(page).to have_current_path custom_style_path(tab: "pdf_export_styles")
 
-      # select a color theme and redirect to the PDF export styles tab
-      select("OpenProject (default)", from: "theme")
-      find("[data-test-selector='color-theme-button']").click
-      expect_flash(message: I18n.t(:notice_successful_update))
-      expect(page).to have_current_path custom_style_path(tab: "pdf_export_styles")
-
       # change export cover text color and redirect to the PDF export styles tab
       fill_in "export_cover_text_color", with: "#333"
-      find("[data-test-selector='text-color-change']").click
+      find_test_selector("text-color-change").click
       expect(page).to have_css("#export_cover_text_color", value: "#333")
       expect(page).to have_current_path custom_style_path(tab: "pdf_export_styles")
     end

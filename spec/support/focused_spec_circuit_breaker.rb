@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 ##
 # Add circuit breakers for CI builds, such as focused specs
 # that somehow elude linting

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -82,7 +84,10 @@ RSpec.shared_examples_for "user contract" do
 
     describe "cannot set the identity url" do
       before do
-        user.identity_url = "saml:123412foo"
+        user.user_auth_provider_links.build(
+          auth_provider: create(:oidc_provider),
+          external_id: "123123123"
+        )
       end
 
       it_behaves_like "contract is invalid", identity_url: :error_readonly

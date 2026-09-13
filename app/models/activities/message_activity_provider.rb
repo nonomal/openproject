@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -64,11 +66,11 @@ class Activities::MessageActivityProvider < Activities::BaseActivityProvider
   end
 
   def event_path(event)
-    url_helpers.topic_path(*url_helper_parameter(event))
+    url_helpers.project_forum_topic_path(*url_helper_parameter(event))
   end
 
   def event_url(event)
-    url_helpers.topic_url(*url_helper_parameter(event))
+    url_helpers.project_forum_topic_url(*url_helper_parameter(event))
   end
 
   private
@@ -81,9 +83,19 @@ class Activities::MessageActivityProvider < Activities::BaseActivityProvider
     is_reply = event["parent_id"].present?
 
     if is_reply
-      { id: event["parent_id"], r: event["journable_id"], anchor: "message-#{event['journable_id']}" }
+      {
+        project_id: event["project_id"],
+        forum: event["forum_id"],
+        id: event["parent_id"],
+        r: event["journable_id"],
+        anchor: "message-#{event['journable_id']}"
+      }
     else
-      [event["journable_id"]]
+      {
+        project_id: event["project_id"],
+        forum_id: event["forum_id"],
+        id: event["journable_id"]
+      }
     end
   end
 end

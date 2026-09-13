@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -50,7 +51,7 @@ module Meeting::VirtualStartTime
   ##
   # Actually sets the aggregated start_time attribute.
   def update_start_time!
-    write_attribute(:start_time, start_time)
+    self[:start_time] = start_time
   end
 
   ##
@@ -80,7 +81,7 @@ module Meeting::VirtualStartTime
 
     return if date.nil? || time.nil?
 
-    Time.zone.local(
+    time_zone.local(
       date.year,
       date.month,
       date.day,
@@ -90,10 +91,15 @@ module Meeting::VirtualStartTime
   end
 
   def set_initial_values
-    # set defaults
-    # Start date is set to tomorrow at 10 AM (Current users local time)
-    write_attribute(:start_time, User.current.time_zone.now.at_midnight + 34.hours) if start_time.nil?
+    self[:start_time] = default_start_time if start_time.nil?
     update_derived_fields
+  end
+
+  ##
+  # Defaults to now, rounded up to the next half hour
+  def default_start_time
+    now = time_zone.now.change(sec: 0)
+    now + ((30 - (now.min % 30)) % 30).minutes
   end
 
   ##
@@ -112,8 +118,8 @@ module Meeting::VirtualStartTime
   end
 
   def update_derived_fields
-    @start_date = format_time_as_date(start_time, format: "%Y-%m-%d")
-    @start_time_hour = format_time(start_time, include_date: false, format: "%H:%M")
+    @start_date = format_date(start_time, time_zone:, format: "%Y-%m-%d")
+    @start_time_hour = format_time(start_time, time_zone:, include_date: false, format: "%H:%M")
   end
 
   ##

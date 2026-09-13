@@ -69,8 +69,8 @@ module TableHelpers
         work_packages_data
             .slice(0, data[:index])
             .reverse
-            .find { _1[:hierarchy_indent] < hierarchy_indent }
-            .then { _1&.fetch(:identifier) }
+            .find { it[:hierarchy_indent] < hierarchy_indent }
+            .then { it&.fetch(:identifier) }
       end
     end
   end

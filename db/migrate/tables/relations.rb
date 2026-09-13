@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,15 +32,19 @@ require_relative "base"
 
 class Tables::Relations < Tables::Base
   def self.table(migration)
-    create_table migration do |t|
-      t.integer :from_id, null: false
-      t.integer :to_id, null: false
-      t.string :relation_type, default: "", null: false
-      t.integer :delay
+    create_table migration do |t| # rubocop:disable Rails/CreateTableWithTimestamps
+      t.integer :from_id, null: false # TODO: turn into bigint, foreign key
+      t.integer :to_id, null: false # TODO: turn into bigint, foreign key
+      t.integer :lag
       t.text :description
+      t.string :relation_type
 
       t.index :from_id, name: "index_relations_on_from_id"
       t.index :to_id, name: "index_relations_on_to_id"
+      t.index %i[from_id to_id relation_type],
+              unique: true
+      t.index %i[to_id from_id relation_type],
+              unique: true
     end
   end
 end

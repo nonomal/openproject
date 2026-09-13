@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -189,7 +191,7 @@ RSpec.describe "PATCH /api/v3/queries/:id",
       post!
 
       expect(last_response).to have_http_status :unprocessable_entity
-      expect(json["message"]).to eq "Project not found"
+      expect(json["message"]).to eq "Project not found."
     end
 
     it "yields a 422 error given an unknown operator" do

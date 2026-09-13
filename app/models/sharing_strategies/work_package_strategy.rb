@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -46,7 +48,7 @@ module SharingStrategies
     end
 
     def manageable?
-      user.allowed_in_project?(:share_work_packages, @entity.project)
+      feature_available? && user.allowed_in_project?(:share_work_packages, @entity.project)
     end
 
     def viewable?
@@ -99,16 +101,12 @@ module SharingStrategies
       Shares::WorkPackages::DeleteContract
     end
 
-    def modal_body_component(errors)
-      if EnterpriseToken.allows_to?(:work_package_sharing)
-        super
-      else
-        Shares::WorkPackages::ModalUpsellComponent.new
-      end
-    end
-
     def title
       I18n.t(:label_share_work_package)
+    end
+
+    def enterprise_feature
+      :work_package_sharing
     end
 
     private

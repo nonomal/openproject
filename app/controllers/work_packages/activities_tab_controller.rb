@@ -31,23 +31,35 @@
 class WorkPackages::ActivitiesTabController < ApplicationController
   include OpTurbo::ComponentStream
   include FlashMessagesOutputSafetyHelper
+  include WorkPackages::ActivitiesTab::JournalSortingInquirable
+  include WorkPackages::ActivitiesTab::StimulusControllers
+  include WorkPackages::ActivitiesTab::PollingTimestamp
+  include WorkPackages::ActivitiesTab::ReactionGrouping
+  include WorkPackages::ActivitiesTab::ComponentStreaming
+
+  Filters = WorkPackages::ActivitiesTab::Filters
 
   before_action :find_work_package
-  before_action :find_project
-  before_action :find_journal, only: %i[edit cancel_edit update toggle_reaction]
+  before_action :find_journal, only: %i[emoji_actions item_actions edit cancel_edit update toggle_reaction]
   before_action :set_filter
   before_action :authorize
+  before_action :initialize_pagination, only: %i[index page_streams]
 
   def index
-    render(
-      WorkPackages::ActivitiesTab::IndexComponent.new(
-        work_package: @work_package,
-        filter: @filter,
-        last_server_timestamp: get_current_server_timestamp,
-        deferred: ActiveRecord::Type::Boolean.new.cast(params[:deferred])
-      ),
-      layout: false
+    render(lazy_index_shell, layout: false)
+  end
+
+  def page_streams
+    replace_via_turbo_stream(
+      component: WorkPackages::ActivitiesTab::Journals::PageComponent.new(
+        journals: @paginated_journals,
+        emoji_reactions: wp_journals_emoji_reactions,
+        page: @paginator.page,
+        filter: @filter
+      )
     )
+
+    respond_with_turbo_streams
   end
 
   def update_streams
@@ -86,6 +98,17 @@ class WorkPackages::ActivitiesTabController < ApplicationController
     respond_with_turbo_streams
   end
 
+  def emoji_actions
+    render WorkPackages::ActivitiesTab::Journals::ItemComponent::AddReactions
+            .new(journal: @journal, grouped_emoji_reactions: grouped_emoji_reactions_for_journal),
+           layout: false
+  end
+
+  def item_actions
+    render WorkPackages::ActivitiesTab::Journals::ItemComponent::Actions.new(@journal),
+           layout: false
+  end
+
   def edit
     if allowed_to_edit?(@journal)
       update_item_edit_component(journal: @journal)
@@ -108,10 +131,9 @@ class WorkPackages::ActivitiesTabController < ApplicationController
 
   def create
     begin
-      call = create_journal_service_call
+      call = comment_service.add
 
       if call.success? && call.result
-        claim_journal_attachments_for(call.result)
         set_last_server_timestamp_to_headers
         handle_successful_create_call(call)
       else
@@ -126,10 +148,9 @@ class WorkPackages::ActivitiesTabController < ApplicationController
 
   def update
     begin
-      call = update_journal_service_call
+      call = comment_service.update(@journal)
 
       if call.success? && call.result
-        claim_journal_attachments_for(call.result)
         update_item_show_component(journal: call.result, grouped_emoji_reactions: grouped_emoji_reactions_for_journal)
       else
         handle_failed_create_or_update_call(call)
@@ -142,30 +163,23 @@ class WorkPackages::ActivitiesTabController < ApplicationController
   end
 
   def sanitize_internal_mentions
-    render plain: sanitized_journal_notes
+    render plain: comment_service.sanitized_notes
   rescue StandardError => e
     handle_internal_server_error(e)
     respond_with_turbo_streams
   end
 
-  def toggle_reaction # rubocop:disable Metrics/AbcSize
-    emoji_reaction_service =
-      if @journal.emoji_reactions.exists?(user: User.current, reaction: params[:reaction])
-        EmojiReactions::DeleteService
-         .new(user: User.current,
-              model: @journal.emoji_reactions.find_by(user: User.current, reaction: params[:reaction]))
-         .call
-      else
-        EmojiReactions::CreateService
-         .new(user: User.current)
-         .call(user: User.current, reactable: @journal, reaction: params[:reaction])
-      end
+  def toggle_reaction
+    emoji_reaction_service = EmojiReactions::ToggleEmojiReactionService
+      .call(user: User.current,
+            reactable: @journal,
+            reaction: params[:reaction])
 
     emoji_reaction_service.on_success do
       update_via_turbo_stream(
         component: WorkPackages::ActivitiesTab::Journals::ItemComponent::Show.new(
           journal: @journal,
-          filter: params[:filter]&.to_sym || :all,
+          filter: @filter,
           grouped_emoji_reactions: grouped_emoji_reactions_for_journal
         )
       )
@@ -182,64 +196,64 @@ class WorkPackages::ActivitiesTabController < ApplicationController
 
   private
 
+  def find_work_package
+    @work_package = WorkPackage.visible.find(params[:work_package_id])
+    @project = @work_package.project
+  rescue ActiveRecord::RecordNotFound
+    # Background polls get a bare 404; a flash stream would add a new error
+    # banner on every polling interval once the session or visibility is gone.
+    if action_name == "update_streams"
+      head :not_found
+    else
+      respond_with_error(I18n.t("label_not_found"))
+    end
+  end
+
+  def initialize_pagination
+    paginator = WorkPackages::ActivitiesTab::Paginator.new(@work_package, params.merge(filter: @filter, limit: 20))
+    @paginator, @paginated_journals = paginator.call
+    @resolved_anchor = paginator.resolved_anchor
+  end
+
   def respond_with_error(error_message)
-    respond_to do |format|
-      # turbo_frame requests (tab is initially rendered and an error occured) are handled below
+    @turbo_status = :not_found
+    render_error_flash_message_via_turbo_stream(message: error_message)
+
+    # Subsequent in-tab requests arrive as turbo_stream and fall through to the flash
+    # stream above; only the initial HTML load needs the standalone error frame.
+    respond_to_with_turbo_streams do |format|
       format.html do
         render(
-          WorkPackages::ActivitiesTab::ErrorFrameComponent.new(
-            error_message:
-          ),
+          WorkPackages::ActivitiesTab::ErrorFrameComponent.new(error_message:),
           layout: false,
           status: :not_found
         )
       end
-      # turbo_stream requests (tab is already rendered and an error occured in subsequent requests) are handled below
-      format.turbo_stream do
-        @turbo_status = :not_found
-        render_error_flash_message_via_turbo_stream(message: error_message)
-      end
     end
   end
 
-  def find_work_package
-    @work_package = WorkPackage.find(params[:work_package_id])
-  rescue ActiveRecord::RecordNotFound
-    respond_with_error(I18n.t("label_not_found"))
-  end
-
-  def find_project
-    @project = @work_package.project
-  rescue ActiveRecord::RecordNotFound
-    respond_with_error(I18n.t("label_not_found"))
-  end
-
   def find_journal
-    @journal = Journal
-      .with_sequence_version
+    @journal = @work_package
+      .journals
+      .internal_visible
+      .without_meeting_causes
       .find(params[:id])
   rescue ActiveRecord::RecordNotFound
     respond_with_error(I18n.t("label_not_found"))
   end
 
   def set_filter
-    @filter = params[:filter]&.to_sym || :all
+    @filter = Filters.cast(params[:filter] || params.dig(:journal, :filter))
   end
 
-  def journal_sorting
-    User.current.preference&.comments_sorting || OpenProject::Configuration.default_comment_sort_order
-  end
-
-  def sanitized_journal_notes
-    WorkPackages::ActivitiesTab::InternalCommentMentionsSanitizer.sanitize(@work_package, journal_params[:notes])
-  end
-
-  def journal_params
-    params.expect(journal: %i[notes internal])
+  def comment_service
+    @comment_service ||= WorkPackages::ActivitiesTab::CommentService.new(
+      work_package: @work_package, user: User.current, params:
+    )
   end
 
   def handle_successful_create_call(call)
-    if @filter == :only_changes
+    if @filter == Filters::ONLY_CHANGES
       handle_only_changes_filter_on_create
     else
       handle_other_filters_on_create(call)
@@ -247,7 +261,7 @@ class WorkPackages::ActivitiesTabController < ApplicationController
   end
 
   def handle_only_changes_filter_on_create
-    @filter = :all # reset filter
+    @filter = Filters::ALL # reset filter
     # we need to update the whole tab in order to reset the filter
     # as the added journal would not be shown otherwise
     replace_whole_tab
@@ -262,9 +276,18 @@ class WorkPackages::ActivitiesTabController < ApplicationController
   end
 
   def perform_update_streams_from_last_update_timestamp
-    if params[:last_update_timestamp].present? && (last_updated_at = Time.zone.parse(params[:last_update_timestamp]))
-      generate_time_based_update_streams(last_updated_at)
-      generate_work_package_journals_emoji_reactions_update_streams
+    last_update_timestamp = params[:last_update_timestamp] || params.dig(:journal, :last_update_timestamp)
+
+    if last_update_timestamp.present?
+      editing_journals = params[:editing_journals]&.split(",")&.map(&:to_i) || []
+
+      WorkPackages::ActivitiesTab::UpdateStreams.new(
+        work_package: @work_package,
+        filter: @filter,
+        since: Time.zone.parse(last_update_timestamp),
+        editing_journal_ids: editing_journals,
+        sorting: journal_sorting
+      ).emit_into(self)
     else
       @turbo_status = :bad_request
     end
@@ -288,206 +311,7 @@ class WorkPackages::ActivitiesTabController < ApplicationController
     )
   end
 
-  def replace_whole_tab
-    replace_via_turbo_stream(
-      component: WorkPackages::ActivitiesTab::IndexComponent.new(
-        work_package: @work_package,
-        filter: @filter,
-        last_server_timestamp: get_current_server_timestamp
-      )
-    )
-  end
-
-  def update_index_component
-    update_via_turbo_stream(
-      component: WorkPackages::ActivitiesTab::Journals::IndexComponent.new(
-        work_package: @work_package,
-        filter: @filter
-      )
-    )
-  end
-
-  def create_journal_service_call
-    internal = to_boolean(journal_params[:internal], false)
-    notes = internal ? sanitized_journal_notes : journal_params[:notes]
-
-    AddWorkPackageNoteService
-      .new(user: User.current,
-           work_package: @work_package)
-      .call(notes,
-            send_notifications: to_boolean(params[:notify], true),
-            internal:)
-  end
-
-  def to_boolean(value, default)
-    ActiveRecord::Type::Boolean.new.cast(value.presence || default)
-  end
-
-  def update_journal_service_call
-    notes = @journal.internal? ? sanitized_journal_notes : journal_params[:notes]
-    Journals::UpdateService.new(model: @journal, user: User.current).call(notes:)
-  end
-
-  def claim_journal_attachments_for(journal)
-    WorkPackages::ActivitiesTab::CommentAttachmentsClaims::ClaimsService
-      .new(user: User.current, model: journal)
-      .call
-  end
-
-  def generate_time_based_update_streams(last_update_timestamp)
-    journals = @work_package
-                 .journals
-                 .internal_visible
-                 .with_sequence_version
-
-    if @filter == :only_comments
-      journals = journals.where.not(notes: "")
-    end
-
-    grouped_emoji_reactions = Journal.grouped_emoji_reactions_by_reactable(
-      reactable_id: journals.pluck(:id), reactable_type: "Journal"
-    )
-
-    rerender_updated_journals(journals, last_update_timestamp, grouped_emoji_reactions)
-    rerender_journals_with_updated_notification(journals, last_update_timestamp, grouped_emoji_reactions)
-    append_or_prepend_journals(journals, last_update_timestamp, grouped_emoji_reactions)
-
-    if journals.present?
-      remove_potential_empty_state
-      update_activity_counter
-    end
-  end
-
-  def generate_work_package_journals_emoji_reactions_update_streams
-    wp_journal_emoji_reactions = Journal.grouped_work_package_journals_emoji_reactions(@work_package)
-    @work_package.journals.each do |journal|
-      update_via_turbo_stream(
-        component: WorkPackages::ActivitiesTab::Journals::ItemComponent::Reactions.new(
-          journal:,
-          grouped_emoji_reactions: wp_journal_emoji_reactions[journal.id] || {}
-        )
-      )
-    end
-  end
-
-  def rerender_updated_journals(journals, last_update_timestamp, grouped_emoji_reactions)
-    journals.where("updated_at > ?", last_update_timestamp).find_each do |journal|
-      update_item_show_component(journal:, grouped_emoji_reactions: grouped_emoji_reactions.fetch(journal.id, {}))
-    end
-  end
-
-  def rerender_journals_with_updated_notification(journals, last_update_timestamp, grouped_emoji_reactions)
-    # Case: the user marked the journal as read somewhere else and expects the bubble to disappear
-    #
-    # below code stopped working with the introduction of the sequence_version query
-    # I believe it is due to the fact that the notification join does not work well with the sequence_version query
-    # see below comments from my debugging session
-    # journals
-    #   .joins(:notifications)
-    #   .where("notifications.updated_at > ?", last_update_timestamp)
-    #   .find_each do |journal|
-    #   # DEBUGGING:
-    #   # the journal id is actually 85 but below data is logged:
-    #   # # journal id 14 (?!)
-    #   # # journal sequence_version 22 (correct!)
-    #   # the update stream has a wrong target then!
-    #   # target="work-packages-activities-tab-journals-item-component-14"
-    #   # instead of
-    #   # target="work-packages-activities-tab-journals-item-component-85"
-    #   update_item_show_component(journal:, grouped_emoji_reactions: grouped_emoji_reactions.fetch(journal.id, {}))
-    # end
-    #
-    # alternative approach in order to bypass the notification join issue in relation with the sequence_version query
-    Notification
-      .where(journal_id: journals.pluck(:id))
-      .where(recipient_id: User.current.id)
-      .where("notifications.updated_at > ?", last_update_timestamp)
-      .find_each do |notification|
-      update_item_show_component(
-        journal: journals.find(notification.journal_id), # take the journal from the journals querried with sequence_version!
-        grouped_emoji_reactions: grouped_emoji_reactions.fetch(notification.journal_id, {})
-      )
-    end
-  end
-
-  def append_or_prepend_journals(journals, last_update_timestamp, grouped_emoji_reactions)
-    journals.where("created_at > ?", last_update_timestamp).find_each do |journal|
-      append_or_prepend_latest_journal_via_turbo_stream(journal, grouped_emoji_reactions.fetch(journal.id, {}))
-    end
-  end
-
-  def append_or_prepend_latest_journal_via_turbo_stream(journal, grouped_emoji_reactions)
-    target_component = WorkPackages::ActivitiesTab::Journals::IndexComponent.new(
-      work_package: @work_package,
-      filter: @filter
-    )
-
-    component = WorkPackages::ActivitiesTab::Journals::ItemComponent.new(
-      journal:, filter: @filter, grouped_emoji_reactions:
-    )
-
-    stream_config = {
-      target_component:,
-      component:
-    }
-
-    # Append or prepend the new journal depending on the sorting
-    if journal_sorting == "asc"
-      append_via_turbo_stream(**stream_config)
-    else
-      prepend_via_turbo_stream(**stream_config)
-    end
-  end
-
-  def remove_potential_empty_state
-    # remove the empty state if it is present
-    remove_via_turbo_stream(
-      component: WorkPackages::ActivitiesTab::Journals::EmptyComponent.new
-    )
-  end
-
-  def update_item_edit_component(journal:, grouped_emoji_reactions: {})
-    update_item_component(journal:, state: :edit, grouped_emoji_reactions:)
-  end
-
-  def update_item_show_component(journal:, grouped_emoji_reactions:)
-    update_item_component(journal:, state: :show, grouped_emoji_reactions:)
-  end
-
-  def update_item_component(journal:, grouped_emoji_reactions:, state:, filter: @filter)
-    update_via_turbo_stream(
-      component: WorkPackages::ActivitiesTab::Journals::ItemComponent.new(
-        journal:,
-        state:,
-        filter:,
-        grouped_emoji_reactions:
-      )
-    )
-  end
-
-  def update_activity_counter
-    # update the activity counter in the primerized tabs
-    # not targeting the legacy tab!
-    replace_via_turbo_stream(
-      component: WorkPackages::Details::UpdateCounterComponent.new(work_package: @work_package, menu_name: "activity")
-    )
-  end
-
-  def grouped_emoji_reactions_for_journal
-    Journal.grouped_journal_emoji_reactions(@journal).fetch(@journal.id, {})
-  end
-
   def allowed_to_edit?(journal)
     journal.editable_by?(User.current)
-  end
-
-  def get_current_server_timestamp
-    # single source of truth for the server timestamp format
-    Time.current.iso8601(3)
-  end
-
-  def set_last_server_timestamp_to_headers
-    # Add server timestamp to response in order to let the client be in sync with the server
-    response.headers["X-Server-Timestamp"] = get_current_server_timestamp
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,6 +34,12 @@ module Queries::Filters::Shared
   module CustomFields
     class Bool < Base
       include Queries::Filters::Shared::BooleanFilter
+
+      # BooleanFilter hands back the plain BooleanList strategy, which cannot express
+      # emptiness. See Strategies::CfBooleanList.
+      def type_strategy
+        @type_strategy ||= ::Queries::Filters::Strategies::CfBooleanList.new(self)
+      end
     end
   end
 end

@@ -31,6 +31,24 @@ class Meeting::TimeGroup < ApplicationForm
   include Redmine::I18n
 
   form do |meeting_form|
+    if editing_recurring? && friendly_timezone_name(User.current.time_zone) != friendly_timezone_name(@meeting.time_zone)
+      meeting_form.html_content do
+        render(
+          Primer::Alpha::Banner.new(
+            description: I18n.t("recurring_meeting.time_zone_difference_banner.description",
+                                actual_zone: friendly_timezone_name(@meeting.time_zone),
+                                user_zone: friendly_timezone_name(User.current.time_zone)),
+            scheme: :warning
+          )
+        ) { I18n.t("recurring_meeting.time_zone_difference_banner.title") }
+      end
+
+      meeting_form.hidden(
+        name: :time_zone,
+        value: @meeting.time_zone.name
+      )
+    end
+
     meeting_form.group(layout: :horizontal) do |group|
       group.text_field(
         name: :start_date,
@@ -71,7 +89,7 @@ class Meeting::TimeGroup < ApplicationForm
         caption: I18n.t("text_in_hours"),
         data: {
           controller: "chronic-duration",
-          application_target: "dynamic"
+          **DurationConverter.stimulus_data_values("chronic-duration")
         }
       )
     end
@@ -99,6 +117,12 @@ class Meeting::TimeGroup < ApplicationForm
   end
 
   def timezone_caption
-    friendly_timezone_name(User.current.time_zone, period: @meeting.start_time)
+    return if editing_recurring?
+
+    friendly_timezone_name(User.current.time_zone, period: @meeting.start_time || Time.zone.now)
+  end
+
+  def editing_recurring?
+    @meeting.is_a?(RecurringMeeting) && @meeting.persisted?
   end
 end

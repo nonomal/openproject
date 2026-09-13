@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,16 +29,15 @@
 #++
 
 require "spec_helper"
-require "support/pages/custom_fields/index_page"
 
 RSpec.describe "custom fields", :js do
   let(:user) { create(:admin) }
-  let(:cf_page) { Pages::CustomFields::IndexPage.new }
+  let(:cf_page) { Pages::CustomFields::Index.new }
   let(:for_all_cf) { create(:list_wp_custom_field, is_for_all: true) }
   let(:project_specific_cf) { create(:integer_wp_custom_field) }
   let(:work_package) do
     build(:work_package) do |wp|
-      wp.type.custom_fields = [for_all_cf, project_specific_cf]
+      wp.type.default_variant.custom_fields = [for_all_cf, project_specific_cf]
       wp.save!
     end
   end

@@ -209,6 +209,7 @@ Also a big thanks to our Community members for reporting bugs and helping us ide
 Special thanks for reporting and finding bugs go to Frank Schmid, Michael Kluge, Mariusz Kamiński, Rince wind, Joris Ceelen, Michael Lathion, and Cornelius Heisse.
 
 Last but not least, we are very grateful for our very engaged translation contributors on Crowdin, who translated quite a few OpenProject strings! This release we would like to highlight
+
 - [Phi Công Nguyễn Vũ](https://crowdin.com/profile/nguyenvuphicong), for an outstanding number of translations into Vietnamese.
 - [daniel chou](https://crowdin.com/profile/chou0214), for an outstanding number of translations into Chinese.
 - [Sebvita_devinci](https://crowdin.com/profile/sebvita_devinci), for proof reading French translations.

@@ -39,7 +39,7 @@ module Overviews
         super
 
         @project = project
-        @phases = @project.available_phases
+        @phases = @project.available_phases.eager_load(:definition)
       end
     end
   end

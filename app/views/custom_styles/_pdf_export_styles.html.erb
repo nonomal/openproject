@@ -27,67 +27,45 @@ See COPYRIGHT and LICENSE files for more details.
 
 ++#%>
 
-<%= form_for @custom_style, url: custom_style_path, html: { multipart: true, class: "form -vertical" } do |f| %>
-  <section class="form--section">
-    <fieldset class="form--fieldset">
-      <legend class="form--fieldset-legend"><%= I18n.t(:label_custom_export_logo) %></legend>
-      <% if @custom_style.id && @custom_style.export_logo.present? %>
-        <div>
-          <%= tag("img", src: custom_style_export_logo_path(digest: @custom_style.digest, filename: @custom_style.export_logo_identifier), class: "custom-export-logo-preview") %>
-          <%= link_to t(:button_delete),
-                      custom_style_export_logo_delete_path,
-                      method: :delete,
-                      class: "icon icon-delete confirm-form-submit" %>
-        </div>
-      <% end %>
-      <div class="grid-block">
-        <div class="form--field -required">
-          <div class="attachment_field form--field-container -vertical -shrink">
-            <div class="form--file-container">
-              <%= f.file_field :export_logo, required: true, class: "attachment_choose_file", size: "15" %>
-            </div>
-          </div>
-          <div class="form--field-instructions">
-            <%= t("text_custom_export_logo_instructions") %>
-          </div>
-        </div>
-      </div>
+<p><%= I18n.t("label_custom_export_images_instructions") %></p>
 
-      <%= styled_button_tag t(@custom_style.export_logo.present? ? :button_replace : :button_upload), class: "button #{@custom_style.export_logo.blank? ? '-with-icon icon-add' : ''}" %>
+<%=
+  render(Primer::Beta::Button.new(
+    target: "_blank",
+    data: { turbo: false },
+    tag: :a,
+    href: export_demo_pdf_download_custom_style_path
+  )) do |_c|
+    t("export.demo.button_text")
+  end
+%>
 
-    </fieldset>
-  </section>
-<% end %>
-<%= form_for @custom_style, url: custom_style_path, html: { multipart: true, class: "form -vertical" } do |f| %>
-  <section class="form--section">
-    <fieldset class="form--fieldset">
-      <legend class="form--fieldset-legend"><%= I18n.t(:label_custom_export_cover) %></legend>
+<%= render partial: "custom_styles/uploads/image",  locals: { image:{
+  field: :export_logo,
+  label: I18n.t(:label_custom_export_logo),
+  present: @custom_style.id && @custom_style.export_logo.present?,
+  source: @custom_style.id && @custom_style.export_logo.present? ?
+            custom_style_export_logo_path(digest: @custom_style.digest, filename: @custom_style.export_logo_identifier) :
+            nil,
+  img_class: "custom-export-logo-preview",
+  accept: "image/png, image/jpg",
+  delete_path: custom_style_export_logo_delete_path,
+  instructions: I18n.t("text_custom_export_logo_instructions")
+} } %>
 
-      <% if @custom_style.id && @custom_style.export_cover.present? %>
-        <div>
-          <%= tag("img", src: custom_style_export_cover_path(digest: @custom_style.digest, filename: @custom_style.export_cover_identifier), class: "custom-export-cover-preview") %>
-          <%= link_to t(:button_delete),
-                      custom_style_export_cover_delete_path,
-                      method: :delete,
-                      class: "icon icon-delete confirm-form-submit" %>
-        </div>
-      <% end %>
-      <div class="grid-block">
-        <div class="form--field -required">
-          <div class="attachment_field form--field-container -vertical -shrink">
-            <div class="form--file-container">
-              <%= f.file_field :export_cover, required: true, class: "attachment_choose_file", size: "15" %>
-            </div>
-          </div>
-          <div class="form--field-instructions">
-            <%= t("text_custom_export_cover_instructions") %>
-          </div>
-        </div>
-      </div>
-      <%= styled_button_tag t(@custom_style.export_cover.present? ? :button_replace : :button_upload), class: "button #{@custom_style.export_cover.blank? ? '-with-icon icon-add' : ''}" %>
-    </fieldset>
-  </section>
-<% end %>
+<%= render partial: "custom_styles/uploads/image",  locals: { image:{
+  field: :export_cover,
+  label: I18n.t(:label_custom_export_cover),
+  present: @custom_style.id && @custom_style.export_cover.present?,
+  source: @custom_style.id && @custom_style.export_cover.present? ?
+            custom_style_export_cover_path(digest: @custom_style.digest, filename: @custom_style.export_cover_identifier) :
+            nil,
+  img_class: "custom-export-cover-preview",
+  accept: "image/png, image/jpg",
+  delete_path: custom_style_export_cover_delete_path,
+  instructions: I18n.t("text_custom_export_cover_instructions")
+} } %>
+
 <%= form_tag update_custom_style_export_cover_text_color_path, html: { multipart: true, class: "form -vertical" } do |f| %>
   <section class="form--section">
     <fieldset class="form--fieldset">
@@ -97,17 +75,17 @@ See COPYRIGHT and LICENSE files for more details.
         <span class="form--field-container">
           <div class="form--field-affix">
             <% design_color_name = "export_cover_text_color" %>
-            <% design_color_hex = @custom_style.export_cover_text_color.presence || "" %>
+            <% design_color_hex = @custom_style.export_cover_text_color.presence %>
             <%= icon_for_color(
                   Color.new(
-                    hexcode: design_color_hex
+                    hexcode: design_color_hex || "#000"
                   ),
                   data: { target: "#" + design_color_name }
                 ) %>
           </div>
           <span class="form--text-field-container">
             <%= styled_text_field_tag design_color_name,
-                                      design_color_hex,
+                                      design_color_hex || "",
                                       placeholder: "#000" %>
           </span>
         </span>
@@ -118,7 +96,31 @@ See COPYRIGHT and LICENSE files for more details.
           <% end %>
         </div>
       </div>
-      <button type="submit" class="button -hide-when-collapsed" data-test-selector="text-color-change"><%= I18n.t(:button_save) %></button>
+      <%=
+        render(Primer::Beta::Button.new(
+          type: :submit,
+          data: {
+            "test-selector": "text-color-change"
+          }
+        )) do |button|
+          I18n.t(:button_save)
+        end
+      %>
     </fieldset>
   </section>
+<% end %>
+
+<%  if OpenProject::FeatureDecisions.minutes_styling_meeting_pdf_active? %>
+  <%= render partial: "custom_styles/uploads/image",  locals: { image:{
+    field: :export_footer,
+    label: I18n.t(:label_custom_export_footer),
+    present: @custom_style.id && @custom_style.export_footer.present?,
+    source: @custom_style.id && @custom_style.export_footer.present? ?
+              custom_style_export_footer_path(digest: @custom_style.digest, filename: @custom_style.export_footer_identifier) :
+              nil,
+    img_class: "custom-export-footer-preview",
+    accept: "image/png, image/jpg",
+    delete_path: custom_style_export_footer_delete_path,
+    instructions: I18n.t("text_custom_export_footer_instructions")
+  } } %>
 <% end %>

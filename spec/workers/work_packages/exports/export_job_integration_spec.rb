@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -53,6 +55,8 @@ RSpec.describe WorkPackages::ExportJob, "Integration" do
   end
   let(:options) { {} }
   let(:mime_type) { :pdf }
+  let(:test_time) { Time.zone.now }
+  let(:test_time_s) { test_time.strftime("%Y-%m-%d_%H-%M") }
 
   let(:performed_job) do
     job.tap(&:perform_now)
@@ -62,19 +66,20 @@ RSpec.describe WorkPackages::ExportJob, "Integration" do
     JobStatus::Status.find_by(job_id: job.job_id)
   end
 
+  before do
+    allow(Time.zone).to receive(:now).and_return(test_time)
+  end
+
   describe "with special characters in the project title" do
     let(:project) { create(:project, name: "Foo Bla. Report No. 4/2021 with/for Case 42") }
 
     it "exports the job correctly, renaming the result" do
-      time = DateTime.new(2023, 6, 30, 23, 59)
-      allow(DateTime).to receive(:now).and_return(time)
-
       expect { performed_job }.not_to raise_error
 
       expect(job_status.status).to eq "success"
 
       attachment = export.attachments.last
-      expected = "Foo_Bla_Report_No._4_2021_with_for_Case_42_Query_report_04_2021__2023-06-30_23-59.pdf"
+      expected = "Foo_Bla_Report_No._4_2021_with_for_Case_42_Query_report_04_2021_aou_#{test_time_s}.pdf"
       expect(attachment.filename).to eq expected
     end
   end
@@ -83,16 +88,13 @@ RSpec.describe WorkPackages::ExportJob, "Integration" do
     let(:project) { create(:project, name: "x" * 255) }
 
     it "exports the job correctly, limiting the result file length" do
-      time = DateTime.new(2023, 6, 30, 23, 59)
-      allow(DateTime).to receive(:now).and_return(time)
-
       expect { performed_job }.not_to raise_error
 
       expect(job_status.status).to eq "success"
 
       attachment = export.attachments.last
       expect(attachment.filename.length).to eq 255
-      expect(attachment.filename).to end_with "_2023-06-30_23-59.pdf"
+      expect(attachment.filename).to end_with "_#{test_time_s}.pdf"
     end
   end
 end

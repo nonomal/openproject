@@ -1,4 +1,4 @@
-<%#-- copyright
+<%# -- copyright
 OpenProject is an open source project management software.
 Copyright (C) the OpenProject GmbH
 
@@ -25,23 +25,20 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 See COPYRIGHT and LICENSE files for more details.
 
-++#%>
+++# %>
 
 <p>
-    <% mail_link = "<a href=\"mailto:#{@email}\">#{@email}</a>" %>
-    <% host = Rails.application.root_url %>
-    <% host_link = "<a href=\"#{host}\">#{Setting.app_title}</a>" %>
-    <%= t("mail_user_activation_limit_reached.message", email: mail_link, host: host_link).html_safe %>
+    <% mail_link = content_tag(:a, @email, href: "mailto:#{@email}") %>
+    <% host_link = content_tag(:a, Setting.app_title, href: Rails.application.root_url) %>
+    <%= t("mail_user_activation_limit_reached.message_html", email: mail_link, host: host_link) %>
 </p>
 
-<p>
-    <span><%= t("mail_user_activation_limit_reached.steps.label") %></span>
-    <ul>
-        <li>
-            <%= link_translate("mail_user_activation_limit_reached.steps.a", links: { upgrade_url: OpenProject::Enterprise.upgrade_url }).html_safe %>
-        </li>
-        <li>
-            <%= link_translate("mail_user_activation_limit_reached.steps.b", links: { users_url: users_url }).html_safe %>
-        </li>
-    </ul>
-</p>
+<span><%= t("mail_user_activation_limit_reached.steps.label") %></span>
+<ul>
+    <li>
+        <%= link_translate("mail_user_activation_limit_reached.steps.a", links: { upgrade_url: OpenProject::Enterprise.upgrade_url }) %>
+    </li>
+    <li>
+        <%= link_translate("mail_user_activation_limit_reached.steps.b", links: { users_url: users_url }) %>
+    </li>
+</ul>

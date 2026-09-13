@@ -30,7 +30,13 @@
 #
 
 class AddButtonComponent < ApplicationComponent
-  options :current_project
+  attr_reader :subheader, :current_project
+
+  def initialize(subheader:, current_project: nil)
+    super
+    @subheader = subheader
+    @current_project = current_project
+  end
 
   def render?
     raise "Implement the conditions for which the component should render or not"
@@ -42,6 +48,14 @@ class AddButtonComponent < ApplicationComponent
 
   def id
     raise "Implement the id for this component"
+  end
+
+  def test_selector
+    raise "Implement the test_selector for this component"
+  end
+
+  def leading_icon
+    :plus
   end
 
   def title

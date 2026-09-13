@@ -34,7 +34,7 @@ RSpec.describe CostQuery, :reporting_query_helper do
   let!(:project1) { create(:project_with_types, types: [type]) }
   let!(:work_package1) { create(:work_package, project: project1, type:) }
   let!(:time_entry1) do
-    create(:time_entry, work_package: work_package1, project: project1, spent_on: Date.new(2012, 1, 1))
+    create(:time_entry, entity: work_package1, project: project1, spent_on: Date.new(2012, 1, 1))
   end
   let!(:time_entry2) do
     time_entry2 = time_entry1.dup
@@ -43,7 +43,7 @@ RSpec.describe CostQuery, :reporting_query_helper do
   end
   let!(:budget1) { create(:budget, project: project1) }
   let!(:cost_entry1) do
-    create(:cost_entry, work_package: work_package1, project: project1, spent_on: Date.new(2013, 2, 3))
+    create(:cost_entry, entity: work_package1, project: project1, spent_on: Date.new(2013, 2, 3))
   end
   let!(:cost_entry2) do
     cost_entry2 = cost_entry1.dup
@@ -54,7 +54,7 @@ RSpec.describe CostQuery, :reporting_query_helper do
   let!(:project2) { create(:project_with_types, types: [type]) }
   let!(:work_package2) { create(:work_package, project: project2, type:) }
   let!(:time_entry3) do
-    create(:time_entry, work_package: work_package2, project: project2, spent_on: Date.new(2013, 2, 3))
+    create(:time_entry, entity: work_package2, project: project2, spent_on: Date.new(2013, 2, 3))
   end
   let!(:time_entry4) do
     time_entry4 = time_entry3.dup
@@ -63,7 +63,7 @@ RSpec.describe CostQuery, :reporting_query_helper do
   end
   let!(:budget2) { create(:budget, project: project2) }
   let!(:cost_entry3) do
-    create(:cost_entry, work_package: work_package2, project: project2, spent_on: Date.new(2012, 1, 1))
+    create(:cost_entry, entity: work_package2, project: project2, spent_on: Date.new(2012, 1, 1))
   end
   let!(:cost_entry4) do
     cost_entry4 = cost_entry3.dup
@@ -74,6 +74,10 @@ RSpec.describe CostQuery, :reporting_query_helper do
   minimal_query
 
   describe CostQuery::GroupBy do
+    it "does not fail when grouping by a non-existent column" do
+      expect { query.group_by(:non_existent_column).result }.not_to raise_error
+    end
+
     it "computes group_by on projects" do
       query.group_by :project_id
       expect(query.result.size).to eq(2)
@@ -84,13 +88,108 @@ RSpec.describe CostQuery, :reporting_query_helper do
       query.group_by :work_package_id
       query.group_by :cost_type_id
       expect(query.all_group_fields).to eq(%w[entries.cost_type_id])
-      expect(query.child.all_group_fields).to eq(%w[entries.cost_type_id entries.work_package_id])
-      expect(query.child.child.all_group_fields).to eq(%w[entries.cost_type_id entries.work_package_id entries.project_id])
+      expect(query.child.all_group_fields).to eq(%w[entries.cost_type_id entries.entity_gid])
+      expect(query.child.child.all_group_fields).to eq(%w[entries.cost_type_id entries.entity_gid entries.project_id])
     end
 
     it "computes group_by WorkPackage" do
       query.group_by :work_package_id
       expect(query.result.size).to eq(2)
+    end
+
+    it "labels the group 'Version' while multiple versions is off", with_settings: { work_package_multiple_versions: false } do
+      expect(CostQuery::GroupBy::VersionId.label).to eq("Version")
+    end
+
+    # While the feature is off a work package is single-version, so it is grouped
+    # under its primary target version only (the lowest version id, i.e. what
+    # target_versions.first returns) and the grouped total matches the ungrouped
+    # entry count.
+    it "computes group_by Version, listing a work package under its primary target version",
+       with_settings: { work_package_multiple_versions: false } do
+      version1 = create(:version, project: project1)
+      version2 = create(:version, project: project1)
+      work_package = create(:work_package, project: project1, type:, version: version1)
+      work_package.work_package_versions.create!(version: version2, kind: "target")
+      create(:time_entry, entity: work_package, project: project1, spent_on: Date.new(2012, 1, 1))
+
+      query.group_by :version_id
+      # work_package1 / work_package2 entries have no target version (one group);
+      # the new work package adds a single primary-version group.
+      expect(query.result.size).to eq(2)
+
+      total_count = query.result.each_direct_result.sum(&:count)
+      expect(total_count).to eq(Entry.count)
+    end
+
+    # Filter and group-by declare the same target-version join; the engine
+    # collapses it only while both emit an identical join statement. If they
+    # drift apart the combined query fails with a duplicate-table error.
+    it "combines the version filter and group-by on a single join" do
+      version = create(:version, project: project1)
+      work_package = create(:work_package, project: project1, type:, version:)
+      create(:time_entry, entity: work_package, project: project1, spent_on: Date.new(2012, 1, 1))
+
+      query.filter :version_id, operator: "=", value: version.id
+      query.group_by :version_id
+      expect(query.result.size).to eq(1)
+    end
+
+    context "with multiple target versions enabled",
+            with_settings: { work_package_multiple_versions: true } do
+      it "labels the group 'Target versions'" do
+        expect(CostQuery::GroupBy::VersionId.label).to eq("Target versions")
+      end
+
+      it "computes group_by Version, listing a work package under each target version" do
+        version1 = create(:version, project: project1)
+        version2 = create(:version, project: project1)
+        work_package = create(:work_package, project: project1, type:, version: version1)
+        work_package.work_package_versions.create!(version: version2, kind: "target")
+        create(:time_entry, entity: work_package, project: project1, spent_on: Date.new(2012, 1, 1))
+
+        query.group_by :version_id
+        # work_package1 / work_package2 entries have no target version (one group);
+        # the new work package is reported under both of its target versions.
+        expect(query.result.size).to eq(3)
+
+        # OPEN POINT FND-178: cost reports over-count totals when grouping or
+        # filtering by a multi-value attribute. The single time entry is counted
+        # once under each target-version group, so the grouped total exceeds the
+        # ungrouped entry count. This is accepted for now (team decision); the
+        # assertion pins the inflated total, not just the group count, so a later
+        # "fix" can't quietly change it without revisiting FND-178.
+        total_count = query.result.each_direct_result.sum(&:count)
+        expect(total_count).to eq(Entry.count + 1)
+      end
+
+      # Same duplicate-join guard as the off-mode spec, on the all-versions join.
+      it "combines the version filter and group-by on a single join" do
+        version1 = create(:version, project: project1)
+        version2 = create(:version, project: project1)
+        work_package = create(:work_package, project: project1, type:, version: version1)
+        work_package.work_package_versions.create!(version: version2, kind: "target")
+        create(:time_entry, entity: work_package, project: project1, spent_on: Date.new(2012, 1, 1))
+
+        query.filter :version_id, operator: "=", value: [version1.id, version2.id]
+        query.group_by :version_id
+        # One group per matching target version of the single work package.
+        expect(query.result.size).to eq(2)
+      end
+    end
+
+    it "does not group a Meeting time entry under a same-id work package's target version" do
+      version = create(:version, project: project1)
+      work_package = create(:work_package, project: project1, type:, version:)
+      # entries.entity_id is polymorphic; simulate a meeting time entry whose id
+      # collides with the versioned work package's id.
+      meeting_entry = create(:time_entry, entity: work_package, project: project1, spent_on: Date.new(2012, 1, 1))
+      meeting_entry.update_columns(entity_type: "Meeting")
+
+      query.group_by :version_id
+      # The meeting entry must stay in the no-version group with work_package1 /
+      # work_package2 rather than inheriting the work package's target version.
+      expect(query.result.size).to eq(1)
     end
 
     it "computes group_by CostType" do

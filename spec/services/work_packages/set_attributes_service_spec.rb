@@ -143,8 +143,8 @@ RSpec.describe WorkPackages::SetAttributesService,
 
   # Scenarios specified in https://community.openproject.org/wp/40749
   # Just checking that everything is correctly wired up. All other scenarios tested in:
-  # - spec/services/work_packages/set_attributes_service/update_progress_values_status_based_spec.rb
-  # - spec/services/work_packages/set_attributes_service/update_progress_values_work_based_spec.rb
+  # - spec/services/work_packages/set_attributes_service/derive_progress_values_status_based_spec.rb
+  # - spec/services/work_packages/set_attributes_service/derive_progress_values_work_based_spec.rb
   describe "deriving progress values attributes" do
     context "in status-based mode",
             with_settings: { work_package_done_ratio: "status" } do
@@ -518,6 +518,34 @@ RSpec.describe WorkPackages::SetAttributesService,
       it "is successful" do
         expect(subject).to be_success
         expect(subject.errors).to be_empty
+      end
+    end
+
+    context "when moving to another project fails validation, with semantic identifiers",
+            with_settings: { work_packages_identifier: "semantic" } do
+      let(:user) { build_stubbed(:admin) }
+      let(:source_project) { create(:project) }
+      let(:target_project) { create(:project) }
+      let(:outsider) { create(:user) }
+      let(:invalid_wp) do
+        create(:work_package, project: source_project, responsible: outsider).tap do |wp|
+          wp.update_columns(identifier: "SRC-1", sequence_number: 1)
+        end
+      end
+      let(:call_attributes) { { project_id: target_project.id } }
+
+      subject(:service_result) { instance.call(call_attributes) }
+
+      it "is unsuccessful and restores the semantic identifier on the returned work package", :aggregate_failures do
+        expect(service_result).not_to be_success
+        expect(invalid_wp.identifier).to eq("SRC-1")
+        expect(invalid_wp.sequence_number).to eq(1)
+        expect(invalid_wp.formatted_id).to eq("SRC-1")
+      end
+
+      it "does not persist the move" do
+        service_result
+        expect(invalid_wp.reload.project_id).to eq(source_project.id)
       end
     end
   end
@@ -1054,6 +1082,69 @@ RSpec.describe WorkPackages::SetAttributesService,
             .to eq(Time.zone.today + 5.days)
           expect(work_package.duration)
             .to eq(-1)
+        end
+      end
+    end
+
+    context "with zero duration" do
+      let(:work_package) do
+        build_stubbed(:work_package, start_date: Time.zone.today, due_date: Time.zone.today + 5.days)
+      end
+      let(:call_attributes) { { duration: 0 } }
+      let(:expected_attributes) { {} }
+
+      it_behaves_like "service call" do
+        it "keeps the dates and duration values (error to be detected by contract)" do
+          subject
+
+          expect(work_package.start_date)
+            .to eq(Time.zone.today)
+          expect(work_package.due_date)
+            .to eq(Time.zone.today + 5.days)
+          expect(work_package.duration)
+            .to eq(0)
+        end
+      end
+
+      context "when the work package has a soonest_start from a predecessor and a due date (Regression #63598)" do
+        before do
+          allow(instance).to receive(:new_start_date).and_return(Time.zone.yesterday)
+        end
+
+        it_behaves_like "service call" do
+          it "keeps the dates and duration values (error to be detected by contract)" do
+            subject
+
+            expect(work_package.start_date)
+              .to eq(Time.zone.yesterday)
+            expect(work_package.due_date)
+              .to eq(Time.zone.today + 5.days)
+            expect(work_package.duration)
+              .to eq(0)
+          end
+        end
+      end
+
+      context "when the work package has a soonest_start from a predecessor and no due date (Regression #63598)" do
+        let(:work_package) do
+          build_stubbed(:work_package, start_date: Time.zone.today, due_date: nil)
+        end
+
+        before do
+          allow(instance).to receive(:new_start_date).and_return(Time.zone.yesterday)
+        end
+
+        it_behaves_like "service call" do
+          it "keeps the dates and duration values (error to be detected by contract)" do
+            subject
+
+            expect(work_package.start_date)
+              .to eq(Time.zone.yesterday)
+            expect(work_package.due_date)
+              .to be_nil
+            expect(work_package.duration)
+              .to eq(0)
+          end
         end
       end
     end
@@ -1719,7 +1810,7 @@ RSpec.describe WorkPackages::SetAttributesService,
     let(:new_versions) { [] }
     let(:type) { work_package.type }
     let(:new_types) { [type] }
-    let(:default_type) { build_stubbed(:type_standard) }
+    let(:default_type) { build_stubbed(:type_task) }
     let(:other_type) { build_stubbed(:type) }
     let(:yet_another_type) { build_stubbed(:type) }
 
@@ -1739,37 +1830,31 @@ RSpec.describe WorkPackages::SetAttributesService,
           .with(name: category.name)
           .and_return nil
         allow(new_project)
-          .to receive_messages(shared_versions: new_versions, types: new_types)
-        allow(new_types)
-          .to receive(:order)
-          .with(:position)
-          .and_return(new_types)
+          .to receive_messages(shared_versions: new_versions, enabled_types: new_types)
       end
     end
 
     shared_examples_for "updating the project" do
-      context "for version" do
+      context "for multiple versions" do
         before do
-          work_package.version = version
+          work_package.target_version_ids_replacements = [version.id]
         end
 
-        context "when not shared in new project" do
-          it "sets to nil" do
+        context "when not shared in the new project" do
+          it "filters to only assignable versions" do
             subject
 
-            expect(work_package.version)
-              .to be_nil
+            expect(work_package.target_version_ids_replacements).to be_empty
           end
         end
 
         context "when shared in the new project" do
           let(:new_versions) { [version] }
 
-          it "keeps the version" do
+          it "keeps assignable versions" do
             subject
 
-            expect(work_package.version)
-              .to eql version
+            expect(work_package.target_version_ids_replacements).to eql [version.id]
           end
         end
       end
@@ -1892,6 +1977,24 @@ RSpec.describe WorkPackages::SetAttributesService,
             expect(work_package.parent)
               .to be_nil
           end
+        end
+      end
+
+      context "for semantic identifier" do
+        let(:work_package) do
+          build_stubbed(:work_package, project:, identifier: "OLD-7")
+        end
+
+        it "clears sequence_number" do
+          subject
+
+          expect(work_package.sequence_number).to be_nil
+        end
+
+        it "clears identifier" do
+          subject
+
+          expect(work_package.identifier).to be_nil
         end
       end
     end
@@ -2101,7 +2204,6 @@ RSpec.describe WorkPackages::SetAttributesService,
              due_date: child_due_date)
     end
     let(:call_attributes) { { schedule_manually: false } }
-    let(:expected_attributes) { {} }
 
     context "when the child has dates" do
       let(:child_start_date) { Time.zone.today + 2.days }
@@ -2118,31 +2220,233 @@ RSpec.describe WorkPackages::SetAttributesService,
     end
   end
 
-  context "when the type defines a pattern for an attribute" do
-    let(:type) { build_stubbed(:type, patterns: { subject: { blueprint: "{{type}} {{project_name}}", enabled: true } }) }
-    let(:work_package) { WorkPackage.new(type:) }
-
-    it "assigns a placeholder value to the field" do
-      instance.call({})
-
-      expect(work_package.subject).to eq(I18n.t("work_packages.templated_subject_hint", type: type.name))
+  describe "ignore_non_working_days when switching back to automatic scheduling" do
+    shared_let(:project) { create(:project) }
+    let!(:work_package) do
+      create(:work_package,
+             subject: "work_package",
+             project:,
+             ignore_non_working_days:,
+             schedule_manually: true)
     end
+    let(:call_attributes) { { schedule_manually: false } }
 
-    it "overrides even a passed subject" do
-      instance.call(subject: "I will be overwritten")
+    context "without any children" do
+      context "when ignoring non working days" do
+        let(:ignore_non_working_days) { true }
 
-      expect(work_package.subject).to eq(I18n.t("work_packages.templated_subject_hint", type: type.name))
-    end
-
-    context "when the pattern is disabled" do
-      let(:type) do
-        build_stubbed(:type, patterns: { subject: { blueprint: "{{type}} {{project_name}}", enabled: false } })
+        include_examples "service call", description: "keeps its ignore non-working days value" do
+          let(:expected_attributes) do
+            {
+              ignore_non_working_days: true
+            }
+          end
+        end
       end
 
-      it "does not overwrite the attribute" do
-        instance.call(subject: "I will be kept")
+      context "when not ignoring non working days" do
+        let(:ignore_non_working_days) { false }
 
-        expect(work_package.subject).to eq("I will be kept")
+        include_examples "service call", description: "keeps its ignore non-working days value" do
+          let(:expected_attributes) do
+            {
+              ignore_non_working_days: false
+            }
+          end
+        end
+      end
+    end
+
+    context "with one child ignoring non working days" do
+      let(:ignore_non_working_days) { false }
+      let!(:child) do
+        create(:work_package,
+               subject: "child",
+               project:,
+               parent: work_package,
+               ignore_non_working_days: true)
+      end
+
+      include_examples "service call", description: "sets the parent to ignore non-working days" do
+        let(:expected_attributes) do
+          {
+            ignore_non_working_days: true
+          }
+        end
+      end
+    end
+
+    context "with one child not ignoring non working days" do
+      let(:ignore_non_working_days) { true }
+      let!(:child) do
+        create(:work_package,
+               subject: "child",
+               project:,
+               parent: work_package,
+               ignore_non_working_days: false)
+      end
+
+      include_examples "service call", description: "sets the parent to not ignore non-working days" do
+        let(:expected_attributes) do
+          {
+            ignore_non_working_days: false
+          }
+        end
+      end
+    end
+
+    context "with two children: one ignoring and the other not ignoring non working days" do
+      let(:ignore_non_working_days) { false }
+      let!(:child1) do
+        create(:work_package,
+               subject: "child",
+               project:,
+               parent: work_package,
+               ignore_non_working_days: false)
+      end
+      let!(:child2) do
+        create(:work_package,
+               subject: "child",
+               project:,
+               parent: work_package,
+               ignore_non_working_days: true)
+      end
+
+      include_examples "service call", description: "sets the parent to ignore non-working days" do
+        let(:expected_attributes) do
+          {
+            ignore_non_working_days: true
+          }
+        end
+      end
+    end
+  end
+
+  context "with subject patterns in play" do
+    let(:type) { build_stubbed(:type) }
+    let(:work_package) { WorkPackage.new(type:, project:) }
+
+    before do
+      resolver = instance_double(WorkPackageTypes::PatternResolver, resolve: "resolved from a pattern")
+      allow(WorkPackageTypes::PatternResolver).to receive(:new).and_return(resolver)
+    end
+
+    it "does not set the resolved subject from the pattern" do
+      instance.call({})
+
+      expect(work_package.subject).to be_blank
+      expect(WorkPackageTypes::PatternResolver).not_to have_received(:new)
+    end
+
+    it "keeps an overridden subject" do
+      instance.call(subject: "My custom subject")
+
+      expect(work_package.subject).to eq("My custom subject")
+    end
+  end
+
+  describe "versions attributes" do
+    it "extracts target_version_ids into replacements" do
+      instance.call(target_version_ids: [1, 2])
+
+      expect(work_package.target_version_ids_replacements).to eq [1, 2]
+    end
+
+    it "casts string IDs to integers" do
+      instance.call(target_version_ids: ["3", "4"])
+
+      expect(work_package.target_version_ids_replacements).to eq [3, 4]
+    end
+
+    it "extracts observed_in_version_ids into replacements" do
+      instance.call(observed_in_version_ids: [5])
+
+      expect(work_package.observed_in_version_ids_replacements).to eq [5]
+    end
+
+    it "handles both passed together" do
+      instance.call(target_version_ids: [1], observed_in_version_ids: [2])
+
+      expect(work_package.target_version_ids_replacements).to eq [1]
+      expect(work_package.observed_in_version_ids_replacements).to eq [2]
+    end
+
+    it "leaves replacements nil when not passed" do
+      instance.call(subject: "foo")
+
+      expect(work_package.target_version_ids_replacements).to be_nil
+      expect(work_package.observed_in_version_ids_replacements).to be_nil
+    end
+
+    it "sets empty array as override (does not set to nil)" do
+      instance.call(target_version_ids: [])
+
+      expect(work_package.target_version_ids_replacements).to eq []
+      expect(work_package.override_target_versions?).to be true
+    end
+  end
+
+  describe "setting the templated description when the type changes on a new work package" do
+    subject(:service_result) { instance.call(call_attributes) }
+
+    let(:work_package) { new_work_package }
+    let(:type_with_template) { create(:type, default_work_package_description: "Some default template text") }
+    let(:type_without_template) { create(:type, default_work_package_description: nil) }
+
+    before { allow(work_package).to receive(:save) }
+
+    context "when changing to a type that has a default description template" do
+      let(:call_attributes) { { type: type_with_template } }
+
+      it "sets the description to the type's template" do
+        service_result
+        expect(work_package.description).to eq("Some default template text")
+      end
+    end
+
+    context "when changing from a templated type to one without a template" do
+      let(:call_attributes) { { type: type_without_template } }
+
+      before do
+        work_package.description = type_with_template.default_variant.default_work_package_description
+        work_package.clear_changes_information
+      end
+
+      it "clears the previous type's template" do
+        service_result
+        expect(work_package.description).to be_blank
+      end
+    end
+
+    context "when the description was authored by the user" do
+      let(:call_attributes) { { type: type_without_template } }
+
+      before do
+        work_package.description = "Something the user typed"
+        work_package.clear_changes_information
+      end
+
+      it "keeps the user's description" do
+        service_result
+        expect(work_package.description).to eq("Something the user typed")
+      end
+    end
+
+    context "when the project resolves the type to a variant" do
+      let(:family_root) { create(:type, default_work_package_description: "Root template") }
+      let(:variant) { create(:type_variant, type: family_root) }
+      let(:variant_project) { create(:project, types: [variant]) }
+      let(:call_attributes) { { project: variant_project, type: family_root } }
+
+      before do
+        unlink_configuration(variant, aspect: TypeVariant::DEFAULTS)
+        variant.update!(default_work_package_description: "Variant template")
+      end
+
+      it "uses the variant's template, not the type's base template" do
+        service_result
+
+        expect(work_package.description).to eq("Variant template")
       end
     end
   end

@@ -62,7 +62,7 @@ module OpenProject::Bim::BcfJson
         elsif array_of_hashes?(array)
           if array_of_similar_hashes?(array)
             # array of values like [{x: 1, y: 2}, {x: -3, y: 12}, ...]
-            array.map! { make_ox_hash_look_like_loaded_by_rexml(_1) }
+            array.map! { make_ox_hash_look_like_loaded_by_rexml(it) }
           else
             hash = merge_hashes_together(array)
             make_ox_hash_look_like_loaded_by_rexml(hash)
@@ -79,7 +79,7 @@ module OpenProject::Bim::BcfJson
       end
 
       def array_of_hashes?(array)
-        array.all? { _1.is_a?(Hash) }
+        array.all? { it.is_a?(Hash) }
       end
 
       def array_of_similar_hashes?(array)

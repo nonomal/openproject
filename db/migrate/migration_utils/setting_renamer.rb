@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -26,26 +28,36 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-module Migration::MigrationUtils
-  class SettingRenamer
-    # define all the following methods as class methods
-    class << self
-      def rename(source_name, target_name)
-        ActiveRecord::Base.connection.execute <<-SQL
-          UPDATE #{settings_table}
-          SET name = #{quote_value(target_name)}
-          WHERE name = #{quote_value(source_name)}
-        SQL
-      end
+module Migration
+  module MigrationUtils
+    class SettingRenamer
+      # define all the following methods as class methods
+      class << self
+        def rename(source_name, target_name)
+          ActiveRecord::Base.connection.execute <<~SQL.squish
+            UPDATE #{settings_table}
+            SET name = #{quote_value(target_name)}
+            WHERE name = #{quote_value(source_name)}
+          SQL
+        end
 
-      private
+        def rename_value(setting_name, from, to)
+          ActiveRecord::Base.connection.execute <<~SQL.squish
+            UPDATE #{settings_table}
+            SET value = #{quote_value(to)}
+            WHERE name = #{quote_value(setting_name)} AND value = #{quote_value(from)}
+          SQL
+        end
 
-      def settings_table
-        @settings_table ||= ActiveRecord::Base.connection.quote_table_name("settings")
-      end
+        private
 
-      def quote_value(s)
-        ActiveRecord::Base.connection.quote(s)
+        def settings_table
+          @settings_table ||= ActiveRecord::Base.connection.quote_table_name("settings")
+        end
+
+        def quote_value(value)
+          ActiveRecord::Base.connection.quote(value)
+        end
       end
     end
   end

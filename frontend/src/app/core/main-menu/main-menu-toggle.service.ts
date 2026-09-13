@@ -21,76 +21,70 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { Injectable, Injector } from '@angular/core';
+import { Injectable, Injector, inject } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { CurrentProjectService } from 'core-app/core/current-project/current-project.service';
 import { DeviceService } from 'core-app/core/browser/device.service';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
+import { queryVisible } from 'core-app/shared/helpers/dom-helpers';
 
 @Injectable({ providedIn: 'root' })
 export class MainMenuToggleService {
-  public toggleTitle:string;
+  injector = inject(Injector);
+  readonly deviceService = inject(DeviceService);
 
   private elementWidth:number;
 
   private elementMinWidth = 11;
 
-  private readonly defaultWidth:number = 230;
+  private readonly defaultWidth:number = 280;
 
   private readonly localStorageKey:string = 'openProject-mainMenuWidth';
 
   private readonly localStorageStateKey:string = 'openProject-mainMenuCollapsed';
 
-  @InjectField() currentProject:CurrentProjectService;
-
-  private global = (window as any);
+  readonly currentProject = inject(CurrentProjectService);
 
   private htmlNode = document.getElementsByTagName('html')[0];
 
-  private mainMenu = jQuery('#main-menu')[0]; // main menu, containing sidebar and resizer
-
-  // Title needs to be sync in main-menu-toggle.component.ts and main-menu-resizer.component.ts
-  private titleData = new BehaviorSubject<string>('');
-
-  public titleData$ = this.titleData.asObservable();
+  private get mainMenu():HTMLElement|null {
+    return document.querySelector<HTMLElement>('#main-menu');
+  }
 
   // Notes all changes of the menu size (currently needed in wp-resizer.component.ts)
-  private changeData = new BehaviorSubject<any>({});
-
+  private changeData = new BehaviorSubject<number|undefined>(undefined);
   public changeData$ = this.changeData.asObservable();
+
   private wasHiddenDueToResize = false;
 
   private wasCollapsedByUser = false;
 
-  constructor(
-    protected I18n:I18nService,
-    public injector:Injector,
-    readonly deviceService:DeviceService,
-  ) {
+  private lastInnerWidth = window.innerWidth;
+
+  constructor() {
     this.initializeMenu();
     // Add resize event listener
     window.addEventListener('resize', this.onWindowResize.bind(this));
   }
 
   public initializeMenu():void {
-    if (!this.mainMenu) {
+    const mainMenu = this.mainMenu;
+    if (!mainMenu) {
       return;
     }
 
-    this.elementWidth = parseInt(window.OpenProject.guardedLocalStorage(this.localStorageKey) as string);
+    this.elementWidth = parseInt(window.OpenProject.guardedLocalStorage(this.localStorageKey) as string, 10);
     const menuCollapsed = window.OpenProject.guardedLocalStorage(this.localStorageStateKey) === 'true';
 
     // Set the initial value of the collapse tracking flag
     this.wasCollapsedByUser = menuCollapsed;
 
     if (!this.elementWidth) {
-      this.saveWidth(this.mainMenu.offsetWidth);
+      this.saveWidth(mainMenu.offsetWidth);
     } else if (menuCollapsed) {
       this.closeMenu();
     } else {
@@ -101,6 +95,12 @@ export class MainMenuToggleService {
   }
 
   private onWindowResize():void {
+    // Skip if only the visual viewport changed (e.g. virtual keyboard opening) —
+    // adjustMenuVisibility() only cares about innerWidth, and the keyboard does not change it.
+    const currentWidth = window.innerWidth;
+    if (currentWidth === this.lastInnerWidth) return;
+    this.lastInnerWidth = currentWidth;
+
     this.adjustMenuVisibility();
   }
 
@@ -117,7 +117,7 @@ export class MainMenuToggleService {
     }
   }
 
-  public toggleNavigation(event?:JQuery.TriggeredEvent|Event):void {
+  public toggleNavigation(event?:Event):void {
     if (event) {
       event.stopPropagation();
       event.preventDefault();
@@ -139,17 +139,23 @@ export class MainMenuToggleService {
     // This needs to be called after AngularJS has rendered the menu, which happens some when after(!) we leave this
     // method here. So we need to set the focus after a timeout.
     setTimeout(() => {
-      jQuery('#main-menu [class*="-menu-item"]:visible').first().focus();
+      const mainMenu = this.mainMenu;
+      if (!mainMenu) return;
+      const firstVisibleMenuItem = queryVisible('[class*="-menu-item"]', mainMenu)[0];
+      firstVisibleMenuItem?.focus();
     }, 500);
   }
 
   public closeMenu():void {
     this.setWidth(0);
-    jQuery('.searchable-menu--search-input').blur();
+    this.changeData.next(0);
+    document.querySelectorAll<HTMLElement>('.searchable-menu--search-input').forEach((input) => input.blur());
   }
 
   public openMenu():void {
-    this.setWidth(this.defaultWidth);
+    const width = parseInt(window.OpenProject.guardedLocalStorage(this.localStorageKey) as string, 10) || this.defaultWidth;
+    this.setWidth(width);
+    this.changeData.next(width);
   }
 
   public setWidth(width?:number):void {
@@ -157,8 +163,11 @@ export class MainMenuToggleService {
       this.elementWidth = width;
     }
 
+    const mainMenu = this.mainMenu;
+    if (!mainMenu) return;
+
     // Apply the width directly to the main menu
-    this.mainMenu.style.width = `${this.elementWidth}px`;
+    mainMenu.style.width = `${this.elementWidth}px`;
 
     // Apply to root CSS variable for any related layout adjustments
     this.htmlNode.style.setProperty('--main-menu-width', `${this.elementWidth}px`);
@@ -166,7 +175,6 @@ export class MainMenuToggleService {
     // Check if menu is open or closed and apply CSS class if needed
     this.toggleClassHidden();
     this.snapBack();
-    this.setToggleTitle();
 
     // Save the width if it's open
     if (this.elementWidth > 0) {
@@ -190,18 +198,9 @@ export class MainMenuToggleService {
     }
   }
 
-  private setToggleTitle():void {
-    if (this.showNavigation) {
-      this.toggleTitle = this.I18n.t('js.label_hide_project_menu');
-    } else {
-      this.toggleTitle = this.I18n.t('js.label_expand_project_menu');
-    }
-    this.titleData.next(this.toggleTitle);
-  }
-
   private toggleClassHidden():void {
     const isHidden = this.elementWidth < this.elementMinWidth;
-    const hideElements = jQuery('.can-hide-navigation');
-    hideElements.toggleClass('hidden-navigation', isHidden);
+    const hideElements = document.querySelectorAll<HTMLElement>('.can-hide-navigation');
+    hideElements.forEach((hideElement) => hideElement.classList.toggle('hidden-navigation', isHidden));
   }
 }

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,8 +29,11 @@
 #++
 
 require "spec_helper"
+require "contracts/shared/model_contract_shared_context"
 
 RSpec.shared_examples_for "project contract" do
+  include_context "ModelContract shared context"
+
   let(:current_user) { build_stubbed(:user) }
 
   before do
@@ -36,6 +41,19 @@ RSpec.shared_examples_for "project contract" do
       mock.allow_in_project(*project_permissions, project:)
       mock.allow_globally(*global_permissions)
     end
+
+    assignable_parents_scope = instance_double(ActiveRecord::Relation,
+                                               empty?: assignable_parents.empty?,
+                                               to_a: assignable_parents)
+
+    allow(Project)
+      .to receive(:assignable_parents)
+            .and_return(assignable_parents_scope)
+
+    allow(assignable_parents_scope)
+      .to receive(:exists?) do |id:|
+        assignable_parents.map(&:id).include?(id)
+      end
   end
 
   let(:project_permissions) { [] }
@@ -47,108 +65,55 @@ RSpec.shared_examples_for "project contract" do
   let(:project_public) { true }
   let(:project_status_code) { "on_track" }
   let(:project_status_explanation) { "some explanation" }
+  let(:project_workspace_type) { "project" }
+  let(:project_templated) { false }
   let(:project_parent) do
     build_stubbed(:project)
   end
-  let(:parent_assignable) { true }
-  let!(:assignable_parents) do
-    assignable_parents_scope = double("assignable parents scope")
-    assignable_parents = double("assignable parents")
+  let(:assignable_parents) { [project_parent] }
 
-    allow(Project)
-      .to receive(:allowed_to)
-      .and_call_original
-
-    allow(Project)
-      .to receive(:allowed_to)
-      .with(current_user, :add_subprojects)
-      .and_return assignable_parents_scope
-
-    allow(assignable_parents_scope)
-      .to receive(:where)
-      .and_return(assignable_parents_scope)
-
-    allow(assignable_parents_scope)
-      .to receive(:not)
-      .with(id: project.self_and_descendants)
-      .and_return(assignable_parents)
-
-    if project_parent
-      allow(assignable_parents)
-        .to receive(:where)
-        .with(id: project_parent.id)
-        .and_return(assignable_parents_scope)
-
-      allow(assignable_parents_scope)
-        .to receive(:exists?)
-        .and_return(parent_assignable)
-    end
-
-    assignable_parents
-  end
-
-  def expect_valid(valid, symbols = {})
-    expect(contract.validate).to eq(valid)
-
-    symbols.each do |key, arr|
-      expect(contract.errors.symbols_for(key)).to match_array arr
-    end
-  end
-
-  shared_examples "is valid" do
-    it "is valid" do
-      expect_valid(true)
-    end
-  end
-
-  it_behaves_like "is valid"
+  it_behaves_like "contract is valid"
 
   context "if the name is nil" do
     let(:project_name) { nil }
 
-    it "is invalid" do
-      expect_valid(false, name: %i(blank))
-    end
+    it_behaves_like "contract is invalid", name: %i(blank)
   end
 
   context "if the description is nil" do
     let(:project_description) { nil }
 
-    it_behaves_like "is valid"
+    it_behaves_like "contract is valid"
   end
 
   context "if the parent is nil" do
     let(:project_parent) { nil }
 
-    it_behaves_like "is valid"
+    it_behaves_like "contract is valid"
   end
 
   context "if the parent is not in the set of assignable_parents" do
-    let(:parent_assignable) { false }
+    let(:assignable_parents) { [] }
 
-    it "is invalid" do
-      expect_valid(false, parent: %i(does_not_exist))
-    end
+    it_behaves_like "contract is invalid", parent: %i(invalid)
   end
 
   context "if active is nil" do
     let(:project_active) { nil }
 
-    it "is invalid" do
-      expect_valid(false, active: %i(blank))
-    end
+    it_behaves_like "contract is invalid", active: %i(blank)
   end
 
   context "if status code is nil" do
     let(:project_status_code) { nil }
 
-    it_behaves_like "is valid"
+    it_behaves_like "contract is valid"
   end
 
   context "if status explanation is nil" do
     let(:project_status_explanation) { nil }
 
-    it_behaves_like "is valid"
+    it_behaves_like "contract is valid"
   end
 
   context "if status code is invalid" do
@@ -164,84 +129,89 @@ RSpec.shared_examples_for "project contract" do
       code_attributes.instance_variable_set(:@value, bogus_project_status_code)
     end
 
-    it "is invalid" do
-      expect_valid(false, status: %i(inclusion))
-    end
+    it_behaves_like "contract is invalid", status: %i(inclusion)
   end
 
   context "when the identifier consists of only letters" do
     let(:project_identifier) { "abc" }
 
-    it_behaves_like "is valid"
+    it_behaves_like "contract is valid"
   end
 
   context "when the identifier consists of letters followed by numbers" do
     let(:project_identifier) { "abc12" }
 
-    it_behaves_like "is valid"
+    it_behaves_like "contract is valid"
   end
 
   context "when the identifier consists of letters followed by numbers with a hyphen in between" do
     let(:project_identifier) { "abc-12" }
 
-    it_behaves_like "is valid"
+    it_behaves_like "contract is valid"
   end
 
   context "when the identifier consists of letters followed by numbers with an underscore in between" do
     let(:project_identifier) { "abc_12" }
 
-    it_behaves_like "is valid"
+    it_behaves_like "contract is valid"
   end
 
   context "when the identifier consists of numbers followed by letters with a hyphen in between" do
     let(:project_identifier) { "12-abc" }
 
-    it_behaves_like "is valid"
+    it_behaves_like "contract is valid"
   end
 
   context "when the identifier consists of numbers followed by letters with an underscore in between" do
     let(:project_identifier) { "12_abc" }
 
-    it_behaves_like "is valid"
+    it_behaves_like "contract is valid"
   end
 
   context "when the identifier consists of only numbers" do
     let(:project_identifier) { "12" }
 
-    it "is invalid" do
-      expect_valid(false, identifier: %i(invalid))
-    end
+    it_behaves_like "contract is invalid", identifier: %i(invalid)
   end
 
   context "when the identifier consists of a reserved word" do
     let(:project_identifier) { "new" }
 
-    it "is invalid" do
-      expect_valid(false, identifier: %i(exclusion))
-    end
+    it_behaves_like "contract is invalid", identifier: %i(exclusion)
+  end
+
+  context "when changing templated as an admin" do
+    let(:current_user) { build_stubbed(:admin) }
+    let(:project_templated) { true }
+
+    it_behaves_like "contract is valid"
+  end
+
+  context "when changing templated as a user" do
+    let(:project_templated) { true }
+
+    it_behaves_like "contract is invalid", templated: %i(error_unauthorized)
   end
 
   context "if the user lacks permission" do
     let(:global_permissions) { [] }
     let(:project_permissions) { [] }
 
-    it "is invalid" do
-      expect_valid(false, base: %i(error_unauthorized))
+    it_behaves_like "contract is invalid", base: %i(error_unauthorized)
+  end
+
+  describe "assignable_parents" do
+    before do
+      assignable_parents
+    end
+
+    it "returns the projects Project.assignable_parents returns" do
+      expect(contract.assignable_parents.to_a)
+        .to eql assignable_parents
     end
   end
 
-  describe "assignable_values" do
-    context "for project" do
-      before do
-        assignable_parents
-      end
-
-      it "returns all projects the user has the add_subprojects permissions for" do
-        expect(contract.assignable_parents)
-          .to eql assignable_parents
-      end
-    end
-
+  describe "assignable_custom_field_values" do
     context "for a list custom field" do
       let(:custom_field) { build_stubbed(:list_project_custom_field) }
 

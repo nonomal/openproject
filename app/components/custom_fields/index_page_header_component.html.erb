@@ -31,14 +31,6 @@ See COPYRIGHT and LICENSE files for more details.
     header.with_title { I18n.t(:label_custom_field_plural) }
     header.with_breadcrumbs(breadcrumb_items, selected_item_font_weight: :normal)
 
-    if @tabs.present?
-      header.with_tab_nav(label: nil, test_selector: "custom-fields--tab-nav") do |tab_nav|
-        @tabs.each do |tab|
-          tab_nav.with_tab(selected: currently_selected_tab == tab, href: tab[:path]) do |t|
-            t.with_text { I18n.t(tab[:label]) }
-          end
-        end
-      end
-    end
+    helpers.render_tab_header_nav(header, @tabs, test_selector: "custom-fields--tab-nav")
   end
 %>

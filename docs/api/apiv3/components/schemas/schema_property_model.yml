@@ -23,14 +23,16 @@ properties:
   writable:
     type: boolean
     description: Indicates, if the property is writable when sending a request of this schema.
-  object:
+  options:
     type: object
     description: Additional options for the property.
   location:
     type: string
     description: Defines the json path where the property is located in the payload.
     default: ''
+  placeholder:
+    type: string
+    description: A placeholder for the property to display if the property has no value.
   _links:
     type: object
     description: Useful links for this property (e.g. an endpoint to fetch allowed values)
-    

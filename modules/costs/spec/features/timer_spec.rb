@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -38,6 +40,7 @@ RSpec.describe "Work Package timer", :js, :selenium do
   let(:wp_view_b) { Pages::FullWorkPackage.new(work_package_b) }
   let(:time_logging_modal) { Components::TimeLoggingModal.new }
   let(:timer_button) { Components::WorkPackages::TimerButton.new }
+  let(:user_menu) { Components::UserMenu.new }
 
   let(:user) { create(:user, member_with_permissions: { project => permissions }) }
 
@@ -55,18 +58,19 @@ RSpec.describe "Work Package timer", :js, :selenium do
       active_time_entries = TimeEntry.where(ongoing: true, user:)
       expect(active_time_entries.count).to eq 1
       timer_entry = active_time_entries.first
-      expect(timer_entry.work_package).to eq work_package_a
+      expect(timer_entry.entity).to eq work_package_a
       expect(timer_entry.hours).to be_nil
 
-      page.find(".op-top-menu-user").click
+      user_menu.open
       expect(page).to have_css(".op-timer-account-menu", wait: 10)
       expect(page).to have_css(".op-timer-account-menu--wp-details", text: "##{work_package_a.id}: WP A")
+      expect(page).to have_css(".op-timer-account-menu--wp-details[href='/work_packages/#{work_package_a.id}']")
       page.find_test_selector("op-timer-account-menu-stop").click
 
       time_logging_modal.is_visible true
 
       time_logging_modal.has_field_with_value "spent_on", Date.current.strftime
-      time_logging_modal.has_field_with_value "hours", /(\d\.)?\d+/
+      time_logging_modal.has_field_with_value "hours_display", /(\d\.)?\d+/
       time_logging_modal.activity_input_disabled_because_work_package_missing? false
       # wait for available_work_packages query to finish before saving
       time_logging_modal.expect_work_package(work_package_a)
@@ -80,6 +84,7 @@ RSpec.describe "Work Package timer", :js, :selenium do
       expect(timer_entry.ongoing).to be false
       expect(timer_entry.hours).not_to be_nil
 
+      user_menu.close
       timer_button.start
       timer_button.expect_active
 
@@ -93,17 +98,19 @@ RSpec.describe "Work Package timer", :js, :selenium do
 
       expect(page).to have_css(".op-timer-stop-modal")
       expect(page).to have_text("Tracking time:")
+      expect(page).to have_css(".op-timer-stop-modal a[href='/work_packages/#{work_package_a.id}']",
+                               text: "##{work_package_a.id}: WP A")
 
       active_time_entries = TimeEntry.where(ongoing: true, user:)
       expect(active_time_entries.count).to eq 1
       timer_entry = active_time_entries.first
-      expect(timer_entry.work_package).to eq work_package_a
+      expect(timer_entry.entity).to eq work_package_a
       expect(timer_entry.hours).to be_nil
 
       page.within(".spot-modal") { click_on "Stop current timer" }
       time_logging_modal.is_visible true
       time_logging_modal.has_field_with_value "spent_on", Date.current.strftime
-      time_logging_modal.has_field_with_value "hours", /(\d\.)?\d+/
+      time_logging_modal.has_field_with_value "hours_display", /(\d\.)?\d+/
       time_logging_modal.activity_input_disabled_because_work_package_missing? false
       # wait for available_work_packages query to finish before saving
       time_logging_modal.expect_work_package(work_package_a)
@@ -122,7 +129,7 @@ RSpec.describe "Work Package timer", :js, :selenium do
       active_time_entries = TimeEntry.where(ongoing: true, user:)
       expect(active_time_entries.count).to eq 1
       timer_entry = active_time_entries.first
-      expect(timer_entry.work_package).to eq work_package_b
+      expect(timer_entry.entity).to eq work_package_b
       expect(timer_entry.hours).to be_nil
     end
   end
@@ -135,7 +142,7 @@ RSpec.describe "Work Package timer", :js, :selenium do
     context "when an old timer exists" do
       let!(:active_timer) do
         Timecop.travel(2.days.ago) do
-          create(:time_entry, project:, work_package: work_package_a, user:, ongoing: true)
+          create(:time_entry, project:, entity: work_package_a, user:, ongoing: true)
         end
       end
 
@@ -146,6 +153,21 @@ RSpec.describe "Work Package timer", :js, :selenium do
       end
     end
 
+    context "when a timer is already running on another work package" do
+      let!(:active_timer) { create(:time_entry, project:, entity: work_package_a, user:, ongoing: true) }
+
+      it "opens the running timer's work package from the stop modal" do
+        wp_view_b.visit!
+        timer_button.expect_visible
+        timer_button.start
+
+        expect(page).to have_css(".op-timer-stop-modal")
+        click_link "##{work_package_a.id}: WP A"
+
+        expect(page).to have_current_path(%r{/work_packages/#{work_package_a.id}(/|\?|$)})
+      end
+    end
+
     it "correctly handles timers in multiple tabs" do
       wp_view_a.visit!
       timer_button.expect_visible
@@ -153,6 +175,7 @@ RSpec.describe "Work Package timer", :js, :selenium do
       second_window = open_new_window
       within_window(second_window) do
         wp_view_a.visit!
+        wait_for_network_idle
         timer_button.expect_visible
         timer_button.start
         timer_button.expect_active
@@ -168,7 +191,7 @@ RSpec.describe "Work Package timer", :js, :selenium do
 
       time_logging_modal.is_visible true
       time_logging_modal.has_field_with_value "spent_on", Date.current.strftime
-      time_logging_modal.has_field_with_value "hours", /(\d\.)?\d+/
+      time_logging_modal.has_field_with_value "hours_display", /(\d\.)?\d+/
       time_logging_modal.activity_input_disabled_because_work_package_missing? false
       # wait for available_work_packages query to finish before saving
       time_logging_modal.expect_work_package(work_package_a)
@@ -180,7 +203,7 @@ RSpec.describe "Work Package timer", :js, :selenium do
       timer_button.stop
       time_logging_modal.is_visible true
       time_logging_modal.has_field_with_value "spent_on", Date.current.strftime
-      time_logging_modal.has_field_with_value "hours", /(\d\.)?\d+/
+      time_logging_modal.has_field_with_value "hours_display", /(\d\.)?\d+/
       time_logging_modal.activity_input_disabled_because_work_package_missing? false
       # wait for available_work_packages query to finish before saving
       time_logging_modal.expect_work_package(work_package_a)

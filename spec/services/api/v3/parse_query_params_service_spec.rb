@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -186,7 +188,7 @@ RSpec.describe API::V3::ParseQueryParamsService,
         end
 
         it "returns the error" do
-          message = 'unexpected token at \'faulty["status:desc"]\''
+          message = "unexpected token 'faulty[\"status:desc\"]' at line 1 column 1"
 
           expect(subject.errors.messages[:base].length)
             .to be(1)
@@ -264,8 +266,7 @@ RSpec.describe API::V3::ParseQueryParamsService,
           end
 
           it "returns the error" do
-            message = "unexpected token at " +
-                      "'faulty[{\"status\":{\"operator\":\"=\"'"
+            message = "unexpected token 'faulty[{\"status\":{\"operator\":\"=\"' at line 1 column 1"
 
             expect(subject.errors.messages[:base].length)
               .to be(1)
@@ -282,6 +283,24 @@ RSpec.describe API::V3::ParseQueryParamsService,
             let(:expected) do
               { filters: [] }
             end
+          end
+        end
+
+        context "with a non-object filter element" do
+          let(:params) do
+            { filters: JSON::dump([["status", "=", "not a hash"]]) }
+          end
+
+          it "is not success" do
+            expect(subject)
+              .not_to be_success
+          end
+
+          it "returns the error" do
+            expect(subject.errors.messages[:base].length)
+              .to be(1)
+            expect(subject.errors.messages[:base][0])
+              .to include("Filter must be a JSON object, got Array")
           end
         end
       end

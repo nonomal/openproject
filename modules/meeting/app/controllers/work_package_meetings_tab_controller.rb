@@ -30,11 +30,11 @@
 
 class WorkPackageMeetingsTabController < ApplicationController
   include OpTurbo::ComponentStream
-  include OpTurbo::DialogStreamHelper
   include Meetings::WorkPackageMeetingsTabComponentStreams
 
+  load_and_authorize_with_permission_in_project :view_work_packages
+
   before_action :set_work_package
-  before_action :authorize_global
 
   def index
     direction = params[:direction]&.to_sym || :upcoming # default to upcoming
@@ -54,7 +54,9 @@ class WorkPackageMeetingsTabController < ApplicationController
   end
 
   def count
-    count = Meeting.visible.where(id: @work_package.meetings.select(:id)).count
+    count = Meeting.visible.not_templated
+      .where(id: agenda_items_linked_to_work_package.select(:meeting_id))
+      .count
     render json: { count: }
   end
 
@@ -70,7 +72,7 @@ class WorkPackageMeetingsTabController < ApplicationController
           work_package_id: @work_package.id,
           presenter_id: current_user.id,
           item_type: MeetingAgendaItem::ITEM_TYPES[:work_package],
-          meeting_section_id: backlog_id
+          meeting_section_id: params[:meeting_agenda_item][:meeting_section_id]
         )
       )
 
@@ -88,11 +90,39 @@ class WorkPackageMeetingsTabController < ApplicationController
     respond_with_turbo_streams
   end
 
+  def refresh_form
+    @meeting_agenda_item = MeetingAgendaItem.new(
+      meeting: meeting_for(params[:meeting_agenda_item][:meeting_id]),
+      notes: params[:meeting_agenda_item][:notes]
+    )
+
+    call = MeetingAgendaItems::SetAttributesService.new(
+      user: current_user,
+      model: @meeting_agenda_item,
+      contract_class: EmptyContract
+    ).call
+
+    meeting_agenda_item = call.result
+
+    update_via_turbo_stream(
+      component: WorkPackageMeetingsTab::AddWorkPackageToMeetingFormComponent.new(
+        work_package: @work_package,
+        meeting_agenda_item: meeting_agenda_item
+      )
+    )
+
+    respond_with_turbo_streams
+  end
+
   private
 
   def set_work_package
-    @work_package = WorkPackage.find(params[:work_package_id])
-    @project = @work_package.project # required for authorization via before_action
+    @work_package = @project.work_packages.visible.find(params[:work_package_id])
+  end
+
+  def meeting_for(meeting_id)
+    # TODO: Should this be scoped to the project?
+    Meeting.visible.find(meeting_id)
   end
 
   def add_work_package_to_meeting_params
@@ -103,7 +133,10 @@ class WorkPackageMeetingsTabController < ApplicationController
     meeting_id = add_work_package_to_meeting_params[:meeting_id]
     return if meeting_id.blank?
 
-    Meeting.find(meeting_id).backlog.id
+    meeting = Meeting.visible.find(meeting_id)
+    return if meeting.recurring?
+
+    meeting.backlog.id
   end
 
   def set_agenda_items(direction)
@@ -126,14 +159,17 @@ class WorkPackageMeetingsTabController < ApplicationController
   end
 
   def get_agenda_items_of_work_package(direction)
-    agenda_items = MeetingAgendaItem
+    agenda_items = agenda_items_linked_to_work_package
         .includes(:meeting)
-        .where(meeting_id: Meeting.not_templated.visible(current_user))
-        .where(work_package_id: @work_package.id)
+        .preload(:outcomes)
         .order(sort_clause(direction))
 
     comparison = direction == :past ? "<" : ">="
     agenda_items.where("meetings.start_time + (interval '1 hour' * meetings.duration) #{comparison} ?", Time.zone.now)
+  end
+
+  def agenda_items_linked_to_work_package
+    MeetingAgendaItem.visible_linked_to_work_package(current_user, @work_package)
   end
 
   def sort_clause(direction)

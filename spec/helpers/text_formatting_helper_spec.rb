@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -106,7 +108,7 @@ RSpec.describe TextFormattingHelper do
         "Lorem ipsum dolor sit \namet, consetetur sadipscing elitr, sed diam nonumy eirmod\n tempor invidunt"
       end
       let(:text_html) do
-        "Lorem ipsum dolor sit <br /> amet, consetetur sadipscing elitr, sed diam nonumy eirmod <br /> tempor invidunt"
+        "Lorem ipsum dolor sit <br/> amet, consetetur sadipscing elitr, sed diam nonumy eirmod <br /> tempor invidunt"
       end
 
       it "replaces escaped line breaks with html line breaks and should be html_safe" do
@@ -133,10 +135,12 @@ RSpec.describe TextFormattingHelper do
     end
 
     context "with potentially harmful code" do
-      it "escapes" do
+      it "strips script tags and their content" do
         text = "Lorem ipsum dolor <script>alert('pwnd');</script> tempor invidunt"
-        expect(truncate_formatted_text(text))
-          .to include("&lt;script&gt;alert('pwnd');&lt;/script&gt;")
+        result = truncate_formatted_text(text)
+        expect(result).not_to include("<script>")
+        expect(result).not_to include("alert('pwnd')")
+        expect(result).to include("Lorem ipsum dolor")
       end
     end
   end

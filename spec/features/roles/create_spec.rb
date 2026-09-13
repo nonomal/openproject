@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -78,7 +80,7 @@ RSpec.describe "Role creation", :js do
       .to have_current_path(roles_path)
 
     expect(page)
-      .to have_css("table td", text: "New role name")
+      .to have_link("New role name")
 
     click_link "New role name"
 
@@ -102,17 +104,13 @@ RSpec.describe "Role creation", :js do
     expect(page)
       .to have_unchecked_field("Delete watchers")
 
-    # Workflow should be copied over.
-    # Workflow routes are not resource-oriented.
-    visit(url_for(controller: :workflows, action: :edit, only_path: true))
-
-    select "New role name", from: "Role"
-    select type.name, from: "Type"
-    click_button "Edit"
-
-    from_id = existing_workflow.old_status_id
-    to_id = existing_workflow.new_status_id
-
-    expect(page).to have_field("status_#{from_id}_#{to_id}_", checked: true)
+    # Workflow should be copied over from the source role.
+    new_role = Role.find_by!(name: "New role name")
+    expect(
+      Workflow.exists?(role_id: new_role.id,
+                       type_variant_id: type.default_variant.id,
+                       old_status_id: existing_workflow.old_status_id,
+                       new_status_id: existing_workflow.new_status_id)
+    ).to be true
   end
 end

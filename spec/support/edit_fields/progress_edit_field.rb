@@ -285,7 +285,7 @@ class ProgressEditField < EditField
   def input_aria_related_element(describedby:)
     input_element["aria-describedby"]
       .split
-      .find { _1.start_with?("#{describedby}-") }
+      .find { it.start_with?("#{describedby}-") }
       &.then { |id| find(id:) }
   end
 end

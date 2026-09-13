@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -62,9 +64,28 @@ class WorkPackages::ScheduleDependency::DependencyGraph
   def full_dependencies_of(work_package_id)
     @full_dependent_ids ||= {}
     @full_dependent_ids[work_package_id] ||= begin
-      ids = dependent_ids_for_work_package_id(work_package_id)
-      ids += ids.flat_map { full_dependencies_of(_1) }
-      ids.uniq
+      visited = Set.new
+      stack = [work_package_id]
+      result = Set.new
+
+      while stack.any?
+        current_id = stack.pop
+
+        visited.add(current_id)
+
+        # Get direct dependencies for current work package
+        dependent_ids = dependent_ids_for_work_package_id(current_id)
+
+        dependent_ids.each do |dependent_id|
+          # Add to result set
+          result.add(dependent_id) unless dependent_id == work_package_id
+
+          # Add to stack for further processing (if not already visited)
+          stack.push(dependent_id) unless visited.include?(dependent_id)
+        end
+      end
+
+      result.to_a
     end
   end
 

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -36,6 +38,10 @@ RSpec.describe API::V3::Statuses::StatusRepresenter do
     subject(:generated) { representer.to_json }
 
     it { is_expected.to include_json("Status".to_json).at_path("_type") }
+
+    it "fulfills the documented schema" do
+      expect(generated).to match_json_schema.from_docs("status_model")
+    end
 
     describe "status" do
       it { is_expected.to have_json_path("id") }

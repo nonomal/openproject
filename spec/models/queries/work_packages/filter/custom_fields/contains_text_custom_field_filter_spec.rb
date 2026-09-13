@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -44,7 +46,7 @@ RSpec.describe Queries::WorkPackages::Filter::CustomFieldFilter,
   let(:custom_field) do
     create(:issue_custom_field, :text, name: "LongText")
   end
-  let(:type) { create(:type_standard, custom_fields: [custom_field]) }
+  let(:type) { create(:type_task, custom_fields: [custom_field]) }
 
   let!(:wp_contains) do
     create(:work_package,

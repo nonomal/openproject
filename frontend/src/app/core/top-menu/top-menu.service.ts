@@ -21,217 +21,37 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
-import { findAllFocusableElementsWithin } from 'core-app/shared/helpers/focus-helpers';
-import { Inject, Injectable } from '@angular/core';
+
+import { Injectable, inject } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { isVisible } from 'core-app/shared/helpers/dom-helpers';
 
 export const ANIMATION_RATE_MS = 100;
 
 @Injectable({ providedIn: 'root' })
 export class TopMenuService {
-  private hover = false;
+  private document = inject<Document>(DOCUMENT);
 
-  private menuIsOpen = false;
-
-  private menuContainer:HTMLElement;
-
-  private active$ = new BehaviorSubject<HTMLElement|null>(null);
-
-  constructor(@Inject(DOCUMENT) private document:Document) {
-  }
 
   register():void {
-    this.menuContainer = this.document.querySelector<HTMLElement>('.op-app-header') as HTMLElement;
-    this.setupDropdownClick();
-    this.closeOnBodyClick();
-    this.accessibility();
     this.skipContentClickListener();
-  }
-
-  public activeDropdown$():Observable<HTMLElement|null> {
-    return this.active$.asObservable();
-  }
-
-  // the entire menu gets closed, no hover possible afterwards
-  public close():void {
-    this.stopHover();
-    this.closeAllItems();
-    this.menuIsOpen = false;
-    this.active$.next(null);
   }
 
   private skipContentClickListener():void {
     // Skip menu on content
-    const skipLink = this.document.querySelector('#skip-navigation--content') as HTMLElement;
+    const skipLink = this.document.querySelector('#skip-navigation--content');
     skipLink?.addEventListener('click', () => {
       // Skip to the breadcrumb or the first link in the toolbar or the first link in the content (homescreen)
       const selectors = '.first-breadcrumb-element a, .toolbar-container a:first-of-type, #content a:first-of-type';
-      const visibleLink = jQuery(selectors)
-        .not(':hidden')
-        .first();
+      const visibleLink = Array
+        .from(document.querySelectorAll<HTMLElement>(selectors))
+        .find((link) => isVisible(link));
 
-      if (visibleLink.length) {
-        visibleLink.trigger('focus');
-      }
+      visibleLink?.focus();
     });
-  }
-
-  private accessibility():void {
-    this
-      .document
-      .querySelectorAll('.op-app-menu--dropdown')
-      .forEach((el) => el.setAttribute('aria-expanded', 'false'));
-  }
-
-  private toggleClick(dropdown:HTMLElement):void {
-    if (this.menuIsOpen) {
-      if (this.isOpen(dropdown)) {
-        this.close();
-      } else {
-        this.openDropdown(dropdown);
-      }
-    } else {
-      this.opening();
-      this.openDropdown(dropdown);
-    }
-  }
-
-  // somebody opens the menu via click, hover possible afterwards
-  private opening():void {
-    this.startHover();
-    this.menuIsOpen = true;
-  }
-
-  private stopHover():void {
-    this.hover = false;
-    this.menuContainer?.classList.remove('hover');
-  }
-
-  private startHover():void {
-    this.hover = true;
-    this.menuContainer?.classList.add('hover');
-  }
-
-  private closeAllItems():void {
-    this
-      .openDropdowns()
-      .forEach((item) => this.closeDropdown(item));
-  }
-
-  private closeOnBodyClick():void {
-    const wrapper = document.getElementById('wrapper');
-    if (!wrapper) {
-      return;
-    }
-
-    wrapper.addEventListener('click', (evt) => {
-      if (this.menuIsOpen && !this.openDropdowns()[0]?.contains(evt.target as HTMLElement)) {
-        this.close();
-      }
-    }, true);
-  }
-
-  private openDropdowns():HTMLElement[] {
-    const elements = this.menuContainer?.querySelectorAll<HTMLElement>('.op-app-menu--item_dropdown-open');
-    return elements ? Array.from(elements) : [];
-  }
-
-  private dropdowns():HTMLElement[] {
-    const elements = this.menuContainer?.querySelectorAll<HTMLElement>('.op-app-menu--item_has-dropdown');
-    return elements ? Array.from(elements) : [];
-  }
-
-  private setupDropdownClick():void {
-    this.dropdowns().forEach((el) => {
-      const action = el.querySelector<HTMLElement>('.op-app-menu--item-action');
-      action?.addEventListener('click', (evt) => {
-        this.toggleClick(el);
-        evt.preventDefault();
-      });
-    });
-  }
-
-  private isOpen(dropdown:HTMLElement):boolean {
-    return dropdown.classList.contains('.op-app-menu--item_dropdown-open');
-  }
-
-  private isClosed(dropdown:HTMLElement):boolean {
-    return !this.isOpen(dropdown);
-  }
-
-  private openDropdown(dropdown:HTMLElement):void {
-    this.closeOtherItems(dropdown);
-    this.slideAndFocus(dropdown, () => {
-      this.active$.next(dropdown);
-    });
-  }
-
-  private closeDropdown(dropdown:HTMLElement, immediate?:boolean):void {
-    this.slideUp(dropdown, !!immediate);
-    this.active$.next(null);
-  }
-
-  private closeOtherItems(dropdown:HTMLElement):void {
-    this
-      .openDropdowns()
-      .forEach((other) => {
-        if (other !== dropdown) {
-          this.closeDropdown(other, true);
-        }
-      });
-  }
-
-  private slideAndFocus(dropdown:HTMLElement, callback:() => void):void {
-    this.slideDown(dropdown, callback);
-    setTimeout(() => this.focusFirstInputOrLink(dropdown), ANIMATION_RATE_MS);
-  }
-
-  private slideDown(dropdown:HTMLElement, callback:() => void):void {
-    const toDrop = this.getDropdownContainer(dropdown);
-    toDrop.setAttribute('aria-expanded', 'true');
-    dropdown.classList.add('op-app-menu--item_dropdown-open');
-
-    jQuery(toDrop)
-      .slideDown(ANIMATION_RATE_MS, callback)
-      .attr('aria-expanded', 'true');
-  }
-
-  private slideUp(dropdown:HTMLElement, immediate:boolean):void {
-    const toDrop = this.getDropdownContainer(dropdown);
-    toDrop.removeAttribute('aria-expanded');
-    dropdown.classList.remove('op-app-menu--item_dropdown-open');
-
-    if (immediate) {
-      toDrop.style.display = 'none';
-    } else {
-      jQuery(toDrop).slideUp(ANIMATION_RATE_MS);
-    }
-  }
-
-  // If there is ANY input, it will have precedence over links,
-  // i.e. links will only get focused, if there is NO input whatsoever
-  private focusFirstInputOrLink(dropdown:HTMLElement):void {
-    const toDrop = this.getDropdownContainer(dropdown);
-    const focusable = findAllFocusableElementsWithin(toDrop);
-    const toFocus = focusable[0] as HTMLElement;
-    if (!toFocus) {
-      return;
-    }
-    // actually a simple focus should be enough.
-    // The rest is only there to work around a rendering bug in webkit (as of Oct 2011),
-    // occurring mostly inside the login/signup dropdown.
-    toFocus.blur();
-    setTimeout(() => {
-      toFocus.focus();
-    }, 10);
-  }
-
-  private getDropdownContainer(dropdown:HTMLElement):HTMLElement {
-    return dropdown.querySelector('.op-app-menu--dropdown') as HTMLElement;
   }
 }

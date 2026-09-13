@@ -1,38 +1,65 @@
-import {
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-  ElementRef,
-  Inject,
-  OnInit,
-  ViewChild, AfterViewInit, OnDestroy,
-} from '@angular/core';
-import { OpModalLocalsMap } from 'core-app/shared/components/modal/modal.types';
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
+import { ChangeDetectionStrategy, Component, ElementRef, OnInit, ViewChild, AfterViewInit, OnDestroy, inject } from '@angular/core';
 import { OpModalComponent } from 'core-app/shared/components/modal/modal.component';
-import { OpModalLocalsToken } from 'core-app/shared/components/modal/modal.service';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { WorkPackageResource } from 'core-app/features/hal/resources/work-package-resource';
 import { PathHelperService } from 'core-app/core/path-helper/path-helper.service';
 import { ActionsService } from 'core-app/core/state/actions/actions.service';
 import { reminderModalUpdated } from 'core-app/features/work-packages/components/wp-reminder-modal/reminder.actions';
+import { ReminderPreset } from 'core-app/features/work-packages/components/wp-reminder-modal/reminder.types';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ApiV3Service } from 'core-app/core/apiv3/api-v3.service';
 import { CollectionResource } from 'core-app/features/hal/resources/collection-resource';
+import type { FrameElement, TurboSubmitEndEvent } from '@hotwired/turbo';
 
 @Component({
   templateUrl: './wp-reminder.modal.html',
   styleUrls: ['./wp-reminder.modal.sass'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
 export class WorkPackageReminderModalComponent extends OpModalComponent implements OnInit, AfterViewInit, OnDestroy {
-  @ViewChild('frameElement') frameElement:ElementRef<HTMLIFrameElement>;
+  readonly I18n = inject(I18nService);
+  readonly pathHelper = inject(PathHelperService);
+  readonly actions$ = inject(ActionsService);
+  readonly apiV3Service = inject(ApiV3Service);
+
+  @ViewChild('frameElement') frameElement:ElementRef<FrameElement>;
 
   // Hide close button so it's not duplicated in primer (WP#51699)
   showCloseButton = false;
 
   private workPackage:WorkPackageResource;
   public frameSrc:string;
+  private preset:ReminderPreset | undefined;
 
   text = {
     new_title: this.I18n.t('js.work_packages.reminders.title.new'),
@@ -45,28 +72,21 @@ export class WorkPackageReminderModalComponent extends OpModalComponent implemen
 
   private boundListener = this.turboSubmitEndListener.bind(this);
 
-  constructor(
-    @Inject(OpModalLocalsToken) public locals:OpModalLocalsMap,
-    readonly cdRef:ChangeDetectorRef,
-    readonly I18n:I18nService,
-    readonly elementRef:ElementRef<HTMLElement>,
-    readonly pathHelper:PathHelperService,
-    readonly actions$:ActionsService,
-    readonly apiV3Service:ApiV3Service,
-  ) {
-    super(locals, cdRef, elementRef);
+  constructor() {
+    super();
 
     this.workPackage = this.locals.workPackage as WorkPackageResource;
+    this.preset = this.locals.preset as ReminderPreset | undefined;
     this.title$ = this
       .isEditMode()
       .pipe(
         map((isEditMode) => (isEditMode ? this.text.edit_title : this.text.new_title)),
       );
-    this.frameSrc = this.pathHelper.workPackageReminderModalBodyPath(this.workPackage.id as string);
   }
 
   ngOnInit() {
     super.ngOnInit();
+    this.updateFrameSrc();
   }
 
   ngAfterViewInit() {
@@ -81,17 +101,26 @@ export class WorkPackageReminderModalComponent extends OpModalComponent implemen
   }
 
   onClose():boolean {
-    this.actions$.dispatch(reminderModalUpdated({ workPackageId: this.workPackage.id as string }));
+    this.actions$.dispatch(reminderModalUpdated({ workPackageId: this.workPackage.id! }));
 
     return super.onClose();
   }
 
-  private turboSubmitEndListener(event:CustomEvent) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  private updateFrameSrc():void {
+    const url = new URL(
+      this.pathHelper.workPackageReminderModalBodyPath(this.workPackage.id!),
+      window.location.origin,
+    );
+    if (this.preset) {
+      url.searchParams.set('preset', this.preset);
+    }
+    this.frameSrc = url.toString();
+  }
+
+  private turboSubmitEndListener(event:TurboSubmitEndEvent) {
     const { fetchResponse } = event.detail;
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if (fetchResponse.succeeded) {
+    if (fetchResponse?.succeeded) {
       this.closeMe();
       this.onClose();
     }
@@ -105,7 +134,7 @@ export class WorkPackageReminderModalComponent extends OpModalComponent implemen
     return this
       .apiV3Service
       .work_packages
-      .id(this.workPackage.id as string)
+      .id(this.workPackage.id!)
       .reminders
       .get()
       .pipe(

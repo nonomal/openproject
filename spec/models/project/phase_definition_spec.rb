@@ -35,6 +35,10 @@ RSpec.describe Project::PhaseDefinition do
     expect { described_class.new }.not_to raise_error
   end
 
+  it "returns its name" do
+    expect(subject.to_s).to eq(subject.name)
+  end
+
   describe "validations" do
     it { is_expected.to validate_presence_of(:name) }
     it { is_expected.to validate_uniqueness_of(:name) }
@@ -50,5 +54,6 @@ RSpec.describe Project::PhaseDefinition do
 
     it { is_expected.to have_many(:projects).through(:phases) }
     it { is_expected.to belong_to(:color).required }
+    it { is_expected.to have_many(:work_packages) }
   end
 end

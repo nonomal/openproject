@@ -21,10 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
+
+import { pickBy } from 'lodash-es';
 
 export type FilterOperator = '='|'!*'|'!'|'~'|'o'|'>t-'|'<>d'|'**'|'ow';
 export const FalseValue = ['f'];
@@ -37,11 +39,9 @@ export interface ApiV3FilterValue {
   values:ApiV3FilterValueType[];
 }
 
-export interface ApiV3Filter {
-  [filter:string]:ApiV3FilterValue;
-}
+export type ApiV3Filter = Record<string, ApiV3FilterValue>;
 
-export type ApiV3FilterObject = { [filter:string]:ApiV3FilterValue };
+export type ApiV3FilterObject = Record<string, ApiV3FilterValue>;
 
 export class ApiV3FilterBuilder {
   private filterMap:ApiV3FilterObject = {};
@@ -85,7 +85,7 @@ export class ApiV3FilterBuilder {
     const map:ApiV3FilterObject = {};
 
     filters.forEach((item:ApiV3Filter) => {
-      _.each(item, (val:ApiV3FilterValue, filter:string) => {
+      Object.entries(item).forEach(([filter, val]) => {
         map[filter] = val;
       });
     });
@@ -118,7 +118,7 @@ export class ApiV3FilterBuilder {
    * @param only Only apply the given filters
    */
   public merge(filters:ApiV3Filter[], ...only:string[]):void {
-    const toAdd:ApiV3FilterObject = _.pickBy(
+    const toAdd:ApiV3FilterObject = pickBy(
       ApiV3FilterBuilder.toFilterObject(filters),
       (_, filter:string) => only.includes(filter),
     );
@@ -131,7 +131,7 @@ export class ApiV3FilterBuilder {
 
   public get filters():ApiV3Filter[] {
     const filters:ApiV3Filter[] = [];
-    _.each(this.filterMap, (val:ApiV3FilterValue, filter:string) => {
+    Object.entries(this.filterMap).forEach(([filter, val]) => {
       filters.push({ [filter]: val });
     });
 
@@ -142,7 +142,7 @@ export class ApiV3FilterBuilder {
     return JSON.stringify(this.filters);
   }
 
-  public toParams(mergeParams:{ [key:string]:string } = {}):string {
+  public toParams(mergeParams:Record<string, string> = {}):string {
     const params = { filters: this.toJson(), ...mergeParams };
     return new URLSearchParams(params).toString();
   }

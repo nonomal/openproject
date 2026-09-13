@@ -21,39 +21,31 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
+import { merge } from 'lodash-es';
 import { InputState } from '@openproject/reactivestates';
 import { Injector } from '@angular/core';
 import { States } from 'core-app/core/states/states.service';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
+import { LazyInject } from 'core-app/shared/helpers/angular/lazy-inject.decorator';
 import { HalLinkInterface } from 'core-app/features/hal/hal-link/hal-link';
 import { ICKEditorContext } from 'core-app/shared/components/editor/components/ckeditor/ckeditor.types';
 import idFromLink from 'core-app/features/hal/helpers/id-from-link';
+import { cloneDeep } from 'lodash-es';
 import isNewResource from 'core-app/features/hal/helpers/is-new-resource';
 
-export interface HalResourceClass<T extends HalResource = HalResource> {
-  new(injector:Injector,
-    source:any,
-    $loaded:boolean,
-    halInitializer:(halResource:T) => void,
-    $halType:string):T;
-}
-
-export type HalSourceLink = { href:string|null, title?:string };
-
-export type HalSourceLinks = {
-  [key:string]:HalSourceLink
-};
-
-export type HalSource = {
-  [key:string]:string|number|boolean|null|HalSourceLinks,
-  _links:HalSourceLinks
-};
+export type HalResourceClass<T extends HalResource = HalResource> = new(
+  _injector:Injector,
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  _source:any,
+  _$loaded:boolean,
+  _halInitializer:(_:T) => void,
+  _$halType:string,
+) => T;
 
 export class HalResource {
   // TODO this is the source of many issues in the frontend
@@ -76,9 +68,9 @@ export class HalResource {
   // This is required for attributes to be correctly mapped according to their configuration.
   public $halType:string;
 
-  @InjectField() states:States;
+  @LazyInject() states:States;
 
-  @InjectField() I18n!:I18nService;
+  @LazyInject() I18n!:I18nService;
 
   /**
    * Constructs and initializes the HalResource. For this, the halResoureFactory is required.
@@ -95,6 +87,7 @@ export class HalResource {
    */
   public constructor(
     public injector:Injector,
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
     public $source:any,
     public $loaded:boolean,
     public halInitializer:(halResource:any) => void,
@@ -177,14 +170,17 @@ export class HalResource {
    * @param {HalResource} other
    * @returns A HalResource with the identitical copied source of other.
    */
-  public $copy<T extends HalResource = HalResource>(source:Object = {}):T {
+  public $copy<T extends HalResource = HalResource>(source:object = {}):T {
     const clone:HalResourceClass<T> = this.constructor as any;
 
-    return new clone(this.injector, _.merge(this.$plain(), source), this.$loaded, this.halInitializer, this.$halType);
+    return new clone(this.injector, merge(this.$plain(), source), this.$loaded, this.halInitializer, this.$halType);
   }
 
   public $plain():any {
-    return _.cloneDeep(this.$source);
+    // Use a deep clone (not structuredClone) because $source may contain
+    // HalResource instances (e.g. filter values), which carry functions and
+    // injector state that structuredClone cannot clone (DataCloneError).
+    return cloneDeep(this.$source);
   }
 
   public get $isHal():boolean {
@@ -252,14 +248,15 @@ export class HalResource {
     // Otherwise, we risk returning a promise, that will never be resolved.
     state.putFromPromiseIfPristine(() => this.$loadResource(force));
 
-    return <Promise<this>>state.valuesPromise().then((source:any) => {
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    return state.valuesPromise().then((source:any) => {
       this.$initialize(source);
       this.$loaded = true;
       return this;
-    });
+    }) as Promise<this>;
   }
 
-  protected $loadResource(force = false):Promise<this> {
+  $loadResource(force = false):Promise<this> {
     if (!force) {
       if (this.$loaded) {
         return Promise.resolve(this);
@@ -294,7 +291,7 @@ export class HalResource {
    */
   public $embeddableKeys():string[] {
     const properties = Object.keys(this.$source);
-    return _.without(properties, '_links', '_embedded', 'id');
+    return properties.filter((property) => !['_links', '_embedded', 'id'].includes(property));
   }
 
   /**
@@ -303,6 +300,6 @@ export class HalResource {
    */
   public $linkableKeys():string[] {
     const properties = Object.keys(this.$links);
-    return _.without(properties, 'self');
+    return properties.filter((property) => property !== 'self');
   }
 }

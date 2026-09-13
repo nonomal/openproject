@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -53,6 +55,14 @@ FactoryBot.define do
     end
   end
 
+  factory :custom_style_with_export_footer, class: "CustomStyle" do
+    export_footer do
+      Rack::Test::UploadedFile.new(
+        Rails.root.join("spec/support/custom_styles/export_logos/export_logo_image.png")
+      )
+    end
+  end
+
   factory :custom_style_with_favicon, class: "CustomStyle" do
     favicon do
       Rack::Test::UploadedFile.new(
@@ -65,6 +75,46 @@ FactoryBot.define do
     touch_icon do
       Rack::Test::UploadedFile.new(
         Rails.root.join("spec/support/custom_styles/touch_icons/touch_icon_image.png")
+      )
+    end
+  end
+
+  factory :custom_style_with_export_font_regular, class: "CustomStyle" do
+    export_font_regular do
+      Rack::Test::UploadedFile.new(
+        Rails.public_path.join("fonts/noto/NotoSans-Regular.ttf")
+      )
+    end
+  end
+
+  factory :custom_style_with_export_font_bold, class: "CustomStyle" do
+    export_font_bold do
+      Rack::Test::UploadedFile.new(
+        Rails.public_path.join("fonts/noto/NotoSans-Bold.ttf")
+      )
+    end
+  end
+
+  factory :custom_style_with_export_font_italic, class: "CustomStyle" do
+    export_font_italic do
+      Rack::Test::UploadedFile.new(
+        Rails.public_path.join("fonts/noto/NotoSans-Italic.ttf")
+      )
+    end
+  end
+
+  factory :custom_style_with_export_font_bold_italic, class: "CustomStyle" do
+    export_font_bold_italic do
+      Rack::Test::UploadedFile.new(
+        Rails.public_path.join("fonts/noto/NotoSans-BoldItalic.ttf")
+      )
+    end
+  end
+
+  factory :custom_style_with_logo_mobile, class: "CustomStyle" do
+    logo_mobile do
+      Rack::Test::UploadedFile.new(
+        Rails.root.join("spec/support/custom_styles/logos/logo_image.png")
       )
     end
   end

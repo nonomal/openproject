@@ -45,7 +45,7 @@ module TimeEntries
     def can_delete_time_entry?
       return false if time_entry.new_record?
 
-      DeleteContract.deletion_allowed?(time_entry, User.current)
+      TimeEntries::DeleteContract.new(time_entry, User.current).valid?
     end
   end
 end

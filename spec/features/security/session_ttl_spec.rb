@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -46,7 +48,10 @@ RSpec.describe "Session TTL",
   describe "outdated TTL on Rails request" do
     it "expires on the next Rails request" do
       visit "/my/account"
-      expect(page).to have_css(".form--field-container", text: admin.login)
+
+      within_test_selector "my-account-form" do
+        expect(page).to have_field "user_login", with: admin.login
+      end
 
       # Expire the session
       expire!
@@ -58,7 +63,6 @@ RSpec.describe "Session TTL",
 
   describe "outdated TTL on API request" do
     it "expires on the next APIv3 request" do
-      page.driver.header("X-Requested-With", "XMLHttpRequest")
       visit "/api/v3/work_packages/#{work_package.id}"
 
       body = JSON.parse(page.body)

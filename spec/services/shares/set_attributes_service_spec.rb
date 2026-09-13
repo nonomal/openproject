@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # -- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -161,7 +163,7 @@ RSpec.describe Shares::SetAttributesService, type: :model do
 
         it "adds the new role and marks the other for destruction" do
           expect(subject.result.member_roles.map(&:role_id)).to contain_exactly(first_role.id, second_role.id, third_role.id)
-          expect(subject.result.member_roles.detect { _1.role_id == first_role.id }).to be_marked_for_destruction
+          expect(subject.result.member_roles.detect { it.role_id == first_role.id }).to be_marked_for_destruction
         end
 
         context "when a role being assigned is already inherited via a group" do
@@ -170,7 +172,7 @@ RSpec.describe Shares::SetAttributesService, type: :model do
           end
 
           before do
-            allow(member.member_roles.detect { _1.role_id == third_role.id })
+            allow(member.member_roles.detect { it.role_id == third_role.id })
               .to receive(:inherited_from)
                     .and_return(true)
           end

@@ -21,25 +21,32 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 
 @Component({
   selector: 'op-icon',
   host: { class: 'op-icon--wrapper' },
   template: `
       <i [ngClass]="iconClasses"
-         [attr.title]="iconTitle || undefined"
-         aria-hidden="true"></i>
-      <span
-        class="hidden-for-sighted"
-        [textContent]="iconTitle"
-        *ngIf="iconTitle"></span>
-    `,
+        [attr.title]="iconTitle || undefined"
+      aria-hidden="true"></i>
+      @if (iconTitle) {
+        <span
+          class="sr-only"
+          [textContent]="iconTitle"
+        ></span>
+      }
+      `,
+  standalone: false,
+  // TODO: This component has been partially migrated to be zoneless-compatible.
+  // After testing, this should be updated to ChangeDetectionStrategy.OnPush.
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class OpIconComponent {
   @Input('icon-classes') iconClasses:string;

@@ -38,8 +38,8 @@ module Storages::Peripherals
     end
 
     def handle_base_errors(errors)
-      base_errors = errors.symbols_for(:base)
-      message = errors.full_messages_for(:base)&.first
+      base_errors = errors.symbols_for(:base).to_set
+      message = error_message_for(errors)
 
       if base_errors.include? :not_found
         fail API::Errors::OutboundRequestNotFound.new(message)
@@ -48,26 +48,34 @@ module Storages::Peripherals
       elsif base_errors.include? :forbidden
         fail API::Errors::OutboundRequestForbidden.new(message)
       elsif base_errors.include? :error
-        fail API::Errors::InternalError.new(message)
+        fail API::Errors::SafeInternalError.new(message)
       else
         base_errors
       end
     end
 
+    def error_message_for(error, attr = :base)
+      error.full_messages_for(attr)&.first
+    rescue I18n::MissingTranslationData
+      nil
+    end
+
     def raise_error(error)
       Rails.logger.error(error)
+
+      # FIXME: messages were removed we need to deal with it - 2025-04-14 @mereghost
 
       case error.code
       when :not_found
         raise API::Errors::OutboundRequestNotFound.new
       when :bad_request
-        raise API::Errors::BadRequest.new(error.log_message)
+        raise API::Errors::BadRequest.new(error.code)
       when :forbidden
         raise API::Errors::OutboundRequestForbidden.new
       when :missing_ee_token_for_one_drive
         raise API::Errors::EnterpriseTokenMissing.new
       else
-        raise API::Errors::InternalError.new(error.log_message)
+        raise API::Errors::SafeInternalError.new(error.code)
       end
     end
   end

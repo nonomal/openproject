@@ -1,10 +1,12 @@
+# frozen_string_literal: true
+
 require "omniauth-saml"
 module OpenProject
   module AuthSaml
     def self.configuration
       providers = Saml::Provider.where(available: true)
 
-      OpenProject::Cache.fetch(providers.cache_key_with_version) do
+      OpenProject::ConfidentialCache.fetch(providers.cache_key_with_version) do
         providers.each_with_object({}) do |provider, hash|
           hash[provider.slug.to_sym] = provider.to_h
         end
@@ -25,6 +27,7 @@ module OpenProject
              :plugin_saml,
              :saml_providers_path,
              parent: :authentication,
+             after: :oauth_applications,
              caption: ->(*) { I18n.t("saml.menu_title") },
              enterprise_feature: "sso_auth_providers"
       end
@@ -34,17 +37,18 @@ module OpenProject
         auth_provider-saml.png
       )
 
-      register_auth_providers do
+      register_auth_providers(persist: false) do
         strategy :saml do
           OpenProject::AuthSaml.configuration.values.map do |h|
             # Remember saml session values when logging in user
             h[:retain_from_session] = %w[saml_uid saml_session_index saml_transaction_id]
 
             # remember the origin in RelayState
-            h[:idp_sso_target_url_runtime_params] = { origin: :RelayState }
+            h[:idp_sso_service_url_runtime_params] = { origin: :RelayState } # omniauth-saml 2.x
+            h[:idp_sso_target_url_runtime_params] = { origin: :RelayState } # omniauth-saml 1.10
 
             h[:single_sign_out_callback] = Proc.new do |prev_session, _prev_user|
-              next unless h[:idp_slo_target_url]
+              next unless h[:idp_slo_service_url]
               next unless prev_session[:saml_uid] && prev_session[:saml_session_index]
 
               # Set the uid and index for the logout in this session again
@@ -65,6 +69,11 @@ module OpenProject
                                    writable: false,
                                    default: {},
                                    format: :hash
+      end
+
+      config.to_prepare do
+        # Load AuthProvider descendants due to STI
+        Saml::Provider
       end
     end
   end

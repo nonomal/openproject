@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -43,7 +45,7 @@ module Users::FunctionUser
 
     def builtin? = true
 
-    def name(*_args); raise NotImplementedError end
+    def name(*_args) = raise SubclassResponsibilityError
 
     def mail = nil
 

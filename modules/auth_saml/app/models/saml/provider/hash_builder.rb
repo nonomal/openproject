@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Saml
   module Provider::HashBuilder
     def formatted_attribute_statements
@@ -26,22 +28,22 @@ module Saml
     end
 
     def idp_cert_options_hash
-      if idp_cert_fingerprint.present?
-        return { idp_cert_fingerprint: }
-      end
-
       if idp_cert.present?
         certificates = loaded_idp_certificates.map(&:to_pem)
         if certificates.count > 1
-          {
+          return {
             idp_cert_multi: {
               signing: certificates,
               encryption: certificates
             }
           }
         else
-          { idp_cert: certificates.first }
+          return { idp_cert: certificates.first }
         end
+      end
+
+      if idp_cert_fingerprint.present?
+        { idp_cert_fingerprint: }
       else
         {}
       end
@@ -69,13 +71,15 @@ module Saml
         sp_entity_id:,
         idp_sso_service_url:,
         idp_slo_service_url:,
+        idp_slo_target_url: idp_slo_service_url, # for compatibility with 1.10 version of the omniauth-saml gem
         name_identifier_format:,
         certificate:,
         private_key:,
         limit_self_registration:,
         attribute_statements: formatted_attribute_statements,
         request_attributes: formatted_request_attributes,
-        uid_attribute: mapping_uid.presence
+        uid_attribute: mapping_uid.presence,
+        allowed_clock_drift:
       }
         .merge(idp_cert_options_hash)
         .merge(security: security_options_hash)

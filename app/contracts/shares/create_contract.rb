@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # -- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -40,7 +42,7 @@ module Shares
     def principal_assignable
       return if principal.nil?
 
-      if principal.builtin? || principal.locked?
+      if principal.builtin? || principal.locked? || principal.deleted?
         errors.add(:principal, :unassignable)
       end
     end

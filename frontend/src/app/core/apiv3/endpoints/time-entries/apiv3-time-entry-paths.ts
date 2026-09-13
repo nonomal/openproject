@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -49,7 +49,7 @@ export class ApiV3TimeEntryPaths extends ApiV3Resource<TimeEntryResource> {
    * @param payload
    * @param schema
    */
-  public patch(payload:Object, schema:SchemaResource|null = null):Observable<TimeEntryResource> {
+  public patch(payload:object, schema:SchemaResource|null = null):Observable<TimeEntryResource> {
     return this
       .halResourceService
       .patch<TimeEntryResource>(this.path, this.extractPayload(payload, schema))
@@ -81,7 +81,7 @@ export class ApiV3TimeEntryPaths extends ApiV3Resource<TimeEntryResource> {
    * @param resource
    * @param schema
    */
-  protected extractPayload(resource:HalResource|Object|null, schema:SchemaResource|null = null) {
+  protected extractPayload(resource:HalResource|object|null, schema:SchemaResource|null = null) {
     if (resource instanceof HalResource && schema) {
       return HalPayloadHelper.extractPayloadFromSchema(resource, schema);
     } if (!(resource instanceof HalResource)) {

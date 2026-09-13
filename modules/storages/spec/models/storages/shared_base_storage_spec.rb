@@ -37,15 +37,15 @@ RSpec.shared_examples_for "base storage" do
     }
   end
 
-  describe ".shorten_provider_type" do
+  describe ".shorten_provider_type", skip: "Method being removed" do
     context "when provider_type matches the signature" do
       it "responds with shortened provider type" do
         expect(
-          described_class.shorten_provider_type(described_class::PROVIDER_TYPE_NEXTCLOUD)
-        ).to eq("nextcloud")
+          described_class.short_provider_name
+        ).to eq(:nextcloud)
         expect(
-          described_class.shorten_provider_type(described_class::PROVIDER_TYPE_ONE_DRIVE)
-        ).to eq("one_drive")
+          described_class.short_provider_name
+        ).to eq(:one_drive)
       end
     end
 

@@ -39,4 +39,11 @@ class Widget::Filters::Base < Widget::Base
     end
     @engine = filter.engine
   end
+
+  def expand_comma_separated_values!
+    # In case the filter values are all written in a single string (e.g. ["12, 33"])
+    if filter.values.length === 1 && filter.values[0].instance_of?(String)
+      filter.values = filter.values[0].split(",").map(&:strip)
+    end
+  end
 end

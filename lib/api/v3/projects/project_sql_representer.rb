@@ -47,7 +47,7 @@ module API
           end
 
           def ancestors_sql(walker_result)
-            <<-SQL.squish
+            <<~SQL.squish
               SELECT id, CASE WHEN count(link) = 0 THEN '[]' ELSE json_agg(link) END ancestors
               FROM
                 (
@@ -73,32 +73,53 @@ module API
           end
 
           def ancestor_projection
+            undisclosed_ancestor_title = OpenProject::SqlSanitization.sanitize(
+              "?", I18n.t(:"api_v3.undisclosed.ancestor")
+            )
+
             if User.current.admin?
-              <<-SQL.squish
+              <<~SQL.squish
                 CASE
                   WHEN ancestors.id IS NOT NULL
-                    THEN json_build_object('href', format('#{api_v3_paths.project('%s')}', ancestors.id),
-                                           'title', ancestors.name)
+                    THEN #{workspace_type_link_case('ancestors')}
                   ELSE NULL
                 END
               SQL
             else
-              <<-SQL.squish
+              <<~SQL.squish
                 CASE
                   WHEN ancestors.id IS NOT NULL AND ancestors.id IN (SELECT id FROM visible_projects)
-                    THEN json_build_object('href', format('#{api_v3_paths.project('%s')}', ancestors.id),
-                                           'title', ancestors.name)
+                    THEN #{workspace_type_link_case('ancestors')}
                   WHEN ancestors.id IS NOT NULL AND ancestors.id NOT IN (SELECT id FROM visible_projects)
                     THEN json_build_object('href', '#{API::V3::URN_UNDISCLOSED}',
-                                           'title', #{ActiveRecord::Base.connection.quote(I18n.t(:"api_v3.undisclosed.ancestor"))})
+                                           'title', #{undisclosed_ancestor_title})
                   ELSE NULL
                 END
               SQL
             end
           end
+
+          def workspace_type_link_case(table = nil)
+            table = "#{table}." if table
+
+            <<~SQL.squish
+              CASE
+                WHEN #{table}workspace_type = 'project'
+                  THEN json_build_object('href', format('#{api_v3_paths.project('%s')}', #{table}id),
+                                         'title', #{table}name)
+                WHEN #{table}workspace_type = 'program'
+                  THEN json_build_object('href', format('#{api_v3_paths.program('%s')}', #{table}id),
+                                         'title', #{table}name)
+                WHEN #{table}workspace_type = 'portfolio'
+                  THEN json_build_object('href', format('#{api_v3_paths.portfolio('%s')}', #{table}id),
+                                         'title', #{table}name)
+              END
+            SQL
+          end
         end
 
         link :self,
+             sql: -> { workspace_type_link_case(nil) },
              path: { api: :project, params: %w(id) },
              column: -> { :id },
              title: -> { :name }
@@ -112,7 +133,15 @@ module API
              }
 
         property :_type,
-                 representation: ->(*) { "'Project'" }
+                 representation: ->(*) {
+                   <<~SQL.squish
+                     CASE
+                       WHEN workspace_type = 'project' THEN 'Project'
+                       WHEN workspace_type = 'program' THEN 'Program'
+                       WHEN workspace_type = 'portfolio' THEN 'Portfolio'
+                     END
+                   SQL
+                 }
 
         property :id
 

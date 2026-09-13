@@ -21,24 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import {
-  AfterViewInit,
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  EventEmitter,
-  Input,
-  OnChanges,
-  OnInit,
-  Output,
-  SimpleChanges,
-  ViewChild,
-} from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
 
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { TimezoneService } from 'core-app/core/datetime/timezone.service';
@@ -61,8 +49,14 @@ import SpotDropAlignmentOption from 'core-app/spot/drop-alignment-options';
   selector: '[op-file-link-list-item]',
   templateUrl: './file-link-list-item.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
 export class FileLinkListItemComponent implements OnInit, OnChanges, AfterViewInit {
+  private readonly i18n = inject(I18nService);
+  private readonly timezoneService = inject(TimezoneService);
+  private readonly confirmDialogService = inject(ConfirmDialogService);
+  private readonly principalRendererService = inject(PrincipalRendererService);
+
   @Input() public fileLink:IFileLink;
 
   @Input() public allowEditing = false;
@@ -71,7 +65,7 @@ export class FileLinkListItemComponent implements OnInit, OnChanges, AfterViewIn
 
   @Output() public removeFileLink = new EventEmitter<void>();
 
-  @ViewChild('avatar') avatar:ElementRef;
+  @ViewChild('avatar') avatar:ElementRef<HTMLElement>;
 
   infoTimestampText:string;
 
@@ -97,13 +91,6 @@ export class FileLinkListItemComponent implements OnInit, OnChanges, AfterViewIn
     viewNotAllowedTooltipText: this.i18n.t('js.storages.file_links.tooltip.view_not_allowed'),
     notFoundTooltipText: this.i18n.t('js.storages.file_links.tooltip.not_found'),
   };
-
-  constructor(
-    private readonly i18n:I18nService,
-    private readonly timezoneService:TimezoneService,
-    private readonly confirmDialogService:ConfirmDialogService,
-    private readonly principalRendererService:PrincipalRendererService,
-  ) {}
 
   public get hasTooltip():boolean {
     return this.tooltip !== '';
@@ -149,14 +136,14 @@ export class FileLinkListItemComponent implements OnInit, OnChanges, AfterViewIn
   ngAfterViewInit():void {
     if (this.originData.lastModifiedByName) {
       this.principalRendererService.render(
-        this.avatar.nativeElement as HTMLElement,
+        this.avatar.nativeElement,
         { name: this.originData.lastModifiedByName, href: '/external_users/1' },
         { hide: true, link: false },
         { hide: false, size: 'mini' },
       );
     } else {
       this.principalRendererService.render(
-        this.avatar.nativeElement as HTMLElement,
+        this.avatar.nativeElement,
         { name: 'Not Available', href: '/placeholder_users/1' },
         { hide: true, link: false },
         { hide: false, size: 'mini' },
@@ -172,7 +159,7 @@ export class FileLinkListItemComponent implements OnInit, OnChanges, AfterViewIn
         button_continue: this.text.removalButtonLabel,
       },
       icon: {
-        continue: 'remove-link',
+        continue: 'unlink',
       },
     };
     void this.confirmDialogService
@@ -240,7 +227,7 @@ export class FileLinkListItemComponent implements OnInit, OnChanges, AfterViewIn
 
   private downloadAction():FloatingAction {
     return new FloatingAction(
-      'download-arrow',
+      'download',
       this.text.title.downloadFileLink,
       undefined,
       { url: this.fileLink._links.staticOriginDownload.href, target: '_self' },

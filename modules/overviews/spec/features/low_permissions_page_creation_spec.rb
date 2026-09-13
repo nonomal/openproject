@@ -28,9 +28,9 @@
 
 require "spec_helper"
 
-require_relative "../support/pages/overview"
+require_relative "../support/pages/dashboard"
 
-RSpec.describe "Overview page on the fly creation if user lacks :mange_overview permission", :js do
+RSpec.describe "Dashboard page on the fly creation if user lacks :manage_dashboards permission", :js do
   let!(:type) { create(:type) }
   let!(:project) { create(:project, types: [type]) }
   let!(:open_status) { create(:default_status) }
@@ -43,14 +43,14 @@ RSpec.describe "Overview page on the fly creation if user lacks :mange_overview 
     create(:user,
            member_with_permissions: { project => permissions })
   end
-  let(:overview_page) do
-    Pages::Overview.new(project)
+  let(:dashboard_page) do
+    Pages::Dashboard.new(project)
   end
 
   before do
     login_as user
 
-    overview_page.visit!
+    dashboard_page.visit!
   end
 
   it "renders the default view, allows altering and saving" do

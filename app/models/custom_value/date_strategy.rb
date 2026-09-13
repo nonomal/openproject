@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,9 +32,11 @@ class CustomValue::DateStrategy < CustomValue::FormatStrategy
   include Redmine::I18n
 
   def typed_value
-    if value.present?
-      Date.iso8601(value)
-    end
+    return if value.blank?
+
+    Date.iso8601(value)
+  rescue Date::Error
+    nil
   end
 
   def formatted_value

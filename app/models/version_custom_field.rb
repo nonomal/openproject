@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,6 +29,8 @@
 #++
 
 class VersionCustomField < CustomField
+  scopes :visible
+
   def type_name
     :label_version_plural
   end

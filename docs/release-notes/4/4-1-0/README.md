@@ -14,15 +14,15 @@ The layout of the work package split screen was updated to provide a
 clearer, more accessible interface. Several changes have been
 implemented to the split screen:
 
-  - In order to allow users to see the most relevant work package
-    information at a glance, only the work package attributes which have
-    values assigned are displayed by default.
-  - Work package attributes which have no values assigned can be
-    displayed via the “Show all” button, which has been moved to the top
-    of the attribute list.
-  - To provide a logical structure to the work package, work package
-    attributes are clustered into separate groups (Details, People,
-    Estimates & Time, Costs, Other).
+- In order to allow users to see the most relevant work package
+  information at a glance, only the work package attributes which have
+  values assigned are displayed by default.
+- Work package attributes which have no values assigned can be
+  displayed via the “Show all” button, which has been moved to the top
+  of the attribute list.
+- To provide a logical structure to the work package, work package
+  attributes are clustered into separate groups (Details, People,
+  Estimates & Time, Costs, Other).
 
 ## In-place editing on work package split screen
 
@@ -31,9 +31,9 @@ to update work packages without leaving the work package table. Via the
 split screen many work package attributes can be edited on the fly, such
 as:
 
-  - Work package subject
-  - Work package description
-  - Work package attributes (including custom fields)
+- Work package subject
+- Work package description
+- Work package attributes (including custom fields)
 
 Several work package values can be edited at once.
 
@@ -44,20 +44,20 @@ filters – even when the filter section is collapsed. Additionally, the
 work package ID in the work package table is no longer static, but can be
 configured as the other columns in the work package table:
 
-  - Number of activated filters shown
-  - Work package ID in work package table can be added, removed, changed
-    in order
+- Number of activated filters shown
+- Work package ID in work package table can be added, removed, changed
+  in order
 
 ## Improved work package full screen
 
 The design of the work package page and the work package form has been
 updated:
 
-  - When editing a work package, the type, parent and subject can be
-    edited right away without having to expand a separate section.
-  - The spacing of the work package attributes has been increased.
-  - The work package hierarchy, related work packages and watchers have
-    been styled more prominently.
+- When editing a work package, the type, parent and subject can be
+  edited right away without having to expand a separate section.
+- The spacing of the work package attributes has been increased.
+- The work package hierarchy, related work packages and watchers have
+  been styled more prominently.
 
 ## New design through Foundation framework
 
@@ -71,13 +71,13 @@ with OpenProject 4.1.
 Numerous accessibility improvements have been introduced – particularly
 on the work package page.
 
-  - Split screen accessible
-  - In-place editing can be performed via keyboard
-  - Modal windows on work package page include helpful hints for both
-    seeing and blind users
-  - Additional access key for switching between work package table and
-    split screen
-  - Contrast for watcher icon improved
+- Split screen accessible
+- In-place editing can be performed via keyboard
+- Modal windows on work package page include helpful hints for both
+  seeing and blind users
+- Additional access key for switching between work package table and
+  split screen
+- Contrast for watcher icon improved
 
 ## Substantial number of bug fixes
 

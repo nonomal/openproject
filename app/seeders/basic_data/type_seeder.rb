@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -33,12 +35,11 @@ module BasicData
       BasicData::ColorSeeder,
       BasicData::ColorSchemeSeeder
     ]
+    self.attribute_names_for_lookups = %i[name]
 
     def model_attributes(type_data)
       {
         name: type_data["name"],
-        description: "",
-        is_default: true?(type_data["is_default"]),
         color_id: color_id(type_data["color_name"]),
         is_in_roadmap: true?(type_data["is_in_roadmap"]),
         is_milestone: true?(type_data["is_milestone"]),

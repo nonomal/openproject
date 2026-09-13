@@ -34,6 +34,7 @@ class Widget::Filters::Operators < Widget::Filters::Base
       options = { class: "advanced-filters--select filters-select filter_operator",
                   id: "operators[#{filter_class.underscore_name}]",
                   name: "operators[#{filter_class.underscore_name}]",
+                  "data-action": "reporting--page#onOperatorInput",
                   "data-filter-name": filter_class.underscore_name }
       options[:style] = "display: none" if hide_select_box
 
@@ -49,7 +50,7 @@ class Widget::Filters::Operators < Widget::Filters::Base
       label1 = content_tag :label,
                            hidden_for_sighted_label,
                            for: "operators[#{filter_class.underscore_name}]",
-                           class: "hidden-for-sighted"
+                           class: "sr-only"
       label = content_tag :label do
         if filter_class.available_operators.any?
           filter_class.available_operators.first.label

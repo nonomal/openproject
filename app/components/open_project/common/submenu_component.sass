@@ -2,14 +2,21 @@
   height: 100%
   display: flex
   flex-direction: column
-  overflow: hidden
 
   &--search
-    margin: 12px var(--main-menu-x-spacing)
+    position: sticky
+    top: 0
+    z-index: 1
+    background: var(--main-menu-bg-color)
+    padding: 4px 0
     color: var(--main-menu-font-color)
     display: flex
     flex-direction: column
     row-gap: 16px
+
+    input::placeholder,
+    .FormControl-input-leadingVisual
+      color: color-mix(in srgb, var(--main-menu-font-color) 80%, white)
 
   &--search-input
     // Overriding the defult input styles, because of the default dark background of the sidebar
@@ -32,26 +39,24 @@
     @supports (-webkit-touch-callout: none)
       padding: 1rem 1rem 5rem
 
-    .button .spot-icon
-      margin-right: 0.5rem
-
   &--title
     display: flex
     justify-content: space-between
     background: transparent
-    color: var(--main-menu-fieldset-header-color)
+    color: var(--main-menu-font-color)
     border: 1px solid transparent
-    text-transform: uppercase
+    border-radius: var(--borderRadius-medium)
     padding: 8px var(--main-menu-x-spacing) 8px var(--main-menu-x-spacing)
     margin-top: 12px
+    margin-bottom: 2px
     font-size: 12px
     cursor: pointer
     width: 100%
-
+    font-weight: var(--base-text-weight-semibold, 600)
 
     &:hover
-      background: var(--main-menu-bg-hover-background)
-      color: var(--main-menu-hover-font-color)
+      background: var(--control-transparent-bgColor-hover)
+      color: var(--main-menu-font-color)
       border-color: var(--main-menu-hover-border-color)
 
   &--items
@@ -60,6 +65,9 @@
     &_collapsed
       display: none
 
+  &--item
+    margin-bottom: 2px !important
+
   &--item-action
     display: flex
     align-items: center
@@ -67,8 +75,8 @@
     padding: 8px 12px 8px 32px
 
     &:hover
-      background: var(--main-menu-bg-hover-background)
-      color: var(--main-menu-hover-font-color)
+      background: var(--control-transparent-bgColor-hover)
+      color: var(--main-menu-font-color)
 
     &_active
       background: var(--main-menu-bg-selected-background)

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,8 +29,10 @@
 #++
 
 class Projects::ArchiveController < ApplicationController
-  before_action :find_project_by_project_id
-  before_action :authorize, only: [:create]
+  include OpTurbo::ComponentStream
+
+  before_action :find_project_including_archived
+  before_action :authorize, only: %i[create dialog]
   before_action :require_admin, only: [:destroy]
 
   def create
@@ -39,18 +43,27 @@ class Projects::ArchiveController < ApplicationController
     change_status_action(:unarchive)
   end
 
+  def dialog
+    respond_with_dialog Projects::ArchiveDialogComponent.new(project: @project)
+  end
+
   private
+
+  def find_project_including_archived
+    # The visible scope filters out archived projects, but here we want to explicitly unarchive them.
+    # The contracts do proper permission checks, so we can skip the visible scope here.
+    @project = Project.find(params[:project_id])
+  end
 
   def change_status_action(status)
     service_call = change_status(status)
 
-    if service_call.success?
-      redirect_to(projects_path)
-    else
+    if !service_call.success?
       flash[:error] = t(:"error_can_not_#{status}_project",
                         errors: service_call.errors.full_messages.join(", "))
-      redirect_back fallback_location: projects_path
     end
+
+    redirect_to(projects_path, status: :see_other)
   end
 
   def change_status(status)

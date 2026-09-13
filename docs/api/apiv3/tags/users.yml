@@ -1,6 +1,9 @@
 ---
 name: Users
 description: |-
+  The users endpoints return collections or single entities of type `User`. The following tables list the different properties
+  of `User` entities.
+
   ## Actions
 
   | Link                | Description                                                          | Condition                                                        |

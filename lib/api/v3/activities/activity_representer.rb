@@ -37,6 +37,11 @@ module API
         include ::API::V3::Attachments::AttachableRepresenterMixin
         include ActivityPropertyFormatters
 
+        def initialize(*, embed_emoji_reactions: false, **)
+          @embed_emoji_reactions = embed_emoji_reactions
+          super(*, **)
+        end
+
         self_link path: :activity,
                   title_getter: ->(*) {}
 
@@ -62,6 +67,12 @@ module API
           }
         end
 
+        link :emojiReactions do
+          {
+            href: api_v3_paths.emoji_reactions_by_activity_comment(represented.id)
+          }
+        end
+
         property :id,
                  render_nil: true
 
@@ -76,10 +87,18 @@ module API
 
         property :version, render_nil: true
 
+        property :internal
+
         property :work_package,
                  embedded: true,
                  exec_context: :decorator,
                  if: ->(*) { embed_links },
+                 uncacheable: true
+
+        property :emoji_reactions,
+                 embedded: true,
+                 exec_context: :decorator,
+                 if: ->(*) { embed_links || embed_emoji_reactions },
                  uncacheable: true
 
         date_time_property :created_at
@@ -102,7 +121,19 @@ module API
                     embed_links: false)
         end
 
+        def emoji_reactions
+          return unless represented.journable.is_a?(WorkPackage)
+
+          emoji_reactions = ::EmojiReactions::GroupedQueries.grouped_emoji_reactions(reactable: represented)
+          API::V3::EmojiReactions::EmojiReactionCollectionRepresenter
+            .new(emoji_reactions,
+                 self_link: api_v3_paths.emoji_reactions_by_activity_comment(represented.id),
+                 current_user:)
+        end
+
         private
+
+        attr_reader :embed_emoji_reactions
 
         def current_user_allowed_to_edit?
           represented.editable_by?(current_user)

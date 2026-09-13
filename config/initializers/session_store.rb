@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -34,6 +36,7 @@ relative_url_root = config["rails_relative_url_root"].presence
 session_options = {
   key: config["session_cookie_name"],
   httponly: true,
+  same_site: :lax,
   secure: config.https?,
   path: relative_url_root
 }

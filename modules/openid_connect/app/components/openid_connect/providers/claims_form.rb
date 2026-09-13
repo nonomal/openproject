@@ -37,31 +37,37 @@ module OpenIDConnect
         f.text_area(
           name: :claims,
           rows: 10,
-          label: I18n.t("activerecord.attributes.openid_connect/provider.claims"),
+          label: OpenIDConnect::Provider.human_attribute_name(:claims),
           caption: link_translate(
             "openid_connect.instructions.claims",
-            links: {
-              docs_url: ::OpenProject::Static::Links[:sysadmin_docs][:oidc_claims][:href]
-            }
+            links: { docs_url: %i[sysadmin_docs oidc_claims] }
           ),
           disabled: provider.seeded_from_env?,
           required: false,
-          input_width: :large
+          input_width: :large,
+          value: pretty_claims
         )
 
         f.text_field(
           name: :acr_values,
-          label: I18n.t("activerecord.attributes.openid_connect/provider.acr_values"),
+          label: OpenIDConnect::Provider.human_attribute_name(:acr_values),
           caption: link_translate(
             "openid_connect.instructions.acr_values",
-            links: {
-              docs_url: ::OpenProject::Static::Links[:sysadmin_docs][:oidc_acr_values][:href]
-            }
+            links: { docs_url: %i[sysadmin_docs oidc_acr_values] }
           ),
           disabled: provider.seeded_from_env?,
           required: false,
           input_width: :large
         )
+      end
+
+      private
+
+      def pretty_claims
+        claims = model.claims || ""
+        JSON.pretty_generate(JSON.parse(claims))
+      rescue JSON::ParserError
+        claims
       end
     end
   end

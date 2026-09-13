@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,12 +30,11 @@
 
 module OAuth
   class CleanupJob < ApplicationJob
-    include ::RakeJob
-
     queue_with_priority :low
 
     def perform
-      super("doorkeeper:db:cleanup")
+      cleaner = Doorkeeper::StaleRecordsCleaner.new(Doorkeeper.config.access_token_model)
+      cleaner.clean_revoked
     end
   end
 end

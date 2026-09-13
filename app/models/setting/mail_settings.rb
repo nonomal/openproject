@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,7 +33,6 @@ class Setting
     ##
     # Reload the currently configured mailer configuration
     def reload_mailer_settings!
-      ActionMailer::Base.perform_deliveries = true
       ActionMailer::Base.delivery_method = Setting.email_delivery_method if Setting.email_delivery_method
 
       case Setting.email_delivery_method

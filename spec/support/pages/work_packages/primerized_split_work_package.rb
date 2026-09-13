@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -57,10 +59,6 @@ module Pages
 
     def within_active_tab(&)
       within(".work-packages--details-content", &)
-    end
-
-    def path(tab = "overview")
-      details_notifications_path(work_package.id, tab:)
     end
 
     private

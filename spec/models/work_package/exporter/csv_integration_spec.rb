@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -33,23 +35,25 @@ RSpec.describe WorkPackage::Exports::CSV, "integration" do
     login_as user
   end
 
-  let(:project) { create(:project) }
-  let(:options) { { show_descriptions: true } }
-  let(:type_a) { create(:type, name: "Type A") }
-  let(:type_b) { create(:type, name: "Type B") }
-  let(:wp1) { create(:work_package, project:, done_ratio: 25, subject: "WP1", type: type_a, id: 1) }
-  let(:wp2) { create(:work_package, project:, done_ratio: 0, subject: "WP2", type: type_a, id: 2) }
-  let(:wp3) { create(:work_package, project:, done_ratio: 0, subject: "WP3", type: type_b, id: 3) }
-  let(:wp4) { create(:work_package, project:, done_ratio: 0, subject: "WP4", type: type_a, id: 4) }
-  let(:user) do
+  shared_let(:project) { create(:project) }
+  shared_let(:options) { { show_descriptions: true } }
+  shared_let(:type_a) { create(:type, name: "Type A") }
+  shared_let(:type_b) { create(:type, name: "Type B") }
+  shared_let(:user) do
     create(:user,
            member_with_permissions: { project => %i(view_work_packages) })
   end
+
+  before_all do
+    set_factory_default(:user, user)
+  end
+
   let(:instance) do
     described_class.new(query, options)
   end
-  let(:work_packages) do
-    [wp1, wp2, wp3, wp4]
+
+  def byte_order_mark
+    "\uFEFF"
   end
 
   context "when the query is default" do
@@ -63,115 +67,226 @@ RSpec.describe WorkPackage::Exports::CSV, "integration" do
     # This would not happen if the description contained only letters covered by
     # ISO-8859-1. Since this can happen, though, it is more sensible to encode everything
     # in UTF-8 which gets rid of this problem altogether.
-    let!(:work_package) do
+    shared_let(:work_package) do
       create(
         :work_package,
         subject: "Ruby encodes ß as '\\xDF' in ISO-8859-1.",
         description: "\u2022 requires unicode.",
         assigned_to: user,
+        estimated_hours: 10.0,
         derived_estimated_hours: 15.0,
         type: type_a,
         project:
       )
     end
 
+    subject(:header_value_pairs) do
+      data = CSV.parse instance.export!.content
+      headers, values = data
+      headers.zip(values)
+    end
+
     context "when description is included" do
-      it "performs a successful export" do
-        work_package.reload
-
-        data = CSV.parse instance.export!.content
-
-        expect(data.size).to eq(2)
-        expect(data.last).to include(work_package.type.name)
-        expect(data.last).to include(work_package.subject)
-        expect(data.last).to include(work_package.description)
-        expect(data.last).to include(user.name)
-        expect(data.last).to include(work_package.updated_at.localtime.strftime("%m/%d/%Y %I:%M %p"))
-        expect(data.last).to include("· Σ 15h")
+      it "performs a successful export with description column" do
+        expect(header_value_pairs).to eq [
+          ["#{byte_order_mark}Type", work_package.type.name],
+          ["Subject", work_package.subject],
+          ["Assignee", user.name],
+          ["Updated on", work_package.updated_at.in_time_zone(user.time_zone).strftime("%m/%d/%Y %I:%M %p")],
+          ["Work", "10.0"],
+          ["Total work", "15.0"],
+          ["Description", work_package.description]
+        ]
       end
     end
 
     context "when description is not included" do
       let(:options) { { show_descriptions: false } }
 
-      it "performs a successful export" do
-        work_package.reload
+      it "performs a successful export without description column" do
+        expect(header_value_pairs).to eq [
+          ["#{byte_order_mark}Type", work_package.type.name],
+          ["Subject", work_package.subject],
+          ["Assignee", user.name],
+          ["Updated on", work_package.updated_at.in_time_zone(user.time_zone).strftime("%m/%d/%Y %I:%M %p")],
+          ["Work", "10.0"],
+          ["Total work", "15.0"]
+        ]
+      end
+    end
 
+    context "with a formula-injection payload in user-controlled fields",
+            with_settings: { csv_escape_formulas: true } do
+      shared_let(:work_package) do
+        create(:work_package,
+               subject: "=1+1",
+               description: '=HYPERLINK("https://example.com","x")',
+               type: type_a,
+               project:)
+      end
+
+      it "escapes the formula cell by prepending a single quote" do
+        pairs = header_value_pairs.to_h
+
+        expect(pairs["Subject"]).to eq("'=1+1")
+        expect(pairs["Description"]).to eq(%('=HYPERLINK("https://example.com","x")))
+      end
+    end
+  end
+
+  context "with semantic work package identifiers",
+          with_settings: { work_packages_identifier: "semantic" } do
+    let(:semantic_project) do
+      create(:project,
+             identifier: "CSVPROJ",
+             member_with_permissions: { user => %i[view_work_packages] })
+    end
+    let!(:work_package) { create(:work_package, project: semantic_project) }
+    let(:options) { {} }
+    let(:query) do
+      create(:query, project: semantic_project, user:, column_names: %i(id subject))
+    end
+
+    it "exports the semantic identifier in the ID column" do
+      headers, values = CSV.parse instance.export!.content
+      pairs = headers.zip(values).to_h
+
+      expect(work_package.identifier).to match(/\ACSVPROJ-\d+\z/)
+      # the leading ID header is downcased by the exporter to avoid SYLK detection
+      expect(pairs["#{byte_order_mark}id"]).to eq work_package.identifier
+      expect(pairs["Subject"]).to eq work_package.subject
+    end
+  end
+
+  context "with the target versions column",
+          with_settings: { work_package_multiple_versions: true } do
+    let(:version_one) { create(:version, project:, name: "1.0") }
+    let(:version_two) { create(:version, project:, name: "2.0") }
+    let!(:work_package) do
+      create(:work_package, project:, type: type_a).tap do |wp|
+        wp.target_version_ids_replacements = [version_one.id, version_two.id]
+        wp.save!
+      end
+    end
+    let(:options) { {} }
+    let(:query) do
+      create(:query, project:, user:, column_names: %i(subject target_versions))
+    end
+
+    it "exports the joined target version names" do
+      headers, values = CSV.parse instance.export!.content
+      pairs = headers.zip(values).to_h
+
+      # the association carries no order, so compare the cell as a set
+      expect(pairs["Target versions"].split("; ")).to match_array %w[1.0 2.0]
+    end
+
+    it "preloads target versions so cell rendering does not query per row" do
+      loaded = instance.work_packages.to_a
+
+      expect { loaded.each { it.target_versions.map(&:name) } }.to have_a_query_limit(0)
+    end
+  end
+
+  context "with the deprecated version column (multiple versions feature off)",
+          with_settings: { work_package_multiple_versions: false } do
+    let(:version_one) { create(:version, project:, name: "1.0") }
+    let!(:work_package) do
+      create(:work_package, project:, type: type_a, version: version_one)
+    end
+    let(:options) { {} }
+    let(:query) do
+      create(:query, project:, user:, column_names: %i(subject version))
+    end
+
+    it "exports the version name from the target_versions data" do
+      headers, values = CSV.parse instance.export!.content
+      pairs = headers.zip(values).to_h
+
+      expect(pairs["Version"]).to eq "1.0"
+    end
+  end
+
+  context "when no displayed column has a backing association" do
+    let!(:work_package) { create(:work_package, project:, type: type_a, subject: "No associations") }
+    let(:query) do
+      create(:query, project:, user:, column_names: %i(subject start_date))
+    end
+
+    it "exports successfully with an empty preload list" do
+      headers, values = CSV.parse instance.export!.content
+
+      expect(headers.first).to eq "#{byte_order_mark}Subject"
+      expect(values.first).to eq "No associations"
+    end
+  end
+
+  context "with multiple work packages" do
+    shared_let(:wp1) { create(:work_package, project:, done_ratio: 25, subject: "WP1", type: type_a, id: 1) }
+    shared_let(:wp2) { create(:work_package, project:, done_ratio: 0, subject: "WP2", type: type_a, id: 2) }
+    shared_let(:wp3) { create(:work_package, project:, done_ratio: 0, subject: "WP3", type: type_b, id: 3) }
+    shared_let(:wp4) { create(:work_package, project:, done_ratio: 0, subject: "WP4", type: type_a, id: 4) }
+
+    context "when the query is grouped" do
+      let(:query) do
+        create(:query, project:, user:, column_names: %i(type subject id),
+                       group_by: "type",
+                       show_hierarchies: false, sort_criteria: [%w[type asc], %w[id asc]])
+      end
+
+      it "performs a successful grouped export" do
+        type_a.update_column(:position, 1)
+        type_b.update_column(:position, 2)
+        data = CSV.parse instance.export!.content
+
+        expect(data.size).to eq(5)
+        expect(data.pluck(0)).to eq ["#{byte_order_mark}Type", "Type A", "Type A", "Type A", "Type B"]
+      end
+    end
+
+    context "when the query is filtered" do
+      let(:query) do
+        create(:query, project:, user:, column_names: %i(subject done_ratio))
+          .tap do |query|
+          query.add_filter "done_ratio", "=", [25]
+        end
+      end
+
+      it "performs a successful grouped export" do
         data = CSV.parse instance.export!.content
 
         expect(data.size).to eq(2)
-        expect(data.last).to include(work_package.type.name)
-        expect(data.last).to include(work_package.subject)
-        expect(data.last).not_to include(work_package.description)
-        expect(data.last).to include(user.name)
-        expect(data.last).to include(work_package.updated_at.localtime.strftime("%m/%d/%Y %I:%M %p"))
-        expect(data.last).to include("· Σ 15h")
-      end
-    end
-  end
-
-  context "when the query is grouped" do
-    let(:query) do
-      create(:query, project:, user:, column_names: %i(type subject id),
-                     group_by: "type",
-                     show_hierarchies: false, sort_criteria: [%w[type asc], %w[id asc]])
-    end
-
-    it "performs a successful grouped export" do
-      type_a.update_column(:position, 1)
-      type_b.update_column(:position, 2)
-      work_packages
-      data = CSV.parse instance.export!.content
-
-      expect(data.size).to eq(5)
-      expect(data.pluck(0)).to eq ["\xEF\xBB\xBFType", "Type A", "Type A", "Type A", "Type B"]
-    end
-  end
-
-  context "when the query is filtered" do
-    let(:query) do
-      create(:query, project:, user:, column_names: %i(subject done_ratio))
-        .tap do |query|
-        query.add_filter "done_ratio", "=", [25]
+        expect(data.last).to include(wp1.name)
       end
     end
 
-    it "performs a successful grouped export" do
-      work_packages
-      data = CSV.parse instance.export!.content
+    context "when the query is manually ordered" do
+      let(:query) do
+        create(
+          :query, project:, user:,
+                  column_names: %i(subject done_ratio),
+                  sort_criteria: [[:manual_sorting, "asc"]]
+        )
+      end
 
-      expect(data.size).to eq(2)
-      expect(data.last).to include(wp1.name)
-    end
-  end
+      before do
+        OrderedWorkPackage.delete_all
+        OrderedWorkPackage.create(query:, work_package: wp4, position: 0)
+        OrderedWorkPackage.create(query:, work_package: wp2, position: 1)
+        OrderedWorkPackage.create(query:, work_package: wp1, position: 2)
+        OrderedWorkPackage.create(query:, work_package: wp3, position: 3)
+      end
 
-  context "when the query is manually ordered" do
-    let(:query) do
-      create(
-        :query, project:, user:,
-                column_names: %i(subject done_ratio),
-                sort_criteria: [[:manual_sorting, "asc"]]
-      )
-    end
+      after do
+        OrderedWorkPackage.delete_all
+      end
 
-    before do
-      OrderedWorkPackage.delete_all
-      OrderedWorkPackage.create(query:, work_package: wp4, position: 0)
-      OrderedWorkPackage.create(query:, work_package: wp2, position: 1)
-      OrderedWorkPackage.create(query:, work_package: wp1, position: 2)
-      OrderedWorkPackage.create(query:, work_package: wp3, position: 3)
-    end
+      it "performs a successful manually ordered export" do
+        data = CSV.parse instance.export!.content
 
-    after do
-      OrderedWorkPackage.delete_all
-    end
-
-    it "performs a successful manually ordered export" do
-      work_packages
-      data = CSV.parse instance.export!.content
-
-      expect(data.size).to eq(5)
-      expect(data.pluck(0)).to eq %w[WP4 WP2 WP1 WP3].unshift("\xEF\xBB\xBFSubject")
+        expect(data.size).to eq(5)
+        expect(data.pluck(0)).to eq %w[WP4 WP2 WP1 WP3].unshift("#{byte_order_mark}Subject")
+      end
     end
   end
 end

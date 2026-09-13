@@ -38,9 +38,10 @@ RSpec.describe OpenIDConnect::JwtParser do
   end
   let(:token) { JWT.encode(payload, private_key, "RS256", { kid: "key-identifier" }) }
 
-  let!(:provider) { create(:oidc_provider) }
+  let!(:provider) { create(:oidc_provider, issuer: known_issuer, client_id: our_client_id, jwks_uri:) }
   let(:known_issuer) { "International Space Station" }
   let(:our_client_id) { "openproject.org" }
+  let(:jwks_uri) { "https://example.com/certs" }
   let(:expiration) { 1.minute.from_now.to_i }
 
   before do
@@ -48,9 +49,6 @@ RSpec.describe OpenIDConnect::JwtParser do
       instance_double(JSON::JWK, to_key: private_key.public_key)
     )
 
-    provider.options["issuer"] = known_issuer
-    provider.options["client_id"] = our_client_id
-    provider.options["jwks_uri"] = "https://example.com/certs"
     provider.save!
   end
 
@@ -69,7 +67,7 @@ RSpec.describe OpenIDConnect::JwtParser do
   it "correctly queries for the token's public key" do
     parse
 
-    expect(JSON::JWK::Set::Fetcher).to have_received(:fetch).with("https://example.com/certs", kid: "key-identifier")
+    expect(JSON::JWK::Set::Fetcher).to have_received(:fetch).with(jwks_uri, kid: "key-identifier")
   end
 
   context "when the provider signing the token is not known" do
@@ -91,6 +89,18 @@ RSpec.describe OpenIDConnect::JwtParser do
 
     it "indicates the problem" do
       expect(parse.failure).to match(/issuer is unknown/)
+    end
+  end
+
+  context "when the token does not specify an issuer" do
+    let(:payload) do
+      { "exp" => expiration, "sub" => "M. Curie", "aud" => our_client_id }
+    end
+
+    it { is_expected.to be_failure }
+
+    it "indicates the problem" do
+      expect(parse.failure).to match(/token has no issuer/)
     end
   end
 
@@ -157,6 +167,22 @@ RSpec.describe OpenIDConnect::JwtParser do
       subject(:parse) { described_class.new(verify_expiration: false).parse(token) }
 
       it { is_expected.to be_success }
+    end
+  end
+
+  context "when the provider has no jwks_url set" do
+    let(:jwks_uri) { "" }
+
+    it { is_expected.to be_failure }
+
+    it "indicates the problem that occured" do
+      expect(parse.failure).to match(/Unable to validate issuer signature/)
+    end
+
+    it "does not try to fetch a public key" do
+      parse
+
+      expect(JSON::JWK::Set::Fetcher).not_to have_received(:fetch)
     end
   end
 end

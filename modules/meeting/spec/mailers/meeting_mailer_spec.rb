@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,6 +28,7 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
+require "icalendar"
 require_relative "../spec_helper"
 
 RSpec.describe MeetingMailer do
@@ -62,6 +64,7 @@ RSpec.describe MeetingMailer do
     let(:i18n) do
       Class.new do
         include Redmine::I18n
+
         public :format_date, :format_time
       end
     end
@@ -70,7 +73,7 @@ RSpec.describe MeetingMailer do
       expect(mail.subject).to include(meeting.project.name)
       expect(mail.subject).to include(meeting.title)
       expect(mail.to).to contain_exactly(watcher1.mail)
-      expect(mail.from).to eq([Setting.mail_from])
+      expect(mail.from).to eq([ApplicationMailer.reply_to_address])
     end
 
     it "renders the text body" do
@@ -82,6 +85,33 @@ RSpec.describe MeetingMailer do
     it "renders the html body" do
       User.execute_as(watcher1) do
         check_meeting_mail_content mail.html_part.body
+      end
+    end
+
+    context "when a recurring occurrence is sent as a standalone occurrence" do
+      let(:recurring_meeting) do
+        create(:recurring_meeting,
+               title: "Weekly Sync",
+               project:,
+               author:)
+      end
+      let(:meeting) do
+        create(:recurring_meeting_occurrence,
+               recurring_meeting:,
+               start_time: recurring_meeting.start_time,
+               recurrence_start_time: recurring_meeting.start_time)
+      end
+      let(:mail) { described_class.invited(meeting, watcher1, author, standalone_occurrence: true) }
+      let(:calendar) { Icalendar::Calendar.parse(mail.attachments["meeting.ics"].body.decoded).first }
+      let(:entry) { calendar.events.first }
+
+      it "renders one standalone event for the occurrence" do
+        expect(calendar.events.length).to eq(1)
+
+        expect(entry.uid).to eq(meeting.uid)
+        expect(entry.recurrence_id).to be_nil
+        expect(entry.rrule).to be_empty
+        expect(entry.description).to eq("Link to meeting: http://#{Setting.host_name}/meetings/#{meeting.id}")
       end
     end
 
@@ -132,6 +162,77 @@ RSpec.describe MeetingMailer do
     end
   end
 
+  describe "updated" do
+    let(:meeting) do
+      create(:meeting,
+             author:,
+             project:,
+             title: "Old title",
+             start_time: "2021-11-09T23:00:00 +0100".to_datetime.utc)
+    end
+    let(:new_start) { "2021-11-12T23:00:00 +0100".to_datetime.utc }
+    let(:changes) do
+      { old_start: meeting.start_time,
+        new_start:,
+        old_duration: 1,
+        new_duration: 1,
+        old_location: nil,
+        new_location: "Some new location",
+        old_title: meeting.title,
+        new_title: "New title" }
+    end
+    let(:mail) { described_class.updated(meeting, watcher1, author, changes:) }
+    # this is needed to call module functions from Redmine::I18n
+    let(:i18n) do
+      Class.new do
+        include Redmine::I18n
+
+        public :format_date, :format_time
+      end
+    end
+
+    it "renders the headers" do
+      expect(mail.subject).to include(meeting.project.name)
+      expect(mail.subject).to include(meeting.title)
+      expect(mail.to).to contain_exactly(watcher1.mail)
+      expect(mail.from).to eq([ApplicationMailer.reply_to_address])
+    end
+
+    describe "text body" do
+      subject(:body) { mail.text_part.body }
+
+      it "renders the text body" do
+        expect(body).to include("has been updated")
+        expect(body).to include(meeting.title)
+        expect(body).to include(i18n.format_date(meeting.start_time))
+        expect(body).to include(i18n.format_time(meeting.start_time, include_date: false))
+        expect(body).to include(i18n.format_date(new_start))
+        expect(body).to include(i18n.format_time(new_start, include_date: false))
+        expect(body).to include("-")
+        expect(body).to include("Some new location")
+        expect(body).to include("Old title")
+        expect(body).to include("New title")
+      end
+    end
+
+    describe "renders the html body" do
+      subject(:body) { mail.html_part.body }
+
+      it "renders the text body" do
+        expect(body).to include("has been updated")
+        expect(body).to include(meeting.title)
+        expect(body).to include(i18n.format_date(meeting.start_time))
+        expect(body).to include(i18n.format_time(meeting.start_time, include_date: false))
+        expect(body).to include(i18n.format_date(new_start))
+        expect(body).to include(i18n.format_time(new_start, include_date: false))
+        expect(body).to include("-")
+        expect(body).to include("Some new location")
+        expect(body).to include("Old title")
+        expect(body).to include("New title")
+      end
+    end
+  end
+
   describe "icalendar" do
     let(:meeting) do
       create(:meeting,
@@ -148,7 +249,7 @@ RSpec.describe MeetingMailer do
       expect(mail.subject).to include(meeting.project.name)
       expect(mail.subject).to include(meeting.title)
       expect(mail.to).to contain_exactly(author.mail)
-      expect(mail.from).to eq([Setting.mail_from])
+      expect(mail.from).to eq([ApplicationMailer.reply_to_address])
     end
 
     describe "text body" do
@@ -189,14 +290,63 @@ RSpec.describe MeetingMailer do
 
         expect(entry.dtstart.utc).to eq meeting.start_time
         expect(entry.dtend.utc).to eq meeting.start_time + 1.hour
-        expect(entry.summary).to eq "[My project] Important meeting"
-        expect(entry.description).to eq "[My project] Meeting: Important meeting"
+        expect(entry.summary).to eq "Important meeting"
+        expect(entry.description).to eq "Link to meeting: http://#{Setting.host_name}/meetings/#{meeting.id}"
         expect(entry.location).to eq(meeting.location.presence)
       end
 
       it "has the correct time matching the timezone" do
         expect(entry.dtstart).to eq "2021-01-19T10:00:00Z".to_time(:utc).in_time_zone("Europe/Berlin")
         expect(entry.dtend).to eq ("2021-01-19T10:00:00Z".to_time(:utc) + 1.hour).in_time_zone("Europe/Berlin")
+      end
+    end
+
+    describe "calendar MIME part for email client integration" do
+      def find_calendar_part(message)
+        message.all_parts.find { |p| p.content_type&.include?("text/calendar") && !p.content_disposition&.include?("attachment") }
+      end
+
+      it "includes a text/calendar part with REQUEST method" do
+        calendar_part = find_calendar_part(mail)
+
+        expect(calendar_part).to be_present
+        expect(calendar_part.content_type).to include("text/calendar")
+        expect(calendar_part.content_type).to include("method=REQUEST")
+      end
+
+      it "includes the ICS content in the calendar part" do
+        calendar_part = find_calendar_part(mail)
+
+        expect(calendar_part.body.decoded).to include("BEGIN:VCALENDAR")
+        expect(calendar_part.body.decoded).to include("METHOD:REQUEST")
+        expect(calendar_part.body.decoded).to include("Important meeting")
+      end
+
+      it "also includes the ICS as a downloadable attachment" do
+        attachment = mail.attachments["meeting.ics"]
+
+        expect(attachment).to be_present
+        expect(attachment.content_type).to include("text/calendar")
+        expect(attachment.body.decoded).to include("BEGIN:VCALENDAR")
+      end
+
+      context "when the meeting is cancelled" do
+        let(:mail) { described_class.cancelled(meeting, author, author) }
+
+        it "includes a text/calendar part with CANCEL method" do
+          calendar_part = find_calendar_part(mail)
+
+          expect(calendar_part).to be_present
+          expect(calendar_part.content_type).to include("text/calendar")
+          expect(calendar_part.content_type).to include("method=CANCEL")
+        end
+
+        it "includes the ICS content with CANCEL method" do
+          calendar_part = find_calendar_part(mail)
+
+          expect(calendar_part.body.decoded).to include("BEGIN:VCALENDAR")
+          expect(calendar_part.body.decoded).to include("METHOD:CANCEL")
+        end
       end
     end
 
@@ -243,6 +393,50 @@ RSpec.describe MeetingMailer do
 
           expect(mail.to).to contain_exactly(watcher1.mail)
         end
+      end
+    end
+  end
+
+  describe "updated with participant changes" do
+    let(:meeting) do
+      create(:meeting,
+             author:,
+             project:,
+             start_time: "2021-11-09T23:00:00 +0100".to_datetime.utc)
+    end
+    let(:changes) do
+      { old_start: meeting.start_time,
+        new_start: meeting.start_time,
+        old_duration: 1,
+        new_duration: 1,
+        old_location: nil,
+        new_location: nil }
+    end
+    let(:added_names) { ["Added Person"] }
+    let(:removed_names) { ["Removed Person"] }
+    let(:mail) do
+      described_class.updated(meeting, watcher1, author,
+                              changes:,
+                              added_participants: added_names,
+                              removed_participants: removed_names)
+    end
+
+    it "renders added participants bold in the html body" do
+      User.execute_as(watcher1) do
+        expect(mail.html_part.body).to include(added_names.first)
+      end
+    end
+
+    it "renders removed participants with strikethrough in the html body" do
+      User.execute_as(watcher1) do
+        expect(mail.html_part.body).to include("<s>#{removed_names.first}</s>")
+      end
+    end
+
+    it "renders added and removed participants in the text body" do
+      User.execute_as(watcher1) do
+        expect(mail.text_part.body).to include(added_names.first)
+        expect(mail.text_part.body).to include(removed_names.first)
       end
     end
   end

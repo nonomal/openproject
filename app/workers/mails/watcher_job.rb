@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -71,6 +73,6 @@ class Mails::WatcherJob < Mails::DeliverJob
   end
 
   def action
-    raise NotImplementedError, "subclass responsibility"
+    raise SubclassResponsibilityError
   end
 end

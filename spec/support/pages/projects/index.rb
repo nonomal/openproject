@@ -34,46 +34,39 @@ module Pages
   module Projects
     class Index < ::Pages::Page
       include ::Components::Common::Filters
-      include ::Components::Autocompleter::NgSelectAutocompleteHelpers
 
       def path(*)
         "/projects"
       end
 
       def expect_projects_listed(*projects, archived: false)
-        within_table do
-          projects.each do |project|
-            displayed_name = if archived
-                               "ARCHIVED #{project.name}"
-                             else
-                               project.name
-                             end
+        projects.each do |project|
+          displayed_name = if archived
+                             "#{project.name} (Archived)"
+                           else
+                             project.name
+                           end
 
-            expect(page).to have_text(displayed_name)
-          end
+          expect(page).to have_css("#project-table", text: displayed_name, normalize_ws: true)
         end
       end
 
       def expect_projects_not_listed(*projects)
-        within_table do
-          projects.each do |project|
-            case project
-            when Project
-              expect(page).to have_no_text(project.name)
-            when String
-              expect(page).to have_no_text(project)
-            else
-              raise ArgumentError, "#{project.inspect} is not a Project or a String"
-            end
+        projects.each do |project|
+          case project
+          when Project
+            expect(page).to have_no_css("#project-table", text: project.name)
+          when String
+            expect(page).to have_no_css("#project-table", text: project)
+          else
+            raise ArgumentError, "#{project.inspect} is not a Project or a String"
           end
         end
       end
 
       def expect_project_at_place(project, place)
-        within_table do
-          expect(page)
-            .to have_css(".project:nth-of-type(#{place}) td.name", text: project.name)
-        end
+        expect(page)
+          .to have_css("#project-table .project:nth-of-type(#{place}) td.name", text: project.name)
       end
 
       def expect_projects_in_order(*projects)
@@ -86,8 +79,12 @@ module Pages
         expect(page).to have_css('[data-test-selector="project-query-name"]', text: name)
       end
 
-      def expect_sidebar_filter(filter_name, selected: false, favored: false, visible: true)
-        submenu.expect_item(filter_name, selected:, favored:, visible:)
+      def expect_sidebar_filter(filter_name, selected: false, favorited: false, visible: true)
+        submenu.expect_item(filter_name, selected:, favorited:, visible:)
+      end
+
+      def expect_no_sidebar_filter_selected
+        submenu.expect_no_selected_item
       end
 
       def expect_no_sidebar_filter(filter_name)
@@ -107,49 +104,56 @@ module Pages
       end
 
       def expect_current_page_number(number)
-        within ".op-pagination--pages" do
-          expect(page).to have_css(".op-pagination--item_current", text: number)
+        within ".PaginationContainer" do
+          expect(page).to have_css("a.Page", text: number.to_s, aria: { current: "page" })
         end
       end
 
       def expect_total_pages(number)
         within ".op-pagination--pages" do
-          expect(page).to have_css(".op-pagination--item", text: number)
-          expect(page).to have_no_css(".op-pagination--item", text: number + 1)
+          expect(page).to have_css(".Page", text: number)
+          expect(page).to have_no_css(".Page", text: number + 1)
         end
       end
 
       def expect_page_link(text)
         within ".op-pagination--pages" do
-          expect(page).to have_css("a.op-pagination--item-link", text:)
+          expect(page).to have_css("a.Page", text:)
         end
       end
 
       def expect_page_links(model:, current_page: 1)
-        within ".op-pagination--pages" do
-          pagination_links = page.all(".op-pagination--item-link")
+        within ".PaginationContainer" do
+          pagination_links = page.all("a.Page")
           expect(pagination_links.size).to be_positive
 
-          page_number_links = pagination_links.reject { |link| link.text =~ /previous|next/i }
-          page_number_links.each.with_index(1) do |pagination_link, page_number|
+          page_number_links = pagination_links.select { |link| link["aria-label"]&.match?(/\APage \d+\z/) }
+
+          page_number_links.each do |pagination_link|
+            page_number = pagination_link.text.to_i
             uri = URI.parse(pagination_link["href"])
             expect(uri.path).to eq(path(model))
             expect(uri.query).to include("page=#{page_number}")
           end
 
           if current_page > 1
-            expect(page).to have_link("Previous", href: "#{path(model)}?#{{ page: current_page - 1 }.to_query}")
+            previous_link = find("a[rel='prev']", visible: true)
+            previous_uri = URI.parse(previous_link["href"])
+            expect(previous_uri.path).to eq(path(model))
+            expect(previous_uri.query).to include("page=#{current_page - 1}")
           else
-            expect(page).to have_link("Next", href: "#{path(model)}?#{{ page: current_page + 1 }.to_query}")
+            next_link = find("a[rel='next']", visible: true)
+            next_uri = URI.parse(next_link["href"])
+            expect(next_uri.path).to eq(path(model))
+            expect(next_uri.query).to include("page=#{current_page + 1}")
           end
         end
       end
 
       def expect_page_sizes(model:)
         within ".op-pagination--options" do
-          pagination_links = page.all(".op-pagination--item-link")
+          pagination_links = page.all("a.Page")
           expect(pagination_links.size).to be_positive
-          expect(page).to have_css(".op-pagination--item_current")
 
           pagination_links.each do |pagination_link|
             uri = URI.parse(pagination_link["href"])
@@ -221,8 +225,8 @@ module Pages
         wait_for_reload
       end
 
-      def filter_by_favored(value)
-        set_filter("favored", "Favorite", "is", [value])
+      def filter_by_favorited(value)
+        set_filter("favorited", "Favorite", "is", [value])
         wait_for_reload
       end
 
@@ -237,22 +241,27 @@ module Pages
       end
 
       def set_advanced_filter(name, human_name, human_operator = nil, values = [], send_keys: false)
-        selected_filter = select_filter(name, human_name)
+        select_filter(name, human_name)
 
-        within(selected_filter) do
+        # Classify the row before apply_operator re-renders it. Skipped when
+        # there is nothing to set.
+        kind = values.any? ? filter_kind(name) : nil
+
+        within(filter_selector(name)) do
           apply_operator(name, human_operator)
+        end
 
-          return unless values.any?
+        return unless values.any?
 
+        return set_autocomplete_filter(values, filter_name: name) if kind == :autocomplete
+
+        # Re-find again as apply_operator may have triggered further DOM updates
+        within(filter_selector(name)) do
           if boolean_filter?(name)
             set_toggle_filter(values)
-          elsif autocomplete_filter?(selected_filter)
-            select(human_operator, from: "operator")
-            set_autocomplete_filter(values)
-          elsif date_filter?(selected_filter) || date_time_filter?(selected_filter)
-            select(human_operator, from: "operator")
+          elsif %i[date datetime_past].include?(kind)
             wait_for_network_idle
-            set_created_at_filter(human_operator, values, send_keys:)
+            set_datetime_filter(name, human_operator, values, send_keys:)
           end
         end
       end
@@ -267,8 +276,8 @@ module Pages
 
         not_protected_columns = Regexp.new("^(?!#{(columns + ['Name']).join('$|')}$).*$")
 
-        while (item = page.all(".op-draggable-autocomplete--item", text: not_protected_columns)[0])
-          item.find(".op-draggable-autocomplete--remove-item").click
+        while (items = page.all(".op-draggable-autocomplete--item", text: not_protected_columns)[0]) # rubocop:disable Capybara/FindAllFirst
+          items.find(".op-draggable-autocomplete--remove-item").click
         end
 
         remaining_columns = page.all(".op-draggable-autocomplete--item").map { |i| i.text.downcase }
@@ -276,8 +285,8 @@ module Pages
         columns.each do |column|
           next if remaining_columns.include?(column.downcase)
 
-          select_autocomplete find(".op-draggable-autocomplete--input"),
-                              results_selector: ".ng-dropdown-panel-items",
+          select_autocomplete find("ng-select.op-draggable-autocomplete--input"),
+                              results_selector: "ng-dropdown-panel.op-draggable-autocomplete--input .ng-dropdown-panel-items",
                               query: column
         end
 
@@ -288,14 +297,13 @@ module Pages
         wait_for_network_idle
       end
 
-      def expect_no_config_columns(*columns, element_selector: ".op-draggable-autocomplete--input",
-                                   results_selector: ".ng-dropdown-panel-items")
+      def expect_no_config_columns(*columns)
         open_configure_view
 
         columns.each do |column|
-          expect_no_ng_option find(element_selector),
+          expect_no_ng_option find("ng-select.op-draggable-autocomplete--input"),
                               column,
-                              results_selector:
+                              results_selector: "ng-dropdown-panel.op-draggable-autocomplete--input .ng-dropdown-panel-items"
         end
 
         within "dialog" do
@@ -318,6 +326,12 @@ module Pages
         wait_for_network_idle
       end
 
+      def expect_no_more_menu_item(item)
+        wait_for_network_idle
+        page.find('[data-test-selector="project-more-dropdown-menu"]').click
+        expect(page).to have_no_css(".ActionListItem", text: item, exact_text: true)
+      end
+
       def click_menu_item_of(title, project)
         activate_menu_of(project) do
           click_on title
@@ -336,12 +350,33 @@ module Pages
         end
       end
 
-      def navigate_to_new_project_page_from_toolbar_items
-        page.find('[data-test-selector="project-new-button"]').click
+      def create_new_workspace(type, open_menu: false)
+        label = I18n.t(:"label_#{type}")
+
+        if open_menu
+          click_on I18n.t(:button_add)
+          page.find(".ActionListItem", exact_text: label).click
+        else
+          page.find('[data-test-selector="workspace-new-button"]', exact_text: label).click
+        end
       end
 
       def save_query
         click_more_menu_item("Save")
+        wait_for_network_idle
+      end
+
+      def save_query_via_header
+        page.find('[data-test-selector="header-save-button"]').click
+        wait_for_network_idle
+      end
+
+      def expect_header_save_button
+        expect(page).to have_css('[data-test-selector="header-save-button"]')
+      end
+
+      def expect_no_header_save_button
+        expect(page).to have_no_css('[data-test-selector="header-save-button"]')
       end
 
       def save_query_as(name)
@@ -352,8 +387,12 @@ module Pages
         click_on "Save"
       end
 
-      def expect_can_only_save_as_label
+      def expect_save_as_label
         expect(page).to have_text(I18n.t("lists.can_be_saved_as"))
+      end
+
+      def expect_save_label
+        expect(page).to have_text(I18n.t("lists.can_be_saved"))
       end
 
       def fill_in_the_name(name)
@@ -420,19 +459,19 @@ module Pages
 
       def set_page_size(size)
         within ".op-pagination--options" do
-          find(".op-pagination--item", text: size).click
+          find("a.Page", text: size.to_s).click
         end
       end
 
       def expect_page_size(size)
         within ".op-pagination--options" do
-          expect(page).to have_css(".op-pagination--item_current", text: size)
+          expect(page).to have_css("a.Page", text: /\A#{size}\z/, aria: { current: "page" })
         end
       end
 
       def go_to_page(page_number)
-        within ".op-pagination--pages" do
-          find(".op-pagination--item-link", text: page_number).click
+        within ".PaginationContainer" do
+          click_link accessible_name: "Page #{page_number}"
         end
       end
 
@@ -520,7 +559,7 @@ module Pages
       private
 
       def boolean_filter?(filter)
-        %w[active member_of favored public templated].include?(filter.to_s)
+        %w[active member_of favorited public templated].include?(filter.to_s)
       end
 
       def submenu

@@ -16,7 +16,7 @@
                 data: {
                   turbo_stream: true,
                   turbo_method: :put,
-                  "work-packages--activities-tab--index-target": "reactionButton"
+                  "#{polling_stimulus_controller}-target": "reactionButton"
                 },
                 aria: { label: aria_label_text(reaction, data[:users]) },
                 disabled: current_user_cannot_react?,

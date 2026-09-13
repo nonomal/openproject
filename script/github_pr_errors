@@ -15,17 +15,24 @@ require "pry"
 require "time"
 require "yaml"
 require "httpx"
+require "cgi"
+
+require_relative "support/github_actions_failures"
 
 GITHUB_API_OPENPROJECT_PREFIX = "https://api.github.com/repos/opf/openproject"
 GITHUB_HTML_OPENPROJECT_PREFIX = "https://github.com/opf/openproject"
 RAILS_ROOT = Pathname.new(__dir__).dirname
 EXCLUDED_JOB_NAMES = %w[eslint rubocop].freeze
 
-if !ENV["GITHUB_USERNAME"]
-  raise "Missing GITHUB_USERNAME env"
-elsif !ENV["GITHUB_TOKEN"]
+if !ENV["GITHUB_TOKEN"]
   raise "Missing GITHUB_TOKEN env, go to https://github.com/settings/tokens and create one with 'repo' access"
 end
+
+# workaround an openssl 3.6.0 issue
+# https://github.com/ruby/openssl/issues/949#issuecomment-3367944960
+s = OpenSSL::X509::Store.new.tap(&:set_default_paths)
+OpenSSL::SSL::SSLContext.send(:remove_const, :DEFAULT_CERT_STORE) rescue nil # rubocop:disable Style/RescueModifier
+OpenSSL::SSL::SSLContext.const_set(:DEFAULT_CERT_STORE, s.freeze)
 
 class Options
   DEFAULTS = {
@@ -53,7 +60,7 @@ class Options
 
     Use this script with xargs to run failing specs locally:
 
-        #{$0} | xargs --no-run-if-empty bundle exec rspec
+        #{$0} | xargs --no-run-if-empty bin/rspec
 
 
     Options:
@@ -172,8 +179,9 @@ end
 def http
   HTTPX
     .plugin(:follow_redirects)
-    .plugin(:basic_auth)
-    .basic_auth(ENV.fetch("GITHUB_USERNAME"), ENV.fetch("GITHUB_TOKEN"))
+    .with_headers(
+      "Authorization" => "Bearer #{ENV.fetch('GITHUB_TOKEN')}"
+    )
 end
 
 def get_http(path)
@@ -182,8 +190,8 @@ def get_http(path)
 
   response = http.get(url)
 
-  say_verbose("HTTP Response #{response.status}")
   response.raise_for_status
+  say_verbose("HTTP Response #{response.status}")
   response.to_s
 rescue HTTPX::HTTPError => e
   warn error_details(e)
@@ -330,170 +338,6 @@ Report = Data.define(
   end
 end
 
-class Error
-  attr_accessor :location, :page_html, :page_screenshot, :tests_group, :loading_error
-end
-
-# rubocop:disable Layout/LineLength
-# Looks like this in the job log:
-# Process 28: TEST_ENV_NUMBER=28 RUBYOPT=-I/usr/local/bundle/bundler/gems/turbo_tests-3148ae6c3482/lib -r/usr/local/bundle/gems/bundler-2.5.23/lib/bundler/setup -W0 RSPEC_SILENCE_FILTER_ANNOUNCEMENTS=1 /usr/local/bundle/gems/bundler-2.5.23/exe/bundle exec rspec --seed 52674 --format TurboTests::JsonRowsFormatter --out tmp/test-pipes/subprocess-28 --format ParallelTests::RSpec::RuntimeLogger --out spec/support/turbo_runtime_features.log spec/features/api_docs/index_spec.rb spec/features/custom_fields/reorder_options_spec.rb spec/features/projects/projects_portfolio_spec.rb spec/features/projects/template_spec.rb spec/features/versions/edit_spec.rb spec/features/work_packages/details/markdown/description_editor_spec.rb spec/features/work_packages/table/hierarchy/hierarchy_parent_below_spec.rb spec/features/work_packages/table/inline_create/inline_create_refresh_spec.rb spec/features/work_packages/table/invalid_query_spec.rb spec/features/work_packages/tabs/activity_revisions_spec.rb
-# rubocop:enable Layout/LineLength
-class TestsGroup
-  attr_accessor :test_env_number, :seed, :files
-
-  def initialize
-    @files = []
-  end
-
-  def include_error?(error)
-    return false if error.location.nil?
-
-    files.any? { |file| error.location.include?(file) }
-  end
-
-  def inspect
-    "#<#{self.class} @test_env_number=#{test_env_number} @seed=#{seed} (#{files.count} files)>"
-  end
-end
-
-class JobErrorsFinder
-  SPEC_FAILURES_PATTERN = %r{^\S+ rspec (\S+) #.+$}
-  SPEC_LOADING_ERRORS_PATTERN = %r{^\S+ An error occurred while loading (\S+)\.\r?$}
-  SCREENSHOT_PATTERN = /\{"message":"Screenshot captured for failed feature test"[^\n]+$/
-  TESTS_GROUP_PATTERN = /Process \d+: TEST_ENV_NUMBER=\d+ [^\n]+$/
-  BRANCH_MERGE_PATTERN = /Merge \w{40} into (\w{40})$/
-
-  attr_reader :failures_explanation, :merge_branch_sha
-
-  def self.scan_logs(report, logs)
-    finder = new
-    logs.each do |log|
-      finder.scan_log(log)
-    end
-    report.with(
-      errors: finder.errors,
-      failures_explanation: finder.failures_explanation,
-      merge_branch_sha: finder.merge_branch_sha
-    )
-  end
-
-  def scan_log(log)
-    find_failures(log)
-    find_failures_explanation(log)
-    find_loading_errors(log)
-    find_screenshots(log)
-    find_tests_groups(log)
-    find_merge_branch_info(log)
-  end
-
-  def errors
-    @errors.values
-  end
-
-  protected
-
-  def initialize
-    @errors = {}
-  end
-
-  def create_error(location)
-    return if location.nil?
-
-    error = Error.new
-    error.location = location
-    @errors[location] ||= error
-  end
-
-  def with_matching_error(location: nil, id: nil)
-    error = @errors[id] || @errors[location]
-    yield error if error && block_given?
-    error
-  end
-
-  def find_failures(log)
-    log.scan(SPEC_FAILURES_PATTERN)
-      .flatten
-      .uniq
-      .sort
-      .each do |rerun_location|
-        create_error(rerun_location)
-      end
-  end
-
-  def find_failures_explanation(log)
-    explanations = []
-    log.split("\n").each do |line|
-      if line.end_with?("Failures:") .. line.end_with?("Failed examples:")
-        explanations << line
-      end
-    end
-    explanations.map! { it[29..] } # Remove leading timestamp (like "2024-02-05T08:37:54.5175930Z")
-    explanations.reject! do |line|
-      line == "Failures:" ||
-        line == "Failed examples:" ||
-        line.include?("gems/rspec-retry-") ||
-        line.include?("gems/webmock-")
-    end
-    @failures_explanation = explanations.join("\n")
-  end
-
-  def find_loading_errors(log)
-    log.scan(SPEC_LOADING_ERRORS_PATTERN)
-      .flatten
-      .uniq
-      .sort
-      .each do |location|
-        error = create_error(location)
-        error.loading_error = true
-      end
-  end
-
-  def find_screenshots(log)
-    log.scan(SCREENSHOT_PATTERN)
-      .map { JSON.parse it }
-      .each do |screenshot_info|
-        id = screenshot_info["test_id"]
-        location = screenshot_info["test_location"]
-        with_matching_error(location:, id:) do |error|
-          error.page_html = screenshot_info["html"]
-          error.page_screenshot = screenshot_info["image"]
-        end
-      end
-  end
-
-  def find_tests_groups(log)
-    tests_groups = log
-      .scan(TESTS_GROUP_PATTERN)
-      .flatten
-      .map { build_tests_group_from_command(it) }
-
-    errors.each do |error|
-      error.tests_group = tests_groups.find { it.include_error?(error) }
-    end
-  end
-
-  def find_merge_branch_info(log)
-    merge_branch_sha = log.scan(BRANCH_MERGE_PATTERN).flatten.first
-    @merge_branch_sha = merge_branch_sha if merge_branch_sha
-  end
-
-  def build_tests_group_from_command(line)
-    tests_group = TestsGroup.new
-    parts = line.split
-    while parts.any?
-      case part = parts.shift
-      when /^TEST_ENV_NUMBER=/
-        tests_group.test_env_number = part.delete_prefix("TEST_ENV_NUMBER=")
-      when "--seed"
-        tests_group.seed = parts.shift
-      when /_spec.rb$/
-        tests_group.files << part
-      end
-    end
-    tests_group
-  end
-end
-
 class Formatter
   def initialize(compact: false)
     @compact = compact
@@ -522,7 +366,7 @@ class Formatter
   def display_errors_from_report(report)
     display_failures_explanation(report.failures_explanation)
     display_errors(report.errors)
-    display_checkout_test_commit_information(report) if Options.display_rerun_info
+    display_rerun_env_setup(report) if Options.display_rerun_info
   end
 
   def display_failures_explanation(failures_explanation)
@@ -543,14 +387,16 @@ class Formatter
     end
   end
 
-  def display_pull_request_info(workflow_run)
+  def display_pull_request_info(workflow_run) # rubocop:disable Metrics/AbcSize
     return unless workflow_run["event"] == "pull_request"
 
     if pr = workflow_run["pull_requests"].first
       pr_number = "##{pr['number']}"
       pr_html_url = "#{GITHUB_HTML_OPENPROJECT_PREFIX}/pull/#{pr['number']}"
-      pr_display_title = "#{workflow_run['display_title']} #{pr_number.white.dark} #{pr_html_url.white.dark}"
+      pr_display_title = "#{workflow_run['display_title'].bold} #{pr_number.white.dark} #{pr_html_url.white.dark}"
       warn "  Pull Request: #{pr_display_title} "
+      warn "    base branch: #{pr.dig('base', 'ref').bold}"
+      warn "    base SHA: #{pr.dig('base', 'sha').bold}"
     else
       warn "  Pull Request: not found; perhaps it is already merged or closed?"
     end
@@ -618,7 +464,8 @@ class Formatter
         end
       rescue Errno::ENOENT => e
         warn e
-        warn "To display image inline, you need to have a compatible terminal like iTerm2 or Konsole, and the 'imgcat' command installed."
+        warn "To display image inline, you need to have a compatible terminal like iTerm2 " \
+             "or Konsole, and the 'imgcat' command installed."
         warn "See https://iterm2.com/documentation-images.html to know more."
       end
     end
@@ -637,24 +484,36 @@ class Formatter
     ].join
   end
 
-  def display_checkout_test_commit_information(report)
-    if report.merge_branch_sha
-      warn <<~INSTRUCTIONS.white.dark
-        GitHub Action run merged #{report.merge_branch_sha} into #{report.head_sha} before running.
+  def display_rerun_env_setup(report)
+    warn <<~INSTRUCTIONS.white.dark
+      To be closer to CI conditions, run these commands first:
+      ```
+      #{checkout_test_commit_commands(report)}
+      #{reset_test_database_command}
+      #{precompile_assets_command}
+      ```
+      Then start a load-stress tool and run a test group using the rspec command above.
+    INSTRUCTIONS
+  end
 
-        To be with the exact same source files as CI, use these commands (warning: stash your modifications first):
-          git checkout -B repro_ci_failures #{report.head_sha}
-          git merge --no-edit --no-verify #{report.merge_branch_sha}
+  def checkout_test_commit_commands(report)
+    if report.merge_branch_sha
+      <<~INSTRUCTIONS
+        # GitHub Action run merged #{report.merge_branch_sha} into #{report.head_sha} (#{report.head_branch} branch)
+        git checkout -B repro_ci_failures #{report.head_sha}
+        git merge --no-edit --no-verify #{report.merge_branch_sha}
       INSTRUCTIONS
     else
-      warn <<~INSTRUCTIONS.white.dark
-        To be with the exact same source files as CI, use this command:
-          git checkout #{report.head_sha}
-      INSTRUCTIONS
+      "git checkout #{report.head_sha}"
     end
-    warn <<~INSTRUCTIONS.white.dark
-      Then run a test group with the rspec command above.
-    INSTRUCTIONS
+  end
+
+  def reset_test_database_command
+    "rm -f db/structure.sql; bin/rails db:drop db:create db:migrate RAILS_ENV=test"
+  end
+
+  def precompile_assets_command
+    "bin/rails assets:clobber openproject:plugins:register_frontend assets:precompile"
   end
 
   def display_tests_group_info(tests_group)
@@ -666,9 +525,14 @@ class Formatter
   def display_tests_group_rerun_commands(tests_group)
     return unless tests_group
 
-    warn "To run the tests group in the same order as CI, use this command:".white.dark
-    warn "CI=true bundle exec rspec --seed #{tests_group.seed} #{tests_group.files.join(' ')}".white.dark
-    warn ""
+    warn <<~COMMANDS.white.dark
+      To run the tests group in conditions closer to CI, use this command:
+      ```
+      CI=true TZ=UTC OPENPROJECT_LOG__LEVEL=info CAPYBARA_PUMA_THREADS=0:4 \
+      DISABLE_SPRING=1 OPENPROJECT_DISABLE_DEV_ASSET_PROXY=1 \
+      bin/rspec --seed #{tests_group.seed} #{tests_group.files.join(' ')}
+      ```
+    COMMANDS
   end
 
   def status_icon(job)
@@ -771,7 +635,12 @@ formatter = Formatter.new(compact: Options.compact)
 
 report = get_failed_jobs_logs(report, formatter)
 
-report = JobErrorsFinder.scan_logs(report, report.failed_job_logs)
+scan_result = GithubActionsFailures::JobErrorsFinder.scan_logs(report.failed_job_logs)
+report = report.with(
+  errors: scan_result.errors,
+  failures_explanation: scan_result.failures_explanation,
+  merge_branch_sha: scan_result.merge_branch_sha
+)
 
 case report.run_status
 when "completed"

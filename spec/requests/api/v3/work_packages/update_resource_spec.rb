@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -351,7 +353,7 @@ RSpec.describe "API v3 Work package resource",
 
         context "valid type" do
           before do
-            project.types << target_type
+            project.project_types.create!(type: target_type)
           end
 
           include_context "patch request"
@@ -372,9 +374,9 @@ RSpec.describe "API v3 Work package resource",
           let(:params) { valid_params.merge(type_parameter).merge(custom_field_parameter) }
 
           before do
-            project.types << target_type
+            project.project_types.create!(type: target_type)
             project.work_package_custom_fields << custom_field
-            target_type.custom_fields << custom_field
+            target_type.default_variant.custom_fields << custom_field
           end
 
           include_context "patch request"
@@ -414,6 +416,7 @@ RSpec.describe "API v3 Work package resource",
         let(:target_project) do
           create(:project, public: false)
         end
+        let(:permissions) { super() + [:move_work_packages] }
         let(:project_link) { api_v3_paths.project target_project.id }
         let(:project_parameter) { { _links: { project: { href: project_link } } } }
         let(:params) { valid_params.merge(project_parameter) }
@@ -454,7 +457,7 @@ RSpec.describe "API v3 Work package resource",
 
           before do
             target_project.work_package_custom_fields << custom_field
-            work_package.type.custom_fields << custom_field
+            work_package.type.default_variant.custom_fields << custom_field
           end
 
           include_context "patch request"
@@ -561,7 +564,7 @@ RSpec.describe "API v3 Work package resource",
             include_context "patch request"
 
             context "user doesn't exist" do
-              let(:user_href) { api_v3_paths.user 909090 }
+              let(:user_href) { api_v3_paths.user(not_existing_id(User)) }
 
               it_behaves_like "constraint violation" do
                 let(:message) do
@@ -610,7 +613,7 @@ RSpec.describe "API v3 Work package resource",
         end
       end
 
-      context "version" do
+      describe "version", with_settings: { work_package_multiple_versions: false } do
         let(:target_version) { create(:version, project:) }
         let(:version_link) { api_v3_paths.version target_version.id }
         let(:version_parameter) { { _links: { version: { href: version_link } } } }
@@ -618,7 +621,7 @@ RSpec.describe "API v3 Work package resource",
 
         before { allow(User).to receive(:current).and_return current_user }
 
-        context "valid" do
+        context "when valid" do
           include_context "patch request"
 
           it { expect(response).to have_http_status(:ok) }
@@ -630,6 +633,108 @@ RSpec.describe "API v3 Work package resource",
           end
 
           it_behaves_like "lock version updated"
+        end
+
+        context "for a user lacking the assign_versions permission" do
+          let(:permissions) { %i[view_work_packages edit_work_packages] }
+
+          include_context "patch request"
+
+          it { expect(response).to have_http_status(:unprocessable_entity) }
+
+          it "has a readonly error" do
+            expect(response.body)
+              .to be_json_eql("urn:openproject-org:api:v3:errors:PropertyIsReadOnly".to_json)
+                    .at_path("errorIdentifier")
+          end
+        end
+      end
+
+      describe "targetVersions" do
+        let(:target_version) { create(:version, project:) }
+        let(:target_versions_links) { [{ href: api_v3_paths.version(target_version.id) }] }
+        let(:params) { valid_params.merge(_links: { targetVersions: target_versions_links }) }
+
+        before { allow(User).to receive(:current).and_return current_user }
+
+        context "with a single version" do
+          include_context "patch request"
+
+          it { expect(response).to have_http_status(:ok) }
+
+          it "assigns the target version" do
+            expect(work_package.reload.target_versions).to contain_exactly(target_version)
+          end
+
+          it "responds with the target version link" do
+            expect(response.body)
+              .to be_json_eql(api_v3_paths.version(target_version.id).to_json)
+                    .at_path("_links/targetVersions/0/href")
+          end
+
+          it_behaves_like "lock version updated"
+        end
+
+        context "with an empty collection" do
+          let!(:existing) do
+            create(:work_package_version, work_package:, version: target_version, kind: "target")
+          end
+          let(:target_versions_links) { [] }
+
+          include_context "patch request"
+
+          it { expect(response).to have_http_status(:ok) }
+
+          it "clears the target versions" do
+            expect(work_package.reload.target_versions).to be_empty
+          end
+        end
+
+        context "with more than one version while multiple versions is disabled",
+                with_settings: { work_package_multiple_versions: false } do
+          let(:other_version) { create(:version, project:) }
+          let(:target_versions_links) do
+            [{ href: api_v3_paths.version(target_version.id) },
+             { href: api_v3_paths.version(other_version.id) }]
+          end
+
+          include_context "patch request"
+
+          it { expect(response).to have_http_status(:unprocessable_entity) }
+
+          it "rejects the update with a single-value error" do
+            expect(response.body).to include("Target Versions can only hold a single value")
+          end
+
+          it "does not assign any target version" do
+            expect(work_package.reload.target_versions).to be_empty
+          end
+        end
+
+        context "with more than one version while multiple versions is enabled",
+                with_settings: { work_package_multiple_versions: true } do
+          let(:other_version) { create(:version, project:) }
+          let(:target_versions_links) do
+            [{ href: api_v3_paths.version(target_version.id) },
+             { href: api_v3_paths.version(other_version.id) }]
+          end
+
+          include_context "patch request"
+
+          it { expect(response).to have_http_status(:ok) }
+
+          it "assigns all target versions" do
+            expect(work_package.reload.target_versions)
+              .to contain_exactly(target_version, other_version)
+          end
+
+          it "responds with a link per target version" do
+            hrefs = parse_json(response.body, "_links/targetVersions").pluck("href")
+
+            expect(hrefs)
+              .to contain_exactly(api_v3_paths.version(target_version.id),
+                                  api_v3_paths.version(other_version.id))
+          end
         end
 
         context "for a user lacking the assign_versions permission" do
@@ -743,7 +848,7 @@ RSpec.describe "API v3 Work package resource",
         before do
           allow(User).to receive(:current).and_return current_user
           work_package.project.work_package_custom_fields << custom_field
-          work_package.type.custom_fields << custom_field
+          work_package.type.default_variant.custom_fields << custom_field
         end
 
         context "valid" do
@@ -784,7 +889,7 @@ RSpec.describe "API v3 Work package resource",
 
         context "multiple read-only attributes" do
           let(:params) do
-            valid_params.merge(createdAt: Date.today.iso8601, updatedAt: Date.today.iso8601)
+            valid_params.merge(createdAt: Time.zone.today.iso8601, updatedAt: Time.zone.today.iso8601)
           end
 
           include_context "patch request"
@@ -861,6 +966,108 @@ RSpec.describe "API v3 Work package resource",
           include_context "patch request"
 
           it_behaves_like "update conflict"
+        end
+      end
+
+      describe "custom fields" do
+        context "when the custom field is required" do
+          let!(:required_custom_field) do
+            create(:work_package_custom_field,
+                   field_format: "string",
+                   name: "Department",
+                   is_required: true,
+                   projects: [project],
+                   types: [work_package.type])
+          end
+
+          context "when no custom field value is provided" do
+            let(:params) { valid_params }
+
+            include_context "patch request"
+
+            it "responds with 200" do
+              expect(response).to have_http_status(:ok)
+            end
+
+            it "keeps the custom field value to be empty" do
+              response
+              expect(work_package.reload.typed_custom_value_for(required_custom_field))
+                .to be_nil
+            end
+          end
+
+          context "when the custom field value is provided but empty" do
+            let(:params) do
+              valid_params.merge("customField#{required_custom_field.id}" => "")
+            end
+
+            include_context "patch request"
+
+            it "returns 422 with custom field validation error" do
+              expect(response)
+                .to have_http_status(422)
+
+              expect(response.body)
+                .to be_json_eql("Department can't be blank.".to_json)
+                .at_path("message")
+            end
+
+            it "does not alter the work package" do
+              expect { response }.not_to change(work_package.reload, :updated_at)
+            end
+          end
+
+          context "when custom field value is being cleared" do
+            let(:params) do
+              valid_params.merge("customField#{required_custom_field.id}" => "")
+            end
+
+            before do
+              # Set an initial value for the custom field
+              work_package.custom_field_values = { required_custom_field.id => "Initial Department" }
+              work_package.save!
+            end
+
+            include_context "patch request"
+
+            it "returns 422 with custom field validation error" do
+              expect(response)
+                .to have_http_status(422)
+
+              expect(response.body)
+                .to be_json_eql("Department can't be blank.".to_json)
+                .at_path("message")
+            end
+
+            it "does not alter the work package" do
+              expect { response }.not_to change(work_package.reload, :updated_at)
+
+              # Custom field value should remain unchanged
+              expect(work_package.reload.typed_custom_value_for(required_custom_field))
+                .to eq("Initial Department")
+            end
+          end
+
+          context "when the custom field value is provided and valid" do
+            let(:params) do
+              valid_params.merge("customField#{required_custom_field.id}" => "Engineering")
+            end
+
+            include_context "patch request"
+
+            it "responds with 200" do
+              expect(response).to have_http_status(:ok)
+            end
+
+            it "updates the custom field value" do
+              response
+              work_package.reload
+              expect(work_package.typed_custom_value_for(required_custom_field))
+                .to eq("Engineering")
+            end
+
+            it_behaves_like "lock version updated"
+          end
         end
       end
 

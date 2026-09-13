@@ -32,8 +32,7 @@ require "spec_helper"
 
 RSpec.describe "Work package activity tab comment editor",
                :js,
-               :with_cuprite,
-               with_flag: { internal_comments: true } do
+               :with_cuprite do
   let(:project) { create(:project) }
   let(:admin) { create(:admin) }
   let(:work_package) { create(:work_package, project:, author: admin) }
@@ -56,7 +55,17 @@ RSpec.describe "Work package activity tab comment editor",
         end
       end
 
-      it "is dismissable via Cancel button" do
+      it "shows a Dismiss button (not Cancel) for new comments" do
+        activity_tab.add_comment(text: "Sample text", save: false)
+        activity_tab.clear_comment
+
+        page.within_test_selector("op-work-package-journal-form") do
+          expect(page).to have_button("Dismiss")
+          expect(page).to have_no_button("Cancel")
+        end
+      end
+
+      it "is dismissable via Dismiss button" do
         expect_editor_to_be_dismissed do
           activity_tab.dismiss_comment_editor_with_cancel_button
         end
@@ -81,10 +90,22 @@ RSpec.describe "Work package activity tab comment editor",
           end
         end
 
-        it "requires confirmation to dismiss via Cancel button" do
+        it "requires confirmation to dismiss via Dismiss button" do
           expect_editor_to_be_dismissed_with_confirmation do
             activity_tab.dismiss_comment_editor_with_cancel_button
           end
+        end
+
+        it "shows the updated confirmation message when dismissing a new comment" do
+          activity_tab.add_comment(text: "Sample text", save: false)
+          activity_tab.expect_focus_on_editor
+
+          expected_message = "Are you sure you want to dismiss your comment? The content that you have written will be lost."
+          accept_alert(expected_message) do
+            activity_tab.dismiss_comment_editor_with_cancel_button
+          end
+
+          expect(page).not_to have_test_selector("op-work-package-journal-form-element")
         end
 
         def expect_editor_to_be_dismissed_with_confirmation(&)
@@ -116,6 +137,27 @@ RSpec.describe "Work package activity tab comment editor",
           end
         end
       end
+    end
+  end
+
+  describe "Accessibility" do
+    current_user { admin }
+
+    before do
+      wp_page.visit!
+      wp_page.wait_for_activity_tab
+    end
+
+    it "has the rich text editor aria labelled" do
+      activity_tab.add_comment(text: "Sample text", save: false)
+
+      activity_tab.expect_focus_on_editor
+      expect(page).to have_selector(:rich_text, "Add a comment. Type @ to notify people.")
+
+      activity_tab.clear_comment(blur: true)
+
+      activity_tab.expect_blur_on_editor
+      expect(page).to have_selector(:rich_text, "Add a comment. Type @ to notify people.")
     end
   end
 

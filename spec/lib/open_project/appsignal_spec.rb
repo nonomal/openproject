@@ -46,11 +46,7 @@ RSpec.describe OpenProject::Appsignal do
     end
 
     it "stores the exception in current appsignal transaction if one is available" do
-      transaction = Appsignal::Transaction.create(
-        SecureRandom.uuid,
-        Appsignal::Transaction::BACKGROUND_JOB,
-        Appsignal::Transaction::GenericRequest.new({})
-      )
+      transaction = Appsignal::Transaction.create SecureRandom.uuid
       allow(transaction).to receive(:set_error)
       described_class.exception_handler("message", exception:)
 
@@ -65,6 +61,27 @@ RSpec.describe OpenProject::Appsignal do
       described_class.exception_handler("message", exception:)
 
       expect(Appsignal).to have_received(:send_error).with(exception)
+    end
+  end
+
+  describe ".increment_counter" do
+    before do
+      allow(Appsignal).to receive(:increment_counter)
+    end
+
+    it "does nothing when Appsignal is disabled" do
+      described_class.increment_counter("outbound_mail.recipients_dropped", 1, field: "to")
+
+      expect(Appsignal).not_to have_received(:increment_counter)
+    end
+
+    it "increments the counter when Appsignal is enabled" do
+      allow(described_class).to receive(:enabled?).and_return(true)
+
+      described_class.increment_counter("outbound_mail.recipients_dropped", 2, field: "cc")
+
+      expect(Appsignal).to have_received(:increment_counter)
+        .with("outbound_mail.recipients_dropped", 2, field: "cc")
     end
   end
 end

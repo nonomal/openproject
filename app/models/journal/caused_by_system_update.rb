@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,10 +29,9 @@
 #++
 #
 class Journal::CausedBySystemUpdate < CauseOfChange::Base
-  def initialize(feature:)
-    additional = {
-      "feature" => feature
-    }
-    super("system_update", additional)
+  def initialize(feature:, **additional_attributes)
+    system_update_attributes =
+      { "feature" => feature }.merge(additional_attributes.deep_stringify_keys)
+    super("system_update", system_update_attributes)
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -48,11 +50,11 @@ module Queries::Filters::Shared::ParsedFilter
   private
 
   def split_values
-    raise NotImplementedError
+    raise SubclassResponsibilityError
   end
 
   def value_conditions
-    raise NotImplementedError
+    raise SubclassResponsibilityError
   end
 
   def validate_values

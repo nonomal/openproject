@@ -76,7 +76,7 @@ RSpec.describe Boards::StatusBoardCreateService do
         subject
 
         query_filter = queries.flat_map(&:filters).map(&:to_hash).first
-        widget_filter = widgets.flat_map { _1.options["filters"] }.first
+        widget_filter = widgets.flat_map { it.options["filters"] }.first
 
         expect(query_filter).to match_array(widget_filter)
       end

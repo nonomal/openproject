@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -60,7 +62,7 @@ RSpec.shared_examples_for "API V3 collection response" do |total, count, element
   it "returns a collection successfully" do
     aggregate_failures do
       expect(last_response).to have_http_status(expected_status_code)
-      errors = JSON.parse(subject).dig("_embedded", "errors")&.map { _1["message"] }
+      errors = JSON.parse(subject).dig("_embedded", "errors")&.map { it["message"] }
       expect(errors).to eq([]) if errors # make errors visible in console if any
     end
   end

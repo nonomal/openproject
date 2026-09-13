@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -36,7 +38,7 @@ class Reports::TypeReport < Reports::Report
   end
 
   def rows
-    @rows ||= @project.types
+    @rows ||= @project.enabled_types
   end
 
   def data

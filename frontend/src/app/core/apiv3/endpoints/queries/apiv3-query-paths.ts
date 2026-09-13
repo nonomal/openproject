@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -32,13 +32,13 @@ import { ApiV3QueryOrder } from 'core-app/core/apiv3/endpoints/queries/apiv3-que
 import { ApiV3QueryForm } from 'core-app/core/apiv3/endpoints/queries/apiv3-query-form';
 import { Observable } from 'rxjs';
 import { QueryFormResource } from 'core-app/features/hal/resources/query-form-resource';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
+import { LazyInject } from 'core-app/shared/helpers/angular/lazy-inject.decorator';
 import { QueryFiltersService } from 'core-app/features/work-packages/components/wp-query/query-filters.service';
 import { HalPayloadHelper } from 'core-app/features/hal/schemas/hal-payload.helper';
 import { PaginationObject } from 'core-app/shared/components/table-pagination/pagination-service';
 
 export class ApiV3QueryPaths extends ApiV3GettableResource<QueryResource> {
-  @InjectField() private queryFilters:QueryFiltersService;
+  @LazyInject() private queryFilters:QueryFiltersService;
 
   // Static paths
   readonly form = this.subResource('form', ApiV3QueryForm);
@@ -50,7 +50,7 @@ export class ApiV3QueryPaths extends ApiV3GettableResource<QueryResource> {
    * Stream the response for the given query request
    * @param queryData
    */
-  public parameterised(params:Object):Observable<QueryResource> {
+  public parameterised(params:object):Observable<QueryResource> {
     return this.halResourceService
       .get<QueryResource>(this.path, params);
   }
@@ -60,7 +60,7 @@ export class ApiV3QueryPaths extends ApiV3GettableResource<QueryResource> {
    * @param query
    * @param form
    */
-  public patch(payload:QueryResource|Object, form?:QueryFormResource):Observable<QueryResource> {
+  public patch(payload:QueryResource|object, form?:QueryFormResource):Observable<QueryResource> {
     if (payload instanceof QueryResource && form) {
       // Extracting requires having the filter schemas loaded as the dependencies
       this.queryFilters.mapSchemasIntoFilters(payload, form);

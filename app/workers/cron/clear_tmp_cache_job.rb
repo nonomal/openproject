@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,10 +30,10 @@
 
 module Cron
   class ClearTmpCacheJob < ApplicationJob
-    include ::RakeJob
-
+    ##
+    # Clear the tmp/cache directory in case a file caching is configured
     def perform
-      super("tmp:cache:clear")
+      FileUtils.rm_rf(Dir["tmp/cache/[^.]*"], verbose: false)
     end
   end
 end

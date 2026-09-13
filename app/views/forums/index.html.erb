@@ -43,13 +43,12 @@ See COPYRIGHT and LICENSE files for more details.
     render(Primer::OpenProject::SubHeader.new) do |subheader|
       subheader.with_action_button(
         scheme: :primary,
-        aria: { label: t(:label_forum_new) },
-        title: t(:label_forum_new),
+        leading_icon: :plus,
+        label: t(:label_forum_new),
         tag: :a,
         href: new_project_forum_path(@project)
-      ) do |button|
-        button.with_leading_visual_icon(icon: :plus)
-        t("activerecord.models.forum")
+      ) do
+        Forum.model_name.human
       end
     end
   %>
@@ -154,8 +153,7 @@ See COPYRIGHT and LICENSE files for more details.
                                             title: t(:button_edit) %>
                   <%= link_to_if_authorized "",
                                             { controller: "/forums", action: "destroy", project_id: @project, id: forum },
-                                            data: { confirm: t(:text_are_you_sure) },
-                                            method: :delete,
+                                            data: { turbo_method: :delete, turbo_confirm: t(:text_are_you_sure) },
                                             class: "icon icon-delete",
                                             title: t(:button_delete) %>
                 </td>

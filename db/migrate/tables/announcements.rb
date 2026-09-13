@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -34,7 +36,7 @@ class Tables::Announcements < Tables::Base
       t.text :text
       t.date :show_until
       t.boolean :active, default: false
-      t.timestamps null: true # compatibility to pre 5.1 migrations
+      t.timestamps precision: nil, null: true # compatibility to pre 5.1 migrations
 
       t.index %i[show_until active]
     end

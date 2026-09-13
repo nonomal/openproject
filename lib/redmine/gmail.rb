@@ -31,7 +31,7 @@ module Redmine
         email = gmail.get_user_message("me", message_id, format: "raw")
         msg = email.raw
 
-        raise "Messages was not successfully handled." unless MailHandler.receive(msg, options)
+        raise "Messages was not successfully handled." unless IncomingEmails::MailHandler.receive(msg, options)
 
         message_received(message_id, gmail, gmail_options)
       rescue StandardError => e

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 
 require "features/work_packages/shared_contexts"
@@ -10,7 +12,7 @@ RSpec.describe "activity comments", :js, :selenium do
            project:,
            journal_notes: initial_comment)
   end
-  let(:wp_page) { Pages::SplitWorkPackage.new(work_package, project) }
+  let(:wp_page) { Pages::PrimerizedSplitWorkPackage.new(work_package, project) }
   let(:activity_tab) { Components::WorkPackages::Activities.new(work_package) }
   let(:initial_comment) { "the first comment in this WP" }
 
@@ -61,13 +63,13 @@ RSpec.describe "activity comments", :js, :selenium do
     end
 
     context "with the project page" do
-      let(:wp_page) { Pages::SplitWorkPackage.new(work_package, project) }
+      let(:wp_page) { Pages::PrimerizedSplitWorkPackage.new(work_package, project) }
 
       it_behaves_like "principal autocomplete on field"
     end
 
     context "without the project page" do
-      let(:wp_page) { Pages::SplitWorkPackage.new(work_package) }
+      let(:wp_page) { Pages::PrimerizedSplitWorkPackage.new(work_package) }
 
       it_behaves_like "principal autocomplete on field"
     end
@@ -101,6 +103,12 @@ RSpec.describe "activity comments", :js, :selenium do
           activity_tab.type_comment("this is a comment!1")
           page.find_test_selector("op-submit-work-package-journal-form").click
           activity_tab.expect_journal_notes(text: "this is a comment!1")
+        end
+
+        it "submits with ctrl/cmd+enter" do
+          activity_tab.type_comment("this is a comment!2")
+          activity_tab.get_editor_form_field_element.input_element.send_keys :control, :enter
+          activity_tab.expect_journal_notes(text: "this is a comment!2")
         end
       end
 

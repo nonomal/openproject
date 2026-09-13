@@ -44,14 +44,13 @@ See COPYRIGHT and LICENSE files for more details.
   render(Primer::OpenProject::SubHeader.new) do |subheader|
     subheader.with_action_button(
       scheme: :primary,
-      aria: { label: I18n.t(:label_ldap_auth_source_new) },
-      title: I18n.t(:label_ldap_auth_source_new),
+      leading_icon: :plus,
+      label: t(:label_ldap_auth_source_new),
       tag: :a,
       test_selector: "op-admin-ldap-connection--button-new",
       href: new_ldap_auth_source_path
-    ) do |button|
-      button.with_leading_visual_icon(icon: :plus)
-      t(:label_ldap_auth_source)
+    ) do
+      LdapAuthSource.model_name.human
     end
   end
 %>

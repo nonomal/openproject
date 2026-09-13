@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -442,9 +444,9 @@ RSpec.describe API::V3::Queries::Schemas::QuerySchemaRepresenter do
           end
         end
 
-        context "when project query" do
+        context "when workspace query" do
           let(:project) { build_stubbed(:project) }
-          let(:href) { api_v3_paths.query_project_filter_instance_schemas(project.id) }
+          let(:href) { api_v3_paths.query_workspace_filter_instance_schemas(project.id) }
 
           it "contains the link to the filter schemas" do
             expect(subject)
@@ -557,7 +559,7 @@ RSpec.describe API::V3::Queries::Schemas::QuerySchemaRepresenter do
 
         context "when project query" do
           let(:project) { build_stubbed(:project) }
-          let(:href) { api_v3_paths.query_project_filter_instance_schemas(project.id) }
+          let(:href) { api_v3_paths.query_workspace_filter_instance_schemas(project.id) }
 
           it "contains a collection of filter schemas" do
             expect(subject)

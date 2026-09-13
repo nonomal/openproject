@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Components
   module WorkPackages
     class Tabs

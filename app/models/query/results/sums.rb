@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -117,11 +119,17 @@ module ::Query::Results::Sums
         []
       end
 
-    group_statement + summed_columns
+    group_statement + summed_columns + counted_summed_columns
   end
 
   def summed_columns
     query.summed_up_columns.filter_map(&:summable_work_packages_select).map { |c| "SUM(#{c}) #{c}" }
+  end
+
+  def counted_summed_columns
+    query.summed_up_columns
+         .select(&:summable_work_packages_count_select)
+         .map { |col| "COUNT(#{col.name}) #{col.name}_count" }
   end
 
   def callable_summed_up_columns

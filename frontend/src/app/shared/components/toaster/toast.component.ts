@@ -21,17 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import {
-  ChangeDetectionStrategy,
-  Component,
-  Input,
-  OnInit,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnInit, inject } from '@angular/core';
 import {
   BehaviorSubject,
   Observable,
@@ -49,8 +44,12 @@ import { IToast, ToastService, ToastType } from 'core-app/shared/components/toas
   templateUrl: './toast.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'op-toast',
+  standalone: false,
 })
 export class ToastComponent implements OnInit {
+  readonly I18n = inject(I18nService);
+  readonly toastService = inject(ToastService);
+
   @Input() public toast:IToast;
 
   public text = {
@@ -70,12 +69,6 @@ export class ToastComponent implements OnInit {
   public removable = true;
 
   public loading$ = new BehaviorSubject<boolean>(false);
-
-  constructor(
-    readonly I18n:I18nService,
-    readonly toastService:ToastService,
-  ) {
-  }
 
   ngOnInit():void {
     this.type = this.toast.type;

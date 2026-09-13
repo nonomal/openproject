@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -40,9 +42,15 @@ module WorkPackages
     delegate :to_s,
              to: :model
 
-    private
+    def valid?(_context = nil)
+      # For project copying, we want to preserve the exact state
+      # even if copied work packages would normally be invalid
+      true
+    end
 
-    def validate_version_is_assignable; end
+    def validate_model? = false
+
+    private
 
     def validate_no_reopen_on_closed_version; end
   end

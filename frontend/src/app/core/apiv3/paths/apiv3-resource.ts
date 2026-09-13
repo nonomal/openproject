@@ -1,6 +1,32 @@
-/* eslint-disable max-classes-per-file */
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
 
-import { Constructor } from '@angular/cdk/table';
+import { Constructor } from 'core-app/core/util-types';
 import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 
@@ -8,7 +34,7 @@ import {
   SimpleResource,
   SimpleResourceCollection,
 } from 'core-app/core/apiv3/paths/path-resources';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
+import { LazyInject } from 'core-app/shared/helpers/angular/lazy-inject.decorator';
 import { HalResourceService } from 'core-app/features/hal/services/hal-resource.service';
 import { ApiV3Service } from 'core-app/core/apiv3/api-v3.service';
 import { ApiV3FilterBuilder } from 'core-app/shared/helpers/api-v3/api-v3-filter-builder';
@@ -20,7 +46,7 @@ import { addFiltersToPath } from 'core-app/core/apiv3/helpers/add-filters-to-pat
 export class ApiV3ResourcePath<T = HalResource> extends SimpleResource {
   readonly injector = this.apiRoot.injector;
 
-  @InjectField() halResourceService:HalResourceService;
+  @LazyInject() halResourceService:HalResourceService;
 
   constructor(
     protected apiRoot:ApiV3Service,
@@ -39,10 +65,8 @@ export class ApiV3ResourcePath<T = HalResource> extends SimpleResource {
    */
   protected subResource<R = ApiV3GettableResource>(
     segment:string,
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
     cls:Constructor<R> = ApiV3GettableResource as unknown as Constructor<R>,
   ):R {
-    // eslint-disable-next-line new-cap
     return new cls(this.apiRoot, this.path, segment, this);
   }
 }
@@ -74,9 +98,9 @@ export class ApiV3GettableResourceCollection<T = HalResource, V = CollectionReso
 export class ApiV3ResourceCollection<V, T extends ApiV3GettableResource<V>> extends SimpleResourceCollection {
   readonly injector = this.apiRoot.injector;
 
-  @InjectField() http:HttpClient;
+  @LazyInject() http:HttpClient;
 
-  @InjectField() halResourceService:HalResourceService;
+  @LazyInject() halResourceService:HalResourceService;
 
   constructor(
     protected apiRoot:ApiV3Service,
@@ -97,14 +121,14 @@ export class ApiV3ResourceCollection<V, T extends ApiV3GettableResource<V>> exte
     if (typeof input === 'string' || typeof input === 'number') {
       id = input.toString();
     } else {
-      id = input.id as string;
+      id = input.id!;
     }
 
     return new (this.resource || ApiV3GettableResource)(this.apiRoot, this.path, id, this) as T;
   }
 
   public withOptionalId(id?:string|number|null):this|T {
-    if (_.isNil(id)) {
+    if (id == null) {
       return this;
     }
     return this.id(id);
@@ -134,12 +158,11 @@ export class ApiV3ResourceCollection<V, T extends ApiV3GettableResource<V>> exte
    */
   public filtered<R = ApiV3GettableResourceCollection<V>>(
     filters:ApiV3FilterBuilder,
-    params:{ [key:string]:string } = {},
+    params:Record<string, string> = {},
     resourceClass?:Constructor<R>,
   ):R {
     const url = addFiltersToPath(this.path, filters, params);
     const cls = resourceClass || ApiV3GettableResourceCollection;
-    // eslint-disable-next-line new-cap
     return new cls(this.apiRoot, url.pathname, url.search, this) as R;
   }
 
@@ -151,7 +174,7 @@ export class ApiV3ResourceCollection<V, T extends ApiV3GettableResource<V>> exte
    * @param select The signalling parameters to request
    * @param params additional URL params to append
    */
-  public signalled<R>(filters:ApiV3FilterBuilder, select:string[], params:{ [key:string]:string } = {}):Observable<R> {
+  public signalled<R>(filters:ApiV3FilterBuilder, select:string[], params:Record<string, string> = {}):Observable<R> {
     const url = addFiltersToPath(this.path, filters, { ...params, select: select.join(',') });
 
     return this
@@ -169,7 +192,6 @@ export class ApiV3ResourceCollection<V, T extends ApiV3GettableResource<V>> exte
     segment:string,
     cls:Constructor<R> = ApiV3GettableResource as unknown as Constructor<R>,
   ):R {
-    // eslint-disable-next-line new-cap
     return new cls(this.apiRoot, this.path, segment, this);
   }
 }

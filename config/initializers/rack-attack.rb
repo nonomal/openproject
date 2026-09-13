@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -38,9 +40,15 @@ Rails.application.reloader.to_prepare do
       regex.any? { |i| i =~ req.path }
     end
 
-    Rack::Attack.blocklisted_responder = lambda do |_env|
-      # All blacklisted routes would return a 404.
-      [404, {}, ["Not found"]]
+    # Route blocklist returns 404.
+    # All other blocklists (for example, login ban)
+    # use the RateLimiting dispatcher set up by set_defaults!
+    Rack::Attack.blocklisted_responder = lambda do |request|
+      if request.env["rack.attack.matched"] == "block forbidden routes"
+        [404, {}, ["Not found"]]
+      else
+        OpenProject::RateLimiting.blocklisted_response(request)
+      end
     end
   end
 end

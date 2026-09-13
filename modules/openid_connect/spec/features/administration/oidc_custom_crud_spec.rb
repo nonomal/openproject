@@ -34,7 +34,6 @@ require_module_spec_helper
 RSpec.describe "OIDC administration CRUD",
                :js do
   shared_let(:user) { create(:admin) }
-  let(:danger_zone) { DangerZone.new(page) }
 
   before do
     login_as(user)
@@ -78,8 +77,22 @@ RSpec.describe "OIDC administration CRUD",
 
       click_link_or_button "Continue"
 
+      # Groups
+      enabled_checkbox = page.find_by_id("sync_groups")
+      expect(enabled_checkbox).not_to be_checked
+      expect(page).to have_no_field " Groups claim"
+      expect(page).to have_no_field "Patterns (regular expressions)"
+
+      check "Synchronize groups"
+      expect(page).to have_field("Groups claim", with: "groups")
+      expect(page).to have_field("Patterns (regular expressions)", with: "")
+      fill_in "Groups claim", with: "custom-groups"
+      fill_in "Patterns (regular expressions)", with: "Foo\nBar"
+
+      click_link_or_button "Continue"
+
       # Claims
-      fill_in "Claims", with: '{"foo": "bar"}'
+      fill_in "Claims", with: '{"id_token": { "bar": null }}'
       fill_in "ACR values", with: "foo bar"
 
       click_link_or_button "Finish setup"
@@ -112,21 +125,13 @@ RSpec.describe "OIDC administration CRUD",
       expect(provider.mapping_first_name).to eq "myName"
       expect(provider.mapping_last_name).to eq "myLastName"
 
+      expect(provider.groups_claim).to eq("custom-groups")
+      expect(provider.group_regexes).to eq(["Foo", "Bar"])
+
       click_link_or_button "Delete"
-      # Confirm the deletion
-      # Without confirmation, the button is disabled
-      expect(danger_zone).to be_disabled
 
-      # With wrong confirmation, the button is disabled
-      danger_zone.confirm_with("foo")
-
-      expect(danger_zone).to be_disabled
-
-      # With correct confirmation, the button is enabled
-      # and the project can be deleted
-      danger_zone.confirm_with(provider.display_name)
-      expect(danger_zone).not_to be_disabled
-      danger_zone.danger_button.click
+      check "I understand that this deletion cannot be reversed."
+      click_on "Delete permanently"
 
       expect(page).to have_text "No OpenID providers configured yet."
       expect { provider.reload }.to raise_error ActiveRecord::RecordNotFound
@@ -175,7 +180,7 @@ RSpec.describe "OIDC administration CRUD",
   context "without EE", without_ee: %i[sso_auth_providers] do
     it "renders the upsell page" do
       visit "/admin/openid_connect/providers"
-      expect(page).to have_enterprise_banner(:premium)
+      expect(page).to have_enterprise_banner(:professional)
     end
   end
 end

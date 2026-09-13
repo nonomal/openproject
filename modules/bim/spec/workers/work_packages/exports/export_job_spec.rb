@@ -66,15 +66,14 @@ RSpec.describe WorkPackages::ExportJob do
 
         service = double("attachments create service")
 
-        expect(Attachments::CreateService)
-          .to receive(:bypass_whitelist)
-                .with(user:)
+        allow(Attachments::CreateService)
+          .to receive(:bypass_allowlist)
                 .and_return(service)
 
-        expect(Exports::CleanupOutdatedJob)
+        allow(Exports::CleanupOutdatedJob)
           .to receive(:perform_after_grace)
 
-        expect(service)
+        allow(service)
           .to(receive(:call))
           .and_return(ServiceResult.success(result: attachment))
 
@@ -85,6 +84,16 @@ RSpec.describe WorkPackages::ExportJob do
         expect(subject.job_status).to be_present
         expect(subject.job_status[:status]).to eq "success"
         expect(subject.job_status[:payload]["download"]).to eq "/api/v3/attachments/1234/content"
+
+        expect(Attachments::CreateService)
+          .to have_received(:bypass_allowlist)
+                .with(user:)
+
+        expect(Exports::CleanupOutdatedJob)
+          .to have_received(:perform_after_grace)
+
+        expect(service)
+          .to have_received(:call)
       end
     end
   end

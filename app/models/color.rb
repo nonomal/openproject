@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -35,11 +37,9 @@ class Color < ApplicationRecord
            class_name: "Type",
            dependent: :nullify
 
-  after_initialize :normalize_hexcode
-  before_validation :normalize_hexcode
-
   validates :name, :hexcode, presence: true
+  validates :name, length: { maximum: 255 }
+  validates :hexcode, format: { with: RGB_HEX_FORMAT, message: :hexcode_invalid, allow_blank: true }
 
-  validates :name, length: { maximum: 255, unless: lambda { |e| e.name.blank? } }
-  validates :hexcode, format: { with: /\A#[0-9A-F]{6}\z/, unless: lambda { |e| e.hexcode.blank? } }
+  normalizes :hexcode, with: ::Colors::HexColor::Normalizer
 end

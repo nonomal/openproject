@@ -273,7 +273,44 @@ RSpec.describe "Projects lists ordering", :js, with_settings: { login_required?:
     projects_page.expect_project_at_place(project, 1)
   end
 
-  context "when sorting by project phase", with_flag: { stages_and_gates: true } do
+  context "when sorting calculated value custom fields", with_ee: %i[calculated_values] do
+    let(:projects_with_calculated_value) do
+      [project, development_project, public_project, child_project_m, child_project_a]
+    end
+
+    let!(:calculated_value) do
+      create(:calculated_value_project_custom_field,
+             name: "Calculated value",
+             formula: "1 + {{cf_#{integer_custom_field.id}}}",
+             projects: projects_with_calculated_value)
+    end
+
+    before do
+      projects_with_calculated_value.each do |proj|
+        proj.calculate_custom_fields([calculated_value])
+        proj.save!
+      end
+
+      Setting.enabled_projects_columns += [calculated_value.column_name]
+      visit projects_path
+    end
+
+    it "sorts by calculated value custom fields" do
+      projects_page.click_table_header_to_open_action_menu(calculated_value.column_name)
+      projects_page.sort_via_action_menu(calculated_value.column_name, direction: :asc)
+      wait_for_reload
+
+      projects_page
+        .expect_projects_in_order(child_project_z,
+                                  project,
+                                  development_project,
+                                  public_project,
+                                  child_project_a,
+                                  child_project_m)
+    end
+  end
+
+  context "when sorting by project phase" do
     let(:stage_def) { create(:project_phase_definition) }
     let(:stage) do
       create(:project_phase,

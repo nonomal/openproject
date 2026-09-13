@@ -33,22 +33,29 @@ $widget-box--enumeration-width: 20px
   &.-flex
     display: flex
     flex-flow: row wrap
-    // cancel the margin of the outer elements to align with the rest of the page
-    margin: 0 -10px
+    gap: var(--stack-gap-normal)
 
     .widget-box
       flex: 1
-      flex-basis: 32%
+      flex-basis: calc(50% - var(--stack-gap-normal))
+      max-height: 750px // Avoid that individual widgets blow the whole grid
       display: flex
       flex-direction: column
+
+      &_half-width
+        flex-basis: calc(25% - var(--stack-gap-normal))
+        min-width: 200px
+
+        @media screen and (max-width: $breakpoint-lg)
+          flex-basis: calc(50% - var(--stack-gap-normal))
+
+      &_full-width
+        flex-basis: 100%
 
     .widget-box--enumeration,
     .widget-box--arrow-links,
     .widget-box--feature-list
       flex-grow: 2
-
-  &.-vertical
-    flex-flow: column wrap
 
   .icon-context:before
     padding-right: 5px
@@ -64,8 +71,6 @@ $widget-box--enumeration-width: 20px
   .widget-box
     position: relative
     @include widget-box--style
-    padding: 20px
-    min-height: 250px
     word-wrap: break-word
     overflow: hidden
 
@@ -78,9 +83,14 @@ $widget-box--enumeration-width: 20px
     &.-no-border
       padding: 0
       border: 0
+      box-shadow: none
 
     &--teaser-image
       width: 200px
+
+    // Unfortunately, we cannot add a class to that container, so we have to use the Primer class
+    .blankslate-container
+      margin: auto
 
     .widget-box--enumeration
       margin-left: 1.5rem
@@ -107,14 +117,74 @@ $widget-box--enumeration-width: 20px
       grid-template-columns: auto auto
       grid-column-gap: 20px
 
+.op-widget-box--body
+  display: flex
+  flex-direction: column
+  height: 100%
+  padding: 0 var(--stack-padding-normal) var(--stack-padding-normal) var(--stack-padding-normal)
+  overflow-x: auto
+  overflow-y: auto
+
+  &.-no-overflow
+    overflow-x: hidden
+    overflow-y: hidden
+    display: block
+
+  &.-no-padding
+    padding-right: 0
+    padding-bottom: 0
+    padding-left: 0
+
+  &.-allow-inner-overflow
+    .wiki
+      overflow-y: auto
+      @include styled-scroll-bar
+
+  &.op-widget-box--empty
+    align-items: center
+    justify-content: center
+
+  // styles specific to the custom-text widget
+  &.-custom-text
+    a.inplace-editing--trigger-link
+      color: inherit
+      text-decoration: none
+
+    .op-ckeditor--wrapper
+      margin-bottom: 0
+
+    .ck-editor__top
+      position: sticky
+      top: 0
+
+    .inplace-edit--controls
+      position: initial
+
+      i
+        float: initial
+        padding: 0
+
+    edit-field-controls
+      display: flex
+      position: sticky
+      bottom: 0
+      justify-content: flex-end
+
+    .textarea-wrapper
+      margin-bottom: 0
+
 .op-widget-box--header
   font-weight: var(--base-text-weight-bold)
-  font-size: 1.25rem
+  font-size: var(--h4-size, 16px)
+  color: var(--fgColor-default)
   display: flex
-  margin-top: 4px
-  margin-bottom: 13px
-  border-bottom: none
-  padding-bottom: 0
+  align-items: center
+  padding: var(--stack-padding-normal)
+  background-color: var(--body-background)
+
+  .help-text--entry
+    vertical-align: -1px
+    margin-left: 4px
 
 .op-widget-box--header-title
   vertical-align: middle
@@ -124,12 +194,38 @@ $widget-box--enumeration-width: 20px
 
   // Ensure style for read-only widget headers
   .editable-toolbar-title--fixed,
-  .toolbar--editable-toolbar
-    color: var(--fgColor-default)
-    font-size: var(--body-font-size)
-    letter-spacing: 1px
-    text-transform: uppercase
+  .toolbar--editable-toolbar,
+  .editable-toolbar-title--input
+    font-size: var(--h4-size, 16px)
     font-weight: var(--base-text-weight-bold)
+    color: var(--fgColor-default) !important
+    padding: 0 !important
+    @include text-shortener
+
+  .toolbar--editable-toolbar
+    height: 20px
+
+.op-widget-box--rows
+  margin: 0
+  overflow: auto
+
+.op-widget-box--row
+  padding: var(--stack-padding-normal)
+  list-style-type: none /* To account for applying Box component to a list */
+  border-top: var(--borderWidth-thin) solid var(--borderColor-muted)
+
+  &:first-of-type
+    border-top: none
+    padding-top: 0
+
+  &:last-of-type
+    border-bottom-right-radius: var(--borderRadius-medium)
+    border-bottom-left-radius: var(--borderRadius-medium)
+
+.op-widget-box--footer
+  margin-top: auto
+  padding: var(--stack-padding-normal)
+  border-top: var(--borderWidth-thin) solid var(--borderColor-muted)
 
 .widget-box--arrow-links
   list-style: none

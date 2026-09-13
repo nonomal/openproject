@@ -78,7 +78,9 @@ module Pages::Meetings
     end
 
     def click_create
-      click_on "Create meeting"
+      within "#new-meeting-dialog" do
+        click_on "Create meeting"
+      end
       wait_for_network_idle
     end
 
@@ -103,13 +105,13 @@ module Pages::Meetings
 
     def expect_copy_action(meeting)
       within more_menu(meeting) do
-        expect(page).to have_link("Copy meeting")
+        expect(page).to have_link("Duplicate meeting")
       end
     end
 
     def expect_no_copy_action(meeting)
       within more_menu(meeting) do
-        expect(page).to have_no_link("Copy meeting")
+        expect(page).to have_no_link("Duplicate meeting")
       end
     end
 
@@ -147,6 +149,38 @@ module Pages::Meetings
       wait_for_network_idle
     end
 
+    def expect_quick_filter_selected(label)
+      within "#content-body" do
+        expect(page).to have_css("segmented-control .SegmentedControl-item--selected", text: label)
+      end
+    end
+
+    def set_project_filter(*projects)
+      find_test_selector("quick-filter-select-panel-button").click
+
+      projects.each do |project|
+        option = find("[role='option']", text: project.name)
+        option.click unless option[:"aria-selected"] == "true"
+      end
+
+      within("[data-controller='quick-filter--select-panel']") do
+        click_link_or_button I18n.t(:button_apply)
+      end
+
+      wait_for_network_idle
+    end
+
+    def set_title_filter(value)
+      open_filters
+      select_filter("title", "Title") unless page.has_css?(filter_selector("title"), wait: 0)
+
+      within(filter_selector("title")) do
+        fill_in "title_value", with: value
+      end
+
+      wait_for_network_idle
+    end
+
     def expect_no_meetings_listed
       within "#content-wrapper" do
         expect(page)
@@ -154,9 +188,13 @@ module Pages::Meetings
       end
     end
 
+    def expect_blank_slate_component
+      expect(page).to have_test_selector("meetings-blank-slate")
+    end
+
     def expect_meetings_listed_in_order(*meetings)
       retry_block do
-        listed_meeting_titles = all("li div.title").map(&:text)
+        listed_meeting_titles = all(:role, :rowheader).map(&:text)
         expect(listed_meeting_titles).to eq(meetings.map(&:title))
       end
     end
@@ -164,14 +202,14 @@ module Pages::Meetings
     def expect_meetings_listed_in_table(*meetings)
       within "[data-test-selector='Meetings::TableComponent']" do
         meetings.each do |meeting|
-          expect(page).to have_css("div.title", text: meeting.title)
+          expect(page).to have_role(:rowheader, text: meeting.title)
         end
       end
     end
 
     def expect_meeting_listed_in_group(meeting, key: meeting_group_key(meeting))
       within "[data-test-selector='meetings-table-#{key}']" do
-        expect(page).to have_css("div.title", text: meeting.title)
+        expect(page).to have_role(:rowheader, text: meeting.title)
       end
     end
 
@@ -192,15 +230,14 @@ module Pages::Meetings
 
     def expect_meetings_listed(*meetings)
       meetings.each do |meeting|
-        expect(page).to have_css("div.title", text: meeting.title)
+        expect(page).to have_role(:rowheader, text: meeting.title)
       end
     end
 
     def expect_meetings_not_listed(*meetings)
       within "#content-wrapper" do
         meetings.each do |meeting|
-          expect(page).to have_no_css("div.title",
-                                      text: meeting.title)
+          expect(page).to have_no_role(:rowheader, text: meeting.title)
         end
       end
     end
@@ -255,7 +292,7 @@ module Pages::Meetings
     private
 
     def row_for(meeting)
-      find("div.title", text: meeting.title).ancestor("li")
+      find(:role, :rowheader, text: meeting.title).ancestor(:row)
     end
 
     def more_menu(meeting)

@@ -76,7 +76,7 @@ See COPYRIGHT and LICENSE files for more details.
         <%= h(ent_name) %>
       <% end %>
     </td>
-    <td class="hidden-for-sighted"> <%= depth %></td>
+    <td class="sr-only"> <%= depth %></td>
     <td class="size"><%= (entry.size ? number_to_human_size(entry.size, precision: 3) : "?") unless entry.dir? %></td>
     <% changeset = @project.repository.find_changeset_by_name(entry.lastrev.identifier) if entry.lastrev&.identifier %>
     <td class="revision"><%= link_to_revision(changeset, @project) if changeset %></td>

@@ -13,12 +13,19 @@
   border-bottom-color: var(--header-border-bottom-color)
   width: 100vw
 
+  @media screen and (max-width: $breakpoint-md)
+    grid-template-columns: minmax(0, auto) 1fr auto
+
   @media screen and (max-width: $breakpoint-sm)
-    grid-template-columns: minmax(0, auto) auto 1fr
     position: fixed
     top: 0
     left: 0
     right: 0
+
+    .op-app-header--start
+      padding-left: 6px
+    .op-app-header--end
+      padding-right: 6px
 
   @at-root .zen-mode &
     display: none
@@ -32,18 +39,32 @@
   &--start
     grid-area: start
     justify-content: flex-start
+    padding-left: 4px
 
   &--center
     grid-area: center
     justify-content: center
 
+  &--center_mobile-end
+    @media screen and (max-width: $breakpoint-md)
+      justify-content: flex-end
+
   &--end
     grid-area: end
     justify-content: flex-end
+    padding-right: 14px
+
+    .op-app-menu--item
+      padding: 0 var(--controlStack-large-gap-spacious)
 
   &--avatar
     border: 1px solid var(--header-item-font-color)
 
+  &--modules-menu-header
+    .op-logo
+      display: block
+      height: 32px
+      width: 32px
 
   ._header-scrolled &
     @media screen and (max-width: $breakpoint-sm)
@@ -52,15 +73,16 @@
       transition: margin-top .4s
 
   &_search-open
-    @media screen and (max-width: $breakpoint-sm)
+    @media screen and (max-width: $breakpoint-md)
       display: flex
 
       .op-app-header--start,
-      .op-app-header--center
+      .op-app-header--end
         display: none
 
-      .op-app-header--end
+      .op-app-header--center
         flex-grow: 1
+        padding-right: 6px
 
       .op-app-search
         flex-grow: 1

@@ -45,7 +45,7 @@ See COPYRIGHT and LICENSE files for more details.
         style: templated ? "display: none;" : ""
       ) do %>
     <td>
-      <label class="hidden-for-sighted" for="<%= "#{id_prefix}_valid_from" %>"><%= Rate.human_attribute_name(:valid_from) %></label>
+      <label class="sr-only" for="<%= "#{id_prefix}_valid_from" %>"><%= Rate.human_attribute_name(:valid_from) %></label>
       <%= rate_form.date_picker :valid_from,
                                 index: id_or_index,
                                 class: "date costs-date-picker",
@@ -54,7 +54,7 @@ See COPYRIGHT and LICENSE files for more details.
     </td>
     <td class="currency">
       <span class="inline-label">
-        <label class="hidden-for-sighted" for="<%= "#{id_prefix}_rate" %>"><%= Rate.model_name.human %></label>
+        <label class="sr-only" for="<%= "#{id_prefix}_rate" %>"><%= Rate.model_name.human %></label>
         <%= rate_form.text_field :rate,
                                  index: id_or_index,
                                  no_label: true,
@@ -67,9 +67,18 @@ See COPYRIGHT and LICENSE files for more details.
       </span>
     </td>
     <td class="buttons">
-      <a href="#" class="delete-row-button no-decoration-on-hover" data-action="subform#deleteRow">
-        <%= op_icon("icon-context icon-delete", title: t(:button_delete)) %>
-      </a>
+      <%=
+        render(
+          Primer::Beta::IconButton.new(
+            icon: :trash,
+            scheme: :invisible,
+            type: :button,
+            classes: "delete-row-button",
+            aria: { label: t(:button_delete) },
+            data: { action: "subform#deleteRow" }
+          )
+        )
+      %>
     </td>
   <% end %>
 <% end %>

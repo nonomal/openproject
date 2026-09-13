@@ -47,8 +47,8 @@ module Meetings
         OpPrimer::StatusButtonComponent.new(
           current_status: current_status,
           items: [open_status, in_progress_status, closed_status],
-          readonly: !edit_enabled?,
-          disabled: !edit_enabled?,
+          readonly: !edit_enabled? || @meeting.draft?,
+          disabled: !edit_enabled? || @meeting.draft?,
           button_arguments: {
             title: t("label_meeting_state"),
             size: @size
@@ -67,6 +67,8 @@ module Meetings
 
     def current_status
       case @meeting.state
+      when "draft"
+        draft_status
       when "open"
         open_status
       when "in_progress"
@@ -76,16 +78,24 @@ module Meetings
       end
     end
 
+    def draft_status
+      OpPrimer::StatusButtonOption.new(name: t("label_meeting_state_draft"),
+                                       color_ref: Meetings::Statuses::DRAFT.id,
+                                       color_namespace: :meeting_status,
+                                       icon: :"issue-draft",
+                                       tag: :a)
+    end
+
     def open_status
       OpPrimer::StatusButtonOption.new(name: t("label_meeting_state_open"),
                                        color_ref: Meetings::Statuses::OPEN.id,
                                        color_namespace: :meeting_status,
                                        icon: :"issue-opened",
                                        tag: :a,
+                                       href: href("open"),
                                        description: t("text_meeting_open_dropdown_description"),
-                                       href: change_state_project_meeting_path(@project, @meeting, state: "open"),
                                        content_arguments: {
-                                         data: { "turbo-stream": true, "turbo-method": "put" }
+                                         data: data_attributes(href("open"))
                                        })
     end
 
@@ -95,10 +105,10 @@ module Meetings
                                        color_namespace: :meeting_status,
                                        icon: :play,
                                        tag: :a,
+                                       href: href("in_progress"),
                                        description: t("text_meeting_in_progress_dropdown_description"),
-                                       href: change_state_project_meeting_path(@project, @meeting, state: "in_progress"),
                                        content_arguments: {
-                                         data: { "turbo-stream": true, "turbo-method": "put" }
+                                         data: data_attributes(href("in_progress"))
                                        })
     end
 
@@ -108,11 +118,22 @@ module Meetings
                                        color_namespace: :meeting_status,
                                        icon: :"issue-closed",
                                        tag: :a,
+                                       href: href("closed"),
                                        description: t("text_meeting_closed_dropdown_description"),
-                                       href: change_state_project_meeting_path(@project, @meeting, state: "closed"),
                                        content_arguments: {
-                                         data: { "turbo-stream": true, "turbo-method": "put" }
+                                         data: data_attributes(href("closed"))
                                        })
+    end
+
+    def href(state)
+      change_state_project_meeting_path(@project, @meeting, state: state)
+    end
+
+    def data_attributes(href)
+      {
+        action: "click->meetings--submit#intercept",
+        href: href
+      }
     end
   end
 end

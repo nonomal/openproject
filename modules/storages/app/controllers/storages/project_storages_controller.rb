@@ -32,118 +32,106 @@ class Storages::ProjectStoragesController < ApplicationController
   using Storages::Peripherals::ServiceResultRefinements
 
   menu_item :overview
-  model_object Storages::ProjectStorage
 
   before_action :require_login
-  before_action :find_model_object
   before_action :find_project_by_project_id
+  before_action :find_project_storage
   before_action :render_403, unless: -> { User.current.allowed_in_project?(:view_file_links, @project) }
   no_authorization_required! :open
 
-  # rubocop:disable Metrics/AbcSize
+  before_action :ensure_remote_identity, only: :open
+  before_action :ensure_folder_created, only: :open
+  before_action :ensure_folder_permissions, only: :open
+
   def open
-    if @object.project_folder_automatic?
-      @storage = @object.storage
-      # check if user "see" project_folder
-      if @object.project_folder_id.present?
-        ::Storages::Peripherals::Registry
-          .resolve("#{@storage}.queries.file_info")
-          .call(storage: @storage, auth_strategy:, file_id: @object.project_folder_id)
-          .match(
-            on_success: user_can_read_project_folder,
-            on_failure: user_can_not_read_project_folder
-          )
-      else
-        respond_to do |format|
-          format.turbo_stream { head :no_content }
-          format.html do
-            redirect_to_project_overview_with_modal
-          end
-        end
-      end
-    else
-      redirect_to api_v3_project_storage_open
-    end
-  end
-
-  # rubocop:enable Metrics/AbcSize
-
-  private
-
-  def auth_strategy
-    Storages::Peripherals::Registry.resolve("#{@storage}.authentication.user_bound").call(user: current_user, storage: @storage)
-  end
-
-  def user_can_read_project_folder
-    ->(_) do
-      respond_to do |format|
-        format.turbo_stream do
-          render(
-            turbo_stream: OpTurbo::StreamComponent.new(
-              action: :update,
-              target: Storages::OpenProjectStorageModalComponent.dialog_body_id,
-              template: Storages::OpenProjectStorageModalComponent::Body.new(:success).render_in(view_context)
-            ).render_in(view_context)
-          )
-        end
-        format.html { redirect_to api_v3_project_storage_open }
-      end
-    end
-  end
-
-  def user_can_not_read_project_folder
-    ->(result) do
-      respond_to do |format|
-        format.turbo_stream { head :no_content }
-        format.html do
-          case result.code
-          when :unauthorized
-            redirect_to(storage_fallback_url, allow_other_host: true)
-          when :forbidden
-            redirect_to_project_overview_with_modal
-          end
-        end
-      end
-    end
-  end
-
-  def storage_fallback_url
-    selector = Storages::Peripherals::StorageInteraction::AuthenticationMethodSelector.new(user: current_user, storage: @storage)
-    if selector.sso?
-      # Maybe the user just can't read folder because they are not provisioned in (Nextcloud) storage. We redirect them
-      # to the storage and leave error handling up to storage. Ideally they will login to the storage and thus prevent
-      # the same error in the future.
-      # This would not work for OneDrive, but for OneDrive we don't have SSO (yet).
-      res = Storages::Peripherals::Registry.resolve("#{@storage}.queries.open_file_link").call(
-        storage: @storage,
-        auth_strategy:,
-        file_id: @object.project_folder_id
-      )
-      res.result_or { |errors| raise "Could not redirect SSO user to storage: #{errors}" }
-    else
-      oauth_clients_ensure_connection_url(
-        oauth_client_id: @storage.oauth_client.client_id,
-        storage_id: @storage.id,
-        destination_url: request.url
-      )
-    end
-  end
-
-  def redirect_to_project_overview_with_modal
-    redirect_to(
-      project_overview_path(project_id: @project.identifier),
-      op_modal: {
-        component: Storages::OpenProjectStorageModalComponent.name,
-        parameters: {
-          project_storage_open_url: request.path,
-          redirect_url: api_v3_project_storage_open,
-          state: :waiting
-        }
-      }
+    @project_storage.open(current_user).match(
+      on_success: ->(url) { redirect_to url, allow_other_host: true },
+      on_failure: ->(error) { show_error(error.code.to_s) }
     )
   end
 
-  def api_v3_project_storage_open
-    ::API::V3::Utilities::PathHelper::ApiV3Path.project_storage_open(@object.id)
+  private
+
+  def find_project_storage
+    @project_storage = @project.project_storages.find(params[:id])
+  end
+
+  def ensure_remote_identity
+    case Storages::Adapters::Authentication.authorization_state(storage:, user: current_user)
+    when :not_connected
+      redirect_to ensure_connection_url
+    when :error, :failed_authorization
+      show_error(I18n.t("project_storages.open.remote_identity_error"))
+    else
+      true
+    end
+  end
+
+  def ensure_folder_created
+    return unless @project_storage.project_folder_automatic?
+    return if @project_storage.project_folder_id.present?
+
+    folder_create_service.call(storage:, project_storages_scope: project_storage_scope).on_failure do |result|
+      return show_error(result.errors.full_messages)
+    end
+
+    @project_storage.reload
+  end
+
+  def ensure_folder_permissions
+    return unless @project_storage.project_folder_automatic?
+
+    result = test_folder_access
+    return if result.success? || result.failure.code != :forbidden
+
+    # Note: The time this operation takes may still scale with the number of users.
+    # If this becomes a problem, we will have to update downstream code to allow changing permissions for a few users instead of
+    # requiring to always set all permissions.
+    folder_permissions_service.call(storage:, project_storages_scope: project_storage_scope).on_failure do |r|
+      return show_error(r.errors.full_messages)
+    end
+  end
+
+  def ensure_connection_url
+    oauth_clients_ensure_connection_url(
+      oauth_client_id: storage.oauth_client.client_id,
+      integration_id: storage.id,
+      destination_url: request.url
+    )
+  end
+
+  def folder_create_service
+    Storages::Adapters::Registry.resolve("#{storage}.services.upkeep_managed_folders")
+  end
+
+  def folder_permissions_service
+    Storages::Adapters::Registry.resolve("#{storage}.services.upkeep_managed_folder_permissions")
+  end
+
+  def file_info
+    Storages::Adapters::Registry.resolve("#{storage}.queries.file_info")
+  end
+
+  def user_bound
+    Storages::Adapters::Registry.resolve("#{storage}.authentication.user_bound")
+  end
+
+  def storage
+    @project_storage.storage
+  end
+
+  def project_storage_scope
+    @project.project_storages.where(id: @project_storage.id)
+  end
+
+  def test_folder_access
+    Storages::Adapters::Input::FileInfo.build(file_id: @project_storage.project_folder_id).bind do |input_data|
+      file_info.call(storage:, auth_strategy: user_bound.call(current_user, storage), input_data:)
+    end
+  end
+
+  def show_error(message)
+    flash[:error] = Array(message) + [I18n.t("project_storages.open.contact_admin")]
+    redirect_back_or_to(project_path(id: @project_storage.project_id))
   end
 end

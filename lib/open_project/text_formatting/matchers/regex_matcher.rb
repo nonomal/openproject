@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -50,7 +52,7 @@ module OpenProject::TextFormatting
       ##
       # Process the node's html and possibly, replace it
       def self.process_node!(content, context)
-        return nil unless content.present?
+        return nil if content.blank?
 
         content.gsub!(regexp) do |matched_string|
           matchdata = Regexp.last_match
@@ -61,13 +63,13 @@ module OpenProject::TextFormatting
       ##
       # Get the regexp that matches the content
       def self.regexp
-        raise NotImplementedError
+        raise SubclassResponsibilityError
       end
 
       ##
       # Called with a match from the regexp on the node's content
       def self.process_match(matchdata, matched_string, context)
-        raise NotImplementedError
+        raise SubclassResponsibilityError
       end
 
       ##

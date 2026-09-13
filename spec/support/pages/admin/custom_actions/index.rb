@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -70,24 +72,28 @@ module Pages
           within_row_of(name) do
             find("a[title='Move to top']").trigger("click")
           end
+          wait_for_network_idle
         end
 
         def move_bottom(name)
           within_row_of(name) do
             find("a[title='Move to bottom']").trigger("click")
           end
+          wait_for_network_idle
         end
 
         def move_up(name)
           within_row_of(name) do
             find("a[title='Move up']").trigger("click")
           end
+          wait_for_network_idle
         end
 
         def move_down(name)
           within_row_of(name) do
             find("a[title='Move down']").trigger("click")
           end
+          wait_for_network_idle
         end
 
         def path

@@ -3,8 +3,10 @@
     render(Primer::OpenProject::SidePanel::Section.new) do |section|
       section.with_title { t(:label_attachment_plural) }
       section.with_description do
-        if @meeting.templated?
-          I18n.t("meeting.attachments.template")
+        if @meeting.onetime_template?
+          I18n.t("meeting.attachments.onetime_template")
+        elsif @meeting.series_template?
+          I18n.t("meeting.attachments.series_template")
         else
           I18n.t("meeting.attachments.text")
         end
@@ -12,10 +14,11 @@
       section.with_counter(count: @meeting.attachments.count)
 
       section.with_footer_button(
+        color: :accent,
         id: "meetings-add-attachments",
         classes: "hide-when-print"
       ) do |button|
-        button.with_leading_visual_icon(icon: "op-attachmentadd")
+        button.with_leading_visual_icon(icon: "op-add-attachment")
         t("js.label_add_attachments")
       end
 

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,6 +30,8 @@
 module BasicData
   class BaseRoleSeeder < ModelSeeder
     self.needs = []
+
+    self.attribute_names_for_lookups = %i[name]
 
     def model_attributes(role_data)
       {

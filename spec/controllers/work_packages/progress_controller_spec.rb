@@ -45,6 +45,12 @@ RSpec.describe WorkPackages::ProgressController do
     work_package.errors.group_by_attribute.slice(:estimated_hours, :remaining_hours, :done_ratio)
   end
 
+  # Gets the html content of the template of the first turbo-stream with the
+  # given action.
+  def turbo_stream_template(action:)
+    assert_select("turbo-stream[action=#{action}] template").first.inner_html
+  end
+
   describe "GET /work_packages/progress/new" do
     let(:params) do
       {
@@ -69,7 +75,7 @@ RSpec.describe WorkPackages::ProgressController do
       params["work_package"]["remaining_hours"] = "3"
       params["work_package"]["remaining_hours_touched"] = "true"
 
-      get("new", params:, as: :turbo_stream)
+      get("new", params:)
 
       assigned_work_package = assigns(:work_package)
       expect(assigned_work_package).to be_new_record
@@ -88,7 +94,7 @@ RSpec.describe WorkPackages::ProgressController do
         params["work_package"]["remaining_hours"] = "3"
         params["work_package"]["remaining_hours_touched"] = "true"
 
-        get("new", params:, as: :turbo_stream)
+        get("new", params:)
 
         assigned_work_package = assigns(:work_package)
         expect(progress_errors(assigned_work_package)).to match(
@@ -106,7 +112,7 @@ RSpec.describe WorkPackages::ProgressController do
         params["work_package"]["remaining_hours"] = "3"
         params["work_package"]["remaining_hours_touched"] = "true"
 
-        get("new", params:, as: :turbo_stream)
+        get("new", params:)
 
         assigned_work_package = assigns(:work_package)
         expect(progress_errors(assigned_work_package)).to be_empty
@@ -133,7 +139,7 @@ RSpec.describe WorkPackages::ProgressController do
       params["work_package"]["estimated_hours"] = "50h"
       params["work_package"]["estimated_hours_touched"] = "true"
 
-      get("edit", params:, as: :turbo_stream)
+      get("edit", params:)
 
       assigned_work_package = assigns(:work_package)
       expect(assigned_work_package.estimated_hours).to eq(50)
@@ -151,7 +157,7 @@ RSpec.describe WorkPackages::ProgressController do
         params["work_package"]["estimated_hours"] = "50h"
         params["work_package"]["estimated_hours_touched"] = "true"
 
-        get("edit", params:, as: :turbo_stream)
+        get("edit", params:)
 
         assigned_work_package = assigns(:work_package)
         expect(progress_errors(assigned_work_package)).to be_empty
@@ -167,7 +173,7 @@ RSpec.describe WorkPackages::ProgressController do
         params["work_package"]["estimated_hours"] = "50h"
         params["work_package"]["estimated_hours_touched"] = "true"
 
-        get("edit", params:, as: :turbo_stream)
+        get("edit", params:)
 
         assigned_work_package = assigns(:work_package)
         expect(progress_errors(assigned_work_package)).to match(
@@ -235,6 +241,39 @@ RSpec.describe WorkPackages::ProgressController do
       expect(work_package.estimated_hours).to eq(42)
       expect(work_package.remaining_hours).to eq(4)
       expect(work_package.done_ratio).to eq(90)
+    end
+
+    context "when the user enters invalid values" do
+      it "replies with a 422 status and displays an error message related to the erroneous field in the modal" do
+        params["work_package"]["estimated_hours_touched"] = "true"
+        params["work_package"]["estimated_hours"] = "-1"
+        patch("update", params:, as: :turbo_stream)
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_turbo_stream action: "update"
+        # the flash is not rendered with the progress field errors, as they are already in the progress modal
+        expect(response).not_to have_turbo_stream action: "flash"
+        template = Capybara.string(turbo_stream_template(action: "update"))
+        expect(template).to have_css("primer-text-field:has(label:contains('Work')) .FormControl-inlineValidation",
+                                     text: "Must be greater than or equal to 0.")
+      end
+    end
+
+    context "when the work package cannot be saved due to other errors" do
+      before do
+        # update the work package in an invalid state
+        work_package.update_column(:subject, "")
+      end
+
+      it "replies with a 422 status and displays an error message in a flash" do
+        params["work_package"]["estimated_hours_touched"] = "true"
+        params["work_package"]["estimated_hours"] = "0"
+        patch("update", params:, as: :turbo_stream)
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_turbo_stream action: "flash"
+        expect(turbo_stream_template(action: "flash")).to include("Subject can't be blank.")
+      end
     end
   end
 

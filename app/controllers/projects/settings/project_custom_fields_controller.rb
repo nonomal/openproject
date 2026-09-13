@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -89,7 +91,7 @@ class Projects::Settings::ProjectCustomFieldsController < Projects::SettingsCont
         .includes(:custom_fields)
         .merge(ProjectCustomField.visible)
         .group(:id, "custom_fields.id")
-        .order(:position, :position_in_custom_field_section)
+        .order(:position)
   end
 
   def set_project_custom_field_section

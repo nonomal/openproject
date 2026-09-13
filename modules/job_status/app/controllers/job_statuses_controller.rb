@@ -28,7 +28,6 @@
 
 class JobStatusesController < ApplicationController
   include OpTurbo::ComponentStream
-  include OpTurbo::DialogStreamHelper
 
   no_authorization_required! :show, :dialog, :dialog_body
   before_action :validate_job, only: [:dialog_body]

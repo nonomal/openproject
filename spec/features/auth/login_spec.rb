@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,6 +31,8 @@
 require "spec_helper"
 
 RSpec.describe "Login" do
+  let(:user_menu) { Components::UserMenu.new }
+
   before do
     @capybara_ignore_elements = Capybara.ignore_hidden_elements
     Capybara.ignore_hidden_elements = true
@@ -39,8 +43,7 @@ RSpec.describe "Login" do
   end
 
   def expect_being_logged_in(user)
-    expect(page)
-      .to have_css("a[title='#{user.name}']")
+    user_menu.expect_user_shown user.name
   end
 
   def expect_not_being_logged_in
@@ -76,34 +79,61 @@ RSpec.describe "Login" do
       end
     end
 
-    context "with force password change" do
+    context "with force password change and first login" do
       let(:force_password_change) { true }
       let(:first_login) { true }
 
-      it "redirects to homescreen after forced password change (with validation error) and first login" do
-        # first login
-        login_with(user.login, user_password)
-        expect(current_path).to eql signin_path
+      context "with an invalid password" do
+        it "redirects to homescreen after forced password change" do
+          # first login
+          login_with(user.login, user_password)
+          expect(page).to have_current_path signin_path
 
-        # change password page (giving an invalid password)
-        within("#main") do
-          fill_in("password", with: user_password)
-          fill_in("new_password", with: new_user_password)
-          fill_in("new_password_confirmation", with: new_user_password + "typo")
-          click_link_or_button I18n.t(:button_save)
+          # change password page (giving an invalid password)
+          within("#main") do
+            fill_in("password", with: user_password)
+            fill_in("new_password", with: new_user_password)
+            fill_in("new_password_confirmation", with: "#{new_user_password}typo")
+            click_button I18n.t(:button_change_password)
+          end
+          expect(page).to have_current_path account_change_password_path
+
+          # change password page
+          within("#main") do
+            fill_in("password", with: user_password)
+            fill_in("new_password", with: new_user_password)
+            fill_in("new_password_confirmation", with: new_user_password)
+            click_button I18n.t(:button_change_password)
+          end
+
+          # on the my page
+          expect(page).to have_current_path home_path(first_time_user: true)
         end
-        expect(current_path).to eql account_change_password_path
+      end
 
-        # change password page
-        within("#main") do
-          fill_in("password", with: user_password)
-          fill_in("new_password", with: new_user_password)
-          fill_in("new_password_confirmation", with: new_user_password)
-          click_link_or_button I18n.t(:button_save)
+      context "with an invalid custom field" do
+        before do
+          # Create the user, then add a required custom field invalidating the user.
+          user
+          create(:user_custom_field, :string, name: "Department", is_required: true)
         end
 
-        # on the my page
-        expect(current_path).to eql "/"
+        it "redirects to homescreen after forced password change ignoring the validation error" do
+          # first login
+          login_with(user.login, user_password)
+          expect(page).to have_current_path signin_path
+
+          # change password page
+          within("#main") do
+            fill_in("password", with: user_password)
+            fill_in("new_password", with: new_user_password)
+            fill_in("new_password_confirmation", with: new_user_password)
+            click_button I18n.t(:button_change_password)
+          end
+
+          # on the my page
+          expect(page).to have_current_path home_path(first_time_user: true)
+        end
       end
     end
 
@@ -112,7 +142,7 @@ RSpec.describe "Login" do
 
       login_with(user.login, user.password)
 
-      expect(current_path).to eql signin_path
+      expect(page).to have_current_path signin_path
       expect(page)
         .to have_content "Invalid user or password"
     end
@@ -156,7 +186,7 @@ RSpec.describe "Login" do
       end
     end
 
-    context "with password expiry", :js do
+    context "with password expiration", :js do
       before do
         user.passwords.update_all(created_at: 31.days.ago,
                                   updated_at: 31.days.ago)
@@ -178,7 +208,7 @@ RSpec.describe "Login" do
         fill_in "New password", with: new_user_password
         fill_in "Confirmation", with: new_user_password
 
-        click_button "Save"
+        click_button "Change password"
 
         expect_being_logged_in(user)
 

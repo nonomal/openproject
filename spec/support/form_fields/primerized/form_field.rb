@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module FormFields
   module Primerized
     class FormField < FormFields::FormField

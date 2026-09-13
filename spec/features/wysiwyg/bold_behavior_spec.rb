@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,7 +33,7 @@ require "spec_helper"
 RSpec.describe "Wysiwyg bold behavior", :js do
   current_user { create(:admin) }
 
-  let(:project) { create(:project, enabled_module_names: %w[wiki]) }
+  let(:project) { create(:project, :with_internal_wiki) }
   let(:editor) { Components::WysiwygEditor.new }
 
   def mac_osx?
@@ -56,7 +58,7 @@ RSpec.describe "Wysiwyg bold behavior", :js do
         editor.click_and_type_slowly "some text ", bold_keystroke, "with bold"
 
         # Save wiki page
-        click_on "Save"
+        click_on "Create"
 
         expect_flash(message: "Successful creation.")
 

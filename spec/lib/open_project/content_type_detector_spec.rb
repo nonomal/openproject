@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -88,7 +90,7 @@ RSpec.describe OpenProject::ContentTypeDetector do
     File.open(@filename, "w+") do |file|
       file.puts "This is a text file."
       file.rewind
-      expect(OpenProject::ContentTypeDetector.new(file.path).detect).to eq("text/plain")
+      expect(described_class.new(file.path).detect).to start_with("text/plain")
     end
     FileUtils.rm @filename
   end

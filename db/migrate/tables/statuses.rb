@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,11 +33,15 @@ require_relative "base"
 class Tables::Statuses < Tables::Base
   def self.table(migration)
     create_table migration do |t|
-      t.string :name, limit: 30, default: "", null: false
+      t.string :name, default: "", null: false
       t.boolean :is_closed, default: false, null: false
       t.boolean :is_default, default: false, null: false
       t.integer :position, default: 1
-      t.integer :default_done_ratio
+      t.integer :default_done_ratio, default: 0, null: false
+      t.timestamps precision: nil
+      t.belongs_to :color
+      t.boolean :is_readonly, default: false # rubocop:disable Rails/ThreeStateBooleanColumn
+      t.boolean :excluded_from_totals, default: false, null: false
 
       t.index :is_closed, name: "index_statuses_on_is_closed"
       t.index :is_default, name: "index_statuses_on_is_default"

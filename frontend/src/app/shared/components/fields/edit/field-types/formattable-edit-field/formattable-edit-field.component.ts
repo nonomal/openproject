@@ -1,3 +1,4 @@
+//-- copyright
 // OpenProject is an open source project management software.
 // Copyright (C) the OpenProject GmbH
 //
@@ -20,10 +21,10 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
-// ++
+//++
 
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { EditFieldComponent } from 'core-app/shared/components/fields/edit/edit-field.component';
@@ -37,6 +38,7 @@ import isNewResource from 'core-app/features/hal/helpers/is-new-resource';
 @Component({
   templateUrl: './formattable-edit-field.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
 export class FormattableEditFieldComponent extends EditFieldComponent implements OnInit, OnDestroy {
   public readonly field = this;
@@ -63,7 +65,7 @@ export class FormattableEditFieldComponent extends EditFieldComponent implements
     macros: 'none' as const,
     previewContext: this.previewContext,
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-member-access
-    options: { rtl: this.schema.options && this.schema.options.rtl },
+    options: { rtl: this.schema.options?.rtl },
     type: 'constrained',
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call
     ...this.resource.getEditorContext(this.field.name),
@@ -135,7 +137,7 @@ export class FormattableEditFieldComponent extends EditFieldComponent implements
   }
 
   public get rawValue():string {
-    if (this.value && this.value.raw) {
+    if (this.value?.raw) {
       return this.value.raw;
     }
     return '';
@@ -146,7 +148,7 @@ export class FormattableEditFieldComponent extends EditFieldComponent implements
   }
 
   public isEmpty():boolean {
-    return !(this.value && this.value.raw);
+    return !(this.value?.raw);
   }
 
   protected initialize():void {

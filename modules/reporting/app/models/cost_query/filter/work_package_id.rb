@@ -29,6 +29,8 @@
 #++
 
 class CostQuery::Filter::WorkPackageId < Report::Filter::Base
+  db_field "entries.entity_id"
+
   def self.label
     WorkPackage.model_name.human
   end
@@ -38,20 +40,16 @@ class CostQuery::Filter::WorkPackageId < Report::Filter::Base
   end
 
   def self.available_values(*)
-    WorkPackage
-      .where(project_id: Project.allowed_to(User.current, :view_work_packages))
-      .order(:id)
-      .pluck(:id, :subject)
-      .map { |id, subject| [text_for_tuple(id, subject), id] }
+    []
   end
 
   ##
   # Overwrites Report::Filter::Base self.label_for_value method
   # to achieve a more performant implementation
   def self.label_for_value(value)
-    return nil unless value.to_i.to_s == value.to_s # we expect an work_package-id
+    return nil unless WorkPackage::SemanticIdentifier.numeric_id?(value.to_s)
 
-    work_package = WorkPackage.find(value.to_i)
+    work_package = WorkPackage.visible.find(value.to_i)
     [text_for_work_package(work_package), work_package.id] if work_package&.visible?(User.current)
   end
 
@@ -68,5 +66,11 @@ class CostQuery::Filter::WorkPackageId < Report::Filter::Base
          end
 
     text_for_tuple(wp.id, wp.subject)
+  end
+
+  def sql_statement
+    super.tap do |query|
+      query.where << "entries.entity_type = 'WorkPackage'"
+    end
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,7 +32,7 @@ require "spec_helper"
 
 RSpec.describe "Wysiwyg work package quicklink macros", :js do
   shared_let(:user) { create(:admin) }
-  shared_let(:project) { create(:project_with_types) }
+  shared_let(:project) { create(:project_with_types, :with_internal_wiki).reload }
   let(:work_package) do
     create(:work_package,
            subject: "My subject",
@@ -48,7 +50,7 @@ RSpec.describe "Wysiwyg work package quicklink macros", :js do
 
   it "renders work package quicklink macro # with id linking to work package" do
     editor.set_markdown "##{work_package.id}"
-    click_on "Save"
+    click_on "Create"
 
     expect_and_dismiss_flash(message: "Successful creation.")
 
@@ -68,7 +70,7 @@ RSpec.describe "Wysiwyg work package quicklink macros", :js do
 
   it "renders work package quicklink macro ## with id link, subject and type" do
     editor.set_markdown "###{work_package.id}"
-    click_on "Save"
+    click_on "Create"
 
     expect_and_dismiss_flash(message: "Successful creation.")
 
@@ -85,13 +87,15 @@ RSpec.describe "Wysiwyg work package quicklink macros", :js do
     click_on "Edit"
 
     editor.in_editor do |container,|
-      expect(container).to have_css("p", text: "###{work_package.id}")
+      expect(container).to have_css(".op-macro-wp-quickinfo-widget")
+      expect(container).to have_css("opce-macro-wp-quickinfo[data-id='#{work_package.id}'][data-detailed='false']")
+      expect(container).to have_css("opce-macro-wp-quickinfo > a", text: "##{work_package.id}")
     end
   end
 
   it "renders work package quicklink macro ### with id link, subject, type, status, and dates" do
     editor.set_markdown "####{work_package.id}"
-    click_on "Save"
+    click_on "Create"
 
     expect_and_dismiss_flash(message: "Successful creation.")
 
@@ -113,7 +117,9 @@ RSpec.describe "Wysiwyg work package quicklink macros", :js do
     click_on "Edit"
 
     editor.in_editor do |container,|
-      expect(container).to have_css("p", text: "####{work_package.id}")
+      expect(container).to have_css(".op-macro-wp-quickinfo-widget")
+      expect(container).to have_css("opce-macro-wp-quickinfo[data-id='#{work_package.id}'][data-detailed='true']")
+      expect(container).to have_css("opce-macro-wp-quickinfo > a", text: "##{work_package.id}")
     end
   end
 
@@ -165,7 +171,9 @@ RSpec.describe "Wysiwyg work package quicklink macros", :js do
       ####{wp_milestone_without_date.id}
     MD
 
-    click_on "Save"
+    click_on "Create"
+
+    expect_and_dismiss_flash(message: "Successful creation.")
 
     within("#content") do
       expect(page).to have_css("opce-macro-wp-quickinfo", text: /No dates$/)

@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -30,13 +30,13 @@ import { QueryResource } from 'core-app/features/hal/resources/query-resource';
 import { ApiV3FormResource } from 'core-app/core/apiv3/forms/apiv3-form-resource';
 import { QueryFormResource } from 'core-app/features/hal/resources/query-form-resource';
 import { Observable } from 'rxjs';
-import * as URI from 'urijs';
+import URI from 'urijs';
 import { map, tap } from 'rxjs/operators';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
+import { LazyInject } from 'core-app/shared/helpers/angular/lazy-inject.decorator';
 import { QueryFiltersService } from 'core-app/features/work-packages/components/wp-query/query-filters.service';
 
 export class ApiV3QueryForm extends ApiV3FormResource<QueryFormResource> {
-  @InjectField() private queryFilters:QueryFiltersService;
+  @LazyInject() private queryFilters:QueryFiltersService;
 
   /**
    * Load the query form for the given existing (or new) query resource
@@ -75,7 +75,7 @@ export class ApiV3QueryForm extends ApiV3FormResource<QueryFormResource> {
    * @param projectIdentifier
    * @param payload
    */
-  public loadWithParams(params:{ [key:string]:unknown }, queryId:string|null|undefined, projectIdentifier:string|undefined|null, payload:any = {}):Observable<[QueryFormResource, QueryResource]> {
+  public loadWithParams(params:Record<string, unknown>, queryId:string|null|undefined, projectIdentifier:string|undefined|null, payload:any = {}):Observable<[QueryFormResource, QueryResource]> {
     // We need a valid payload so that we
     // can check whether form saving is possible.
     // The query needs a name to be valid.

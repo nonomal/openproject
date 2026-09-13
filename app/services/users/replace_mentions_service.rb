@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #  OpenProject is an open source project management software.
 #  Copyright (C) the OpenProject GmbH
 #
@@ -61,7 +63,6 @@ module Users
             )
           SQL
         },
-        { class: Journal::MeetingContentJournal, column: :text },
         { class: Message, column: :content },
         { class: Journal::MessageJournal, column: :content },
         { class: News, column: :description },

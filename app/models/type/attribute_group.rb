@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,7 +33,7 @@ class Type::AttributeGroup < Type::FormGroup
     # The attributes might not be present anymore, for instance when you remove
     # a plugin leaving an empty group behind. If we did not delete such a
     # group, the admin saving such a form configuration would encounter an
-    # unexpected/unexplicable validation error.
+    # unexpected/inexplicable validation error.
     valid_keys = type.work_package_attributes.keys
 
     (attributes & valid_keys)
@@ -45,7 +47,8 @@ class Type::AttributeGroup < Type::FormGroup
     other.is_a?(self.class) &&
       key == other.key &&
       type == other.type &&
-      attributes == other.attributes
+      attributes == other.attributes &&
+      display_name == other.display_name
   end
 
   def active_members(project)

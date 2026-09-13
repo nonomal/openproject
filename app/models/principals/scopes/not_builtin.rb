@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -40,7 +42,8 @@ module Principals::Scopes
       def not_builtin
         where.not(type: [SystemUser.name,
                          AnonymousUser.name,
-                         DeletedUser.name])
+                         DeletedUser.name,
+                         ServiceAccount.name])
       end
     end
   end

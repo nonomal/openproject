@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -67,6 +69,22 @@ RSpec.describe API::V3::Queries::SortBys::QuerySortByRepresenter do
       expect(subject)
         .to be_json_eql("Status (Descending)".to_json)
         .at_path("name")
+    end
+
+    it "has displayable attribute" do
+      expect(subject)
+        .to be_json_eql(true.to_json)
+        .at_path("displayable")
+    end
+
+    context "for a non-displayable column" do
+      let(:column) { Queries::WorkPackages::Selects::TypeaheadSelect.instances }
+
+      it "has displayable attribute set to false" do
+        expect(subject)
+          .to be_json_eql(false.to_json)
+          .at_path("displayable")
+      end
     end
 
     it_behaves_like "has a titled link" do

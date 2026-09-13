@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,20 +32,17 @@ require_relative "base"
 
 class Tables::AttachmentJournals < Tables::Base
   def self.table(migration)
-    create_table migration do |t|
-      t.integer :journal_id, null: false
-      t.integer :container_id, default: 0, null: false
-      t.string :container_type, limit: 30, default: "", null: false
-      t.string :filename, default: "", null: false
-      t.string :disk_filename, default: "", null: false
-      t.integer :filesize, default: 0, null: false
-      t.string :content_type, default: ""
-      t.string :digest, limit: 40, default: "", null: false
-      t.integer :downloads, default: 0, null: false
-      t.integer :author_id, default: 0, null: false
+    create_table migration do |t| # rubocop:disable Rails/CreateTableWithTimestamps
+      t.bigint :container_id, default: nil, null: true
+      t.string :container_type, limit: 30, null: true
+      t.string :filename, default: nil, null: false
+      t.string :disk_filename, default: nil, null: false
+      t.integer :filesize, default: nil, null: false, limit: 8
+      t.string :content_type, default: nil
+      t.string :digest, limit: 40, default: nil, null: false
+      t.integer :downloads, default: nil, null: false
+      t.bigint :author_id, null: false
       t.text :description
-
-      t.index [:journal_id]
     end
   end
 end

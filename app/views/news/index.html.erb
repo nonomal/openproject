@@ -36,11 +36,7 @@ See COPYRIGHT and LICENSE files for more details.
 <%=
   render Primer::OpenProject::PageHeader.new do |header|
     header.with_title { t(:label_news_plural) }
-    header.with_breadcrumbs(
-      [*([href: home_path, text: organization_name] unless @project),
-       *([href: project_overview_path(@project.id), text: @project.name] if @project),
-       t(:label_news_plural)]
-    )
+    header.with_breadcrumbs(@project ? [{ href: project_overview_path(@project.id), text: @project.name }, t(:label_news_plural)] : nil)
   end
 %>
 <% if managable %>
@@ -48,29 +44,28 @@ See COPYRIGHT and LICENSE files for more details.
     render(Primer::OpenProject::SubHeader.new) do |subheader|
       subheader.with_action_button(
         scheme: :primary,
-        aria: { label: t(:label_news_new) },
-        title: I18n.t(:label_work_package_status_new),
+        leading_icon: :plus,
+        label: t(:label_news_new),
         tag: :a,
         id: "new_news_link",
         data: { "test-selector": "add-news-button" },
         href: new_project_news_path(@project)
-      ) do |button|
-        button.with_leading_visual_icon(icon: :plus)
+      ) do
         t(:label_news_singular)
       end
     end
   %>
 <% end %>
 
-<% if @newss.any? %>
-  <% @newss.each do |news| %>
+<% if @news.any? %>
+  <% @news.each do |news| %>
    <div class="news">
-     <h3 class="news--header"><%= avatar(news.author) %><%= link_to_project(news.project) + ": " unless news.project == @project %>
-       <%= link_to h(news.title), news_path(news) %>
+     <h3 class="news--header"><%= avatar(news.author) %><%= link_to_project(news.project).concat(": ") unless news.project == @project %>
+       <%= link_to h(news.title), project_news_path(news.project, news) %>
        <%= "(#{t(:label_x_comments, count: news.comments_count)})" if news.comments_count > 0 %></h3>
     <p class="author additional-information"><%= authoring news.created_at, news.author %></p>
     <div class="wiki op-uc-container">
-      <%= format_text((news.summary.presence || truncate(news.description, length: 150, escape: false)), object: news) %>
+      <%= format_text(news.summary.presence || truncate(news.description, length: 150, escape: false), object: news) %>
     </div>
    </div>
   <% end %>
@@ -85,7 +80,7 @@ See COPYRIGHT and LICENSE files for more details.
   <% end %>
 <% end %>
 
-<%= pagination_links_full @newss %>
+<%= pagination_links_full @news %>
 
 <%= other_formats_links do |f| %>
   <%= f.link_to "Atom", url: { project_id: @project, key: User.current.rss_key } %>

@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -86,6 +86,9 @@ import {
   WorkPackageSpentTimeDisplayField,
 } from 'core-app/shared/components/fields/display/field-types/wp-spent-time-display-field.module';
 import { LinkDisplayField } from 'core-app/shared/components/fields/display/field-types/link-display-field.module';
+import {
+  ProjectPhaseDisplayField,
+} from 'core-app/shared/components/fields/display/field-types/project-phase-display-field.module';
 
 export function initializeCoreDisplayFields(displayFieldService:DisplayFieldService) {
   return () => {
@@ -104,8 +107,12 @@ export function initializeCoreDisplayFields(displayFieldService:DisplayFieldServ
         'TimeEntriesActivity',
         'Version',
         'Category',
+        'BacklogBucket',
+        'Sprint',
         'CustomField::Hierarchy::Item',
-        'CustomOption'])
+        'CustomOption',
+        'Workspace'])
+      .addFieldType(ProjectPhaseDisplayField, 'projectPhase', ['ProjectPhase'])
       .addFieldType(ResourcesDisplayField, 'resources', ['[]CustomOption', '[]CustomField::Hierarchy::Item'])
       .addFieldType(ResourcesDisplayField, 'resources', ['[]Version'])
       .addFieldType(MultipleUserFieldModule, 'users', ['[]User'])

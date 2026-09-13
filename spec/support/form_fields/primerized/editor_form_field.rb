@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "form_field"
 
 module FormFields
@@ -14,7 +16,7 @@ module FormFields
       end
 
       def field_container
-        augmented_textarea = page.find("[data-textarea-selector='\"#project_custom_field_values_#{property.id}\"']")
+        augmented_textarea = page.find(selector || "[data-text-area-id='\"project_custom_field_values_#{property.id}\"']")
         augmented_textarea.first(:xpath, ".//..")
       end
 

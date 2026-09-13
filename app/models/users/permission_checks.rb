@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -66,9 +68,7 @@ module Users::PermissionChecks
   end
 
   def reload(*args)
-    @user_permissible_service = nil
-    @user_allowed_service = nil
-    @project_role_cache = nil
+    reset_permission_caches
 
     super
   end
@@ -156,6 +156,12 @@ module Users::PermissionChecks
         false
       end
     end
+  end
+
+  def reset_permission_caches
+    @user_permissible_service = nil
+    @user_allowed_service = nil
+    @project_role_cache = nil
   end
 
   private

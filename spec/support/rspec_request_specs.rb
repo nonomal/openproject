@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module RackTestHelper
   include Rack::Test::Methods
 

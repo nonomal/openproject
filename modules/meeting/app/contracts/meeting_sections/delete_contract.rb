@@ -29,8 +29,14 @@
 
 module MeetingSections
   class DeleteContract < ::DeleteContract
-    include ModifiableItem
+    include EditableItem
 
     delete_permission :manage_agendas
+
+    validate :backlog_not_deletable
+
+    def backlog_not_deletable
+      errors.add :base, :error_readonly if model.backlog?
+    end
   end
 end

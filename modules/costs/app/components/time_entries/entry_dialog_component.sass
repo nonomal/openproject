@@ -28,12 +28,12 @@
  / ++
  /
 
-.time-entry-dialog-footer-buttons
+.time-entry-dialog-footer
   width: 100%
-
-.time-entry-button-push
-  margin-left: auto
-
+  display: grid
+  grid-gap: var(--stack-gap-condensed)
+  grid-template-columns: auto 1fr auto auto
+  grid-template-areas: "delete . cancel confirm"
 
 .time-entry-dialog-form-spacing
   row-gap: var(--stack-gap-normal)

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,14 +32,17 @@ require_relative "base"
 
 class Tables::CustomValues < Tables::Base
   def self.table(migration)
-    create_table migration do |t|
+    create_table migration do |t| # rubocop:disable Rails/CreateTableWithTimestamps
       t.string :customized_type, limit: 30, default: "", null: false
-      t.integer :customized_id, default: 0, null: false
-      t.integer :custom_field_id, default: 0, null: false
+      t.bigint :customized_id, null: false
+      t.bigint :custom_field_id, null: false
       t.text :value
 
       t.index :custom_field_id, name: "index_custom_values_on_custom_field_id"
       t.index %i[customized_type customized_id], name: "custom_values_customized"
+      t.index :value,
+              using: "gin",
+              opclass: :gin_trgm_ops
     end
   end
 end

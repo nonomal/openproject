@@ -4,6 +4,33 @@
       section.with_title { t(:label_meeting_state) }
 
       case @meeting.state
+      when "draft"
+        flex_layout(classes: "op-meeting-sidebar-state") do |draft_state|
+          draft_state.with_row do
+            status_button
+          end
+
+          draft_state.with_row(mt: 3, classes: "hidden-for-mobile") do
+            render(Primer::Beta::Text.new(color: :subtle)) { t("text_meeting_draft_description") }
+          end
+
+          if edit_enabled?
+            section.with_footer_button(
+              color: :accent,
+              tag: :button,
+              classes: "hide-when-print",
+              data: {
+                action: "click->meetings--submit#intercept",
+                href: exit_draft_mode_dialog_project_meeting_path(@project, @meeting),
+                method: "GET"
+              }
+            ) do |button|
+              button.with_leading_visual_icon(icon: :"issue-opened")
+              @meeting.recurring? ? t("recurring_meeting.template.button_finalize") : t("label_meeting_open_action")
+            end
+          end
+        end
+
       when "open"
         flex_layout(classes: "op-meeting-sidebar-state") do |open_state|
           open_state.with_row do
@@ -16,11 +43,12 @@
 
           if edit_enabled?
             section.with_footer_button(
+              color: :accent,
               tag: :a,
-              href: change_state_project_meeting_path(@project, @meeting, state: "in_progress"),
+              href: href("in_progress"),
               classes: "hide-when-print",
-              data: { "turbo-stream": true, "turbo-method": "put" },
-              test_selector: "close-meeting-button"
+              test_selector: "close-meeting-button",
+              data: button_data_attributes(href("in_progress"))
             ) do |button|
               button.with_leading_visual_icon(icon: :play)
               t("label_meeting_in_progress_action")
@@ -40,10 +68,12 @@
 
           if edit_enabled?
             section.with_footer_button(
+              color: :accent,
               tag: :a,
-              href: change_state_project_meeting_path(@project, @meeting, state: "open"),
+              scheme: :link,
+              href: href("open"),
               classes: "hide-when-print",
-              data: { "turbo-stream": true, "turbo-method": "put" }
+              data: button_data_attributes(href("open"))
             ) do |button|
               button.with_leading_visual_icon(icon: :unlock)
               t("label_meeting_reopen_action")
@@ -63,11 +93,13 @@
 
           if edit_enabled?
             section.with_footer_button(
+              color: :accent,
               tag: :a,
-              href: change_state_project_meeting_path(@project, @meeting, state: "closed"),
+              scheme: :link,
+              href: href("closed"),
               classes: "hide-when-print",
-              data: { "turbo-stream": true, "turbo-method": "put" },
-              test_selector: "close-meeting-button"
+              test_selector: "close-meeting-button",
+              data: button_data_attributes(href("closed"))
             ) do |button|
               button.with_leading_visual_icon(icon: :unlock)
               t("label_meeting_close_action")

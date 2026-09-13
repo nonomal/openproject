@@ -48,7 +48,7 @@ module API
                   end,
                   ->(error) do
                     msg = "#{I18n.t('api_v3.errors.code_500')} #{error}"
-                    raise ::API::Errors::InternalError.new(msg)
+                    raise ::API::Errors::SafeInternalError.new(msg)
                   end
                 )
             end

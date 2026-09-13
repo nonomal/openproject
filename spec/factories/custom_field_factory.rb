@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -21,15 +23,30 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
 FactoryBot.define do
+  # A custom field is activated per variant. `types:` is kept as an alias so the many call
+  # sites that name a type keep reading naturally: a type contributes its base variant.
+  trait :activatable_on_types do
+    transient do
+      types { [] }
+    end
+
+    after(:create) do |custom_field, evaluator|
+      next if evaluator.types.empty?
+
+      variants = evaluator.types.map { |type| type.is_a?(TypeVariant) ? type : type.default_variant }
+      custom_field.type_variants = (custom_field.type_variants + variants).uniq
+    end
+  end
+
   factory :custom_field do
     transient do
-      # These values are used internally to customize the  custom field name
+      # These values are used internally to customize the custom field name
       # when using traits. They are not meant to be set externally.
       _format_name do
         [
@@ -54,7 +71,19 @@ FactoryBot.define do
 
     after(:create) do
       # As the request store keeps track of the created custom fields
-      RequestStore.clear!
+      RequestStore.store.delete_if { |key, _| key.to_s.include?("_custom_fields") }
+    end
+
+    trait :is_for_all do
+      is_for_all { true }
+    end
+
+    trait :admin_only do
+      admin_only { true }
+    end
+
+    trait :has_comment do
+      has_comment { true }
     end
 
     trait :multi_value do
@@ -79,6 +108,11 @@ FactoryBot.define do
       field_format { "int" }
     end
 
+    trait :calculated_value do
+      field_format { "calculated_value" }
+      formula { "2 + 2" }
+    end
+
     trait :float do
       field_format { "float" }
     end
@@ -94,7 +128,7 @@ FactoryBot.define do
       end
       field_format { "list" }
       multi_value { false }
-      possible_values { ["A", "B", "C", "D", "E", "F", "G"] }
+      possible_values { %w[A B C D E F G] }
 
       # update custom options default value from the default_option transient
       # field for non-multiselect field
@@ -178,6 +212,14 @@ FactoryBot.define do
       multi_value
     end
 
+    trait :weighted_item_list do
+      field_format { "weighted_item_list" }
+      hierarchy_root do
+        service = CustomFields::Hierarchy::HierarchicalItemService.new
+        service.generate_root(instance).value!
+      end
+    end
+
     factory :project_custom_field, class: "ProjectCustomField" do
       project_custom_field_section
 
@@ -185,7 +227,7 @@ FactoryBot.define do
         projects { [] }
       end
 
-      # enable the the custom_field for the given projects
+      # Enable the custom_field for the given projects
       after(:create) do |custom_field, evaluator|
         projects = Array(evaluator.projects)
         next if projects.blank?
@@ -197,25 +239,36 @@ FactoryBot.define do
         end
       end
 
-      factory :boolean_project_custom_field, traits: [:boolean]
-      factory :string_project_custom_field, traits: [:string]
-      factory :text_project_custom_field, traits: [:text]
-      factory :integer_project_custom_field, traits: [:integer]
-      factory :float_project_custom_field, traits: [:float]
-      factory :date_project_custom_field, traits: [:date]
-      factory :list_project_custom_field, traits: [:list]
-      factory :version_project_custom_field, traits: [:version]
-      factory :user_project_custom_field, traits: [:user]
-      factory :link_project_custom_field, traits: [:link]
+      %w[
+        boolean
+        calculated_value
+        date
+        float
+        hierarchy multi_hierarchy
+        integer
+        link
+        list multi_list
+        weighted_item_list
+        string
+        text
+        user multi_user
+        version multi_version
+      ].each do |trait|
+        factory :"#{trait}_project_custom_field", traits: [trait]
+      end
     end
 
-    factory :user_custom_field, class: "UserCustomField"
+    factory :user_custom_field, class: "UserCustomField" do
+      user_custom_field_section
+    end
 
     factory :group_custom_field, class: "GroupCustomField"
 
     factory :wp_custom_field, class: "WorkPackageCustomField" do
       _type_name { "WP custom field" }
       is_filter { true }
+
+      activatable_on_types
 
       transient do
         projects { [] }
@@ -227,24 +280,28 @@ FactoryBot.define do
         end
       end
 
-      factory :boolean_wp_custom_field, traits: [:boolean]
-      factory :string_wp_custom_field, traits: [:string]
-      factory :text_wp_custom_field, traits: [:text]
-      factory :integer_wp_custom_field, traits: [:integer]
-      factory :float_wp_custom_field, traits: [:float]
-      factory :date_wp_custom_field, traits: [:date]
-      factory :list_wp_custom_field, traits: [:list]
-      factory :multi_list_wp_custom_field, traits: [:multi_list]
-      factory :version_wp_custom_field, traits: [:version]
-      factory :multi_version_wp_custom_field, traits: [:multi_version]
-      factory :user_wp_custom_field, traits: [:user]
-      factory :multi_user_wp_custom_field, traits: [:multi_user]
-      factory :link_wp_custom_field, traits: [:link]
-      factory :hierarchy_wp_custom_field, traits: [:hierarchy]
+      %w[
+        boolean
+        date
+        float
+        hierarchy multi_hierarchy
+        integer
+        link
+        list multi_list
+        weighted_item_list
+        string
+        text
+        user multi_user
+        version multi_version
+      ].each do |trait|
+        factory :"#{trait}_wp_custom_field", traits: [trait]
+      end
     end
 
     factory :issue_custom_field, class: "WorkPackageCustomField" do
       _type_name { "issue custom field" }
+
+      activatable_on_types
     end
 
     factory :time_entry_custom_field, class: "TimeEntryCustomField" do

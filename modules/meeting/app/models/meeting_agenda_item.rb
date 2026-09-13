@@ -44,12 +44,30 @@ class MeetingAgendaItem < ApplicationRecord
   belongs_to :author, class_name: "User", optional: false
   belongs_to :presenter, class_name: "User", optional: true
 
-  has_many :outcomes, class_name: "MeetingOutcome", dependent: :destroy
+  has_many :outcomes,
+           -> { order(id: :asc) },
+           class_name: "MeetingOutcome",
+           dependent: :destroy,
+           inverse_of: :meeting_agenda_item
 
   acts_as_list scope: :meeting_section
   default_scope { order(:position) }
 
   scope :with_includes_to_render, -> { includes(:author, :meeting) }
+
+  def self.linked_to_work_package(work_package)
+    where(<<~SQL.squish, wp_id: work_package.id)
+      meeting_agenda_items.work_package_id = :wp_id OR
+      meeting_agenda_items.id IN (
+        SELECT meeting_agenda_item_id FROM meeting_outcomes WHERE meeting_outcomes.work_package_id = :wp_id
+      )
+    SQL
+  end
+
+  def self.visible_linked_to_work_package(user, work_package)
+    linked_to_work_package(work_package)
+      .where(meeting_id: Meeting.not_templated.visible(user))
+  end
 
   # The primer form depends on meeting_id being validated, even though Rails pattern would suggest
   # to validate only :meeting. When copying meetings however,
@@ -67,14 +85,9 @@ class MeetingAgendaItem < ApplicationRecord
             allow_nil: true
 
   before_validation :add_to_latest_meeting_section
-
-  after_create :trigger_meeting_agenda_item_time_slots_calculation
-  after_save :trigger_meeting_agenda_item_time_slots_calculation, if: Proc.new { |item|
-    item.duration_in_minutes_previously_changed? || item.position_previously_changed?
-  }
   before_save :update_meeting_to_match_section
-  after_destroy :trigger_meeting_agenda_item_time_slots_calculation
-  # after_destroy :delete_meeting_section_if_empty
+  after_update :delete_default_section_if_last_item_moved, if: :saved_change_to_meeting_section_id?
+  after_destroy :delete_default_section_if_last_item_deleted
 
   def add_to_latest_meeting_section
     return if meeting.nil?
@@ -90,22 +103,43 @@ class MeetingAgendaItem < ApplicationRecord
     end
   end
 
+  def display_title
+    if visible_work_package?
+      work_package.to_s
+    elsif linked_work_package?
+      I18n.t(:label_agenda_item_undisclosed_wp, id: work_package_id)
+    elsif deleted_work_package?
+      I18n.t(:label_agenda_item_deleted_wp)
+    else
+      title
+    end
+  end
+
+  def delete_default_section_if_last_item_deleted
+    return if meeting_section.nil? || meeting.sections.count > 1 || meeting_section.backlog?
+
+    check_and_destroy(meeting_section)
+  end
+
+  def delete_default_section_if_last_item_moved
+    old_section_id = saved_change_to_meeting_section_id.first
+    old_section = MeetingSection.find_by(id: old_section_id)
+    return if old_section.nil? || old_section.backlog?
+
+    check_and_destroy(old_section)
+  end
+
+  def check_and_destroy(section)
+    # Only destroy the auto created default section, discernible via the blank title
+    if section.agenda_items.empty? && section.title.blank?
+      section.destroy
+    end
+  end
+
   def update_meeting_to_match_section
     # TODO - see #63561
     self.meeting = meeting_section.meeting
   end
-
-  def trigger_meeting_agenda_item_time_slots_calculation
-    meeting.calculate_agenda_item_time_slots
-  end
-
-  # def delete_meeting_section_if_empty
-  #   # we need to delete the last existing section if the last meeting agenda item is deleted
-  #   # as we don't render the section (including the section menu) if only one section exists
-  #   # thus the section would silently exist in the database when the very last agenda item was deleted
-  #   # which makes UI rendering inconsistent
-  #   meeting_section.destroy if meeting_section.agenda_items.empty? && meeting.sections.count == 1
-  # end
 
   def linked_work_package?
     item_type == "work_package" && work_package.present?
@@ -120,11 +154,7 @@ class MeetingAgendaItem < ApplicationRecord
   end
 
   def editable?
-    !(meeting&.closed? || deleted_work_package?)
-  end
-
-  def modifiable?
-    !(meeting&.closed? || (deleted_work_package? && work_package_id.present?))
+    !meeting&.closed?
   end
 
   def copy_attributes

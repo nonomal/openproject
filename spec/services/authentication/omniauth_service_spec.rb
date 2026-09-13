@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,13 +30,14 @@
 require "spec_helper"
 
 RSpec.describe Authentication::OmniauthService do
-  let(:strategy) { double("Omniauth Strategy", name: "saml") }
+  shared_let(:auth_provider) { create(:oidc_provider_google) }
   let(:additional_info) do
     {}
   end
+  let(:strategy) { instance_double(OmniAuth::Strategy, name: auth_provider.slug) }
   let(:auth_hash) do
     OmniAuth::AuthHash.new(
-      provider: "google",
+      provider: auth_provider.slug,
       uid: "123545",
       info: {
         name: "foo",
@@ -93,7 +96,7 @@ RSpec.describe Authentication::OmniauthService do
     let(:call) { instance.call }
 
     context "with an active found user" do
-      shared_let(:user) { create(:user, login: "foo@bar.com", identity_url: "google:123545") }
+      shared_let(:user) { create(:user, login: "foo@bar.com", identity_url: "#{auth_provider.slug}:123545") }
 
       it "does not call register user service and logs in the user" do
         allow(Users::RegisterUserService).to receive(:new)
@@ -185,7 +188,7 @@ RSpec.describe Authentication::OmniauthService do
 
     context "with an active user remapped",
             with_settings: { oauth_allow_remapping_of_existing_users?: true } do
-      let!(:user) { create(:user, identity_url: "foo", login: auth_email.downcase) }
+      let!(:user) { create(:user, login: auth_email.downcase) }
 
       shared_examples_for "a successful remapping of foo" do
         before do
@@ -210,7 +213,7 @@ RSpec.describe Authentication::OmniauthService do
           aggregate_failures "User attributes" do
             expect(user.firstname).to eq "foo"
             expect(user.lastname).to eq "bar"
-            expect(user.identity_url).to eq "google:123545"
+            expect(user.identity_url).to eq "#{auth_provider.slug}:123545"
           end
 
           aggregate_failures "Message expectations" do
@@ -255,27 +258,34 @@ RSpec.describe Authentication::OmniauthService do
         end
       end
     end
-
-    describe "assuming registration/activation failed" do
-      let(:register_success) { false }
-      let(:register_message) { "Oh noes :(" }
-    end
   end
 
   describe "#identity_url_from_omniauth" do
-    let(:auth_hash) { { provider: "developer", uid: "veryuniqueid", info: {} } }
+    let(:auth_hash) { { provider:, uid: "veryuniqueid", info: {} } }
 
     subject { instance.send(:identity_url_from_omniauth) }
 
-    it "returns the correct identity_url" do
-      expect(subject).to eql("developer:veryuniqueid")
+    context "when provider is developer" do
+      let(:provider) { "developer" }
+
+      it "returns nil" do
+        expect(subject).to be_nil
+      end
     end
 
-    context "with uid mapped from info" do
-      let(:auth_hash) { { provider: "developer", uid: "veryuniqueid", info: { uid: "internal" } } }
+    context "when provider is not developer" do
+      let(:provider) { "another_provider_slug" }
 
       it "returns the correct identity_url" do
-        expect(subject).to eql("developer:internal")
+        expect(subject).to eql("another_provider_slug:veryuniqueid")
+      end
+
+      context "with uid mapped from info" do
+        let(:auth_hash) { { provider:, uid: "veryuniqueid", info: { uid: "internal" } } }
+
+        it "returns the correct identity_url" do
+          expect(subject).to eql("#{provider}:internal")
+        end
       end
     end
   end

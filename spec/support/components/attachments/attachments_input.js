@@ -1,3 +1,31 @@
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
 let params = arguments;
 
 // Target element to drag & drop to
@@ -103,43 +131,44 @@ function dropOnTarget(dataTransfer) {
   });
 }
 
-let input = jQuery('<input>')
-    .attr('id', name)
-    .attr('name', name)
-    .attr('type', 'file')
-    .attr('style', 'position:fixed;left:0;bottom:0;z-index:10000')
-    .appendTo(document.body)
-    .on('change', function(event) {
-      input.remove();
-      event.stopPropagation();
+let input = document.createElement('input');
+input.id = name;
+input.name = name;
+input.type = 'file';
+input.style.cssText = 'position:fixed;left:0;bottom:0;z-index:10000';
+document.body.appendChild(input);
 
-      let dataTransfer = {
-        constructor   : DataTransfer,
-        effectAllowed : 'all',
-        dropEffect    : 'none',
-        types         : [ 'Files' ],
-        files         : input[0].files,
-        setData       : function setData(){},
-        getData       : function getData(){},
-        clearData     : function clearData(){},
-        setDragImage  : function setDragImage(){}
-      };
+input.addEventListener('change', function(event) {
+  input.remove();
+  event.stopPropagation();
 
-      // If we have stopovers, do those first and then get the target
-      if (stopovers.length > 0) {
-        stopovers.forEach((stopover) => dropOnStopover(stopover, dataTransfer));
+  let dataTransfer = {
+    constructor   : DataTransfer,
+    effectAllowed : 'all',
+    dropEffect    : 'none',
+    types         : [ 'Files' ],
+    files         : input.files,
+    setData       : function setData(){},
+    getData       : function getData(){},
+    clearData     : function clearData(){},
+    setDragImage  : function setDragImage(){}
+  };
 
-        setTimeout(() => {
-          if (!cancelDrop) {
-            // After we left the stopover DOM elements, the target element should remain visible.
-            // If it's not visible, we raise an error.
-            if (target.offsetParent === null) {
-              throw new Error("Cannot drop the file on an invisible target");
-            };
-            dropOnTarget(dataTransfer);
-          }
-        }, 2000);
-      } else {
+  // If we have stopovers, do those first and then get the target
+  if (stopovers.length > 0) {
+    stopovers.forEach((stopover) => dropOnStopover(stopover, dataTransfer));
+
+    setTimeout(() => {
+      if (!cancelDrop) {
+        // After we left the stopover DOM elements, the target element should remain visible.
+        // If it's not visible, we raise an error.
+        if (target.offsetParent === null) {
+          throw new Error("Cannot drop the file on an invisible target");
+        };
         dropOnTarget(dataTransfer);
       }
-    });
+    }, 2000);
+  } else {
+    dropOnTarget(dataTransfer);
+  }
+});

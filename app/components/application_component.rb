@@ -29,10 +29,12 @@
 #++
 
 class ApplicationComponent < ViewComponent::Base
+  prepend TranslationsOverride
+
   attr_reader :model, :options
 
   def initialize(model = nil, **options)
-    super
+    super()
     @model = model if model
     @options = options
   end
@@ -42,6 +44,21 @@ class ApplicationComponent < ViewComponent::Base
   end
 
   class << self
+    ##
+    # Generates a unique identifier suitable for use as an HTML `id` attribute
+    # value. If passed a non-nil model instance, it will use the model's id to
+    # generate the identifier (see {ActiveModel::Conversion#to_param}).
+    # Otherwise, it will generate an identifier with random numbers.
+    #
+    # @see ActiveModel::Conversion#to_param
+    #
+    # @param [ActiveModel::Model] model an optional model instance.
+    # @param [String] base_name a prefix for the unique identifier.
+    # @return [String] a unique identifier.
+    def generate_id(model = nil, base_name: name.demodulize.underscore.dasherize)
+      "#{base_name}-#{model&.to_param || SecureRandom.uuid}"
+    end
+
     ##
     # Defines options for this cell which can be used within the cell's template.
     # Options are passed to the cell during the render call.

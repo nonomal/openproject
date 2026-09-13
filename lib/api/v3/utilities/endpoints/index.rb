@@ -117,7 +117,7 @@ module API
           end
 
           def calculate_groups(query)
-            return if !query.respond_to?(:group_by) || !query.group_by
+            return if !query.respond_to?(:group_bys) || query.group_bys.empty?
 
             query.group_values.map do |group, count|
               ::API::Decorators::AggregationGroup.new(group, count, query:, current_user: User.current)
@@ -162,9 +162,7 @@ module API
             if constraint.is_a?(Class)
               result_scope
             else
-              result_scope
-                .includes(constraint.includes_values)
-                .merge constraint
+              result_scope.merge(constraint)
             end
           end
         end

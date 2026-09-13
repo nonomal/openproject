@@ -32,6 +32,9 @@ module WorkPackages
   module DatePicker
     class DateFormComponent < ApplicationComponent
       include OpPrimer::ComponentHelpers
+
+      FOCUSED_CLASS = "op-datepicker-modal--date-field_current"
+
       attr_reader :work_package
 
       def initialize(work_package:,
@@ -78,10 +81,10 @@ module WorkPackages
           disabled: disabled?(name),
           label:,
           show_clear_button: show_clear_button?(name),
-          classes: "op-datepicker-modal--date-field #{'op-datepicker-modal--date-field_current' if @focused_field == name}",
+          classes: "op-datepicker-modal--date-field #{FOCUSED_CLASS if focused?(name)}",
           validation_message: validation_message(name),
           type: field_type(name),
-          placeholder: placeholder(name)
+          readonly: readonly?
         )
 
         if duration_field?(name)
@@ -115,6 +118,11 @@ module WorkPackages
 
       def duration_field?(name)
         name == :duration
+      end
+
+      def show_duration?
+        # On mobile, we want to hide the duration field to gain some space
+        !!helpers.browser.device.mobile?
       end
 
       def start_date_label
@@ -165,6 +173,10 @@ module WorkPackages
         @disabled
       end
 
+      def focused?(name)
+        @focused_field == name && !disabled?(name)
+      end
+
       def field_value(name)
         errors = @work_package.errors.where(name)
         if (user_value = errors.map { |error| error.options[:value] }.find { !it.nil? })
@@ -175,22 +187,7 @@ module WorkPackages
       end
 
       def field_type(name)
-        return :number if duration_field?(name)
-
-        # Do not show the native datepicker on iOS safari because it
-        # behaves totally different than all other browsers and destroys the behavior of the datepicker
-        # Given a date field with no value: When Safari opens its native datepicker, the first thing it does is to
-        # set the date to Today. And not only in the datepicker but directly in the field.
-        # This behaviour has however consequences:
-        # * The "reset" button in the datepicker does not clear the input (as the other browsers do it) but it resets
-        #   it to the original value it had when you opened it. So if the value was empty, it sets it back to empty.
-        #   If the value was set before, you cannot clear it, but only set it back to that value.
-        # * Since the input changes, the whole datepicker updates without the user even knowing about it,
-        #   since the form is hidden behind the datepicker. That leads to this:
-        #     when you enter a start date after today, and then open the datepicker for finish date,
-        #     it will reset the start date because the finish date is set automatically to today,
-        #     but the finish date can't be before the start date.
-        helpers.browser.device.mobile? && !helpers.browser.safari? ? :date : :text
+        duration_field?(name) ? :number : :text
       end
 
       def validation_message(name)
@@ -206,24 +203,21 @@ module WorkPackages
                          "focus->work-packages--date-picker--preview#onHighlightField",
                  test_selector: "op-datepicker-modal--#{name.to_s.dasherize}-field" }
 
-        if @focused_field == name && !disabled?(name)
+        if focused?(name)
           data[:qa_highlighted] = "true"
           data[:focus] = "true"
         end
 
-        {
-          data: data,
-          aria: { live: :polite, atomic: true }
-        }
+        { data: data }
       end
 
       def single_date_field_button_link(focused_field)
         permitted_params = params.merge(date_mode: "range", focused_field:).permit!
 
-        if params[:action] == "new"
-          new_date_picker_path(permitted_params)
+        if work_package.new_record?
+          preview_date_picker_path(permitted_params)
         else
-          work_package_date_picker_path(permitted_params)
+          preview_work_package_date_picker_path(work_package, permitted_params)
         end
       end
 
@@ -266,8 +260,22 @@ module WorkPackages
         !disabled?(name) && !duration_field?(name)
       end
 
-      def placeholder(name)
-        helpers.browser.device.mobile? && !duration_field?(name) ? "yyyy-mm-dd" : nil
+      def readonly?
+        # On mobile, the fields are readonly because of iOS Safari
+        # Do not show the native datepicker on iOS safari because it
+        # behaves totally different than all other browsers and destroys the behavior of the datepicker
+        # Given a date field with no value: When Safari opens its native datepicker, the first thing it does is to
+        # set the date to Today. And not only in the datepicker but directly in the field.
+        # This behaviour has however consequences:
+        # * The "reset" button in the datepicker does not clear the input (as the other browsers do it) but it resets
+        #   it to the original value it had when you opened it. So if the value was empty, it sets it back to empty.
+        #   If the value was set before, you cannot clear it, but only set it back to that value.
+        # * Since the input changes, the whole datepicker updates without the user even knowing about it,
+        #   since the form is hidden behind the datepicker. That leads to this:
+        #     - when you enter a start date after today, and then open the datepicker for finish date,
+        #       it will reset the start date because the finish date is set automatically to today,
+        #       but the finish date can't be before the start date.
+        helpers.browser.device.mobile?
       end
     end
   end

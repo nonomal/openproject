@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,7 +29,8 @@
 #++
 
 class PlaceholderUsersController < ApplicationController
-  include EnterpriseTrialHelper
+  include OpTurbo::ComponentStream
+
   layout "admin"
   before_action :authorize_global, except: %i[show]
   no_authorization_required! :show
@@ -110,7 +113,7 @@ class PlaceholderUsersController < ApplicationController
       respond_to do |format|
         format.html do
           flash[:notice] = I18n.t(:notice_successful_update)
-          redirect_back(fallback_location: edit_placeholder_user_path(@placeholder_user))
+          redirect_back_or_to(edit_placeholder_user_path(@placeholder_user))
         end
       end
     else
@@ -125,7 +128,7 @@ class PlaceholderUsersController < ApplicationController
   end
 
   def deletion_info
-    respond_to :html
+    respond_with_dialog PlaceholderUsers::DeleteDialogComponent.new(placeholder_user: @placeholder_user)
   end
 
   def destroy
@@ -145,7 +148,7 @@ class PlaceholderUsersController < ApplicationController
   private
 
   def find_placeholder_user
-    @placeholder_user = PlaceholderUser.find(params[:id])
+    @placeholder_user = PlaceholderUser.visible.find(params[:id])
   end
 
   protected

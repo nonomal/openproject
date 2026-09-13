@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # -- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -92,6 +94,6 @@ class ProjectQueries::SetAttributesService < BaseServices::SetAttributes
   end
 
   def default_columns
-    (["favored", "name"] + Setting.enabled_projects_columns).uniq
+    (["favorited", "name"] + Setting.enabled_projects_columns).uniq
   end
 end

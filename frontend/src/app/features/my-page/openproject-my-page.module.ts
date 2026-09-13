@@ -21,42 +21,25 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
 import { NgModule } from '@angular/core';
-import { Ng2StateDeclaration, UIRouterModule } from '@uirouter/angular';
 import { OpSharedModule } from 'core-app/shared/shared.module';
 import { OpenprojectModalModule } from 'core-app/shared/components/modal/modal.module';
 import { OpenprojectGridsModule } from 'core-app/shared/components/grids/openproject-grids.module';
 import { MyPageComponent } from 'core-app/features/my-page/my-page.component';
-
-export const MY_PAGE_ROUTES:Ng2StateDeclaration[] = [
-  {
-    name: 'my_page',
-    url: '/my/page',
-    component: MyPageComponent,
-    data: {
-      bodyClasses: ['router--work-packages-my-page', 'widget-grid-layout'],
-      parent: 'work-packages',
-    },
-  },
-];
 
 @NgModule({
   imports: [
     OpSharedModule,
     OpenprojectGridsModule,
     OpenprojectModalModule,
-
-    // Routes for my_page
-    UIRouterModule.forChild({ states: MY_PAGE_ROUTES }),
   ],
   declarations: [
     MyPageComponent,
   ],
 })
-export class OpenprojectMyPageModule {
-}
+export class OpenprojectMyPageModule {}

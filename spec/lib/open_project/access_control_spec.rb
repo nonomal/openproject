@@ -243,7 +243,7 @@ RSpec.describe OpenProject::AccessControl do
 
     subject(:dependencies) do
       described_class.modules
-                     .find { _1[:name] == :dependent_module }[:dependencies]
+                     .find { it[:name] == :dependent_module }[:dependencies]
     end
 
     it "can store specified dependencies" do
@@ -481,7 +481,7 @@ RSpec.describe OpenProject::AccessControl do
                          permissible_on: :project
         end
       end
-      permission_to_disable = described_class.permissions.find { _1.name == :disabled_permission }
+      permission_to_disable = described_class.permissions.find { it.name == :disabled_permission }
       permission_to_disable.disable!
     end
 

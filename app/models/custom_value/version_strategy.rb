@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,9 +33,5 @@ class CustomValue::VersionStrategy < CustomValue::ARObjectStrategy
 
   def ar_class
     Version
-  end
-
-  def ar_object(value)
-    Version.find_by(id: value)
   end
 end

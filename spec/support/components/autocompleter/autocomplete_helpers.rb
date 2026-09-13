@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,7 +30,7 @@
 
 module Components::Autocompleter
   module AutocompleteHelpers
-    def search_autocomplete(element, query:, results_selector: nil)
+    def search_autocomplete(element, query:, results_selector: "body")
       # Open the element
       element.click
       # Insert the text to find
@@ -48,7 +50,7 @@ module Components::Autocompleter
 
     def select_autocomplete(element,
                             query:,
-                            results_selector: nil,
+                            results_selector: "body",
                             item_selector: nil,
                             select_text: nil,
                             expected_value: nil)

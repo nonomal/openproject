@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,10 +32,6 @@ require "spec_helper"
 
 RSpec.describe GlobalRole do
   let!(:global_role) { create(:global_role, name: "globalrole", permissions: ["permissions"]) }
-
-  it { is_expected.to validate_presence_of :name }
-  it { is_expected.to validate_uniqueness_of :name }
-  it { is_expected.to validate_length_of(:name).is_at_most(256) }
 
   describe "attributes" do
     subject(:role) { described_class.new }

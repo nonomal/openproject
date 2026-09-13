@@ -23,7 +23,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
 # See COPYRIGHT and LICENSE files for more details.
 #++
@@ -45,28 +45,35 @@ module CustomFields
       end
 
       # Insert a new node on the hierarchy tree at a desired position or at the end if no sort_order is passed.
+      # @param contract_class [Class<CustomFields::Hierarchy::InsertListItemContract>, Class<CustomFields::Hierarchy::InsertWeightedItemContract>]
+      #   the params validation contract class
       # @param parent [CustomField::Hierarchy::Item] the parent of the node
       # @param label [String] the node label/name that must be unique at the same tree level
       # @param short [String] an alias for the node
-      # @param sort_order [Integer] the position into which insert the item.
+      # @param weight [Decimal] a numeric value for the node
+      # @param before [Integer] the position where to prepend the item. If not set or the position does not exist,
+      #   the item is inserted at the end.
       # @return [Success(CustomField::Hierarchy::Item), Failure(Dry::Validation::Result), Failure(ActiveModel::Errors)]
-      def insert_item(parent:, label:, short: nil, sort_order: nil)
-        CustomFields::Hierarchy::InsertItemContract
+      def insert_item(contract_class:, parent:, label:, short: nil, weight: nil, before: nil)
+        contract_class
           .new
-          .call({ parent:, label:, short: }.compact)
+          .call({ parent:, label:, short:, weight: })
           .to_monad
-          .bind { |validation| create_child_item(validation:, sort_order:) }
+          .bind { |validation| create_child_item(validation:, before:) }
       end
 
       # Updates an item/node
+      # @param contract_class [Class<CustomFields::Hierarchy::UpdateListItemContract>, Class<CustomFields::Hierarchy::UpdateWeightedItemContract>]
+      #   the params validation contract class
       # @param item [CustomField::Hierarchy::Item] the item to be updated
       # @param label [String] the node label/name that must be unique at the same tree level
       # @param short [String] an alias for the node
+      # @param weight [Decimal] a numeric value for the node
       # @return [Success(CustomField::Hierarchy::Item), Failure(Dry::Validation::Result), Failure(ActiveModel::Errors)]
-      def update_item(item:, label: nil, short: nil)
-        CustomFields::Hierarchy::UpdateItemContract
+      def update_item(contract_class:, item:, label: nil, short: nil, weight: nil)
+        contract_class
           .new
-          .call({ item:, label:, short: }.compact)
+          .call({ item:, label:, short:, weight: })
           .to_monad
           .bind { |attributes| update_item_attributes(item:, attributes:) }
       end
@@ -77,7 +84,27 @@ module CustomFields
       def delete_branch(item:)
         return Failure(:item_is_root) if item.root?
 
-        item.destroy ? Success() : Failure(item.errors)
+        # We need to remember item_ids and custom_field and pass them separately
+        # to update_calculated_values_for_hierarchy, as after destroying the
+        # item, the methods will not return expected value (will return empty
+        # list and nil)
+        item_ids = item.self_and_descendant_ids
+        custom_field = item.root&.custom_field
+
+        ActiveRecord::Base.transaction do
+          unless item.destroy
+            raise ActiveRecord::Rollback
+          end
+
+          update_calculated_values_for_hierarchy(item_ids:, custom_field:)
+          remove_assigned_custom_values(custom_field_id: custom_field.id, item_ids:)
+        end
+
+        if item.destroyed?
+          Success()
+        else
+          Failure(item.errors)
+        end
       end
 
       # Gets all nodes in a tree from the item/node back to the root.
@@ -88,16 +115,22 @@ module CustomFields
         Success(item.self_and_ancestors.reverse)
       end
 
+      # Gets all nodes in a tree from the item/node back to the root without the item/node itself.
+      # Ordered from root to leaf
+      # @param item [CustomField::Hierarchy::Item] the parent of the node
+      # @return [Success(Array<CustomField::Hierarchy::Item>)]
+      def get_ancestors(item:)
+        Success(item.ancestors.reverse)
+      end
+
       # Gets all descendant nodes in a tree starting from the item/node.
       # @param item [CustomField::Hierarchy::Item] the node
       # @param include_self [Boolean] flag
       # @return [Success(Array<CustomField::Hierarchy::Item>)]
       def get_descendants(item:, include_self: true)
-        if include_self
-          Success(item.self_and_descendants)
-        else
-          Success(item.descendants)
-        end
+        result = item.self_and_descendants_preordered
+        result = result.offset(1) unless include_self
+        Success(result)
       end
 
       # Move an item/node to a new parent item/node
@@ -126,16 +159,16 @@ module CustomFields
         Success()
       end
 
+      # Soft delete the item and children
       def soft_delete_item(item:)
-        # Soft delete the item and children
-        raise NotImplementedError
+        raise SubclassResponsibilityError
       end
 
       # Returns a hash of Item => { Item => [Item] }
       # @param item [CustomField::Hierarchy::Item] the start node
       # @param depth [Integer] limits the max depth of the hash. see {ClosureTree#hash_tree}
       # @return [Success({CustomField::Hierarchy::Item => Array, Hash})]
-      def hashed_subtree(item:, depth:)
+      def hashed_subtree(item:, depth: -1)
         if depth >= 0
           Success(item.hash_tree(limit_depth: depth + 1))
         else
@@ -161,22 +194,54 @@ module CustomFields
         Success(item)
       end
 
-      def create_child_item(validation:, sort_order: nil)
-        attributes = validation.to_h
-        attributes[:sort_order] = sort_order - 1 if sort_order
+      def create_child_item(validation:, before:)
+        item = CustomField::Hierarchy::Item.new(**validation.to_h.except(:parent))
+        parent = validation[:parent]
+        relative_sibling = parent.children.find_by(sort_order: before)
 
-        item = validation[:parent].children.create(**attributes)
+        if relative_sibling.present?
+          relative_sibling.prepend_sibling(item)
+        else
+          parent.add_child(item)
+        end
+
         return Failure(item.errors) if item.new_record?
 
         update_position_cache(item.root)
         Success(item.reload)
       end
 
+      def remove_assigned_custom_values(custom_field_id:, item_ids:)
+        CustomValue
+          .where(custom_field_id:, value: item_ids)
+          .delete_all
+      rescue ActiveRecord::ActiveRecordError
+        raise ActiveRecord::Rollback
+      end
+
       def update_item_attributes(item:, attributes:)
-        if item.update(label: attributes[:label], short: attributes[:short])
+        if item.update(label: attributes[:label], short: attributes[:short], weight: attributes[:weight])
+          if item.weight_previously_changed?
+            # Only changes to item are of interest, so no need to pass descendant ids
+            update_calculated_values_for_hierarchy(item_ids: item.id, custom_field: item.root&.custom_field)
+          end
           Success(item)
         else
           Failure(item.errors)
+        end
+      end
+
+      # Recalculates Calculated Values in all projects that use the hierarchy's custom field
+      def update_calculated_values_for_hierarchy(item_ids:, custom_field:)
+        return unless custom_field&.field_format_weighted_item_list?
+
+        custom_field.class.customized_class
+                    .where(custom_values: custom_field.custom_values.where(value: item_ids))
+                    .find_each do |customized|
+          affected_cfs = customized.available_custom_fields.affected_calculated_fields([custom_field.id])
+
+          customized.calculate_custom_fields(affected_cfs)
+          customized.save if customized.changed_for_autosave?
         end
       end
 

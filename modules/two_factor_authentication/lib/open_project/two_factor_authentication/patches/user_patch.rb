@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module OpenProject::TwoFactorAuthentication::Patches
   module UserPatch
     def self.included(base)

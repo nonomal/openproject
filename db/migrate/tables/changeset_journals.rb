@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,18 +32,15 @@ require_relative "base"
 
 class Tables::ChangesetJournals < Tables::Base
   def self.table(migration)
-    create_table migration do |t|
-      t.integer :journal_id, null: false
-      t.integer :repository_id, null: false
+    create_table migration do |t| # rubocop:disable Rails/CreateTableWithTimestamps
+      t.bigint :repository_id, null: false
       t.string :revision, null: false
       t.string :committer
-      t.datetime :committed_on, null: false
+      t.datetime :committed_on, precision: nil, null: false
       t.text :comments
       t.date :commit_date
       t.string :scmid
-      t.integer :user_id
-
-      t.index [:journal_id]
+      t.bigint :user_id
     end
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -52,7 +54,7 @@ module Pages
         if allowed
           click_toolbar_button "ifc-create-button"
 
-          expect_correct_page_loaded '.button[type="submit"]'
+          expect_correct_page_loaded '.Button.Button--primary[type="submit"]'
           expect(page).to have_current_path new_bcf_project_ifc_model_path(project)
 
           visit!
@@ -91,9 +93,9 @@ module Pages
       end
 
       def delete_model(model_name)
-        click_table_icon model_name, ".icon-delete"
-
-        page.driver.browser.switch_to.alert.accept
+        accept_alert do
+          click_table_icon model_name, ".icon-delete"
+        end
 
         model_listed false, model_name
         expect(page).to have_current_path bcf_project_ifc_models_path(project), ignore_query: true
@@ -107,8 +109,8 @@ module Pages
         expect_model_active(model)
       end
 
-      def expect_model_active(model, active = true)
-        expect(page).to have_field(model.id.to_s, checked: active, wait: 30)
+      def expect_model_active(model, active: true)
+        expect(page).to have_field("input-#{model.id}", checked: active, wait: 30)
       end
 
       def show_defaults(models = [])
@@ -117,7 +119,7 @@ module Pages
         expect_correct_page_loaded '[data-test-selector="op-ifc-viewer--container"]'
 
         models.each do |model|
-          expect_model_active(model, model.is_default)
+          expect_model_active(model, active: model.is_default)
         end
       end
 
@@ -151,7 +153,6 @@ module Pages
       end
 
       def change_model_name(model_name, new_name)
-        expect(page).to have_css('input[type="file"]')
         expect(page).to have_field("bim_ifc_models_ifc_model[title]", with: model_name)
         fill_in "bim_ifc_models_ifc_model[title]", with: new_name
       end

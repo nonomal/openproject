@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,10 +32,10 @@ require_relative "base"
 
 class Tables::AttachableJournals < Tables::Base
   def self.table(migration)
-    create_table migration do |t|
-      t.integer :journal_id, null: false
-      t.integer :attachment_id, null: false
-      t.string :filename, default: "", null: false
+    create_table migration do |t| # rubocop:disable Rails/CreateTableWithTimestamps
+      t.bigint :journal_id, null: false
+      t.bigint :attachment_id, null: false
+      t.string :filename, default: nil, null: false
 
       t.index :journal_id
       t.index :attachment_id

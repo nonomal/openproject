@@ -29,8 +29,13 @@
 # ++
 
 class Users::IndexPageHeaderComponent < ApplicationComponent
+  include OpTurbo::Streamable
   include OpPrimer::ComponentHelpers
   include ApplicationHelper
+
+  options :query
+
+  delegate :user_limit, to: :"OpenProject::Enterprise"
 
   def breadcrumb_items
     [{ href: admin_index_path, text: t("label_administration") },
@@ -38,10 +43,22 @@ class Users::IndexPageHeaderComponent < ApplicationComponent
      t(:label_user_plural)]
   end
 
-  def user_limit
-    token = OpenProject::Enterprise.token
-    limit = token && Hash(token.restrictions)[:active_user_count]
+  def configure_view_modal_path
+    helpers.configure_view_modal_users_path(query_params)
+  end
 
-    limit if limit && limit > 0
+  private
+
+  def query_params
+    { filters: helpers.params[:filters],
+      sortBy: helpers.params[:sortBy],
+      columns: current_columns }.compact_blank
+  end
+
+  def current_columns
+    return if query.nil?
+
+    cols = query.selects.map { |s| s.attribute.to_s }.join(" ")
+    cols.presence
   end
 end

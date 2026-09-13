@@ -18,7 +18,7 @@ In order to translate OpenProject, we use [CrowdIn](https://crowdin.com/projects
 We highly appreciate the help of anyone who wants to translate OpenProject to additional languages.
 In order to provide translations not only for the OpenProject core but also for the plugins, we created several translation projects on CrowdIn:
 
-* [Translate OpenProject](https://crowdin.com/project/openproject)
+- [Translate OpenProject](https://crowdin.com/project/openproject)
 
 To help us translate OpenProject, please follow the links above and follow the instructions below.
 
@@ -60,8 +60,8 @@ Once a translation has been provided, a proof reader can approve the translation
 
 ## Becoming a proof reader
 
-If you are interested in becoming a proof reader, please contact one of the project managers in the OpenProject CrowdIn project or send us an email at support@openproject.org.
+If you are interested in becoming a proof reader, please contact one of the project managers in the OpenProject CrowdIn project or send us an email at [support@openproject.com](mailto:support@openproject.com).
 
-If your language is not listed in the list of CrowdIn languages, please contact our project managers or send us an email so we can add your language.
+If your language is not listed in the list of CrowdIn languages, please contact our project managers or email us so we can add your language.
 
 Find out more about our development concepts regarding translations [here](../../development/concepts/translations).

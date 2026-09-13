@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -54,8 +56,12 @@ class Setting
       value key: :disabled
     end
 
+    def self.selected?(val)
+      key(value: Setting.self_registration) == val.to_sym
+    end
+
     def self.disabled?
-      key(value: Setting.self_registration) == :disabled
+      selected?(:disabled)
     end
 
     def self.enabled?
@@ -67,7 +73,7 @@ class Setting
     end
 
     def self.by_email?
-      key(value: Setting.self_registration) == :activation_by_email
+      selected?(:activation_by_email)
     end
 
     def self.manual
@@ -75,7 +81,7 @@ class Setting
     end
 
     def self.manual?
-      key(value: Setting.self_registration) == :manual_activation
+      selected?(:manual_activation)
     end
 
     def self.automatic
@@ -83,7 +89,7 @@ class Setting
     end
 
     def self.automatic?
-      key(value: Setting.self_registration) == :automatic_activation
+      selected?(:automatic_activation)
     end
 
     def self.unsupervised_registration?

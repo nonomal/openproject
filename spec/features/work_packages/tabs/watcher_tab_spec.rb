@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 
 RSpec.describe "Watcher tab", :js, :selenium do
@@ -152,12 +154,6 @@ RSpec.describe "Watcher tab", :js, :selenium do
         end
       end
     end
-  end
-
-  context "within a split screen" do
-    let(:wp_page) { Pages::SplitWorkPackage.new(work_package) }
-
-    it_behaves_like "watchers tab"
   end
 
   context "within a primerized split screen" do

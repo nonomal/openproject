@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -51,7 +53,7 @@ RSpec.describe Group do
       work_packages = create_list(
         :work_package,
         1,
-        type: project.types.first,
+        type: project.enabled_types.first,
         author: user,
         project:,
         status:

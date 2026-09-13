@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -109,6 +111,37 @@ RSpec.describe "Homescreen", "index" do
         visit root_url
         expect(page).to have_link(I18n.t(:label_enterprise_support),
                                   href: support_link_as_community)
+      end
+    end
+  end
+
+  describe "Impressum (legal notice) link" do
+    before do
+      OpenProject::Static::Links.reset_cache
+      login_as user
+      visit root_url
+    end
+
+    after do
+      OpenProject::Static::Links.reset_cache
+    end
+
+    context "when impressum_link is set",
+            with_config: { impressum_link: "https://example.com/impressum/" } do
+      it "renders the correct link" do
+        expect(page).to have_link(I18n.t("homescreen.links.impressum"),
+                                  href: OpenProject::Static::Links.url_for(:impressum))
+      end
+    end
+
+    context "when impressum_link is not set",
+            with_config: { impressum_link: nil } do
+      it "does not render the 'Legal notice' link" do
+        # Wait for page load before checking absence of impressum link
+        expect(page).to have_link(I18n.t("homescreen.links.blog"),
+                                  href: OpenProject::Static::Links.url_for(:blog))
+
+        expect(page).to have_no_link(I18n.t("homescreen.links.impressum"))
       end
     end
   end

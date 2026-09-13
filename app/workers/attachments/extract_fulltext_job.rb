@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -51,17 +53,17 @@ module Attachments
 
     def init
       carrierwave_uploader = @attachment.file
-      @file = carrierwave_uploader.local_file
       @filename = carrierwave_uploader.file.filename
 
       if @attachment.readable?
+        @file = carrierwave_uploader.local_file
         resolver = Plaintext::Resolver.new(@file, @attachment.content_type)
         @text = resolver.text
       end
     rescue StandardError => e
-      Rails.logger.error(
-        "Failed to extract plaintext from file #{@attachment&.id} (On domain #{Setting.host_name}): #{e}: #{e.message}"
-      )
+      log_error("Failed to extract plaintext for attachment ##{@attachment&.id}", e)
+      update # Still update tsv values
+      raise
     end
 
     def update
@@ -74,9 +76,8 @@ module Attachments
                      @language,
                      OpenProject::FullTextSearch.normalize_filename(@filename)])
     rescue StandardError => e
-      Rails.logger.error(
-        "Failed to update TSV values for attachment #{@attachment&.id} (On domain #{Setting.host_name}): #{e.message[0..499]}[...]"
-      )
+      log_error("Failed to update TSV values for attachment ##{@attachment&.id}", e)
+      raise
     end
 
     def find_attachment(id)
@@ -89,6 +90,11 @@ module Attachments
 
     def delete_file?
       remote_file? && @file
+    end
+
+    def log_error(message, cause)
+      message += " (on domain #{Setting.host_name})"
+      Rails.logger.error("#{message}: #{cause.message.truncate(500, omission: '[...]')}")
     end
   end
 end

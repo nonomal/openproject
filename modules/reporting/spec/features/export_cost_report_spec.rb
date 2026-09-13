@@ -33,22 +33,22 @@ require_relative "support/pages/cost_report_page"
 
 RSpec.describe "Cost reports XLS export", :js do
   shared_let(:project) { create(:project) }
-  shared_let(:user) { create(:admin) }
+  shared_let(:user) { create(:admin, preferences: { time_zone: "UTC" }) }
   shared_let(:cost_type) { create(:cost_type, name: "Post-war", unit: "cap", unit_plural: "caps") }
   shared_let(:work_package) { create(:work_package, project:, subject: "Some task") }
   shared_let(:cost_entry) do
-    create(:cost_entry, user:, work_package:, project:,
+    create(:cost_entry, user:, entity: work_package, project:,
                         cost_type:, spent_on: 3.days.ago)
   end
   shared_let(:time_entry) do
-    create(:time_entry, user:, work_package:, project:,
+    create(:time_entry, user:, entity: work_package, project:,
                         start_time: 1 * 60,
                         spent_on: 2.days.ago,
                         hours: 1.95,
                         time_zone: "UTC")
   end
   shared_let(:time_entry_long) do
-    create(:time_entry, user:, work_package:, project:,
+    create(:time_entry, user:, entity: work_package, project:,
                         start_time: 1 * 60,
                         spent_on: 1.day.ago,
                         hours: 28.0,
@@ -72,9 +72,13 @@ RSpec.describe "Cost reports XLS export", :js do
     DownloadList.clear
   end
 
-  def expect_custom_cost_entry(cost_entry_row)
+  def excel_float_to_date(excel_float)
+    (DateTime.new(1899, 12, 30) + excel_float).to_date
+  end
+
+  def expect_custom_cost_entry(cost_entry_row, entry)
     date, user_ref, _, wp_ref, _, project_ref, costs, type, = cost_entry_row
-    expect(date).to eq(cost_entry.spent_on.iso8601)
+    expect(excel_float_to_date(date)).to eq(entry.spent_on)
     expect(user_ref).to eq(user.name)
     expect(wp_ref).to include "Some task"
     expect(project_ref).to eq project.name
@@ -84,7 +88,7 @@ RSpec.describe "Cost reports XLS export", :js do
 
   def expect_labor_cost_entry(cost_entry_row, entry)
     date, user_ref, _, wp_ref, _, project_ref, costs, type, = cost_entry_row
-    expect(date).to eq(entry.spent_on.iso8601)
+    expect(excel_float_to_date(date)).to eq(entry.spent_on)
     expect(user_ref).to eq(user.name)
     expect(wp_ref).to include "Some task"
     expect(project_ref).to eq project.name
@@ -94,7 +98,7 @@ RSpec.describe "Cost reports XLS export", :js do
 
   def expect_time_entry(time_entry_row, entry, start_time_value, end_time_value)
     date, start_time, end_time, user_ref, _, wp_ref, _, project_ref, costs, type, = time_entry_row
-    expect(date).to eq(entry.spent_on.iso8601)
+    expect(excel_float_to_date(date)).to eq(entry.spent_on)
     expect(start_time).to eq start_time_value
     expect(end_time).to eq end_time_value
     expect(user_ref).to eq(user.name)
@@ -111,7 +115,7 @@ RSpec.describe "Cost reports XLS export", :js do
   def expect_cost_entries_sheet
     title, _, cost_entry_row, time_entry_row, time_entry_long_row = subject.first.rows
     expect_sheet_title title
-    expect_custom_cost_entry cost_entry_row
+    expect_custom_cost_entry cost_entry_row, cost_entry
     expect_labor_cost_entry time_entry_row, time_entry
     expect_labor_cost_entry time_entry_long_row, time_entry_long
   end
@@ -130,9 +134,9 @@ RSpec.describe "Cost reports XLS export", :js do
   end
 
   def expect_custom_type_entries_sheet
-    title, _, cost_entry = subject.third.rows
+    title, _, cost_entry_row = subject.third.rows
     expect_sheet_title title
-    expect_custom_cost_entry cost_entry
+    expect_custom_cost_entry cost_entry_row, cost_entry
   end
 
   def export_xls

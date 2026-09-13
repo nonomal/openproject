@@ -21,14 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import {
-  ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Output,
-} from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Output, inject } from '@angular/core';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { EditFormComponent } from 'core-app/shared/components/fields/edit/edit-form/edit-form.component';
 
@@ -36,11 +34,16 @@ import { EditFormComponent } from 'core-app/shared/components/fields/edit/edit-f
   templateUrl: './wp-edit-actions-bar.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'wp-edit-actions-bar',
+  standalone: false,
 })
 export class WorkPackageEditActionsBarComponent {
-  @Output('onSave') public onSave = new EventEmitter<void>();
+  private I18n = inject(I18nService);
+  private editForm = inject(EditFormComponent);
+  private cdRef = inject(ChangeDetectorRef);
 
-  @Output('onCancel') public onCancel = new EventEmitter<void>();
+  @Output() public onSave = new EventEmitter<void>();
+
+  @Output() public onCancel = new EventEmitter<void>();
 
   public _saving = false;
 
@@ -48,11 +51,6 @@ export class WorkPackageEditActionsBarComponent {
     save: this.I18n.t('js.button_save'),
     cancel: this.I18n.t('js.button_cancel'),
   };
-
-  constructor(private I18n:I18nService,
-    private editForm:EditFormComponent,
-    private cdRef:ChangeDetectorRef) {
-  }
 
   public set saving(active:boolean) {
     this._saving = active;

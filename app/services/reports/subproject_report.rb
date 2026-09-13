@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -44,6 +46,6 @@ class Reports::SubprojectReport < Reports::Report
   end
 
   def title
-    I18n.t(:label_subproject_plural)
+    I18n.t(:label_subproject)
   end
 end

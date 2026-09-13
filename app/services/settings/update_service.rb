@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,10 +34,24 @@ class Settings::UpdateService < BaseServices::BaseContracted
           contract_class: Settings::UpdateContract)
   end
 
+  def validate_params
+    contract = Settings::UpdateParamsContract.new(model, user, params:)
+    ServiceResult.new success: contract.valid?,
+                      errors: contract.errors,
+                      result: model
+  end
+
   def persist(call)
     params.each do |name, value|
       set_setting_value(name, value)
+    rescue Setting::NotWritableError
+      i18n_name = I18n.t("setting_#{name}", default: name)
+      call.success = false
+      call.errors.add(:base, I18n.t("settings.errors.failed_to_update",
+                                    message: I18n.t("settings.errors.not_writable"),
+                                    name: i18n_name))
     end
+
     call
   end
 

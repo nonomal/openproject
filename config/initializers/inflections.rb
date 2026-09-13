@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -40,9 +42,10 @@
 
 # These inflection rules are supported but not enabled by default:
 ActiveSupport::Inflector.inflections(:en) do |inflect|
+  inflect.acronym "AI"
   inflect.acronym "API"
+  inflect.acronym "ClamAV"
+  inflect.acronym "ICal"
   inflect.acronym "OAuth"
   inflect.acronym "OpenID"
-  inflect.acronym "ICal"
-  inflect.acronym "ClamAV"
 end

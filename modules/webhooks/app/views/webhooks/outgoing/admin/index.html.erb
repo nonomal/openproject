@@ -8,6 +8,13 @@
        { href: admin_settings_api_path, text: t("menus.admin.api_and_webhooks") },
        t("webhooks.plural")]
     )
+
+    header.with_description do
+      link_translate(
+        "webhooks.outgoing.explanation_html",
+        links: { aggregation_path: admin_settings_aggregation_path }
+      )
+    end
   end
 %>
 
@@ -15,22 +22,14 @@
   render(Primer::OpenProject::SubHeader.new) do |subheader|
     subheader.with_action_button(
       scheme: :primary,
-      aria: { label: I18n.t("webhooks.outgoing.label_add_new") },
-      title: I18n.t("webhooks.outgoing.label_add_new"),
+      leading_icon: :plus,
+      label: I18n.t("webhooks.outgoing.label_add_new"),
       tag: :a,
       href: new_admin_outgoing_webhook_path
-    ) do |button|
-      button.with_leading_visual_icon(icon: :plus)
+    ) do
       t("webhooks.singular")
     end
   end
 %>
-
-<p>
-  <%= t(
-        "webhooks.outgoing.explanation.text",
-        link: link_to(t(:"webhooks.outgoing.explanation.link"), admin_settings_aggregation_path, target: "_blank")
-      ).html_safe %>
-</p>
 
 <%= render ::Webhooks::Outgoing::Webhooks::TableComponent.new(rows: @webhooks) %>

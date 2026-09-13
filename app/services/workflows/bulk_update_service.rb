@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -26,10 +28,14 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-class Workflows::BulkUpdateService < BaseServices::Update
-  def initialize(role:, type:)
+# Does not use the BaseServices::Update contract/model flow: it bulk-rewrites the workflow
+# rows for one (role, variant, tab) slice.
+class Workflows::BulkUpdateService < BaseServices::BaseCallable
+  def initialize(role:, variant:, tab:)
+    super()
     @role = role
-    @type = type
+    @variant = variant
+    @tab = tab
   end
 
   def call(status_transitions)
@@ -51,19 +57,19 @@ class Workflows::BulkUpdateService < BaseServices::Update
 
   private
 
-  attr_accessor :role, :type
+  attr_accessor :role, :variant
 
   def build_workflows(status_transitions)
     new_workflows = []
 
     (status_transitions || {}).each do |status_id, transitions|
-      transitions.each do |new_status_id, options|
-        new_workflows << Workflow.new(type:,
+      transitions.each_key do |new_status_id|
+        new_workflows << Workflow.new(type_variant: variant,
                                       role:,
                                       old_status: status_map[status_id.to_i],
                                       new_status: status_map[new_status_id.to_i],
-                                      author: options_include(options, "author"),
-                                      assignee: options_include(options, "assignee"))
+                                      author: author?,
+                                      assignee: assignee?)
       end
     end
 
@@ -71,23 +77,37 @@ class Workflows::BulkUpdateService < BaseServices::Update
   end
 
   def delete_current
-    Workflow.where(role_id: role.id, type_id: type.id).delete_all
+    if author?
+      own_workflows.where(author: true).delete_all
+    elsif assignee?
+      own_workflows.where(assignee: true).delete_all
+    else
+      own_workflows.where(assignee: false, author: false).delete_all
+    end
   end
 
   def bulk_insert(workflows)
     return unless workflows.any?
 
-    columns = %w(role_id type_id old_status_id new_status_id author assignee)
+    columns = %w(role_id type_variant_id old_status_id new_status_id author assignee)
     values = workflows.map { |w| w.attributes.slice(*columns) }
 
     Workflow.insert_all values
+  end
+
+  def own_workflows
+    Workflow.where(role_id: role.id, type_variant_id: variant.id)
   end
 
   def status_map
     @status_map ||= Status.all.group_by(&:id).transform_values(&:first)
   end
 
-  def options_include(options, string)
-    options.is_a?(Array) && options.include?(string) && !options.include?("always")
+  def author?
+    @tab == "author"
+  end
+
+  def assignee?
+    @tab == "assignee"
   end
 end

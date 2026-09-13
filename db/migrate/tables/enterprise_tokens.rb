@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -33,7 +35,7 @@ class Tables::EnterpriseTokens < Tables::Base
     create_table migration do |t|
       t.text :encoded_token
 
-      t.timestamps
+      t.timestamps precision: nil
     end
   end
 end

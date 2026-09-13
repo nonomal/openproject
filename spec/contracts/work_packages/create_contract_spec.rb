@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,122 +29,73 @@
 #++
 
 require "spec_helper"
-require "contracts/work_packages/shared_base_contract"
+require "contracts/work_packages/shared_contract_examples"
 
 RSpec.describe WorkPackages::CreateContract do
+  include_context "work package contract"
+
   let(:work_package) do
-    WorkPackage.new(project: work_package_project) do |wp|
+    WorkPackage.new(project: persisted_project,
+                    subject: "Some subject",
+                    type: persisted_type,
+                    priority: persisted_priority,
+                    status: persisted_status) do |wp|
       wp.extend(OpenProject::ChangedBySystem)
+
+      wp.change_by_system do
+        wp.author = user
+      end
     end
   end
-  let(:validated_contract) do
-    contract = subject
-    contract.validate
-    contract
-  end
-  let(:work_package_project) { project }
-  let(:project) { build_stubbed(:project) }
   let(:other_project) { build_stubbed(:project) }
-  let(:user) { build_stubbed(:user) }
+  let(:user) { persisted_user }
+  let(:permissions) { %i[add_work_packages assign_versions] }
 
   subject(:contract) { described_class.new(work_package, user) }
 
-  it_behaves_like "work package contract"
-
-  describe "authorization" do
+  describe "validations" do
     context "when user allowed in project and project specified" do
-      before do
-        mock_permissions_for(user) do |mock|
-          mock.allow_in_project :add_work_packages, project:
-        end
-
-        work_package.project = project
-      end
-
-      it "has no authorization error" do
-        expect(validated_contract.errors[:base]).to be_empty
-      end
+      it_behaves_like "contract is valid"
     end
 
     context "when user not allowed in project and project specified" do
-      before do
-        mock_permissions_for(user) do |mock|
-          mock.allow_in_project :add_work_packages, project: other_project
-        end
+      let(:permissions) { [] }
 
-        work_package.project = project
-      end
-
-      it "is not authorized" do
-        expect(validated_contract.errors.symbols_for(:base))
-          .to contain_exactly(:error_unauthorized)
-      end
+      it_behaves_like "contract is invalid", base: :error_unauthorized
     end
 
-    context "when user allowed in a project and no project specified" do
+    context "when user not allowed in any project and no project specified" do
       before do
-        mock_permissions_for(user) do |mock|
-          mock.allow_in_project :add_work_packages, project:
-        end
+        work_package.project = nil
       end
 
-      it "has no authorization error" do
-        expect(validated_contract.errors[:base]).to be_empty
-      end
+      # But no error_unauthorized
+      it_behaves_like "contract is invalid", project: :blank
     end
 
     context "when user not allowed in any projects and no project specified" do
+      let(:permissions) { [] }
+
       before do
-        mock_permissions_for(user, &:forbid_everything)
+        work_package.project = nil
       end
 
-      it "is not authorized" do
-        expect(validated_contract.errors.symbols_for(:base))
-          .to contain_exactly(:error_unauthorized)
-      end
-    end
-
-    context "when user not allowed in any projects and project specified" do
-      before do
-        mock_permissions_for(user, &:forbid_everything)
-
-        work_package.project = project
-      end
-
-      it "is not authorized" do
-        expect(validated_contract.errors.symbols_for(:base))
-          .to contain_exactly(:error_unauthorized)
-      end
-    end
-  end
-
-  describe "remaining hours" do
-    before do
-      mock_permissions_for(user) do |mock|
-        mock.allow_in_project :add_work_packages, project:
-      end
-      work_package.project = project
-    end
-
-    context "when not changed" do
-      it("is valid") { expect(validated_contract.errors[:remaining_hours]).to be_empty }
-    end
-
-    context "when changed" do
-      before do
-        work_package.remaining_hours = 10
-      end
-
-      it("is valid") { expect(validated_contract.errors[:remaining_hours]).to be_empty }
+      it_behaves_like "contract is invalid", base: :error_unauthorized
     end
   end
 
   describe "writing read-only attributes" do
+    let(:validated_contract) do
+      contract = subject
+      contract.validate
+      contract
+    end
+
     shared_examples "can write" do |attribute, value|
       it "can write #{attribute}", :aggregate_failures do
         expect(contract.writable_attributes).to include(attribute.to_s)
 
-        work_package.send(:"#{attribute}=", value)
+        work_package.send(:"#{attribute}=", resolve_written_value(value))
         expect(validated_contract.errors[attribute]).to be_empty
       end
     end
@@ -151,10 +104,17 @@ RSpec.describe WorkPackages::CreateContract do
       it "can not write #{attribute}", :aggregate_failures do
         expect(contract.writable_attributes).not_to include(attribute.to_s)
 
-        work_package.send(:"#{attribute}=", value)
+        work_package.send(:"#{attribute}=", resolve_written_value(value))
         expect(validated_contract).not_to be_valid
         expect(validated_contract.errors[attribute]).to include "was attempted to be written but is not writable."
       end
+    end
+
+    # Values may be given as a callable so they can be derived from the example's own
+    # state. Writing a literal id risks matching what the attribute already holds, in
+    # which case nothing changes and the contract has nothing to object to.
+    def resolve_written_value(value)
+      value.respond_to?(:call) ? instance_exec(&value) : value
     end
 
     context "when enabled for admin", with_settings: { apiv3_write_readonly_attributes: true } do
@@ -162,7 +122,7 @@ RSpec.describe WorkPackages::CreateContract do
 
       it_behaves_like "can write", :created_at, 1.day.ago
       it_behaves_like "can not write", :updated_at, 1.day.ago
-      it_behaves_like "can write", :author_id, 1234
+      it_behaves_like "can write", :author_id, -> { user.id + 1 }
     end
 
     context "when disabled for admin", with_settings: { apiv3_write_readonly_attributes: false } do
@@ -170,19 +130,59 @@ RSpec.describe WorkPackages::CreateContract do
 
       it_behaves_like "can not write", :created_at, 1.day.ago
       it_behaves_like "can not write", :updated_at, 1.day.ago
-      it_behaves_like "can not write", :author_id, 1234
+      it_behaves_like "can not write", :author_id, -> { user.id + 1 }
     end
 
     context "when enabled for regular user", with_settings: { apiv3_write_readonly_attributes: true } do
       it_behaves_like "can not write", :created_at, 1.day.ago
       it_behaves_like "can not write", :updated_at, 1.day.ago
-      it_behaves_like "can not write", :author_id, 1234
+      it_behaves_like "can not write", :author_id, -> { user.id + 1 }
     end
 
     context "when disabled for regular user", with_settings: { apiv3_write_readonly_attributes: false } do
       it_behaves_like "can not write", :created_at, 1.day.ago
       it_behaves_like "can not write", :updated_at, 1.day.ago
-      it_behaves_like "can not write", :author_id, 1234
+      it_behaves_like "can not write", :author_id, -> { user.id + 1 }
+    end
+  end
+
+  describe "#assignable_assignees" do
+    context "with a project set" do
+      it "returns the users assignable" do
+        expect(subject.assignable_assignees)
+          .to contain_exactly(persisted_possible_assignee)
+      end
+    end
+
+    context "without a project set" do
+      before do
+        work_package.project = nil
+      end
+
+      it "returns no users" do
+        expect(subject.assignable_assignees)
+          .to be_empty
+      end
+    end
+  end
+
+  describe "#assignable_responsibles" do
+    context "with a project set" do
+      it "returns the users assignable" do
+        expect(subject.assignable_responsibles)
+          .to contain_exactly(persisted_possible_assignee)
+      end
+    end
+
+    context "without a project set" do
+      before do
+        work_package.project = nil
+      end
+
+      it "returns no users" do
+        expect(subject.assignable_responsibles)
+          .to be_empty
+      end
     end
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,14 +30,7 @@
 
 class Queries::WorkPackages::Filter::VersionFilter <
   Queries::WorkPackages::Filter::WorkPackageFilter
-  def allowed_values
-    # as we no longer display the allowed values, the first value is irrelevant
-    @allowed_values ||= versions.pluck(:id).map { |id| [id.to_s, id.to_s] }
-  end
-
-  def type
-    :list_optional
-  end
+  include ::Queries::WorkPackages::Filter::FilterOnVersionsMixin
 
   def human_name
     WorkPackage.human_attribute_name("version")
@@ -45,24 +40,13 @@ class Queries::WorkPackages::Filter::VersionFilter <
     :version_id
   end
 
-  def ar_object_filter?
-    true
-  end
+  def self.stored_key = :target_version_id
 
-  def value_objects
-    available_versions = versions.index_by(&:id)
-
-    values
-      .filter_map { |version_id| available_versions[version_id.to_i] }
+  def available?
+    !Setting::WorkPackageMultipleVersions.active?
   end
 
   private
 
-  def versions
-    if project
-      project.shared_versions
-    else
-      Version.visible
-    end
-  end
+  def version_kind = "target"
 end

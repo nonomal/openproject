@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,19 +34,31 @@ class Queries::WorkPackages::Filter::TypeaheadFilter <
     :search
   end
 
+  def joins
+    %i[type status]
+  end
+
   def where
     parts = values.map(&:split).flatten
 
-    parts.map do |part|
-      conditions = [subject_condition(part),
-                    project_name_condition(part)]
+    parts.map { |part| "(#{conditions_for(part).join(' OR ')})" }.join(" AND ")
+  end
 
-      if (match = part.match(/^#?(\d+)$/))
-        conditions << id_condition(match[1])
-      end
+  def conditions_for(part) # rubocop:disable Metrics/AbcSize
+    conditions = [subject_condition(part),
+                  project_name_condition(part),
+                  type_name_condition(part),
+                  status_condition(part)]
 
-      "(#{conditions.join(' OR ')})"
-    end.join(" AND ")
+    if (match = part.match(/\A(#)?(#{Projects::Identifier::SEMANTIC_FORMAT.source}-?\d*)\z/i))
+      conditions << work_package_identifier_condition(hash_prefixed: match[1].present?, search_term: match[2])
+    end
+
+    if (match = part.match(/\A(#)?(\d+)\z/))
+      conditions << id_or_sequence_number_condition(hash_prefixed: match[1].present?, search_term: match[2])
+    end
+
+    conditions.compact
   end
 
   def subject_condition(string)
@@ -55,7 +69,52 @@ class Queries::WorkPackages::Filter::TypeaheadFilter <
     Queries::Operators::Contains.sql_for_field([string], Project.table_name, "name")
   end
 
+  def type_name_condition(string)
+    Queries::Operators::Contains.sql_for_field([string], Type.table_name, "name")
+  end
+
+  def status_condition(string)
+    # Check if the search string matches translated "open" or "closed" meta statuses
+    open_term = I18n.t("label_open").downcase
+    closed_term = I18n.t("label_closed").downcase
+    search_term = string.downcase
+
+    if search_term == open_term
+      # Match meta statuses that are not closed (open statuses)
+      "#{Status.table_name}.is_closed = false"
+    elsif search_term == closed_term
+      # Match meta statuses that are closed
+      "#{Status.table_name}.is_closed = true"
+    else
+      # Match statuses by name
+      Queries::Operators::Contains.sql_for_field([string], Status.table_name, "name")
+    end
+  end
+
+  def work_package_identifier_condition(hash_prefixed:, search_term:)
+    return unless Setting::WorkPackageIdentifier.semantic? || hash_prefixed
+
+    alias_condition = Queries::Operators::StartsWith.sql_for_field(
+      [search_term], WorkPackageSemanticAlias.table_name, "identifier"
+    )
+    "#{WorkPackage.table_name}.id IN " \
+      "(SELECT work_package_id FROM #{WorkPackageSemanticAlias.table_name} WHERE #{alias_condition})"
+  end
+
+  def id_or_sequence_number_condition(hash_prefixed:, search_term:)
+    if Setting::WorkPackageIdentifier.classic? || hash_prefixed
+      id_condition(search_term)
+    else
+      sequence_number_condition(search_term)
+    end
+  end
+
   def id_condition(string)
     "#{WorkPackage.table_name}.id::varchar(20) LIKE '%#{string}%'"
+  end
+
+  def sequence_number_condition(string)
+    "#{WorkPackage.table_name}.id IN " \
+      "(SELECT id FROM #{WorkPackage.table_name} WHERE sequence_number = #{string})"
   end
 end

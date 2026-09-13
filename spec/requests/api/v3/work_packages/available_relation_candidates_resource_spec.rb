@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -131,6 +133,26 @@ RSpec.describe API::V3::WorkPackages::AvailableRelationCandidatesAPI do
 
       it "returns WP 2 and all WP 2.x sorted by updated_at DESC" do
         expect(subjects).to match [wp2_1.id, wp1_2_1.id, wp2.id, wp2_2.id]
+      end
+    end
+
+    describe "relation candidates for wp1 (in hierarchy) with exact_match sorting" do
+      let(:href) do
+        "/api/v3/work_packages/#{wp1.id}/available_relation_candidates?query=%23RELCAND-5" \
+          "&sortBy=[[\"exactMatch\",\"desc\"],[\"updatedAt\",\"desc\"]]"
+      end
+
+      let!(:prefix_match) { create(:work_package, project: project2, updated_at: 1.minute.ago) }
+      let!(:exact_match) { create(:work_package, project: project2, updated_at: 2.days.ago) }
+      let!(:prefix_alias) do
+        create(:work_package_semantic_alias, work_package: prefix_match, identifier: "RELCAND-50")
+      end
+      let!(:exact_alias) do
+        create(:work_package_semantic_alias, work_package: exact_match, identifier: "RELCAND-5")
+      end
+
+      it "returns the exact identifier match first despite being older" do
+        expect(subjects.first).to eq(exact_match.id)
       end
     end
 

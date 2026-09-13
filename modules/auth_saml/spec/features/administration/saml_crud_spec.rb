@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,7 +34,6 @@ require_module_spec_helper
 RSpec.describe "SAML administration CRUD",
                :js do
   shared_let(:user) { create(:admin) }
-  let(:danger_zone) { DangerZone.new(page) }
 
   before do
     login_as(user)
@@ -47,7 +48,7 @@ RSpec.describe "SAML administration CRUD",
       fill_in "Name", with: "My provider"
       click_link_or_button "Continue"
 
-      expect(page).to have_css("h1", text: "My provider")
+      expect(page).to have_heading text: "My provider"
 
       # Skip metadata
       click_link_or_button "Continue"
@@ -108,20 +109,9 @@ RSpec.describe "SAML administration CRUD",
       expect(provider.limit_self_registration).to be true
 
       click_link_or_button "Delete"
-      # Confirm the deletion
-      # Without confirmation, the button is disabled
-      expect(danger_zone).to be_disabled
 
-      # With wrong confirmation, the button is disabled
-      danger_zone.confirm_with("foo")
-
-      expect(danger_zone).to be_disabled
-
-      # With correct confirmation, the button is enabled
-      # and the project can be deleted
-      danger_zone.confirm_with(provider.display_name)
-      expect(danger_zone).not_to be_disabled
-      danger_zone.danger_button.click
+      check "I understand that this deletion cannot be reversed."
+      click_on "Delete permanently"
 
       expect(page).to have_text "No SAML providers configured yet."
       expect { provider.reload }.to raise_error ActiveRecord::RecordNotFound

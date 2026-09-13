@@ -28,7 +28,7 @@ See COPYRIGHT and LICENSE files for more details.
 ++#%>
 <% html_title t(:label_member_plural) -%>
 
-<% content_controller "members-form", dynamic: true %>
+<% content_controller "members-form" %>
 
 <% content_for :content_header do %>
   <%= render ::Members::IndexPageHeaderComponent.new(project: @project) %>

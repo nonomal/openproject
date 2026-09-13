@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,6 +31,7 @@
 module Groups
   class CreateContract < BaseContract
     attribute :type
+    attribute :organizational_unit
 
     validate :type_is_group
 

@@ -41,14 +41,13 @@ See COPYRIGHT and LICENSE files for more details.
   render(Primer::OpenProject::SubHeader.new) do |subheader|
     subheader.with_action_button(
       scheme: :primary,
-      aria: { label: I18n.t(:button_add_budget) },
+      leading_icon: :plus,
+      label: I18n.t(:button_add_budget),
       data: { test_selector: "budget-create-button" },
-      title: I18n.t(:button_add_budget),
       tag: :a,
       href: new_projects_budget_path(@project)
-    ) do |button|
-      button.with_leading_visual_icon(icon: :plus)
-      t(:label_budget)
+    ) do
+      Budget.model_name.human
     end
   end
 %>

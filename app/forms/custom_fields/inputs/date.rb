@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,6 +34,6 @@ class CustomFields::Inputs::Date < CustomFields::Inputs::Base::Input
   end
 
   def input_attributes
-    super.merge({ type: "date" })
+    super.merge({ input_width: :xsmall, type: "date" })
   end
 end

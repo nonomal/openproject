@@ -39,11 +39,17 @@ module Pages::Meetings::Mobile
       end
     end
 
+    def expect_no_participants_form
+      within(meeting_details_container) do
+        expect(page).to have_no_link("Show all")
+      end
+    end
+
     def open_participant_form
       within(meeting_details_container) do
         click_link_or_button "Show all"
       end
-      expect(page).to have_modal("Participants")
+      expect(page).to have_modal("Manage participants")
     end
   end
 end

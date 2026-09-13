@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,6 +32,7 @@ module Users
   class UpdateContract < BaseContract
     validate :user_allowed_to_update
     validate :at_least_one_admin_is_active
+    validate :user_limit_not_exceeded
 
     ##
     # Users can only be updated when
@@ -51,10 +54,16 @@ module Users
     def at_least_one_admin_is_active
       return unless
         (model.admin_changed? && !model.admin?) ||
-        (model.admin? && model.status_changed? && model.locked?)
+        (model.admin? && model.status_changed? && (model.locked? || model.deleted?))
 
       if User.active.admin.where.not(id: model).none?
         errors.add :base, :one_must_be_active
+      end
+    end
+
+    def user_limit_not_exceeded
+      if activating_user? && OpenProject::Enterprise.user_limit_reached?
+        errors.add :base, :user_limit_reached
       end
     end
 
@@ -66,6 +75,10 @@ module Users
     # Only users with manage_user permission can edit other users
     def can_manage_user?
       user.allowed_globally?(:manage_user) && (user.admin? || !model.admin?)
+    end
+
+    def activating_user?
+      model.status_changed? && model.active?
     end
   end
 end

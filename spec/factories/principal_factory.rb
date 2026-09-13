@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,20 +33,21 @@ FactoryBot.define do
     transient do
       # example:
       #   member_with_permissions: {
-      #     project => [:view_work_packages]
+      #     project => :view_work_packages
       #     work_package => [:view_work_packages, :edit_work_packages]
       #   }
       member_with_permissions { {} }
 
       # example:
       #   member_wih_roles: {
-      #     project => [role1],
+      #     project => role1,
       #     work_package => [role2, role3]
       #   }
       member_with_roles { {} }
 
       global_roles { [] }
       global_permissions { [] }
+      identity_url { nil }
     end
 
     callback(:after_build) do |_principal, evaluator|
@@ -71,15 +74,22 @@ FactoryBot.define do
     end
 
     callback(:after_create) do |principal, evaluator|
-      evaluator.member_with_permissions.each do |object, permissions|
+      if evaluator.identity_url.present?
+        slug, external_id = evaluator.identity_url.split(":", 2)
+        raise "slug or external_id is blank" if slug.blank? || external_id.blank?
+
+        auth_provider = AuthProvider.find_by(slug:) || create(:oidc_provider, slug:)
+        principal.user_auth_provider_links.create!(auth_provider:, external_id:)
+      end
+      evaluator.member_with_permissions.each do |object, permission_or_permissions|
         if object.is_a?(Project)
-          role = create(:project_role, permissions:)
+          role = create(:project_role, permissions: Array(permission_or_permissions))
           create(:member, principal:, project: object, roles: [role])
         elsif Member.can_be_member_of?(object)
           project = object.respond_to?(:project) ? object.project : nil
           role_factory = :"#{object.model_name.element}_role"
 
-          role = create(role_factory, permissions:)
+          role = create(role_factory, permissions: Array(permission_or_permissions))
           create(:member, principal:, entity: object, project:, roles: [role])
         end
       end
@@ -101,7 +111,7 @@ FactoryBot.define do
       end
 
       if evaluator.global_roles.present?
-        create(:global_member, principal:, roles: evaluator.global_roles)
+        create(:global_member, principal:, roles: Array(evaluator.global_roles))
       end
     end
   end

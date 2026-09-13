@@ -32,6 +32,7 @@ See COPYRIGHT and LICENSE files for more details.
 <%=
   render(Primer::OpenProject::PageHeader.new) do |header|
     header.with_title { t(:label_group_plural) }
+    header.with_description { t(".description") }
     header.with_breadcrumbs(
       [{ href: admin_index_path, text: t("label_administration") },
        { href: admin_settings_users_path, text: t(:label_user_and_permission) },
@@ -44,71 +45,14 @@ See COPYRIGHT and LICENSE files for more details.
   render(Primer::OpenProject::SubHeader.new) do |subheader|
     subheader.with_action_button(
       scheme: :primary,
-      aria: { label: I18n.t(:label_group_new) },
-      title: I18n.t(:label_group_new),
+      leading_icon: :plus,
+      label: t(:label_group_new),
       tag: :a,
       href: new_group_path
-    ) do |button|
-      button.with_leading_visual_icon(icon: :plus)
-      t("activerecord.models.group")
+    ) do
+      Group.model_name.human
     end
   end
 %>
 
-<% if @groups.any? %>
-  <div class="generic-table--container">
-    <div class="generic-table--results-container">
-      <table class="generic-table" data-controller="table-highlighting">
-        <colgroup>
-          <col>
-          <col>
-          <col data-highlight="false">
-        </colgroup>
-        <thead>
-          <tr>
-            <th>
-              <div class="generic-table--sort-header-outer">
-                <div class="generic-table--sort-header">
-                  <span>
-                    <%= Group.model_name.human %>
-                  </span>
-                </div>
-              </div>
-            </th>
-            <th>
-              <div class="generic-table--sort-header-outer">
-                <div class="generic-table--sort-header">
-                  <span>
-                    <%= t(:label_user_plural) %>
-                  </span>
-                </div>
-              </div>
-            </th>
-            <th><div class="generic-table--empty-header"></div></th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @groups.each do |group| %>
-            <tr>
-              <td><%= link_to h(group), action: "edit", id: group %></td>
-              <td><%= group.users.size %></td>
-              <td class="buttons">
-                <%= link_to "", group,
-                            data: { confirm: t(:text_are_you_sure) },
-                            method: :delete,
-                            class: "icon icon-delete",
-                            title: t(:button_delete) %>
-              </td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
-
-    </div>
-  </div>
-<% else %>
-  <%= no_results_box(
-        action_url: new_group_path,
-        display_action: true
-      ) %>
-<% end %>
+<%= render(Groups::TableComponent.new(rows: @groups)) %>

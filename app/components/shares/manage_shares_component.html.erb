@@ -1,4 +1,10 @@
 <%=
+  if strategy.enterprise_feature
+    modal_content.with_row do
+      render(EnterpriseEdition::BannerComponent.new(strategy.enterprise_feature))
+    end
+  end
+
   if strategy.manageable?
     modal_content.with_row do
       render(Shares::InviteUserFormComponent.new(strategy:, errors:))
@@ -6,9 +12,8 @@
   end
 
   modal_content.with_row(data: { 'test-selector': 'op-share-dialog-active-list',
-                                  controller: 'shares--bulk-selection',
-                                  application_target: 'dynamic' }) do
-    render(border_box_container(list_id: insert_target_modifier_id)) do |border_box|
+                                  controller: 'shares--bulk-selection' }) do
+    render(border_box_container(list_arguments: { id: insert_target_modifier_id })) do |border_box|
       border_box.with_header(color: :muted, data: { 'test-selector': 'op-share-dialog-header' }) do
         grid_layout('op-share-dialog-modal-body--header', tag: :div, align_items: :center) do |header_grid|
           header_grid.with_area(:counter, tag: :div) do

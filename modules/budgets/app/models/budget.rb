@@ -47,23 +47,27 @@ class Budget < ApplicationRecord
   has_many :time_entries, through: :work_packages
 
   include ActiveModel::ForbiddenAttributesProtection
+  include Costs::NumberHelper
 
   acts_as_attachable
   acts_as_journalized
 
   acts_as_event type: "cost-objects",
-                title: Proc.new { |o| "#{I18n.t(:label_budget)} ##{o.id}: #{o.subject}" },
+                title: Proc.new { |o| "#{Budget.model_name.human} ##{o.id}: #{o.subject}" },
                 url: Proc.new { |o| { controller: "budgets", action: "show", id: o.id } }
 
-  validates_presence_of :subject, :project, :author, :fixed_date
-  validates_length_of :subject, maximum: 255
-  validates_length_of :subject, minimum: 1
+  validates :subject, :project, :author, :fixed_date, presence: true
+  validates :subject, length: { minimum: 1, maximum: 255 }
 
   class << self
-    def visible(user)
-      includes(:project)
-        .references(:projects)
-        .merge(Project.allowed_to(user, :view_budgets))
+    def visible(user = User.current)
+      if user.active_admin?
+        all
+      else
+        includes(:project)
+          .references(:projects)
+          .merge(Project.allowed_to(user, :view_budgets))
+      end
     end
 
     # TODO: Extract into copy service
@@ -79,7 +83,10 @@ class Budget < ApplicationRecord
     protected
 
     def copy_attributes(source)
-      source.attributes.slice("project_id", "subject", "description", "fixed_date").merge("author" => User.current)
+      source
+        .attributes
+        .slice("project_id", "subject", "description", "fixed_date", "base_amount")
+        .merge("author" => User.current)
     end
 
     def copy_budget_items(source, sink, items:)
@@ -98,11 +105,11 @@ class Budget < ApplicationRecord
   end
 
   def budget
-    material_budget + labor_budget
+    base_amount + material_budget + labor_budget
   end
 
   def type_label
-    I18n.t(:label_budget)
+    self.class.model_name.human
   end
 
   def edit_allowed?
@@ -126,6 +133,10 @@ class Budget < ApplicationRecord
 
   def name
     subject
+  end
+
+  def base_amount=(value)
+    super(parse_number_string_to_number(value))
   end
 
   def material_budget
@@ -162,6 +173,10 @@ class Budget < ApplicationRecord
           ELSE
             #{TimeEntry.table_name}.overridden_costs END").to_d
                      end
+  end
+
+  def available
+    budget - spent
   end
 
   def new_material_budget_item_attributes=(material_budget_item_attributes)
@@ -210,7 +225,7 @@ class Budget < ApplicationRecord
   def correct_labor_attributes!(attributes)
     return unless attributes
 
-    attributes[:hours] = Rate.parse_number_string_to_number(attributes[:hours])
+    attributes[:hours] = Rate.parse_hours_string_to_number(attributes[:hours])
     attributes[:amount] = Rate.parse_number_string(attributes[:amount])
   end
 
@@ -243,8 +258,7 @@ class Budget < ApplicationRecord
   def valid_labor_budget_attributes?(attributes)
     attributes &&
       attributes[:hours].to_f.positive? &&
-      attributes[:user_id].to_i.positive? &&
-      Principal.possible_assignee(project).where(id: attributes[:user_id].to_i).exists?
+      attributes[:user_id].to_i.positive?
   end
 
   def valid_material_budget_attributes?(attributes)

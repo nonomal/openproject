@@ -21,12 +21,13 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
 import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { Ng2StateDeclaration } from '@uirouter/angular';
 import { take } from 'rxjs/operators';
 import { HalResourceNotificationService } from 'core-app/features/hal/services/hal-resource-notification.service';
 import { WorkPackageNotificationService } from 'core-app/features/work-packages/services/notifications/work-package-notification.service';
@@ -34,6 +35,7 @@ import { QueryParamListenerService } from 'core-app/features/work-packages/compo
 import {
   PartitionedQuerySpacePageComponent,
   ToolbarButtonComponentDefinition,
+  ViewPartitionState,
 } from 'core-app/features/work-packages/routing/partitioned-query-space-page/partitioned-query-space-page.component';
 import { WorkPackageCreateButtonComponent } from 'core-app/features/work-packages/components/wp-buttons/wp-create-button/wp-create-button.component';
 import { WorkPackageFilterButtonComponent } from 'core-app/features/work-packages/components/wp-buttons/wp-filter-button/wp-filter-button.component';
@@ -45,10 +47,11 @@ import { of } from 'rxjs';
 import { WorkPackageFoldToggleButtonComponent } from 'core-app/features/work-packages/components/wp-buttons/wp-fold-toggle-button/wp-fold-toggle-button.component';
 import { OpProjectIncludeComponent } from 'core-app/shared/components/project-include/project-include.component';
 import { OpBaselineModalComponent } from 'core-app/features/work-packages/components/wp-baseline/baseline-modal/baseline-modal.component';
+import { BreadcrumbItem } from 'core-app/shared/components/breadcrumbs/op-breadcrumbs.component';
 
 @Component({
   selector: 'wp-view-page',
-  templateUrl: '../partitioned-query-space-page/partitioned-query-space-page.component.html',
+  templateUrl: '../partitioned-query-space-page/primerized-partitioned-query-space-page.component.html',
   styleUrls: [
     // Absolute paths do not work for styleURLs :-(
     '../partitioned-query-space-page/partitioned-query-space-page.component.sass',
@@ -59,6 +62,7 @@ import { OpBaselineModalComponent } from 'core-app/features/work-packages/compon
     { provide: HalResourceNotificationService, useClass: WorkPackageNotificationService },
     QueryParamListenerService,
   ],
+  standalone: false,
 })
 export class WorkPackageViewPageComponent extends PartitionedQuerySpacePageComponent implements OnInit {
   toolbarButtonComponents:ToolbarButtonComponentDefinition[] = [
@@ -66,7 +70,7 @@ export class WorkPackageViewPageComponent extends PartitionedQuerySpacePageCompo
       component: WorkPackageCreateButtonComponent,
       inputs: {
         stateName$: of(this.stateName),
-        allowed: ['work_packages.createWorkPackage'],
+        routedFromAngular: false,
       },
     },
     {
@@ -81,7 +85,7 @@ export class WorkPackageViewPageComponent extends PartitionedQuerySpacePageCompo
     },
     {
       component: WorkPackageFoldToggleButtonComponent,
-      show: () => !!(this.currentQuery && this.currentQuery.groupBy),
+      show: () => !!(this.currentQuery?.groupBy),
     },
     {
       component: WorkPackageDetailsViewButtonComponent,
@@ -108,6 +112,38 @@ export class WorkPackageViewPageComponent extends PartitionedQuerySpacePageCompo
     this.text.button_settings = this.I18n.t('js.button_settings');
   }
 
+  breadcrumbItems() {
+    const items:BreadcrumbItem[] = [];
+
+    if (this.currentProject?.identifier) {
+      items.push({
+        href: this.pathHelperService.projectPath(this.currentProject.identifier),
+        text: this.currentProject.name!,
+      });
+    }
+
+    items.push(this.breadcrumbModuleEntry());
+
+    if (this.selectedTitle) {
+      items.push(this.selectedTitle);
+    }
+
+    return items;
+  }
+
+  breadcrumbModuleEntry():{ href:string, text:string } {
+    if (this.isGantt) {
+      return {
+        href: this.pathHelperService.ganttChartsPath(this.currentProject.identifier),
+        text: this.I18n.t('js.work_packages.label_gantt_chart_plural'),
+      };
+    }
+    return {
+      href: this.pathHelperService.workPackagesPath(this.currentProject.identifier),
+      text: this.I18n.t('js.label_work_package_plural'),
+    };
+  }
+
   protected additionalLoadingTime():Promise<unknown> {
     if (this.wpTableTimeline.isVisible) {
       return this.querySpace.timelineRendered.pipe(take(1)).toPromise();
@@ -115,15 +151,25 @@ export class WorkPackageViewPageComponent extends PartitionedQuerySpacePageCompo
     return this.querySpace.tableRendered.valuesPromise() as Promise<unknown>;
   }
 
-  protected shouldUpdateHtmlTitle():boolean {
-    return this.$state.current.name === 'work-packages.partitioned.list';
+  /**
+   * Neither /work_packages nor /gantt register a uiRouter '.details'/'.new' sub-state
+   * anymore (the split view/create form render via a Rails Turbo frame instead), so
+   * the partition is derived from the URL rather than from state data.
+   */
+  protected override setPartition(_state:Ng2StateDeclaration):void {
+    const partition:ViewPartitionState = window.location.pathname.includes('/details/') ? '-split' : '-left-only';
+    this.currentPartition = partition;
   }
 
   private get stateName() {
-    if (this.$state.current.name?.includes('gantt')) {
+    if (this.isGantt) {
       return 'gantt.partitioned.list.new';
     }
 
     return 'work-packages.partitioned.list.new';
+  }
+
+  private get isGantt() {
+    return window.location.pathname.includes('/gantt');
   }
 }

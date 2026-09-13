@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -77,7 +79,7 @@ RSpec.describe WorkPackages::ActivitiesTab::Journals::ItemComponent::Reactions, 
   end
 
   def mock_detailed_grouped_emoji_reactions
-    users = build_stubbed_list(:user, 20).map { |user| { id: user.id, name: user.name } }
+    users = build_stubbed_list(:user, 20, lastname: "Bobbit").map { |user| { id: user.id, name: user.name } }
 
     {
       thumbs_up: { users: users.sample(3), count: 3 },

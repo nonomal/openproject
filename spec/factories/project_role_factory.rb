@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -52,6 +54,11 @@ FactoryBot.define do
       name { "Anonymous" }
       builtin { Role::BUILTIN_ANONYMOUS }
       initialize_with { ProjectRole.where(builtin: Role::BUILTIN_ANONYMOUS).first_or_initialize }
+    end
+
+    factory :project_creator_role do
+      name { "Project creator" }
+      permissions { ProjectRole::PERMISSIONS_FOR_PROJECT_CREATOR }
     end
 
     factory :existing_project_role do

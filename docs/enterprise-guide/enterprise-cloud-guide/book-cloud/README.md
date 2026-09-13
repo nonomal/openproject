@@ -22,7 +22,7 @@ To upgrade your trial to the full version, click the **Buy now** button in the a
 
 ![Buy now button to book Enterprise cloud edition in OpenProject](openproject_enterprise_guide_buy_now_button.png)
 
-You will then be directed to *Administration* -> *Subscription* -> *Billing*.
+You will then be directed to _Administration_ -> _Subscription_ -> _Billing_.
 
 1. **Select a support plan** – Choose between the **professional** and **basic** support plans.
 2. Choose the **amount of users** - Select the number of users from the drop-down list. Users can only be selected in increments of five, with a minimum of five users.
@@ -66,11 +66,9 @@ To select the **Pay per invoice** option, select the respective checkbox. This w
 Enter your **Billing information**. If you are a business customer from the EU, please enter a valid **VAT ID number**.
 
 > [!TIP]
->
 > Make sure to validate your billing email to receive the required information and invoice.
 
 > [!IMPORTANT]
->
 > You have to **agree to our terms of services and privacy policy**.
 
 Click the **Subscribe** button.

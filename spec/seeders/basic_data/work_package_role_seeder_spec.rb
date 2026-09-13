@@ -104,7 +104,7 @@ RSpec.describe BasicData::WorkPackageRoleSeeder do
     it "gives all assignable permissions to the role" do
       expect(Role.find_by(name: "Edit work package").permissions)
         .to match_array(Roles::CreateContract.new(WorkPackageRole.new, nil)
-                                             .assignable_permissions.map { _1.name.to_sym })
+                                             .assignable_permissions.map { it.name.to_sym })
     end
   end
 

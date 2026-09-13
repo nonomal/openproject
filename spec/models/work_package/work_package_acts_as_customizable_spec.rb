@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,11 +31,11 @@
 require "spec_helper"
 
 RSpec.describe WorkPackage, "acts_as_customizable" do
-  let(:type) { create(:type_standard) }
-  let(:project) { create(:project, types: [type]) }
-  let(:user) { create(:user) }
-  let(:status) { create(:status) }
-  let(:priority) { create(:priority) }
+  shared_let(:type) { create(:type_task) }
+  shared_let(:project) { create(:project, types: [type]) }
+  shared_let(:user) { create(:user) }
+  shared_let(:status) { create(:status) }
+  shared_let(:priority) { create(:priority) }
 
   let(:work_package) { create(:work_package, project:, type:) }
   let(:new_work_package) do
@@ -47,9 +49,10 @@ RSpec.describe WorkPackage, "acts_as_customizable" do
 
   def setup_custom_field(cf)
     project.work_package_custom_fields << cf
-    type.custom_fields << cf
+    type.default_variant.custom_fields << cf
     # Void the custom field caching
     RequestStore.clear!
+    cf
   end
 
   describe "#custom_field_values=" do
@@ -170,7 +173,8 @@ RSpec.describe WorkPackage, "acts_as_customizable" do
 
       # now give the work_package another required custom field, but don't assign a value
       setup_custom_field(cf2)
-      work_package.custom_field_values # #custom_field_values needs to be touched
+      # custom_field_values needs to be touched
+      work_package.custom_values_to_validate = work_package.custom_field_values
 
       # that should not be valid
       expect(work_package).not_to be_valid(:saving_custom_fields)
@@ -181,33 +185,12 @@ RSpec.describe WorkPackage, "acts_as_customizable" do
     end
   end
 
-  it_behaves_like "acts_as_customizable included" do
+  it_behaves_like "acts_as_customizable included", admin_only_allowed: false, comments: false do
     let(:model_instance) { work_package }
+    let(:new_model_instance) { new_work_package }
     let(:custom_field) { create(:string_wp_custom_field) }
     before do
       setup_custom_field(custom_field)
-    end
-
-    context "with a default value" do
-      before do
-        custom_field.update! default_value: "foobar"
-        model_instance.custom_values.destroy_all
-      end
-
-      it "returns no changes" do
-        expect(model_instance.custom_field_changes).to be_empty
-      end
-    end
-
-    context "with a bool custom_field having a default value" do
-      before do
-        custom_field.update! field_format: "bool", default_value: "0"
-        model_instance.custom_values.destroy_all
-      end
-
-      it "returns no changes" do
-        expect(model_instance.custom_field_changes).to be_empty
-      end
     end
   end
 
@@ -232,7 +215,7 @@ RSpec.describe WorkPackage, "acts_as_customizable" do
       create(:work_package_custom_field,
              name: "Custom field of type and project").tap do |cf|
         project.work_package_custom_fields << cf
-        type.custom_fields << cf
+        type.default_variant.custom_fields << cf
       end
     end
     let!(:custom_field_of_project_not_type) do
@@ -244,14 +227,14 @@ RSpec.describe WorkPackage, "acts_as_customizable" do
     let!(:custom_field_of_type_not_project) do
       create(:work_package_custom_field,
              name: "Custom field of type not project").tap do |cf|
-        type.custom_fields << cf
+        type.default_variant.custom_fields << cf
       end
     end
     let!(:custom_field_for_all_and_type) do
       create(:work_package_custom_field,
              name: "Custom field for all and type",
              is_for_all: true).tap do |cf|
-        type.custom_fields << cf
+        type.default_variant.custom_fields << cf
       end
     end
     let!(:custom_field_for_all_not_type) do
@@ -265,9 +248,9 @@ RSpec.describe WorkPackage, "acts_as_customizable" do
              name: "Custom field for all and many types and projects",
              is_for_all: true).tap do |cf|
         project.work_package_custom_fields << cf
-        type.custom_fields << cf
+        type.default_variant.custom_fields << cf
         project2.work_package_custom_fields << cf
-        type2.custom_fields << cf
+        type2.default_variant.custom_fields << cf
       end
     end
 
@@ -308,6 +291,94 @@ RSpec.describe WorkPackage, "acts_as_customizable" do
                               custom_field_for_all_and_type,
                               custom_field_of_projects_and_types_for_all)
       end
+    end
+  end
+
+  describe "#available_custom_fields with a linked form configuration" do
+    let(:source_type) { create(:type) }
+    let(:linked_type) { create(:type) }
+    let(:project) { create(:project, types: [linked_type]) }
+    let(:work_package) { build(:work_package, project:, type: linked_type) }
+
+    let!(:source_cf) do
+      create(:work_package_custom_field, name: "Source CF").tap do |cf|
+        project.work_package_custom_fields << cf
+        source_type.default_variant.custom_fields << cf
+      end
+    end
+    let!(:linked_own_cf) do
+      create(:work_package_custom_field, name: "Linked own CF").tap do |cf|
+        project.work_package_custom_fields << cf
+        linked_type.default_variant.custom_fields << cf
+      end
+    end
+
+    before do
+      link_configuration(linked_type, source: source_type, aspect: TypeVariant::FORM_CONFIGURATION)
+    end
+
+    it "surfaces the source type's custom fields for the linked type's work package" do
+      expect(described_class.available_custom_fields(work_package)).to include(source_cf)
+    end
+
+    it "does not surface the linked type's own leftover custom fields" do
+      expect(described_class.available_custom_fields(work_package)).not_to include(linked_own_cf)
+    end
+
+    it "matches on the physical type id when preloading a batch" do
+      described_class.preload_available_custom_fields([work_package])
+
+      expect(described_class.available_custom_fields(work_package)).to include(source_cf)
+    end
+  end
+
+  describe "#available_custom_fields when the project resolves a variant" do
+    let(:root_type) { create(:type) }
+    let(:variant) do
+      create(:type_variant, type: root_type).tap do |v|
+        unlink_configuration(v, aspect: TypeVariant::FORM_CONFIGURATION)
+      end
+    end
+    let(:variant_project) { create(:project, types: [variant]) }
+    let(:work_package) { build(:work_package, project: variant_project, type: root_type) }
+
+    # Activated from the custom field side: Type#custom_fields resolves through the form
+    # configuration link, so appending to it could write to the wrong member.
+    let!(:root_cf) do
+      create(:work_package_custom_field, name: "Root CF",
+                                         projects: [variant_project], types: [root_type])
+    end
+    let!(:variant_cf) do
+      create(:work_package_custom_field, name: "Variant CF",
+                                         projects: [variant_project], types: [variant])
+    end
+
+    it "surfaces the variant's fields" do
+      expect(described_class.available_custom_fields(work_package)).to include(variant_cf)
+    end
+
+    it "does not surface the root's fields" do
+      expect(described_class.available_custom_fields(work_package)).not_to include(root_cf)
+    end
+
+    it "resolves the variant when preloading a batch too" do
+      described_class.preload_available_custom_fields([work_package])
+
+      expect(described_class.available_custom_fields(work_package)).to include(variant_cf)
+      expect(described_class.available_custom_fields(work_package)).not_to include(root_cf)
+    end
+
+    it "keeps work packages in projects using the root on the root's fields" do
+      root_project = create(:project, types: [root_type])
+      root_work_package = build(:work_package, project: root_project, type: root_type)
+      create(:work_package_custom_field, name: "Root project CF",
+                                         projects: [root_project], types: [root_type])
+
+      described_class.preload_available_custom_fields([work_package, root_work_package])
+
+      expect(described_class.available_custom_fields(work_package)).to include(variant_cf)
+      expect(described_class.available_custom_fields(root_work_package).map(&:name))
+        .to include("Root project CF")
     end
   end
 end

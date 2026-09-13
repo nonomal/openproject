@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -50,24 +52,12 @@ module Projects
       ]
     end
 
-    def selected?(query_params) # rubocop:disable Metrics/AbcSize
-      case controller_path
-      when "projects"
-        case params[:query_id]
-        when nil
-          query_params[:query_id].to_s == ProjectQueries::Static::DEFAULT
-        when /\A\d+\z/
-          query_params[:query_id].to_s == params[:query_id]
-        else
-          query_params[:query_id].to_s == params[:query_id] unless modification_params?
-        end
-      when "projects/queries"
-        query_params[:query_id].to_s == params[:id]
-      end
+    def selected?(query_params)
+      query_params[:query_id].to_s == selected_query_id
     end
 
-    def favored?(query_params)
-      query_params[:query_id].in?(favored_ids)
+    def favorited?(query_params)
+      query_params[:query_id].in?(favorited_ids)
     end
 
     def query_path(query_params)
@@ -76,11 +66,24 @@ module Projects
 
     private
 
+    def selected_query_id
+      case controller_path
+      when "projects"
+        if /\A\d+\z/.match?(params[:query_id])
+          params[:query_id]
+        elsif !modification_params?
+          params[:query_id] || ProjectQueries::Static::DEFAULT
+        end
+      when "projects/queries"
+        params[:id]
+      end
+    end
+
     def main_static_filters
       static_filters [
         ProjectQueries::Static::ACTIVE,
-        ProjectQueries::Static::MY,
-        ProjectQueries::Static::FAVORED,
+        current_user.logged? ? ProjectQueries::Static::MY : nil,
+        current_user.logged? ? ProjectQueries::Static::FAVORITED : nil,
         current_user.admin? ? ProjectQueries::Static::ARCHIVED : nil
       ].compact
     end
@@ -101,25 +104,25 @@ module Projects
 
     def my_filters
       persisted_filters
-        .select { |query| !query.public? && query.user == current_user }
+        .select { |query| !query.public? && query.user_id == current_user.id }
         .map { |query| menu_item(title: query.name, query_params: { query_id: query.id }) }
     end
 
     def shared_filters
       persisted_filters
-        .select { |query| query.public? || query.user != current_user }
+        .select { |query| query.public? || query.user_id != current_user.id }
         .map { |query| menu_item(title: query.name, query_params: { query_id: query.id }) }
     end
 
     def persisted_filters
       @persisted_filters ||= ::ProjectQuery
         .visible(current_user)
-        .with_favored_by_user(current_user)
-        .order(favored: :desc, name: :asc)
+        .with_favorited_by_user(current_user)
+        .order(favorited: :desc, name: :asc)
     end
 
-    def favored_ids
-      @favored_ids ||= persisted_filters.select(&:favored).to_set(&:id)
+    def favorited_ids
+      @favorited_ids ||= persisted_filters.select(&:favorited).to_set(&:id)
     end
 
     def modification_params?

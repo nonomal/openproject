@@ -21,13 +21,13 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
 import { setupServerResponse } from 'core-app/core/setup/globals/global-listeners/setup-server-response';
-import { openExternalLinksInNewTab, performAnchorHijacking } from './global-listeners/link-hijacking';
+import { performAnchorHijacking } from './global-listeners/link-hijacking';
 
 /**
  * A set of listeners that are relevant on every page to set sensible defaults
@@ -35,7 +35,7 @@ import { openExternalLinksInNewTab, performAnchorHijacking } from './global-list
 export function initializeGlobalListeners():void {
   document
     .documentElement
-    .addEventListener('click', (evt:MouseEvent) => {
+    .addEventListener('click', (evt) => {
       const target = evt.target as HTMLElement;
 
       // Avoid defaulting clicks on elements already removed from DOM
@@ -56,22 +56,11 @@ export function initializeGlobalListeners():void {
         return;
       }
 
-      const callbacks = [
-        openExternalLinksInNewTab,
-        performAnchorHijacking,
-      ];
-
-      // eslint-disable-next-line no-restricted-syntax
-      for (const fn of callbacks) {
-        if (fn.call(linkElement, evt, linkElement)) {
-          evt.preventDefault();
-          break;
-        }
-      }
-
       // Prevent angular handling clicks on href="#..." links from other libraries
-      // (especially jquery-ui and its datepicker) from routing to <base url>/#
-      performAnchorHijacking(evt, linkElement);
+      // from routing to <base url>/#
+      if (performAnchorHijacking(evt, linkElement)) {
+        evt.preventDefault();
+      }
     });
 
   // Listen for 'zenModeToggled' event to toggle Zen Mode styling on the body.
@@ -81,43 +70,10 @@ export function initializeGlobalListeners():void {
     document.body.classList.toggle('zen-mode', event.detail.active);
   });
 
-  // Jump to the element given by location.hash, if present
-  const { hash } = window.location;
-  if (hash && hash.startsWith('#')) {
-    try {
-      const el = document.querySelector(hash);
-      el && el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } catch (e) {
-      // This is very likely an invalid selector such as a Google Analytics tag.
-      // We can safely ignore this and just not scroll in this case.
-      // Still log the error so one can confirm the reason there is no scrolling.
-      console.log(`Could not scroll to given location hash: ${hash} ( ${e.message})`);
-    }
-  }
-
-  // Global submitting hook,
-  // necessary to avoid a data loss warning on beforeunload
-  jQuery(document).on('submit', 'form', () => {
-    window.OpenProject.pageIsSubmitted = true;
-  });
-
-  // Global beforeunload hook
-  jQuery(window).on('beforeunload', (e:JQuery.TriggeredEvent) => {
-    const event = e.originalEvent as BeforeUnloadEvent;
-    if (window.OpenProject.pageWasEdited && !window.OpenProject.pageIsSubmitted) {
-      // Cancel the event
-      event.preventDefault();
-      // Chrome requires returnValue to be set
-      event.returnValue = I18n.t('js.work_packages.confirm_edit_cancel');
-    }
-  });
-
   // Disable global drag & drop handling, which results in the browser loading the image and losing the page
-  jQuery(document.documentElement)
-    .on('dragover drop', (evt:Event) => {
-      evt.preventDefault();
-      return false;
-    });
+  const disableDragDefaults = (evt:Event) => { evt.preventDefault(); };
+  document.documentElement.addEventListener('dragover', disableDragDefaults);
+  document.documentElement.addEventListener('drop', disableDragDefaults);
 
   // Bootstrap legacy app code
   setupServerResponse();

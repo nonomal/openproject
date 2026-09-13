@@ -47,12 +47,12 @@ de:
           name: Konflikt
       global_queries:
         item_0:
-          name: 'Eingebettete Tabelle: Untergeordnete Arbeitspakete'
+          name: 'Eingebettete Tabelle: Unteraufgaben'
       type_configuration:
         item_0:
           form_configuration:
             item_0:
-              group_name: Untergeordnete Arbeitspakete
+              group_name: Unteraufgaben
       groups:
         item_0:
           name: Architekten
@@ -605,13 +605,27 @@ de:
                   description: Dieser Typ ist hierarchisch ein Elternteil der Typen &quot;Konflikt&quot; und &quot;Anfrage&quot;, stellt also eine allgemeine Notiz dar.
             item_6:
               subject: Modellierung & Koordinierung, zweiter Durchlauf
-              description: "## Ziel\n\n* ...\n\n## Beschreibung\n\n*  ..."
+              description: |-
+                ## Ziel
+
+                * ...
+
+                ## Beschreibung
+
+                *  ...
             item_7:
               subject: Modellierung & Koordinierung, zweiter Durchlauf
               description: Dieser Typ ist hierarchisch ein Elternteil der Typen &quot;Konflikt&quot; und &quot;Anfrage&quot;, stellt also eine allgemeine Notiz dar.
             item_8:
               subject: Modellierung & Koordinierung, (n - 1ter) Durchlauf
-              description: "## Ziel\n\n* ...\n\n## Beschreibung\n\n*  ..."
+              description: |-
+                ## Ziel
+
+                * ...
+
+                ## Beschreibung
+
+                *  ...
             item_9:
               subject: Modellierung & Koordinierung, (n - 1ter) Durchlauf
               description: Dieser Typ ist hierarchisch ein Elternteil der Typen &quot;Konflikt&quot; und &quot;Anfrage&quot;, stellt also eine allgemeine Notiz dar.

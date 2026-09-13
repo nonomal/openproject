@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -232,6 +234,35 @@ RSpec.describe Groups::AddUsersService, "integration" do
           expect(user2.memberships.flat_map(&:roles)).to match_array global_roles
         end
       end
+    end
+  end
+
+  context "when the group is a department and a user is already in another department" do
+    let(:current_user) { admin }
+    let(:user_to_add) { create(:user) }
+    let!(:other_department) { create(:department, members: [user_to_add]) }
+    let!(:group) { create(:department) }
+    let(:user_ids) { [user_to_add.id] }
+
+    it "fails with an error" do
+      expect(service_call).to be_failure
+    end
+
+    it "does not add the user to the department" do
+      service_call
+      expect(group.reload.users).not_to include(user_to_add)
+    end
+  end
+
+  context "when the group is a department and the user is not in any department" do
+    let(:current_user) { admin }
+    let(:user_to_add) { create(:user) }
+    let!(:group) { create(:department) }
+    let(:user_ids) { [user_to_add.id] }
+
+    it "succeeds" do
+      expect(service_call).to be_success
+      expect(group.reload.users).to include(user_to_add)
     end
   end
 

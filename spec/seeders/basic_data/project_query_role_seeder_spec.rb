@@ -87,7 +87,7 @@ RSpec.describe BasicData::ProjectQueryRoleSeeder do
 
     it "gives all assignable permissions to the role" do
       role = ProjectQueryRole.find_by(name: "All Project Query Permissions")
-      expected_roles = Roles::CreateContract.new(ProjectQueryRole.new, nil).assignable_permissions.map { _1.name.to_sym }
+      expected_roles = Roles::CreateContract.new(ProjectQueryRole.new, nil).assignable_permissions.map { it.name.to_sym }
       expect(role.permissions).to match_array(expected_roles)
     end
   end

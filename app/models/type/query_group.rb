@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,7 +29,7 @@
 #++
 
 class Type::QueryGroup < Type::FormGroup
-  MEMBER_PREFIX = "query_".freeze
+  MEMBER_PREFIX = "query_"
 
   def self.query_attribute?(name)
     name.to_s.match?(/#{Type::QueryGroup::MEMBER_PREFIX}(\d+)/o)

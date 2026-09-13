@@ -21,20 +21,13 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import {
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-  ElementRef,
-  Injector,
-  Input,
-  OnInit,
-} from '@angular/core';
+import { isEqual } from 'lodash-es';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Injector, Input, OnInit, inject } from '@angular/core';
 import { StateService } from '@uirouter/core';
 import { BehaviorSubject, combineLatest } from 'rxjs';
 import { distinctUntilChanged, first, map } from 'rxjs/operators';
@@ -64,6 +57,7 @@ import { ProjectStoragesResourceService } from 'core-app/core/state/project-stor
 import { IProjectStorage } from 'core-app/core/state/project-storages/project-storage.model';
 import idFromLink from 'core-app/features/hal/helpers/id-from-link';
 import isNewResource from 'core-app/features/hal/helpers/is-new-resource';
+import { isSemanticWorkPackageId } from 'core-app/shared/helpers/work-package-id-pattern';
 
 export interface FieldDescriptor {
   name:string;
@@ -96,8 +90,26 @@ export const overflowingContainerAttribute = 'overflowingIdentifier';
   templateUrl: './wp-single-view.component.html',
   selector: 'wp-single-view',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
 export class WorkPackageSingleViewComponent extends UntilDestroyedMixin implements OnInit {
+  protected readonly injector = inject(Injector);
+  private readonly states = inject(States);
+  private readonly I18n = inject(I18nService);
+  private readonly hook = inject(HookService);
+  private readonly $state = inject(StateService);
+  private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly cdRef = inject(ChangeDetectorRef);
+  private readonly PathHelper = inject(PathHelperService);
+  private readonly schemaCache = inject(SchemaCacheService);
+  private readonly currentProject = inject(CurrentProjectService);
+  private readonly halEditing = inject(HalResourceEditingService);
+  private readonly halResourceService = inject(HalResourceService);
+  private readonly currentUserService = inject(CurrentUserService);
+  private readonly displayFieldService = inject(DisplayFieldService);
+  private readonly projectsResourceService = inject(ProjectsResourceService);
+  private readonly projectStoragesService = inject(ProjectStoragesResourceService);
+
   @Input() public workPackage:WorkPackageResource;
 
   /** Should we show the project field */
@@ -116,6 +128,7 @@ export class WorkPackageSingleViewComponent extends UntilDestroyedMixin implemen
   };
 
   public text = {
+    linkProject: (name:string) => this.I18n.t('js.project.click_to_switch_to_project', { projectname: name }),
     attachments: {
       label: this.I18n.t('js.label_attachments'),
     },
@@ -139,33 +152,12 @@ export class WorkPackageSingleViewComponent extends UntilDestroyedMixin implemen
 
   public uiSelfRef:string;
 
-  $element:JQuery;
+  element:HTMLElement;
 
   projectStorages = new BehaviorSubject<IProjectStorage[]>([]);
 
-  constructor(
-    protected readonly injector:Injector,
-    private readonly states:States,
-    private readonly I18n:I18nService,
-    private readonly hook:HookService,
-    private readonly $state:StateService,
-    private readonly elementRef:ElementRef,
-    private readonly cdRef:ChangeDetectorRef,
-    private readonly PathHelper:PathHelperService,
-    private readonly schemaCache:SchemaCacheService,
-    private readonly currentProject:CurrentProjectService,
-    private readonly halEditing:HalResourceEditingService,
-    private readonly halResourceService:HalResourceService,
-    private readonly currentUserService:CurrentUserService,
-    private readonly displayFieldService:DisplayFieldService,
-    private readonly projectsResourceService:ProjectsResourceService,
-    private readonly projectStoragesService:ProjectStoragesResourceService,
-  ) {
-    super();
-  }
-
   public ngOnInit():void {
-    this.$element = jQuery(this.elementRef.nativeElement as HTMLElement);
+    this.element = this.elementRef.nativeElement;
 
     this.isNewResource = isNewResource(this.workPackage);
 
@@ -182,7 +174,7 @@ export class WorkPackageSingleViewComponent extends UntilDestroyedMixin implemen
       .pipe(
         this.untilDestroyed(),
         map((resource) => this.contextFrom(resource)),
-        distinctUntilChanged<ResourceContextChange>((a, b) => _.isEqual(a, b)),
+        distinctUntilChanged<ResourceContextChange>((a, b) => isEqual(a, b)),
         map(() => this.halEditing.changeFor(this.workPackage)),
       )
       .subscribe((changeset:WorkPackageChangeset) => this.refresh(changeset));
@@ -203,7 +195,7 @@ export class WorkPackageSingleViewComponent extends UntilDestroyedMixin implemen
 
       this.projectContext = {
         id: project.id,
-        href: this.PathHelper.projectWorkPackagePath(project.id, workPackageId),
+        href: this.PathHelper.projectWorkPackagePath(project.id, this.workPackage.displayId),
         matches: project.href === this.currentProject.apiv3Path,
       };
     }
@@ -264,16 +256,6 @@ export class WorkPackageSingleViewComponent extends UntilDestroyedMixin implemen
   }
 
   /**
-   * angular 2 doesn't support track by property any more but requires a custom function
-   * https://github.com/angular/angular/issues/12969
-   * @param _index
-   * @param elem
-   */
-  public trackByName(_index:number, elem:{ name:string }):string {
-    return elem.name;
-  }
-
-  /**
    * Allow other modules to register groups to insert into the single view
    */
   public prependedAttributeGroupComponents() {
@@ -302,23 +284,24 @@ export class WorkPackageSingleViewComponent extends UntilDestroyedMixin implemen
    * Returns the work package label
    */
   public get idLabel():string {
-    return `#${this.workPackage.id || ''}`;
+    return this.workPackage.formattedId;
+  }
+
+  public get selectEntireId():boolean {
+    return isSemanticWorkPackageId(this.idLabel);
   }
 
   public showSwitchToProjectBanner():boolean {
     return !this.isNewResource && this.projectContext && !this.projectContext.matches;
   }
 
-  public get switchToProjectText():string {
+  public get switchToProjectPath():string {
     const id = idFromLink(this.workPackage.project.href);
-    const projectPath = this.PathHelper.projectPath(id);
-    const projectName = this.workPackage.project.name as string;
-    const project = `<a href="${projectPath}" class="project-context--switch-link">${projectName}<a>`;
-    return this.I18n.t('js.project.click_to_switch_to_project', { projectname: project });
+    return this.PathHelper.projectPath(id);
   }
 
   showTwoColumnLayout():boolean {
-    return this.$element[0].getBoundingClientRect().width > 750;
+    return this.element.getBoundingClientRect().width > 750;
   }
 
   private rebuildGroupedFields(change:WorkPackageChangeset, attributeGroups:any) {
@@ -415,7 +398,7 @@ export class WorkPackageSingleViewComponent extends UntilDestroyedMixin implemen
     const schema = this.schema(workPackage);
 
     let schemaHref:string|null;
-    const projectHref:string|null = workPackage.project && workPackage.project.href;
+    const projectHref:string|null = workPackage.project?.href;
 
     if (schema.baseSchema) {
       schemaHref = schema.baseSchema.href;
@@ -440,9 +423,9 @@ export class WorkPackageSingleViewComponent extends UntilDestroyedMixin implemen
   }
 
   private getAttributesGroupId(group:any):string {
-    const overflowingIdentifier = this.$element
-      .find(`[data-group-name=\'${group.name}\']`)
-      .data(overflowingContainerAttribute);
+    const overflowingIdentifier = this.element
+      .querySelector<HTMLElement>(`[data-group-name=\'${group.name}\']`)
+      ?.dataset[overflowingContainerAttribute];
 
     if (overflowingIdentifier) {
       return overflowingIdentifier.replace('.__overflowing_', '');

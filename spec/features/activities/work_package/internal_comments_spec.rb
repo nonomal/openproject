@@ -32,7 +32,7 @@ require "spec_helper"
 
 RSpec.describe "Work package internal comments",
                :js,
-               with_flag: { internal_comments: true } do
+               with_ee: [:internal_comments] do
   include InternalCommentsHelpers
 
   shared_let(:project) { create(:project, enabled_internal_comments: true) }
@@ -52,6 +52,14 @@ RSpec.describe "Work package internal comments",
 
   context "with an admin user" do
     current_user { admin }
+
+    shared_examples "internal comments are disabled" do
+      it "does not allow adding an internal comment" do
+        activity_tab.expect_input_field
+
+        activity_tab.type_comment("This comment cannot be internal")
+      end
+    end
 
     context "when the feature is enabled for the project" do
       before do
@@ -77,13 +85,19 @@ RSpec.describe "Work package internal comments",
         wp_page.wait_for_activity_tab
       end
 
-      it "does not allow adding an internal comment" do
-        activity_tab.expect_input_field
+      it_behaves_like "internal comments are disabled"
+    end
 
-        activity_tab.type_comment("This comment cannot be internal")
+    context "when the enterprise plan does not allow internal comments", with_ee: [] do
+      before do
+        project.enabled_internal_comments = true
+        project.save!
 
-        expect(page).not_to have_test_selector("op-work-package-journal-internal-comment-checkbox")
+        wp_page.visit!
+        wp_page.wait_for_activity_tab
       end
+
+      it_behaves_like "internal comments are disabled"
     end
   end
 
@@ -194,6 +208,21 @@ RSpec.describe "Work package internal comments",
     end
   end
 
+  describe "inline banner", with_ee: [] do
+    current_user { project_admin }
+
+    before do
+      wp_page.visit!
+      wp_page.wait_for_activity_tab
+    end
+
+    it "shows the banner" do
+      activity_tab.open_new_comment_editor
+
+      expect(page).to have_test_selector("op-enterprise-banner", text: "Write internal comments only a small group can see")
+    end
+  end
+
   describe "mentioning users in comments" do
     current_user { project_admin }
 
@@ -285,6 +314,66 @@ RSpec.describe "Work package internal comments",
           expect(page).to have_text("Something went wrong!!!")
         end
       end
+    end
+  end
+
+  describe "internal comment checkbox state persistence" do
+    current_user { project_admin }
+
+    let(:second_work_package) { create(:work_package, project:, author: admin) }
+    let(:second_wp_page) { Pages::FullWorkPackage.new(second_work_package, project) }
+
+    before do
+      wp_page.visit!
+      wp_page.wait_for_activity_tab
+    end
+
+    it "persists checkbox state when switching between work package tabs" do
+      activity_tab.open_new_comment_editor
+      activity_tab.check_internal_comment_checkbox
+      activity_tab.expect_internal_comment_checked
+
+      wp_page.switch_to_tab tab: "relations"
+      wp_page.switch_to_tab tab: "activity"
+      wp_page.wait_for_activity_tab
+
+      activity_tab.open_new_comment_editor
+      activity_tab.expect_internal_comment_checked
+    end
+
+    it "isolates checkbox state between different work packages" do
+      activity_tab.open_new_comment_editor
+      activity_tab.check_internal_comment_checkbox
+      activity_tab.expect_internal_comment_checked
+
+      second_wp_page.visit!
+      second_wp_page.wait_for_activity_tab
+
+      second_wp_activity_tab = Components::WorkPackages::Activities.new(second_work_package)
+      second_wp_activity_tab.open_new_comment_editor
+      second_wp_activity_tab.expect_internal_comment_unchecked
+
+      wp_page.visit!
+      wp_page.wait_for_activity_tab
+
+      activity_tab.open_new_comment_editor
+      activity_tab.expect_internal_comment_checked
+    end
+
+    it "handles localStorage errors gracefully" do
+      page.execute_script(<<~JS)
+        localStorage.setItem = function() {
+          throw new Error('Storage quota exceeded');
+        };
+      JS
+
+      activity_tab.open_new_comment_editor
+      activity_tab.check_internal_comment_checkbox
+      activity_tab.expect_internal_comment_checked
+
+      page.execute_script(<<~JS)
+        localStorage.setItem = Storage.prototype.setItem;
+      JS
     end
   end
 

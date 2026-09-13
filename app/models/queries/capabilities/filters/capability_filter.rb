@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -34,6 +36,6 @@ class Queries::Capabilities::Filters::CapabilityFilter < Queries::Filters::Base
   end
 
   def where
-    operator_strategy.sql_for_field(values, "capabilities", self.class.key)
+    operator_strategy.sql_for_field(values, "capabilities", key)
   end
 end

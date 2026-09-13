@@ -51,7 +51,9 @@ See COPYRIGHT and LICENSE files for more details.
 
             if new_record?
               flex.with_row(mb: 3) do
-                render(Storages::Admin::Storages::AddProjectsAutocompleterForm.new(form, project_storage:))
+                render(Storages::Admin::Storages::AddProjectsAutocompleterForm.new(form,
+                                                                                   dialog_id:,
+                                                                                   project_storage:))
               end
 
               flex.with_row(mb: 3) do
@@ -69,7 +71,6 @@ See COPYRIGHT and LICENSE files for more details.
 
             flex.with_row(
               data: {
-                "application-target": "dynamic",
                 controller: "storages--project-folder-mode-form",
                 "storages--project-folder-mode-form-folder-mode-value": @project_storage.project_folder_mode,
                 "storages--project-folder-mode-form-placeholder-folder-name-value": t(:"storages.label_no_selected_folder"),

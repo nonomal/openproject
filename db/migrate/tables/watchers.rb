@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,10 +32,10 @@ require_relative "base"
 
 class Tables::Watchers < Tables::Base
   def self.table(migration)
-    create_table migration do |t|
+    create_table migration do |t| # rubocop:disable Rails/CreateTableWithTimestamps
       t.string :watchable_type, default: "", null: false
-      t.integer :watchable_id, default: 0, null: false
-      t.integer :user_id
+      t.bigint :watchable_id, null: false
+      t.bigint :user_id
 
       t.index %i(user_id watchable_type), name: "watchers_user_id_type"
       t.index :user_id, name: "index_watchers_on_user_id"

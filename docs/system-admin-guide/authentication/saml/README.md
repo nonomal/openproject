@@ -1,18 +1,17 @@
 ---
 sidebar_navigation:
   title: SAML single sign-on
-  priority: 100
+  priority: 700
 description: How to set up SAML integration for SSO with OpenProject.
 keywords: SAML, SSO, single sign-on, authentication
 ---
 # SAML (Enterprise add-on)
 
 > [!NOTE]
-> Single sign-on with SAML is an Enterprise add-on. [Click here for more information](https://www.openproject.org/enterprise-edition/) on the OpenProject Enterprise edition.
+>
+> Single sign-on with SAML is an Enterprise add-on.
 
-You can integrate your active directory or other SAML compliant identity provider in your OpenProject Enterprise edition. To activate and configure SAML providers in OpenProject, navigate to *Administration* -> *Authentication* and choose -> *SAML providers*.
-
-
+You can integrate your active directory or other SAML compliant identity provider in your OpenProject Enterprise edition. To activate and configure SAML providers in OpenProject, navigate to _Administration_ -> _Authentication_ and choose -> _SAML providers_.
 
 ## Prerequisites
 
@@ -32,17 +31,13 @@ Starting with OpenProject 15.0, you can define the SAML integration using an int
 
 - Login as OpenProject Administrator
 
-- Navigate to *Administration* -> *Authentication* and choose -> *SAML providers*. 
-
-   
+- Navigate to _Administration_ -> _Authentication_ and choose -> _SAML providers_. 
 
 ### Step 1: Display name
 
-- **Click** the green *+ SAML identity provider* button
+- **Click** the green _+ SAML identity provider_ button
 - Set a **display name**. This will be shown on the login button for all users. Choose a name that users associate with your SAML login provider (e.g., "SSO")
 - Click **Continue**
-
-
 
 ### Step 2: Metadata exchange
 
@@ -55,8 +50,6 @@ The second step allows you to provide metadata in two ways:
 
 With a metadata option, OpenProject will pre-fill the next sections with all the given information. In case there are any errors in the values provided, they will be marked in red for correction. If you do not have metadata for this provider, choose **I don't have metadata**. Click **Continue**. 
 
-
-
 ### Step 3: Primary configuration
 
 If you have used the metadata exchange, the next form will be pre-filled like in the example below.
@@ -64,6 +57,8 @@ If you have used the metadata exchange, the next form will be pre-filled like in
 ![SAML provider primary configuration](./saml-provider-primary-configuration.png)
 
 If some of the required fields (marked with an asterisk) are missing, fill them out with the information from your identity provider. OpenProject assumes you're using the URL of your OpenProject instance as the Service entity ID by default. If your provider expects a different format, this can be an arbitrary string.
+
+The optional **Allowed clock drift** field relaxes the validation of the timestamps contained in the identity provider response by the given number of seconds, fractions of a second included. Leave it empty unless authentication fails because the clocks of OpenProject and the identity provider are out of sync, and prefer synchronizing the clocks over raising this value: a large tolerance weakens the protection against replayed assertions.
 
 Once you verified the configuration with your settings from the identity provider, click on **Continue**.
 
@@ -77,7 +72,9 @@ Request signing means that the service provider (OpenProject in this case) uses 
 
 With request signing enabled, the certificate will be added to the identity provider to validate the signature of the service provider's request.
 
-Fill out the respective fields, or if you do not need these features, simply leave this section empty and click **Continue**.
+**Require signed responses** should always be checked to ensure that signatures on all assertions provided by the identity provider are verified by OpenProject, unless your identity provider does not allow this for some reason.
+
+Fill out the respective fields, or if you do not need these features, simply leave the rest of this section empty and click **Continue**.
 
 ![Encryption and Signature of Requests and Assertions](./saml-encryption.png)
 
@@ -104,8 +101,6 @@ If your provider sends a default set of attributes, you can probably skip over t
 
 Complete the registration of the provider using the **Finish setup** button.
 
-
-
 ### Step 7: Configuration of the identity provider
 
 In order for users to start logging in using the new SSO button that you just added, you need to tell your identity provider some details of the OpenProject provider. Once the provider is saved, you will see details on the right pane of the provider.
@@ -120,11 +115,7 @@ Use the copy to clipboard buttons on each of these entries to copy the informat
 
 ![SAML configuration sidebar in OpenProject administration](./saml-show-view.png)
 
-
-
  Congratulations, you have now finished the setup of your SAML integration provider in OpenProject. 
-
-
 
 ## SAML configuration as Environment Variables
 
@@ -199,9 +190,7 @@ You may provide attribute names or namespace URIs as follows: `email: ['http://s
 
 The OpenProject username is taken by default from the `email` attribute if no explicit login attribute is present.
 
-
-
-```bash
+```shell
 OPENPROJECT_SAML_SAML_ATTRIBUTE__STATEMENTS_EMAIL="[mail]"
 OPENPROJECT_SAML_SAML_ATTRIBUTE__STATEMENTS_LOGIN="[mail]"
 OPENPROJECT_SAML_SAML_ATTRIBUTE__STATEMENTS_FIRST__NAME="[givenName]"
@@ -212,8 +201,6 @@ OPENPROJECT_SAML_SAML_ATTRIBUTE__STATEMENTS_UID="[uid]"
 # OPENPROJECT_SAML_SAML_ATTRIBUTE__STATEMENTS_LOGIN="['mail', 'samAccountName', 'uid']"
 ```
 
-
-
 #### Optional: Request signature and Assertion Encryption
 
 Your identity provider may optionally encrypt the assertion response, however note that with the required use of TLS transport security, in many cases this is not necessary. You may wish to use Assertion Encryption if TLS is terminated before the OpenProject application server (e.g., on the load balancer level).
@@ -223,7 +210,7 @@ To configure assertion encryption, you need to provide the certificate to send i
 > [!IMPORTANT]
 > Example is ONLY for OpenProject version 11 and older and needs to be redesigned for ENV configuration
 
-```bash
+```shell
 OPENPROJECT_SAML_SAML_CERTIFICATE="-----BEGIN CERTIFICATE-----\n .... certificate contents ....\n-----END CERTIFICATE--""
 OPENPROJECT_SAML_SAML_PRIVATE__KEY="-----BEGIN PRIVATE KEY-----\n .... private key contents ....\n-----END PRIVATE KEY-----"
 ```
@@ -232,11 +219,12 @@ Request signing means that the service provider (OpenProject in this case) uses 
 
 For request signing and assertion encryption, these attributes are available
 
-```bash
+```shell
 # When true, OpenProject will sign AuthnRequests using the above certificate and private key pair
 OPENPROJECT_SAML_SAML_SECURITY_AUTHN__REQUESTS__SIGNED="false"
 # When true, OpenProject will require assertions to be signed using a private key matching the provided IDP__CERT
-OPENPROJECT_SAML_SAML_SECURITY_WANT_ASSERTIONS_SIGNED="false"
+# This setting SHOULD always be true to ensure integrity of the idP assertions
+OPENPROJECT_SAML_SAML_SECURITY_WANT_ASSERTIONS_SIGNED="true"
 # When true, OpenProject will require assertiations to be encrypted using the public key from CERTIFICATE
 OPENPROJECT_SAML_SAML_SECURITY_WANT_ASSERTIONS_ENCRYPTED="false"
 # Whether to embed the signature in the request.
@@ -246,15 +234,13 @@ OPENPROJECT_SAML_SAML_SECURITY_SIGNATURE__METHOD="http://www.w3.org/2001/04/xmld
 OPENPROJECT_SAML_SAML_SECURITY_DIGEST__METHOD="http://www.w3.org/2000/09/xmldsig#sha1"
 ```
 
-
-
 #### Optional: Restrict who can automatically self-register
 
-You can configure OpenProject to restrict which users can register on the system with the [authentication self-registration setting](../authentication-settings)
+You can configure OpenProject to restrict which users can register on the system with the [authentication self-registration setting](../login-registration-settings/)
 
  By default, users returning from a SAML idP will be automatically created. If you'd like for the SAML integration to respect the configured self-registration option, please use this setting:
 
-```bash
+```shell
 OPENPROJECT_SAML_SAML_LIMIT__SELF__REGISTRATION="true"
 ```
 
@@ -264,9 +250,21 @@ There are a number of name identifier formats that are relevant, so if you have 
 
 The default behavior would be to use the email Address like so:
 
-```bash
+```shell
 OPENPROJECT_SAML_SAML_NAME__IDENTIFIER__FORMAT="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
 ```
+
+#### Optional: Allow for a clock drift
+
+The timestamps in the identity provider response are validated against the clock of the OpenProject server. If both clocks are out of sync, valid responses may be rejected. You can allow for a tolerance, given in seconds:
+
+```shell
+OPENPROJECT_SAML_SAML_ALLOWED__CLOCK__DRIFT="5"
+```
+
+Fractions of a second are accepted as well, for example `"0.5"`.
+
+Prefer synchronizing the clocks over setting this value, and keep it as low as possible. A large tolerance weakens the protection against replayed assertions. Note that the tolerance applies to the login response only, not to logout requests initiated by the identity provider.
 
 ### Applying the configuration
 
@@ -275,8 +273,6 @@ To apply the configuration after changes, you need to run the `db:seed` rake tas
 - **Packaged installation**: `sudo openproject run bundle exec rake db:seed`
 
 - **Docker**: `docker exec -it <container of all-in-one or web> bundle exec rake db:seed`.
-
-  
 
 ### XML Metadata exchange
 
@@ -298,21 +294,22 @@ When you return from the authentication provider, you might be shown one of thes
 3. You are being redirected to the account registration modal as user name or email is already taken. In this case, the account you want to authenticate already has an internal OpenProject account. You need to follow the [Troubleshooting](#troubleshooting) guide below to enable taking over that existing account.
 4. You are getting an internal or authentication error message. This is often a permission or invalid certificate/fingerprint configuration. Please consult the server logs for any hints OpenProject might log there.
 
-
-
 ## Direct login
 
 Once created, you can assign this SAML provider to become the direct login provider. Users will be directed to the login page of the provider without seeing a login form in OpenProject. [Read more](../../../installation-and-operations/configuration/#omniauth-direct-login-provider).
 
-In the user interface, you can assign this through [Administration > Authentication > Settings](../authentication-settings/).
+In the user interface, you can assign this through [Administration > Authentication > Settings](../login-registration-settings/).
 
 Using environment variables, you could also set this in the following way
 
-```bash
+```shell
 OPENPROJECT_OMNIAUTH__DIRECT__LOGIN__PROVIDER="saml" # This value should be the 'name' property of your configuration
 ```
 
+With the direct login feature activated, accessing the page without authentication will immediately redirect the user to your Single Sign-On (SSO) portal.
 
+A dedicated route `/login/internal` is available for internal authentication, which does not redirect to the SSO portal.
+**We strongly advise** you to maintain an internal administrative login, as you won’t be able to access the application otherwise.
 
 ## Instructions for common SAML providers
 
@@ -320,7 +317,7 @@ In the following, we will provide configuration values for common SAML providers
 
 ### ADFS
 
-For ADFS, you need add OpenProject as a "relying part trust" entry within the ADFS management screen. Please follow this guide to be guided through the steps: https://learn.microsoft.com/en-us/windows-server/identity/ad-fs/operations/create-a-relying-party-trust
+For ADFS, you need add OpenProject as a "relying part trust" entry within the ADFS management screen. Please follow this [guide](https://learn.microsoft.com/en-us/windows-server/identity/ad-fs/operations/create-a-relying-party-trust) to be guided through the steps.
 
 #### Add OpenProject as a Relying Trust Party
 
@@ -339,7 +336,7 @@ For ADFS, you need add OpenProject as a "relying part trust" entry within the AD
 
 A new wizard will pop up. If you missed this step, you can right click on the new party to select "Edit Claim Issuance Policy". In there, you will need to create attribute mappings from LDAP for OpenProject to access user data such as login, email address, names etc.
 
-You can also follow this guide to add the LDAP claim rules: https://learn.microsoft.com/en-us/windows-server/identity/ad-fs/operations/create-a-rule-to-send-ldap-attributes-as-claims
+You can also follow this [guide](https://learn.microsoft.com/en-us/windows-server/identity/ad-fs/operations/create-a-rule-to-send-ldap-attributes-as-claims) to add the LDAP claim rules:
 
 - Click on "Add Rule..."
 - Select "Send LDAP Attributes as Claims" and click Next
@@ -379,8 +376,6 @@ In OpenProject, these are the variables you will need to set. Please refer to th
 | Identity provider login endpoint  | `https://<Your ADFS hostname>/adfs/ls`                 |
 | Identity provider logout endpoint | `https://<Your ADFS hostname>/adfs/ls/?wa=wsignout1.0` |
 | Certificate                       | the                                                    |
-
-
 
 **Alternative: Setting up through environment variables**
 
@@ -469,8 +464,6 @@ sudo openproject run console
 Then, existing users should be able to log in using their SAML identity. Note that this works only if the user is using password-based authentication, and is not linked to any other authentication source (e.g. LDAP) or OpenID provider.
 
 Note that this setting is set to true by default for new installations already. If you're on the Hosted Enterprise Cloud, reach out to our Customer Support to see if this is flag is enabled already.
-
-
 
 **Q:** `"certificate"` **and** `"private key"` **are used in the SAML configuration and openproject logs show a FATAL error after GET "/auth/saml"**  `**FATAL** -- :  OpenSSL::PKey::RSAError (Neither PUB key nor PRIV key: nested asn1 error):`
 

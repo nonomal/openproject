@@ -33,6 +33,7 @@ module WorkPackages
     # rubocop:disable OpenProject/AddPreviewForViewComponent
     class BaseModalComponent < ApplicationComponent
       # rubocop:enable OpenProject/AddPreviewForViewComponent
+      include OpTurbo::Streamable
 
       FIELD_MAP = {
         "estimatedTime" => :estimated_hours,
@@ -58,15 +59,23 @@ module WorkPackages
 
       def initialize(work_package,
                      focused_field: nil,
-                     touched_field_map: {})
+                     touched_field_map: {},
+                     submit_path: nil)
         super()
 
         @work_package = work_package
         @focused_field = map_field(focused_field)
         @touched_field_map = touched_field_map
+        @submit_path = submit_path
       end
 
+      # Defaults to the core progress controller, but callers reusing the modal
+      # from another context (e.g. the resource planner) can point the form at
+      # their own endpoint. The live preview derives its URL from the form
+      # action too (`<action>/preview`), so a single override covers both.
       def submit_path
+        return @submit_path if @submit_path
+
         if work_package.new_record?
           url_for(controller: "work_packages/progress",
                   action: "create")
@@ -78,7 +87,7 @@ module WorkPackages
       end
 
       def learn_more_href
-        OpenProject::Static::Links.links[:progress_tracking_docs][:href]
+        OpenProject::Static::Links.url_for(:progress_tracking_docs)
       end
 
       private
@@ -90,11 +99,7 @@ module WorkPackages
         # an element by default.
         return nil if field.nil?
 
-        field = FIELD_MAP[field.to_s]
-
-        return field if field.present?
-
-        raise ArgumentError, "The selected field is not one of #{FIELD_MAP.keys.join(', ')}."
+        FIELD_MAP[field.to_s].presence || :no_field
       end
     end
   end

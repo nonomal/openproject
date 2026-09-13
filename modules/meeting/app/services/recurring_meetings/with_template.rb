@@ -34,14 +34,14 @@ module RecurringMeetings
     included do
       attr_accessor :template_params
 
-      def before_perform(params, _)
+      def before_perform(_)
         @template_params = extract_template_params(params)
 
         super
       end
 
       def extract_template_params(params)
-        params.slice(:start_date, :start_time_hour, :title, :location, :duration)
+        params.slice(:start_date, :start_time_hour, :title, :location, :duration, :notify)
       end
     end
   end

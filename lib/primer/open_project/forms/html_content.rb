@@ -10,10 +10,10 @@ module Primer
           @html_block = html_block
         end
 
-        def rendered_html_content
-          @view_context.capture do
-            @view_context.instance_exec(&@html_block)
-          end
+        def hidden? = false
+
+        def perform_render(&)
+          super(&@html_block)
         end
       end
     end

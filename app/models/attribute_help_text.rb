@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,6 +31,16 @@
 class AttributeHelpText < ApplicationRecord
   acts_as_attachable viewable_by_all_users: true
 
+  def self.cached(user)
+    RequestStore.fetch(name) do
+      visible_condition(user).where(type: name).select(:id, :type, :attribute_name, :caption).index_by(&:attribute_name)
+    end
+  end
+
+  def self.for(model)
+    subclasses.find { |child| child.name.demodulize == model.model_name }
+  end
+
   def self.available_types
     subclasses.map { |child| child.name.demodulize }
   end
@@ -54,11 +66,13 @@ class AttributeHelpText < ApplicationRecord
     scope
   end
 
+  normalizes :attribute_name, with: -> { it.delete_suffix("_id") }
+
   validates :help_text, presence: true
   validates :attribute_name, uniqueness: { scope: :type }
 
-  def attribute_caption
-    @attribute_caption ||= self.class.available_attributes[attribute_name]
+  def attribute_field_name
+    @attribute_field_name ||= self.class.available_attributes[attribute_name]
   end
 
   def attribute_scope
@@ -66,15 +80,15 @@ class AttributeHelpText < ApplicationRecord
   end
 
   def type_caption
-    raise NotImplementedError
+    raise SubclassResponsibilityError
   end
 
-  def self.visible_condition
-    raise NotImplementedError
+  def self.visible_condition(_user = nil)
+    raise SubclassResponsibilityError
   end
 
   def self.available_attributes
-    raise NotImplementedError
+    raise SubclassResponsibilityError
   end
 end
 

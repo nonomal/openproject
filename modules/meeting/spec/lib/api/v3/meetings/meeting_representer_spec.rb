@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,25 +33,26 @@ require "spec_helper"
 RSpec.describe API::V3::Meetings::MeetingRepresenter do
   include API::V3::Utilities::PathHelper
 
-  shared_let(:project) { create(:project) }
-  let(:permissions) { [:view_meetings] }
-  let(:user) do
-    create(:user,
-           member_with_permissions: { project => permissions },
-           created_at: 1.day.ago,
-           updated_at: Time.zone.now)
+  let(:workspace) { build_stubbed(:project) }
+  let(:current_user) do
+    build_stubbed(:user)
   end
   let(:meeting) do
-    create(:meeting,
-           author: user,
-           location: "https://foo.example.com",
-           project:)
+    build_stubbed(:meeting,
+                  author: current_user,
+                  location: "https://foo.example.com",
+                  project: workspace)
   end
 
-  let(:representer) { described_class.new(meeting, current_user: user) }
+  let(:embed_links) { true }
+  let(:representer) { described_class.new(meeting, current_user:, embed_links:) }
 
   describe "generation" do
     subject(:generated) { representer.to_json }
+
+    it "fulfills the documented schema" do
+      expect(generated).to match_json_schema.from_docs("meeting_model")
+    end
 
     describe "self link" do
       it_behaves_like "has a titled link" do
@@ -67,15 +69,12 @@ RSpec.describe API::V3::Meetings::MeetingRepresenter do
 
     it_behaves_like "has a titled link" do
       let(:link) { "author" }
-      let(:href) { api_v3_paths.user(user.id) }
-      let(:title) { user.name }
+      let(:href) { api_v3_paths.user(current_user.id) }
+      let(:title) { current_user.name }
     end
 
-    it_behaves_like "has a titled link" do
-      let(:link) { "project" }
-      let(:href) { api_v3_paths.project(project.id) }
-      let(:title) { project.name }
-    end
+    it_behaves_like "has workspace linked"
+    it_behaves_like "has workspace embedded"
 
     it_behaves_like "has an untitled action link" do
       let(:link) { :addAttachment }
@@ -91,11 +90,30 @@ RSpec.describe API::V3::Meetings::MeetingRepresenter do
       expect(subject).to be_json_eql(meeting.lock_version.to_json).at_path("lockVersion")
       expect(subject).to be_json_eql(meeting.start_time.utc.iso8601(3).to_json).at_path("startTime")
       expect(subject).to be_json_eql(meeting.end_time.utc.iso8601(3).to_json).at_path("endTime")
-      expect(subject).to be_json_eql(meeting.duration.to_json).at_path("duration")
+      expect(subject).to be_json_eql("PT1H".to_json).at_path("duration")
       expect(subject).to be_json_eql(meeting.location.to_json).at_path("location")
 
       expect(subject).to be_json_eql(meeting.created_at.utc.iso8601(3).to_json).at_path("createdAt")
       expect(subject).to be_json_eql(meeting.updated_at.utc.iso8601(3).to_json).at_path("updatedAt")
+    end
+  end
+
+  describe "notify" do
+    subject(:generated) { representer.to_json }
+
+    it "reflects the resolved notify status (notify?) rather than the raw column" do
+      allow(meeting).to receive_messages(notify?: true, notify: false)
+
+      expect(generated).to be_json_eql(true.to_json).at_path("notify")
+    end
+
+    it "invalidates the cache key when the resolved notify status changes" do
+      allow(meeting).to receive(:notify?).and_return(true)
+      cache_key_when_notifying = representer.json_cache_key
+
+      allow(meeting).to receive(:notify?).and_return(false)
+
+      expect(representer.json_cache_key).not_to eql cache_key_when_notifying
     end
   end
 end

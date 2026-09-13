@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -53,7 +55,7 @@ module Pages::Messages
     end
 
     def path
-      new_forum_topic_path(forum)
+      new_project_forum_topic_path(forum.project, forum)
     end
   end
 end

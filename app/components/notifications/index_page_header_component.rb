@@ -46,8 +46,7 @@ module Notifications
     end
 
     def breadcrumb_items
-      [{ href: home_path, text: helpers.organization_name },
-       { href: notifications_path, text: I18n.t("js.notifications.title") },
+      [{ href: notifications_path, text: I18n.t("js.notifications.title"), skip_for_mobile: first_menu_item? },
        current_breadcrumb_element]
     end
 
@@ -62,17 +61,26 @@ module Notifications
     def current_section
       return @current_section if defined?(@current_section)
 
-      @current_section = Notifications::Menu
-                           .new(params:, current_user: User.current)
+      @current_section = notifications_menu
                            .selected_menu_group
     end
 
     def current_item
       return @current_item if defined?(@current_item)
 
-      @current_item = Notifications::Menu
-                        .new(params:, current_user: User.current)
+      @current_item = notifications_menu
                         .selected_menu_item
+    end
+
+    def first_menu_item?
+      current_item&.href == notifications_path
+    end
+
+    def notifications_menu
+      # Instantiating the Notifications::Menu is currently costly as it fires
+      # three database queries right away.
+      @notifications_menu ||= Notifications::Menu
+                              .new(params:, current_user: User.current)
     end
   end
 end

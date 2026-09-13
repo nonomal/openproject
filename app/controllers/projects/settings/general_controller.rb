@@ -29,7 +29,7 @@
 #++
 
 class Projects::Settings::GeneralController < Projects::SettingsController
-  include OpTurbo::DialogStreamHelper
+  include OpTurbo::ComponentStream
 
   menu_item :settings_general
 
@@ -49,7 +49,7 @@ class Projects::Settings::GeneralController < Projects::SettingsController
     redirect_to action: :show, status: :see_other
   end
 
-  def update
+  def update # rubocop:disable Metrics/AbcSize
     call = Projects::UpdateService
       .new(model: @project, user: current_user)
       .call(permitted_params.project)
@@ -60,6 +60,7 @@ class Projects::Settings::GeneralController < Projects::SettingsController
       flash[:notice] = I18n.t(:notice_successful_update)
       redirect_to project_settings_general_path(@project)
     else
+      flash.now[:error] = I18n.t(:notice_unsuccessful_update_with_reason, reason: call.message)
       render action: :show, status: :unprocessable_entity
     end
   end

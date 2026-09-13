@@ -1,4 +1,32 @@
-import * as moment from 'moment';
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
+import moment, { Moment } from 'moment';
 import { WorkPackageResource } from 'core-app/features/hal/resources/work-package-resource';
 import { DisplayFieldRenderer } from 'core-app/shared/components/fields/display/display-field-renderer';
 import { Injector } from '@angular/core';
@@ -6,7 +34,7 @@ import { Highlighting } from 'core-app/features/work-packages/components/wp-fast
 import { HierarchyRenderPass } from 'core-app/features/work-packages/components/wp-fast-table/builders/modes/hierarchy/hierarchy-render-pass';
 import { WorkPackageViewTimelineService } from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-view-timeline.service';
 import { WorkPackageChangeset } from 'core-app/features/work-packages/components/wp-edit/work-package-changeset';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
+import { LazyInject } from 'core-app/shared/helpers/angular/lazy-inject.decorator';
 import { SchemaCacheService } from 'core-app/core/schemas/schema-cache.service';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { WeekdayService } from 'core-app/core/days/weekday.service';
@@ -20,14 +48,13 @@ import {
   timelineElementCssClass,
   timelineMarkerSelectionStartClass,
 } from '../wp-timeline';
-import Moment = moment.Moment;
 
 export interface CellDateMovement {
   // Target values to move work package to
-  startDate?:moment.Moment;
-  dueDate?:moment.Moment;
+  startDate?:Moment;
+  dueDate?:Moment;
   // Target value to move milestone to
-  date?:moment.Moment;
+  date?:Moment;
 }
 
 export type LabelPosition = 'left'|'right'|'farRight';
@@ -47,13 +74,13 @@ export const classNameRightHandle = 'rightHandle';
 export const classNameBarLabel = 'bar-label';
 
 export class TimelineCellRenderer {
-  @InjectField() wpTableTimeline:WorkPackageViewTimelineService;
+  @LazyInject() wpTableTimeline:WorkPackageViewTimelineService;
 
-  @InjectField() weekdayService:WeekdayService;
+  @LazyInject() weekdayService:WeekdayService;
 
-  @InjectField() schemaCache:SchemaCacheService;
+  @LazyInject() schemaCache:SchemaCacheService;
 
-  @InjectField() I18n!:I18nService;
+  @LazyInject() I18n!:I18nService;
 
   public text = {
     label_children_derived_duration: this.I18n.t('js.label_children_derived_duration'),
@@ -84,9 +111,9 @@ export class TimelineCellRenderer {
   }
 
   public isEmpty(wp:WorkPackageResource) {
-    const start = moment(wp.startDate as any);
-    const due = moment(wp.dueDate as any);
-    const noStartAndDueValues = _.isNaN(start.valueOf()) && _.isNaN(due.valueOf());
+    const start = moment(wp.startDate);
+    const due = moment(wp.dueDate);
+    const noStartAndDueValues = Number.isNaN(start.valueOf()) && Number.isNaN(due.valueOf());
     return noStartAndDueValues;
   }
 
@@ -117,8 +144,8 @@ export class TimelineCellRenderer {
     labels:WorkPackageCellLabels,
     dates:CellDateMovement,
   ):void {
-    this.assignDate(change, 'startDate', dates.startDate as moment.Moment);
-    this.assignDate(change, 'dueDate', dates.dueDate as moment.Moment);
+    this.assignDate(change, 'startDate', dates.startDate!);
+    this.assignDate(change, 'dueDate', dates.dueDate!);
 
     this.updateLabels(true, labels, change);
   }
@@ -188,8 +215,10 @@ export class TimelineCellRenderer {
     const projection = renderInfo.change.projectedResource;
     let direction:Exclude<MouseDirection, 'create'>;
 
+    const target = ev.target as HTMLElement;
+
     // Update the cursor and maybe set start/due values
-    if (jQuery(ev.target!).hasClass(classNameLeftHandle)) {
+    if (target.classList.contains(classNameLeftHandle)) {
       // only left
       direction = 'left';
       this.mouseDirection = 'left';
@@ -197,7 +226,7 @@ export class TimelineCellRenderer {
       if (projection.startDate === null) {
         projection.startDate = projection.dueDate;
       }
-    } else if (jQuery(ev.target!).hasClass(classNameRightHandle) || dateForCreate) {
+    } else if (target.classList.contains(classNameRightHandle) || dateForCreate) {
       // only right
       direction = 'right';
       this.mouseDirection = 'right';
@@ -239,25 +268,27 @@ export class TimelineCellRenderer {
    */
   public update(element:HTMLDivElement, labels:WorkPackageCellLabels|null, renderInfo:RenderInfo):boolean {
     const { change } = renderInfo;
-    const bar = element.querySelector(`.${timelineBackgroundElementClass}`) as HTMLElement;
+    const bar = element.querySelector<HTMLElement>(`.${timelineBackgroundElementClass}`);
+    if (!bar) { return false; }
+
     let start = moment(change.projectedResource.startDate);
     let due = moment(change.projectedResource.dueDate);
 
-    if (_.isNaN(start.valueOf()) && _.isNaN(due.valueOf())) {
+    if (Number.isNaN(start.valueOf()) && Number.isNaN(due.valueOf())) {
       element.style.visibility = 'hidden';
     } else {
       element.style.visibility = 'visible';
     }
 
     // only start date, fade out bar to the right
-    if (_.isNaN(due.valueOf()) && !_.isNaN(start.valueOf())) {
+    if (Number.isNaN(due.valueOf()) && !Number.isNaN(start.valueOf())) {
       // Set due date to today
       due = moment();
       bar.setAttribute('style', 'background-image: linear-gradient(90deg, rgba(255,255,255,0) 0%, #F1F1F1 100%) !important');
     }
 
     // only finish date, fade out bar to the left
-    if (_.isNaN(start.valueOf()) && !_.isNaN(due.valueOf())) {
+    if (Number.isNaN(start.valueOf()) && !Number.isNaN(due.valueOf())) {
       start = due.clone();
       bar.setAttribute('style', 'background-image: linear-gradient(90deg, #F1F1F1 0%, rgba(255,255,255,0) 80%) !important');
     }
@@ -287,7 +318,7 @@ export class TimelineCellRenderer {
       element.style.backgroundImage = ''; // required! unable to disable "fade out bar" with css
 
       if (renderInfo.viewParams.selectionModeStart === `${renderInfo.workPackage.id!}`) {
-        jQuery(element).addClass(timelineMarkerSelectionStartClass);
+        element.classList.add(timelineMarkerSelectionStartClass);
         element.style.background = 'none';
       }
     }
@@ -333,7 +364,7 @@ export class TimelineCellRenderer {
 
     let start = moment(projection.startDate);
     const due = moment(projection.dueDate);
-    start = _.isNaN(start.valueOf()) ? due.clone() : start;
+    start = Number.isNaN(start.valueOf()) ? due.clone() : start;
 
     const offsetStart = start.diff(renderInfo.viewParams.dateDisplayStart, 'days');
 
@@ -346,8 +377,8 @@ export class TimelineCellRenderer {
     let start = moment(projection.startDate);
     let due = moment(projection.dueDate);
 
-    start = _.isNaN(start.valueOf()) ? due.clone() : start;
-    due = _.isNaN(due.valueOf()) ? start.clone() : due;
+    start = Number.isNaN(start.valueOf()) ? due.clone() : start;
+    due = Number.isNaN(due.valueOf()) ? start.clone() : due;
 
     const offsetStart = start.diff(renderInfo.viewParams.dateDisplayStart, 'days');
     const duration = due.diff(start, 'days') + 1;
@@ -434,20 +465,21 @@ export class TimelineCellRenderer {
 
     // Don't apply the class in selection mode
     const { id } = type;
+    const highlightClasses = Highlighting.backgroundClass('type', id!).split(' ');
     if (selectionMode) {
-      bg.classList.remove(Highlighting.backgroundClass('type', id!));
+      bg.classList.remove(...highlightClasses);
     } else {
-      bg.classList.add(Highlighting.backgroundClass('type', id!));
+      bg.classList.add(...highlightClasses);
     }
   }
 
-  protected assignDate(change:WorkPackageChangeset, attributeName:string, value:moment.Moment) {
+  protected assignDate(change:WorkPackageChangeset, attributeName:string, value:Moment) {
     if (value) {
       change.projectedResource[attributeName] = value.format('YYYY-MM-DD');
     }
   }
 
-  setElementPositionAndSize(element:HTMLElement, renderInfo:RenderInfo, start:moment.Moment, due:moment.Moment) {
+  setElementPositionAndSize(element:HTMLElement, renderInfo:RenderInfo, start:Moment, due:Moment) {
     const { viewParams } = renderInfo;
     // offset left
     const offsetStart = start.diff(viewParams.dateDisplayStart, 'days');
@@ -458,8 +490,8 @@ export class TimelineCellRenderer {
     element.style.width = calculatePositionValueForDayCount(viewParams, duration);
 
     // ensure minimum width
-    if (!_.isNaN(start.valueOf()) || !_.isNaN(due.valueOf())) {
-      const minWidth = _.max([renderInfo.viewParams.pixelPerDay, 2]);
+    if (!Number.isNaN(start.valueOf()) || !Number.isNaN(due.valueOf())) {
+      const minWidth = Math.max(renderInfo.viewParams.pixelPerDay, 2);
       element.style.minWidth = `${minWidth}px`;
     }
   }

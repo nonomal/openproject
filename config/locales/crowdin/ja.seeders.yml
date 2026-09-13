@@ -36,32 +36,25 @@ ja:
           name: 黒
       project_phase_colors:
         item_0:
-          name: PM2 Orange
+          name: PM2 オレンジ
         item_1:
-          name: PM2 Red
+          name: PM2レッド
         item_2:
-          name: PM2 Magenta
+          name: PM2 マゼンタ
         item_3:
-          name: PM2 Green Yellow
-      document_categories:
-        item_0:
-          name: 文章
-        item_1:
-          name: 仕様
-        item_2:
-          name: その他
+          name: PM2 緑黄色
       project_query_roles:
         item_0:
-          name: Project query viewer
+          name: プロジェクト・クエリ・ビューア
         item_1:
-          name: Project query editor
+          name: プロジェクトクエリーエディター
       work_package_roles:
         item_0:
-          name: Work package editor
+          name: ワークパッケージエディタ
         item_1:
-          name: Work package commenter
+          name: ワークパッケージのコメンテーター
         item_2:
-          name: Work package viewer
+          name: ワークパッケージ・ビューア
       project_roles:
         item_0:
           name: 非メンバー
@@ -77,20 +70,29 @@ ja:
         item_0:
           name: スタッフとプロジェクトマネージャー
         item_1:
-          name: Standard global role
+          name: 標準的なグローバル役割
+      ai_text_transform_actions:
+        item_0:
+          label: Fix grammar
+        item_1:
+          label: Make concise
+        item_2:
+          label: Translate to English
+        item_3:
+          label: Sort into template
     standard:
       project_phases:
         item_0:
-          name: Initiating
+          name: 開始
         item_1:
           name: 計画
-          start_gate: Ready for Planning
+          start_gate: プランニングの準備
         item_2:
-          name: Executing
-          start_gate: Ready for Executing
+          name: 実行
+          start_gate: 実行準備
         item_3:
-          name: Closing
-          start_gate: Ready for Closing
+          name: クロージング
+          start_gate: クロージングの準備
       priorities:
         item_0:
           name: 低め
@@ -100,69 +102,84 @@ ja:
           name: 高め
         item_3:
           name: 急ぎ
+      departments:
+        item_0:
+          name: Marketing & Communications
+        item_1:
+          name: Public Relations
+        item_2:
+          name: Design & Content
+        item_3:
+          name: Events & Operations
+        item_4:
+          name: Web & IT
+        item_5:
+          name: Finance & Administration
+        item_6:
+          name: Quality Assurance
       projects:
         demo-project:
-          name: Demo project
-          status_explanation: All tasks are on schedule. The people involved know their tasks. The system is completely set up.
-          description: This is a short summary of the goals of this demo project.
+          name: デモプロジェクト
+          status_explanation: すべてのタスクがスケジュール通りに進んでいる。関係者は自分のタスクを把握している。システムは完全にセットアップされている。
+          description: これは、このデモプロジェクトの目標を簡単にまとめたものである。
           news:
             item_0:
-              title: Welcome to your demo project
+              title: デモ・プロジェクトへようこそ
               summary: |
-                We are glad you joined.
-                In this module you can communicate project news to your team members.
-              description: The actual news
+                ご参加ありがとうございます。
+                このモジュールでは、プロジェクトのニュースをチームメンバーに伝えることができます。
+              description: 実際のニュース
           categories:
-            item_0: Category 1 (to be changed in Project settings)
+            item_0: カテゴリー1（プロジェクト設定で変更可能）
           queries:
             item_0:
-              name: Project plan
+              name: プロジェクト計画
             item_1:
               name: マイルストーン
             item_2:
-              name: Tasks
+              name: タスク
             item_3:
               name: チーム プランナー
           boards:
             kanban:
-              name: Kanban board
+              name: カンバンボード
             basic:
               name: 基本ボード
               lists:
                 item_0:
-                  name: Wish list
+                  name: ウィッシュリスト
                 item_1:
-                  name: Short list
+                  name: ショートリスト
                 item_2:
-                  name: Priority list for today
+                  name: 今日の優先順位リスト
                 item_3:
                   name: なし
             parent_child:
-              name: Work breakdown structure
+              name: 作業分解構造
           project-overview:
             widgets:
               item_0:
                 options:
-                  name: Welcome
+                  name: ようこそ
               item_1:
                 options:
                   name: はじめに
                   text: |
-                    We are glad you joined! We suggest to try a few things to get started in OpenProject.
+                    ご参加いただきありがとうございます！OpenProjectを始めるにあたって、いくつかのことを試してみることをお勧めします。
 
-                    Discover the most important features with our [Guided Tour]({{opSetting:base_url}}/projects/demo-project/work_packages/?start_onboarding_tour=true).
+                    ガイドツアー]({{opSetting:base_url}}/projects/demo-project/work_packages/?start_onboarding_tour=true)で最も重要な機能を発見してください。
 
-                    _Try the following steps:_
 
-                    1. *Invite new members to your project*: &rightarrow; Go to [Members]({{opSetting:base_url}}/projects/demo-project/members) in the project navigation.
-                    2. *View the work in your project*: &rightarrow; Go to [Work packages]({{opSetting:base_url}}/projects/demo-project/work_packages) in the project navigation.
-                    3. *Create a new work package*: &rightarrow; Go to [Work packages &rightarrow; Create]({{opSetting:base_url}}/projects/demo-project/work_packages/new).
-                    4. *Create and update a project plan*: &rightarrow; Go to [Project plan]({{opSetting:base_url}}/projects/demo-project/work_packages?query_id=##query.id:demo_project__query__project_plan) in the project navigation.
-                    5. *Activate further modules*: &rightarrow; Go to [Project settings &rightarrow; Modules]({{opSetting:base_url}}/projects/demo-project/settings/modules).
-                    6. *Complete your tasks in the project*: &rightarrow; Go to [Work packages &rightarrow; Tasks]({{opSetting:base_url}}/projects/demo-project/work_packages/details/##wp.id:set_date_and_location_of_conference/overview?query_id=##query.id:demo_project__query__tasks).
 
-                    Here you will find our [User Guides](https://www.openproject.org/docs/user-guide/).
-                    Please let us know if you have any questions or need support. Contact us: [support[at]openproject.com](mailto:support@openproject.com).
+                    1.*プロジェクトに新しいメンバーを招待してください： &rightarrow; プロジェクトナビゲーションの[メンバー]({{opSetting:base_url}}/projects/demo-project/members)に移動します。
+                    2.*プロジェクト内の作業を見る*： &rightarrow; プロジェクトナビゲーションの[Work packages]({{opSetting:base_url}}/projects/demo-project/work_packages)に移動します。
+                    3.*新しいワークパッケージを作成します： &rightarrow; Work packages &rightarrow; Create]({{opSetting:base_url}}/projects/demo-project/work_packages/new)に移動します。
+                    4.*プロジェクト計画の作成と更新*： &rightarrow; プロジェクト・ナビゲーションの[プロジェクト計画]({{opSetting:base_url}}/projects/demo-project/work_packages?query_id=##query.id:demo_project__query__project_plan) に移動します。
+                    5.*さらにモジュールをアクティブにする： &rightarrow; プロジェクト設定 &rightarrow; モジュール]({{opSetting:base_url}}/projects/demo-project/settings/modules)に移動します。
+                    6.*プロジェクトのタスクを完了する： &rightarrow; ワークパッケージ &rightarrow; タスク]({{opSetting:base_url}}/projects/demo-project/work_packages/details/##wp.id:set_date_and_location_of_conference/overview?query_id=##query.id:demo_project__query__tasks) に移動します。
+
+                    こちらには[ユーザーガイド](https://www.openproject.org/docs/user-guide/)があります。
+                    ご質問やサポートが必要な場合は、ご連絡ください。ご連絡ください：[support[at]openproject.com](mailto:support@openproject.com)。
               item_5:
                 options:
                   name: ワークパッケージ
@@ -171,26 +188,28 @@ ja:
                   name: マイルストーン
           work_packages:
             item_0:
-              subject: Start of project
+              subject: プロジェクト開始
             item_1:
-              subject: Organize open source conference
+              subject: オープンソースカンファレンスの開催
               children:
                 item_0:
-                  subject: Set date and location of conference
+                  subject: 会議の日付と場所を決める
                   children:
                     item_0:
-                      subject: Send invitation to speakers
+                      subject: 講演者に招待状を送る
                     item_1:
-                      subject: Contact sponsoring partners
+                      subject: スポンサー・パートナーへのお問い合わせ
                     item_2:
-                      subject: Create sponsorship brochure and hand-outs
+                      subject: スポンサーシップ・パンフレットと配布資料の作成
                 item_1:
-                  subject: Invite attendees to conference
+                  subject: 会議に出席者を招待する
                 item_2:
-                  subject: Setup conference website
+                  subject: 大会ウェブサイトの開設
             item_2:
-              subject: Conference
+              subject: Test and quality-check the conference website
             item_3:
+              subject: Conference
+            item_4:
               subject: Follow-up tasks
               children:
                 item_0:
@@ -202,120 +221,76 @@ ja:
                     *   [ ] Snacks
                     *   [ ] Music
                     *   [ ] Even more beer
-            item_4:
+            item_5:
               subject: End of project
           wiki: |
-            _In this wiki you can collaboratively create and edit pages and sub-pages to create a project wiki._
+            このWikiでは、プロジェクトWikiを作成するためのページやサブページを共同で作成・編集することができます。
 
-            **You can:**
+            **次のことができます:**
 
-            * Insert text and images, also with copy and paste from other documents
-            * Create a page hierarchy with parent pages
-            * Include wiki pages to the project menu
-            * Use macros to include, e.g. table of contents, work package lists, or Gantt charts
-            * Include wiki pages in other text fields, e.g. project overview page
-            * Include links to other documents
-            * View the change history
-            * View as Markdown
+            * テキストや画像を挿入することができます。他のドキュメントからのコピー＆ペーストも可能です。
+            * 親ページを持つページ階層を作成することができます。
+            * プロジェクトメニューにWikiページをインクルードすることができます。
+            * マクロを使用してインクルードすることができます。目次、ワークパッケージリスト、ガントチャートなど
+            * プロジェクト概要ページなど、他のテキストフィールドにwikiページをインクルード
+            * 他のドキュメントへのリンクをインクルード
+            * 変更履歴を表示
+            * Markdownとして表示
 
-            More information: [https://www.openproject.org/docs/user-guide/wiki/](https://www.openproject.org/docs/user-guide/wiki/)
+            詳細情報：[https://www.openproject.org/docs/user-guide/wiki/](https://www.openproject.org/docs/user-guide/wiki/)
         scrum-project:
-          name: Scrum project
-          status_explanation: All tasks are on schedule. The people involved know their tasks. The system is completely set up.
-          description: This is a short summary of the goals of this demo Scrum project.
+          name: スクラムプロジェクト
+          status_explanation: すべてのタスクがスケジュール通りに進んでいる。関係者は自分のタスクを把握している。システムは完全にセットアップされている。
+          description: これは、このデモ・スクラム・プロジェクトの目標を簡単にまとめたものである。
           news:
             item_0:
-              title: Welcome to your Scrum demo project
+              title: スクラム・デモ・プロジェクトへようこそ
               summary: |
-                We are glad you joined.
-                In this module you can communicate project news to your team members.
+                ご参加ありがとうございます。
+                このモジュールでは、プロジェクトのニュースをチームメンバーに伝えることができます。
           versions:
             item_0:
-              name: Bug Backlog
-            item_1:
-              name: Product Backlog
-            item_2:
-              name: Sprint 1
               wiki:
-                title: Sprint 1
+                title: Release 1.0
                 content: |
-                  ### Sprint planning meeting
+                  ### Release 1.0
 
-                  _Please document here topics to the Sprint planning meeting_
+                  _Please document here what this release contains._
 
-                  * Time boxed (8 h)
-                  * Input: Product Backlog
-                  * Output: Sprint Backlog
-
-                  * Divided into two additional time boxes of 4 h:
-
-                      * The Product Owner presents the [Product Backlog]({{opSetting:base_url}}/projects/your-scrum-project/backlogs) and the priorities to the team and explains the Sprint Goal, to which the team must agree. Together, they prioritize the topics from the Product Backlog which the team will take care of in the next sprint. The team commits to the discussed delivery.
-                      * The team plans autonomously (without the Product Owner) in detail and breaks down the tasks from the discussed requirements to consolidate a [Sprint Backlog]({{opSetting:base_url}}/projects/your-scrum-project/backlogs).
-
-
-                  ### Daily Scrum meeting
-
-                  _Please document here topics to the Daily Scrum meeting_
-
-                  * Short, daily status meeting of the team.
-                  * Time boxed (max. 15 min).
-                  * Stand-up meeting to discuss the following topics from the [Task board](##sprint:scrum_project__version__sprint_1).
-                      * What do I plan to do until the next Daily Scrum?
-                      * What has blocked my work (Impediments)?
-                  * Scrum Master moderates and notes down [Sprint Impediments](##sprint:scrum_project__version__sprint_1).
-                  * Product Owner may participate may participate in order to stay informed.
-
-                  ### Sprint Review meeting
-
-                  _Please document here topics to the Sprint Review meeting_
-
-                  * Time boxed (4 h).
-                  * A maximum of one hour of preparation time per person.
-                  * The team shows the product owner and other interested persons what has been achieved in this sprint.
-                  * Important: no dummies and no PowerPoint! Just finished product functionality (Increments) should be demonstrated.
-                  * Feedback from Product Owner, stakeholders and others is desired and will be included in further work.
-                  * Based on the demonstrated functionalities, the Product Owner decides to go live with this increment or to develop it further. This possibility allows an early ROI.
-
-
-                  ### Sprint Retrospective
-
-                  _Please document here topics to the Sprint Retrospective meeting_
-
-                  * Time boxed (3 h).
-                  * After Sprint Review, will be moderated by Scrum Master.
-                  * The team discusses the sprint: what went well, what needs to be improved to be more productive for the next sprint or even have more fun.
-            item_3:
-              name: Sprint 2
+                  * The work packages of this release are the ones with the target version 1.0.
+                  * The release date is the date of the *Release v1.0* milestone.
+                  * Open the [Roadmap]({{opSetting:base_url}}/projects/your-scrum-project/roadmap) to follow the progress of all versions.
+                  * Open [Project settings &rightarrow; Versions]({{opSetting:base_url}}/projects/your-scrum-project/settings/versions) to link another wiki page to a version.
           categories:
-            item_0: Category 1 (to be changed in Project settings)
+            item_0: カテゴリー1（プロジェクト設定で変更可能）
           queries:
             item_0:
-              name: Project plan
+              name: プロジェクト計画
             item_1:
-              name: プロダクトバックログ
+              name: Version 1.1
             item_2:
-              name: Sprint 1
+              name: Version 1.0
             item_3:
-              name: Tasks
+              name: タスク
           boards:
             kanban:
-              name: Kanban board
+              name: カンバンボード
             basic:
               name: かんばん
               lists:
                 item_0:
-                  name: Wish list
+                  name: ウィッシュリスト
                 item_1:
-                  name: Short list
+                  name: ショートリスト
                 item_2:
-                  name: Priority list for today
+                  name: 今日の優先順位リスト
                 item_3:
                   name: なし
           project-overview:
             widgets:
               item_0:
                 options:
-                  name: Welcome
+                  name: ようこそ
               item_1:
                 options:
                   name: はじめに
@@ -326,11 +301,12 @@ ja:
 
                     1. *Invite new members to your project*: &rightarrow; Go to [Members]({{opSetting:base_url}}/projects/your-scrum-project/members) in the project navigation.
                     2. *View your Product backlog and Sprint backlogs*: &rightarrow; Go to [Backlogs]({{opSetting:base_url}}/projects/your-scrum-project/backlogs) in the project navigation.
-                    3. *View your Task board*: &rightarrow; Go to [Backlogs]({{opSetting:base_url}}/projects/your-scrum-project/backlogs) &rightarrow; Click on right arrow on Sprint &rightarrow; Select [Task Board](##sprint:scrum_project__version__sprint_1).
-                    4. *Create a new work package*: &rightarrow; Go to [Work packages &rightarrow; Create]({{opSetting:base_url}}/projects/your-scrum-project/work_packages/new).
-                    5. *Create and update a project plan*: &rightarrow; Go to [Project plan](##query:scrum_project__query__project_plan) in the project navigation.
-                    6. *Create a Sprint wiki*: &rightarrow; Go to [Backlogs]({{opSetting:base_url}}/projects/your-scrum-project/backlogs) and open the sprint wiki from the right drop down menu in a sprint. You can edit the [wiki template]({{opSetting:base_url}}/projects/your-scrum-project/wiki/) based on your needs.
+                    3. *Create a sprint*: &rightarrow; Go to [Backlogs]({{opSetting:base_url}}/projects/your-scrum-project/backlogs) and click "+ Sprint" to create a new sprint. Move work packages from the backlog to the sprint to plan the work to be done. When ready, click "Start sprint".
+                    4. *View your Sprint board*: &rightarrow; Go to [Backlogs]({{opSetting:base_url}}/projects/your-scrum-project/backlogs) &rightarrow; Click on right arrow on Sprint &rightarrow; Select Sprint Board.
+                    5. *Create a new work package*: &rightarrow; Go to [Work packages &rightarrow; Create]({{opSetting:base_url}}/projects/your-scrum-project/work_packages/new).
+                    6. *Create and update a project plan*: &rightarrow; Go to [Project plan](##query:scrum_project__query__project_plan) in the project navigation.
                     7. *Activate further modules*: &rightarrow; Go to [Project settings &rightarrow; Modules]({{opSetting:base_url}}/projects/your-scrum-project/settings/modules).
+
 
                     Here you will find our [User Guides](https://www.openproject.org/docs/user-guide/).
                     Please let us know if you have any questions or need support. Contact us: [support[at]openproject.com](mailto:support@openproject.com).
@@ -339,104 +315,104 @@ ja:
                   name: ワークパッケージ
               item_6:
                 options:
-                  name: Project plan
+                  name: プロジェクト計画
           work_packages:
             item_0:
-              subject: New login screen
+              subject: 新しいログイン画面
             item_1:
-              subject: Password reset does not send email
+              subject: パスワードリセットのメールが送信されない
             item_2:
-              subject: New website
+              subject: 新しいウェブサイト
               children:
                 item_0:
-                  subject: Newsletter registration form
+                  subject: ニュースレター登録フォーム
                 item_1:
-                  subject: Implement product tour
+                  subject: 製品ツアーの実施
                 item_2:
-                  subject: New landing page
+                  subject: 新しいランディングページ
                   children:
                     item_0:
-                      subject: Create wireframes for new landing page
+                      subject: 新しいランディングページのワイヤーフレームを作成
             item_3:
-              subject: Contact form
+              subject: お問い合わせフォーム
             item_4:
-              subject: Feature carousel
+              subject: 特集カルーセル
               children:
                 item_0:
-                  subject: Make screenshots for feature tour
+                  subject: 特集ツアー用のスクリーンショットを作る
             item_5:
-              subject: Wrong hover color
+              subject: 誤ったホバーカラー
             item_6:
-              subject: SSL certificate
+              subject: SSL証明書
             item_7:
-              subject: Set-up Staging environment
+              subject: ステージング環境の構築
             item_8:
-              subject: Choose a content management system
+              subject: コンテンツ管理システムの選択
             item_9:
-              subject: Website navigation structure
+              subject: ウェブサイトのナビゲーション構造
               children:
                 item_0:
-                  subject: Set up navigation concept for website.
+                  subject: ウェブサイトのナビゲーション・コンセプトを設定。
             item_10:
-              subject: Internal link structure
+              subject: 内部リンク構造
             item_11:
-              subject: Develop v1.0
+              subject: 開発 v1.0
             item_12:
-              subject: Release v1.0
+              subject: リリース v1.0
             item_13:
-              subject: Develop v1.1
+              subject: デベロップ v1.1
             item_14:
-              subject: Release v1.1
+              subject: リリース v1.1
             item_15:
-              subject: Develop v2.0
+              subject: デベロップ v2.0
             item_16:
-              subject: Release v2.0
+              subject: リリース v2.0
           wiki: |
-            ### Sprint planning meeting
+            ### スプリント計画会議
 
-            _Please document here topics to the Sprint planning meeting_
+            _スプリント計画会議へのトピックをここに文書化してください_
 
-            * Time boxed (8 h)
-            * Input: Product Backlog
-            * Output: Sprint Backlog
+            * タイムボックス（8時間）
+            * インプット：プロダクトバックログ
+            * アウトプット：スプリントバックログ
 
-            * Divided into two additional time boxes of 4 h:
+            * 4時間の追加タイムボックス2つに分割：
 
-                * The Product Owner presents the [Product Backlog]({{opSetting:base_url}}/projects/your-scrum-project/backlogs) and the priorities to the team and explains the Sprint Goal, to which the team must agree. Together, they prioritize the topics from the Product Backlog which the team will take care of in the next sprint. The team commits to the discussed delivery.
-                * The team plans autonomously (without the Product Owner) in detail and breaks down the tasks from the discussed requirements to consolidate a [Sprint Backlog]({{opSetting:base_url}}/projects/your-scrum-project/backlogs).
-
-
-            ### Daily Scrum meeting
-
-            _Please document here topics to the Daily Scrum meeting_
-
-            * Short, daily status meeting of the team.
-            * Time boxed (max. 15 min).
-            * Stand-up meeting to discuss the following topics from the Task board.
-                * What do I plan to do until the next Daily Scrum?
-                * What has blocked my work (Impediments)?
-            * Scrum Master moderates and notes down Sprint Impediments.
-            * Product Owner may participate may participate in order to stay informed.
-
-            ### Sprint Review meeting
-
-            _Please document here topics to the Sprint Review meeting_
-
-            * Time boxed (4 h).
-            * A maximum of one hour of preparation time per person.
-            * The team shows the product owner and other interested persons what has been achieved in this sprint.
-            * Important: no dummies and no PowerPoint! Just finished product functionality (Increments) should be demonstrated.
-            * Feedback from Product Owner, stakeholders and others is desired and will be included in further work.
-            * Based on the demonstrated functionalities, the Product Owner decides to go live with this increment or to develop it further. This possibility allows an early ROI.
+                * プロダクトオーナーは、[プロダクトバックログ]({{opSetting:base_url}}/projects/your-scrum-project/backlogs)と優先順位をチームに提示し、チームが同意しなければならないスプリントゴールを説明する。一緒に、プロダクトバックログから、チームが次のスプリントで担当するトピックに優先順位をつける。チームは議論された納品にコミットする。
+                * チームは自律的に（プロダクトオーナーなしで）詳細な計画を立て、議論された要件からタスクを分解して[スプリントバックログ]({{opSetting:base_url}}/projects/your-scrum-project/backlogs)を統合する。
 
 
-            ### Sprint Retrospective
+            ### デイリースクラムミーティング
 
-            _Please document here topics to the Sprint Retrospective meeting_
+            _デイリースクラムミーティングのトピックをここに文書化してください_
 
-            * Time boxed (3 h).
-            * After Sprint Review, will be moderated by Scrum Master.
-            * The team discusses the sprint: what went well, what needs to be improved to be more productive for the next sprint or even have more fun.
+            * 短い、毎日のチームのステータスミーティング。
+            * 時間枠（最大15分）。
+            * タスクボード](##sprint:scrum_project__version__sprint_1)から以下のトピックについて議論する。
+                * 次のデイリースクラムまで何をする予定か？
+                * 次のデイリースクラムまで何をする予定か？
+            * スクラムマスターがモデレーターとなり、[スプリントの阻害要因](##sprint:scrum_project__version__sprint_1)をメモします。
+            * プロダクトオーナーは情報を得るために参加することができる。
+
+            ### スプリントレビューミーティング
+
+            _スプリントレビューミーティングのトピックをここに記録してください_
+
+            * タイムボックス（4時間）。
+            * 準備時間は1人あたり最大1時間。
+            * チームは、プロダクトオーナーやその他の関係者に、このスプリントで達成されたことを示す。
+            * 重要：ダミーやパワーポイントは使わない！完成した製品の機能（インクリメント）だけを示すこと。
+            * プロダクトオーナー、利害関係者、その他からのフィードバックが望まれ、今後の作業に含まれる。
+            * 実証された機能性に基づいて、プロダクトオーナーはこのインクリメントを本番稼動させるか、あるいはさらに開発するかを決定する。この可能性は、早期の ROI を可能にする。
+
+
+            ### スプリントレトロスペクティブ
+
+            _スプリントレトロスペクティブミーティングへのトピックをここに文書化してください_
+
+            * 時間枠（3時間）。
+            * スプリントレビューの後、スクラムマスターが司会を務める。
+            * チームはスプリントについて議論する：何がうまくいったか、次のスプリントでより生産的になるために何を改善する必要があるか、あるいはもっと楽しむ必要があるか。
       statuses:
         item_0:
           name: 新しく作成
@@ -485,7 +461,7 @@ ja:
         item_1:
           name: マイルストーン
         item_2:
-          name: Summary task
+          name: サマリー・タスク
         item_3:
           name: 機能
         item_4:
@@ -494,21 +470,35 @@ ja:
           name: ユーザストーリー
         item_6:
           name: 不具合
+      global_queries:
+        item_0:
+          name: 'Epic children: User stories and bugs'
+        item_1:
+          name: 'User story children: Tasks'
+      type_configuration:
+        item_0:
+          form_configuration:
+            item_0:
+              group_name: User stories and bugs
+        item_1:
+          form_configuration:
+            item_0:
+              group_name: Tasks
       welcome:
-        title: Welcome to OpenProject!
+        title: OpenProjectへようこそ！
         text: |
-          OpenProject is the leading open source project management software. It supports classic, agile as well as hybrid project management and gives you full control over your data.
+          OpenProjectは、オープンソースを代表するプロジェクト管理ソフトウェアです。クラシック、アジャイル、ハイブリッドのプロジェクト管理をサポートし、データを完全にコントロールすることができます。
 
-          Core features and use cases:
+          コア機能とユースケース
 
-          * [Project Portfolio Management](https://www.openproject.org/collaboration-software-features/project-portfolio-management/)
-          * [Project Planning and Scheduling](https://www.openproject.org/collaboration-software-features/project-planning-scheduling/)
-          * [Task Management and Issue Tracking](https://www.openproject.org/collaboration-software-features/task-management/)
-          * [Agile Boards (Scrum and Kanban)](https://www.openproject.org/collaboration-software-features/agile-project-management/)
-          * [Requirements Management and Release Planning](https://www.openproject.org/collaboration-software-features/product-development/)
-          * [Time and Cost Tracking, Budgets](https://www.openproject.org/collaboration-software-features/time-tracking/)
-          * [Team Collaboration and Documentation](https://www.openproject.org/collaboration-software-features/team-collaboration/)
+          * プロジェクトポートフォリオ管理](https://www.openproject.org/collaboration-software-features/project-portfolio-management/)
+          * [プロジェクト計画とスケジューリング](https://www.openproject.org/collaboration-software-features/project-planning-scheduling/)
+          * [タスク管理と課題追跡](https://www.openproject.org/collaboration-software-features/task-management/)
+          * [アジャイルボード（スクラムとカンバン）](https://www.openproject.org/collaboration-software-features/agile-project-management/)
+          * [要件管理とリリース計画](https://www.openproject.org/collaboration-software-features/product-development/)
+          * [時間とコスト追跡、予算](https://www.openproject.org/collaboration-software-features/time-tracking/)
+          * [チームコラボレーションと文書化](https://www.openproject.org/collaboration-software-features/team-collaboration/)
 
-          Welcome to the future of project management.
+          プロジェクト管理の未来へようこそ。
 
-          For Admins: You can change this welcome text [here]({{opSetting:base_url}}/admin/settings/general).
+          管理者の方へ：このウェルカムテキストは[ここ]({{opSetting:base_url}}/admin/settings/general)で変更できます。

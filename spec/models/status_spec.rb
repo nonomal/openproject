@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -61,6 +63,30 @@ RSpec.describe Status do
 
       expect(status)
         .not_to be_is_default
+    end
+  end
+
+  describe ".visible" do
+    subject { described_class.visible(user) }
+
+    let!(:status) { create(:status) }
+    let(:user) { create(:user) }
+    let(:permissions) { %i[view_work_packages] }
+
+    before do
+      create(:member, user:, roles: [create(:project_role, permissions: permissions)])
+    end
+
+    it "returns the same statuses as all" do
+      expect(subject.to_a).to match_array(described_class.all.to_a)
+    end
+
+    context "when the user has the wrong permission" do
+      let(:permissions) { %i[view_wikis] }
+
+      it "returns no statuses" do
+        expect(subject.to_a).to be_empty
+      end
     end
   end
 

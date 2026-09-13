@@ -9,108 +9,108 @@ vi:
         item_0:
           name: Thấp
         item_1:
-          name: Bình Thường
+          name: Bình thường
         item_2:
-          name: Cao
+          name: cao
         item_3:
-          name: Nghiêm trọng
+          name: quan trọng
       statuses:
         item_0:
           name: Mới
         item_1:
-          name: Đang xử lý
+          name: Đang tiến hành
         item_2:
-          name: Đã giải quyết
+          name: đã giải quyết
         item_3:
-          name: Đã đóng
+          name: đóng cửa
       time_entry_activities:
         item_0:
-          name: Quản lý
+          name: quản lý
         item_1:
           name: Đặc điểm kỹ thuật
         item_2:
-          name: Khác
+          name: khác
       types:
         item_0:
           name: Nhiệm vụ
         item_1:
-          name: Cột mốc
+          name: cột mốc quan trọng
         item_2:
-          name: Giai đoạn
+          name: giai đoạn
         item_3:
-          name: Vấn đề
+          name: vấn đề
         item_4:
-          name: Lưu ý
+          name: Nhận xét
         item_5:
           name: Yêu cầu
         item_6:
-          name: Xung đột
+          name: Đụng độ
       global_queries:
         item_0:
-          name: 'Bảng nhúng: cấp dưới'
+          name: 'Bảng nhúng: Trẻ em'
       type_configuration:
         item_0:
           form_configuration:
             item_0:
-              group_name: Cấp dưới
+              group_name: bọn trẻ
       groups:
         item_0:
-          name: Các kiến trúc sư
+          name: kiến trúc sư
         item_1:
           name: Điều phối viên BIM
         item_2:
-          name: Quản lý BIM
+          name: Người quản lý BIM
         item_3:
-          name: Mô hình hóa BIM
+          name: Người lập mô hình BIM
         item_4:
-          name: Điều phối viên BIM hàng đầu
+          name: Điều phối viên BIM chính
         item_5:
           name: Kỹ sư MEP
         item_6:
-          name: Người lập kế hoạch
+          name: người lập kế hoạch
         item_7:
           name: Kỹ sư kết cấu
       welcome:
-        title: Chào mừng đến với phiên bản BIM của OpenProject!
+        title: Chào mừng bạn đến với phiên bản OpenProject BIM!
         text: |
-          Xem qua các dự án mẫu để bắt đầu với một số ví dụ.
+          Kiểm tra các dự án demo để bắt đầu với một số ví dụ.
 
-          * [(Demo) Dự án xây dựng]({{opSetting:base_url}}/projects/demo-construction-project): Lập kế hoạch, quy trình BIM, quản lý BCF và xây dựng, tất cả trong một cái nhìn.
-              * [(Demo) Lập kế hoạch & xây dựng]({{opSetting:base_url}}/projects/demo-planning-constructing-project): Lập kế hoạch và quản lý xây dựng theo cách truyền thống.
-              * [(Demo) Dự án BIM]({{opSetting:base_url}}/projects/demo-bim-project): Quy trình và điều phối BIM.
-                  * [(Demo) Quản lý BCF]({{opSetting:base_url}}/projects/demo-bcf-management-project): Quản lý BCF.
+          * [(Demo) Construction project]({{opSetting:base_url}}/projects/demo-construction-project): Lập kế hoạch, quy trình BIM, quản lý BCF và xây dựng, tất cả chỉ trong nháy mắt.
+              * [(Demo) Planning & constructing]({{opSetting:base_url}}/projects/demo-planning-constructing-project): Quy hoạch cổ điển và quản lý xây dựng.
+              * [(Demo) Bim project]({{opSetting:base_url}}/projects/demo-bim-project): Quy trình và điều phối BIM.
+                  * [(Demo) BCF management]({{opSetting:base_url}}/projects/demo-bcf-management-project): Quản lý BCF.
 
-          Bạn cũng có thể tạo một [dự án mới]({{opSetting:base_url}}/projects/new) trống.
+          Ngoài ra, bạn có thể tạo một khoảng trống [new project]({{opSetting:base_url}}/projects/new).
 
-          Đừng ngừng hợp tác. Với mã nguồn mở và tư duy mở.
+          Không bao giờ ngừng hợp tác. Với nguồn mở và tư duy cởi mở.
 
-          Bạn có thể thay đổi văn bản chào mừng này [tại đây]({{opSetting:base_url}}/admin/settings/general).
+          Bạn có thể thay đổi văn bản chào mừng này [here]({{opSetting:base_url}}/admin/settings/general).
       projects:
         demo-construction-project:
           name: "(Demo) Dự án xây dựng"
-          status_explanation: Tất cả các nhiệm vụ và các dự án con đều theo lịch trình. Những người tham gia đã biết nhiệm vụ của họ. Hệ thống đã được thiết lập hoàn toàn.
-          description: Đây là một tóm tắt ngắn gọn về các mục tiêu của dự án xây dựng mẫu này.
+          status_explanation: Tất cả các nhiệm vụ và tiểu dự án đều đúng tiến độ. Những người liên quan biết nhiệm vụ của họ. Hệ thống đã được thiết lập hoàn chỉnh.
+          description: Đây là bản tóm tắt ngắn gọn về các mục tiêu của dự án xây dựng demo này.
           news:
             item_0:
-              title: Chào mừng đến với dự án mẫu của bạn
+              title: Chào mừng đến với dự án demo của bạn
               summary: |
                 Chúng tôi rất vui vì bạn đã tham gia.
-                Trong module này, bạn có thể truyền đạt tin tức dự án đến các thành viên trong nhóm của bạn.
-              description: Tin tức hiện tại
+                Trong mô-đun này, bạn có thể truyền đạt tin tức dự án cho các thành viên trong nhóm của mình.
+              description: Tin tức thực tế
           categories:
-            item_0: Danh mục 1 (cần thay đổi trong Cài đặt Dự án)
+            item_0: Loại 1 (sẽ được thay đổi trong cài đặt Dự án)
           queries:
             item_0:
-              name: Kế hoạch dự án
+              name: kế hoạch dự án
             item_1:
-              name: Các cột mốc
+              name: Các cột mốc quan trọng
             item_2:
               name: Nhiệm vụ
             item_3:
-              name: Lịch trình nhóm
+              name: Người lập kế hoạch nhóm
           boards:
             bcf:
-              name: Quy trình kéo và thả đơn giản
+              name: Quy trình làm việc kéo thả đơn giản
           project-overview:
             widgets:
               item_0:
@@ -141,35 +141,35 @@ vi:
                     Vui lòng cho chúng tôi biết nếu bạn có bất kỳ câu hỏi nào hoặc cần hỗ trợ. Liên hệ với chúng tôi: [support\[at\]openproject.com](mailto:support@openproject.com).
               item_4:
                 options:
-                  name: Thành viên
+                  name: thành viên
               item_5:
                 options:
-                  name: Gói công việc
+                  name: Work Packages
               item_6:
                 options:
-                  name: Các cột mốc
+                  name: Các cột mốc quan trọng
         demo-planning-constructing-project:
-          name: "(Demo) Lập kế hoạch & xây dựng"
-          status_explanation: Tất cả các nhiệm vụ đang theo đúng tiến độ. Những người tham gia đều biết nhiệm vụ của mình. Hệ thống đã được thiết lập hoàn chỉnh.
-          description: Đây là một tóm tắt ngắn gọn về các mục tiêu của dự án lập kế hoạch và xây dựng demo này.
+          name: "(Demo) Quy hoạch & xây dựng"
+          status_explanation: Mọi công việc đều đúng tiến độ. Những người liên quan biết nhiệm vụ của họ. Hệ thống đã được thiết lập hoàn chỉnh.
+          description: Đây là bản tóm tắt ngắn gọn về các mục tiêu của dự án lập kế hoạch và xây dựng demo này.
           news:
             item_0:
               title: Chào mừng đến với dự án demo của bạn
               summary: |
-                Chúng tôi rất vui khi bạn tham gia.
-                Trong mô-đun này, bạn có thể thông báo tin tức dự án cho các thành viên trong nhóm của mình.
-              description: Tin tức thực tế
+                Chúng tôi rất vui vì bạn đã tham gia.
+                Trong mô-đun này, bạn có thể truyền đạt tin tức dự án cho các thành viên trong nhóm của mình.
+              description: Tin tức hiện tại
           categories:
-            item_0: Danh mục 1 (cần thay đổi trong cài đặt dự án)
+            item_0: Loại 1 (sẽ được thay đổi trong cài đặt Dự án)
           queries:
             item_0:
-              name: Kế hoạch dự án
+              name: kế hoạch dự án
             item_1:
-              name: Cột mốc
+              name: Các cột mốc quan trọng
             item_2:
               name: Nhiệm vụ
             item_3:
-              name: Kế hoạch nhóm
+              name: Người lập kế hoạch nhóm
           project-overview:
             widgets:
               item_0:
@@ -196,113 +196,113 @@ vi:
                     Vui lòng cho chúng tôi biết nếu bạn có bất kỳ câu hỏi nào hoặc cần hỗ trợ. Liên hệ với chúng tôi: [support\[at\]openproject.com](mailto:support@openproject.com).
               item_4:
                 options:
-                  name: Thành viên
+                  name: thành viên
               item_5:
                 options:
-                  name: Gói công việc
+                  name: Work Packages
               item_6:
                 options:
-                  name: Cột mốc
+                  name: Các cột mốc quan trọng
           work_packages:
             item_0:
-              subject: Khởi động dự án xây dựng
+              subject: Dự án khởi công dự án xây dựng
               description: |-
                 Khởi động dự án đánh dấu sự bắt đầu của dự án trong công ty của bạn. Mọi người tham gia vào dự án này nên được mời đến buổi khởi động để nhận thông tin ban đầu.
 
                 Bước tiếp theo có thể là kiểm tra lịch trình và điều chỉnh các cuộc hẹn, bằng cách xem [Biểu đồ Gantt]({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B%22id%22%2C%22subject%22%2C%22startDate%22%2C%22dueDate%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22status%22%2C%22o%22%3A%22o%22%2C%22v%22%3A%5B%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%7D).
             item_1:
               subject: Đánh giá cơ bản
-              description: Kiểu này về mặt phân cấp là kiểu cha của kiểu &quot;Clash&quot; và &quot;Request&quot;, do đó thể hiện một lưu ý chung.
+              description: Loại này được phân cấp theo cấp bậc cha của các loại &quot;Clash&quot; và &quot;Request&quot;, do đó đại diện cho một ghi chú chung.
               children:
                 item_0:
                   subject: Thu thập thông tin dự án đầu tiên
                   description: |-
                     ## Mục tiêu
 
-                    *   Xác định các nhiệm vụ dựa trên nhu cầu của khách hàng
-                    *   Định nghĩa khung thời gian và ước lượng chi phí
+                    * Xác định nhiệm vụ dựa trên nhu cầu của khách hàng
+                    * Khung thời gian và ước tính chi phí sẽ được xác định
 
                     ## Mô tả
 
-                    *   Xác định nhu cầu của khách hàng bằng cách tổ chức một buổi workshop với khách hàng
-                    *   Mỗi nhu cầu sẽ đại diện cho một nhiệm vụ với các gói công việc tương ứng
-                    *   Đưa ra ước lượng chi phí và khung thời gian
+                    * Xác định nhu cầu của khách hàng bằng cách tổ chức một buổi hội thảo với họ
+                    * Mỗi nhu cầu sẽ đại diện cho một nhiệm vụ với các gói công việc tương ứng
+                    * Lập dự toán chi phí và khung thời gian
                 item_1:
                   subject: Tóm tắt kết quả
                   description: |-
                     ## Mục tiêu
 
-                    *   Tạo một cái nhìn tổng quan hữu ích về các kết quả
-                    *   Kiểm tra những gì đã được thực hiện và tóm tắt các kết quả
-                    *   Thông báo tất cả các kết quả liên quan với khách hàng
-                    *   Xác định các điều kiện cơ bản của dự án
+                    * Tạo một cái nhìn tổng quan hữu ích về kết quả
+                    * Kiểm tra những gì đã được thực hiện và tóm tắt kết quả
+                    * Truyền đạt tất cả các kết quả có liên quan với khách hàng
+                    * Xác định các điều kiện biên cơ bản của dự án
 
                     ## Mô tả
 
-                    *   Mỗi chủ đề sẽ có cái nhìn tổng quan riêng, sẽ được sử dụng như một danh mục kết quả
-                    *   Cái nhìn tổng quan này thông báo cho tất cả các bên liên quan về các quyết định đã được đưa ra
-                    *   ...
+                    * Mỗi chủ đề có cái nhìn tổng quan riêng và sẽ được sử dụng làm danh mục kết quả
+                    * Tổng quan này thông báo cho tất cả người tham gia về các quyết định được đưa ra
+                    * ...
                 item_2:
                   subject: Kết thúc đánh giá cơ bản
-                  description: Kiểu này về mặt phân cấp là kiểu cha của kiểu &quot;Clash&quot; và &quot;Request&quot;, do đó thể hiện một lưu ý chung.
+                  description: Loại này được phân cấp theo cấp bậc cha của các loại &quot;Clash&quot; và &quot;Request&quot;, do đó đại diện cho một ghi chú chung.
             item_2:
               subject: Lập kế hoạch sơ bộ
-              description: Kiểu này về mặt phân cấp là kiểu cha của kiểu &quot;Clash&quot; và &quot;Request&quot;, do đó thể hiện một lưu ý chung.
+              description: Loại này được phân cấp theo cấp bậc cha của các loại &quot;Clash&quot; và &quot;Request&quot;, do đó đại diện cho một ghi chú chung.
               children:
                 item_0:
-                  subject: Phát triển bản nháp đầu tiên
+                  subject: Phát triển dự thảo đầu tiên
                   description: |-
                     ## Mục tiêu
 
-                    *   Tạo một cái nhìn tổng quan hữu ích về các kết quả
-                    *   Kiểm tra những gì đã được thực hiện và tóm tắt các kết quả
-                    *   Thông báo tất cả các kết quả liên quan với khách hàng
-                    *   Xác định các điều kiện cơ bản của dự án
+                    * Tạo một cái nhìn tổng quan hữu ích về kết quả
+                    * Kiểm tra những gì đã được thực hiện và tóm tắt kết quả
+                    * Truyền đạt tất cả các kết quả có liên quan với khách hàng
+                    * Xác định các điều kiện biên cơ bản của dự án
 
                     ## Mô tả
 
-                    *   Mỗi chủ đề sẽ có cái nhìn tổng quan riêng, sẽ được sử dụng như một danh mục kết quả
-                    *   Cái nhìn tổng quan này thông báo cho tất cả các bên liên quan về các quyết định đã được đưa ra
-                    *   ...
+                    * Mỗi chủ đề có cái nhìn tổng quan riêng và sẽ được sử dụng làm danh mục kết quả
+                    * Tổng quan này thông báo cho tất cả người tham gia về các quyết định được đưa ra
+                    * ...
                 item_1:
                   subject: Tóm tắt kết quả
                   description: |-
                     ## Mục tiêu
 
-                    *   Tạo một cái nhìn tổng quan hữu ích về các kết quả
-                    *   Kiểm tra những gì đã được thực hiện và tóm tắt các kết quả
-                    *   Thông báo tất cả các kết quả liên quan với khách hàng
-                    *   Xác định các điều kiện cơ bản của dự án
+                    * Tạo một cái nhìn tổng quan hữu ích về kết quả
+                    * Kiểm tra những gì đã được thực hiện và tóm tắt kết quả
+                    * Truyền đạt tất cả các kết quả có liên quan với khách hàng
+                    * Xác định các điều kiện biên cơ bản của dự án
 
                     ## Mô tả
 
-                    *   Mỗi chủ đề sẽ có cái nhìn tổng quan riêng, sẽ được sử dụng như một danh mục kết quả
-                    *   Cái nhìn tổng quan này thông báo cho tất cả các bên liên quan về các quyết định đã được đưa ra
-                    *   ...
+                    * Mỗi chủ đề có cái nhìn tổng quan riêng và sẽ được sử dụng làm danh mục kết quả
+                    * Tổng quan này thông báo cho tất cả người tham gia về các quyết định được đưa ra
+                    * ...
             item_3:
-              subject: Kết thúc lập kế hoạch sơ bộ
-              description: Kiểu này về mặt phân cấp là kiểu cha của kiểu &quot;Clash&quot; và &quot;Request&quot;, do đó thể hiện một lưu ý chung.
+              subject: Thông qua quy hoạch sơ bộ
+              description: Loại này được phân cấp theo cấp bậc cha của các loại &quot;Clash&quot; và &quot;Request&quot;, do đó đại diện cho một ghi chú chung.
             item_4:
               subject: Lập kế hoạch thiết kế
-              description: Kiểu này về mặt phân cấp là kiểu cha của kiểu &quot;Clash&quot; và &quot;Request&quot;, do đó thể hiện một lưu ý chung.
+              description: Loại này được phân cấp theo cấp bậc cha của các loại &quot;Clash&quot; và &quot;Request&quot;, do đó đại diện cho một ghi chú chung.
               children:
                 item_0:
-                  subject: Hoàn thành thiết kế
+                  subject: Hoàn thiện thiết kế
                   description: |-
                     ## Mục tiêu
 
-                    *   Thiết kế hoàn thành
-                    *   Tất cả các bên đều hài lòng với kết quả của giai đoạn lập kế hoạch thiết kế
+                    * Thiết kế đã xong
+                    * Tất cả các bên đều hài lòng với kết quả của giai đoạn lập kế hoạch thiết kế
 
                     ## Mô tả
 
-                    *   Thiết kế của dự án sẽ được hoàn thành
-                    *   Tất cả các bên đồng ý với thiết kế
-                    *   Chủ sở hữu hài lòng với kết quả
-                    *   ...
+                    * Thiết kế của dự án sẽ hoàn thành
+                    * Các bên thống nhất về thiết kế
+                    * Chủ sở hữu hài lòng với kết quả
+                    * ...
                 item_1:
                   subject: Đóng băng thiết kế
-                  description: Kiểu này về mặt phân cấp là kiểu cha của kiểu &quot;Clash&quot; và &quot;Request&quot;, do đó thể hiện một lưu ý chung.
+                  description: Loại này được phân cấp theo cấp bậc cha của các loại &quot;Clash&quot; và &quot;Request&quot;, do đó đại diện cho một ghi chú chung.
             item_5:
               subject: Giai đoạn xây dựng
               children:
@@ -311,119 +311,119 @@ vi:
                   description: |-
                     ## Mục tiêu
 
-                    *   Lễ khởi công
-                    *   Thiết lập công trường xây dựng
-                    *   ...
+                    * Lễ động thổ
+                    * Bố trí địa điểm xây dựng
+                    * ...
 
                     ## Mô tả
 
-                    *   Chuẩn bị khu vực cho dự án
-                    *   Tập hợp đội ngũ
-                    *   ...
+                    * Chuẩn bị mặt bằng cho dự án
+                    * Tập hợp nhóm lại
+                    * ...
                 item_1:
-                  subject: Đặt nền móng
+                  subject: Nền móng
                   description: |-
                     ## Mục tiêu
 
-                    *   Đặt viên đá nền móng
-                    *   ...
+                    *Đắp đá móng
+                    * ...
 
                     ## Mô tả
 
-                    *   Thiết lập máy trộn bê tông
-                    *   Thiết lập chuỗi cung ứng bê tông
-                    *   ...
+                    * Lắp đặt máy trộn bê tông
+                    * Thiết lập chuỗi cung ứng bê tông
+                    * ...
                 item_2:
                   subject: Xây dựng công trình
                   description: |-
                     ## Mục tiêu
 
-                    *   Lễ cất nóc
-                    *   Tường và trần hoàn thành
-                    *   ...
+                    * Lễ cất nóc
+                    * Tường và trần đã hoàn thiện
+                    * ...
 
                     ## Mô tả
 
-                    *   Tạo tất cả các cấp cấu trúc của tòa nhà
-                    *   Lắp đặt cửa và cửa sổ
-                    *   Hoàn thiện cấu trúc mái
-                    *   ...
+                    * Tạo tất cả các cấp độ kết cấu của tòa nhà
+                    * Lắp đặt cửa ra vào và cửa sổ
+                    * Hoàn thiện kết cấu mái
+                    * ...
                 item_3:
                   subject: Hoàn thiện mặt tiền
                   description: |-
                     ## Mục tiêu
 
-                    *   Mặt tiền hoàn thành
-                    *   Toàn bộ tòa nhà đã chống thấm
-                    *   ...
+                    * Mặt tiền đã hoàn thiện
+                    * Toàn bộ tòa nhà không thấm nước
+                    * ...
 
                     ## Mô tả
 
-                    *   Lắp đặt tất cả các yếu tố của mặt tiền
-                    *   Hoàn thiện mái nhà
-                    *   ...
+                    * Cài đặt tất cả các yếu tố cho mặt tiền
+                    * Hoàn thiện mái nhà
+                    * ...
                 item_4:
                   subject: Lắp đặt hệ thống dịch vụ tòa nhà
                   description: |-
                     ## Mục tiêu
 
-                    *   Tất cả các hệ thống dịch vụ tòa nhà đã sẵn sàng để sử dụng
+                    * Tất cả các hệ thống dịch vụ tòa nhà đã sẵn sàng để sử dụng
 
                     ## Mô tả
 
-                    *   Lắp đặt hệ thống sưởi
-                    *   Lắp đặt hệ thống điều hòa không khí
-                    *   Lắp đặt điện
-                    *   ...
+                    * Lắp đặt hệ thống sưởi
+                    * Lắp đặt hệ thống điều hòa
+                    * Lắp đặt điện
+                    * ...
                 item_5:
-                  subject: Hoàn thiện
+                  subject: Những bước cuối cùng
                   description: |-
                     ## Mục tiêu
 
-                    *   Bàn giao chìa khóa
-                    *   Khách hàng hài lòng với tòa nhà của mình
-                    *   ...
+                    * Bàn giao chìa khóa
+                    * Khách hàng hài lòng với tòa nhà của mình
+                    * ...
 
                     ## Mô tả
 
-                    *   Hoàn tất lắp đặt hệ thống dịch vụ tòa nhà
-                    *   Hoàn thiện xây dựng nội thất
-                    *   Hoàn thiện mặt tiền
-                    *   ...
+                    * Hoàn thiện lắp đặt hệ thống dịch vụ tòa nhà
+                    * Hoàn thiện thi công nội thất
+                    * Hoàn thiện mặt tiền
+                    * ...
                 item_6:
-                  subject: Tiệc khai trương
+                  subject: Tiệc tân gia
                   description: |-
                     ## Mục tiêu
 
-                    *   Có một bữa tiệc vui vẻ!
+                    * Chúc bạn vui vẻ!
 
                     ## Mô tả
 
-                    *   Mời đội ngũ xây dựng
-                    *   Mời bạn bè của bạn
-                    *   Mang theo một số đồ uống, món ăn nhẹ và nụ cười của bạn
+                    * Mời đội xây dựng
+                    * Mời bạn bè của bạn
+                    * Mang theo một ít đồ uống, đồ ăn nhẹ và nụ cười của bạn
         demo-bim-project:
           name: "(Demo) Dự án BIM"
-          status_explanation: Tất cả các nhiệm vụ và tiểu dự án đang theo đúng tiến độ. Những người tham gia biết nhiệm vụ của họ. Hệ thống đã được thiết lập hoàn toàn.
-          description: Đây là tóm tắt ngắn gọn về mục tiêu của dự án BIM demo này.
+          status_explanation: Tất cả các nhiệm vụ và tiểu dự án đều được thực hiện đúng tiến độ. Những người liên quan biết nhiệm vụ của họ. Hệ thống đã được thiết lập hoàn chỉnh.
+          description: Đây là bản tóm tắt ngắn gọn về các mục tiêu của dự án BIM demo này.
           news:
             item_0:
-              title: Chào mừng đến với dự án demo của bạn
+              title: Chào mừng đến với dự án mẫu của bạn
               summary: |
                 Chúng tôi rất vui vì bạn đã tham gia.
-                Trong mô-đun này, bạn có thể truyền đạt tin tức dự án đến các thành viên trong nhóm của bạn.
-              description: Tin tức hiện tại
+                Trong mô-đun này, bạn có thể truyền đạt tin tức dự án cho các thành viên trong nhóm của mình.
+              description: Tin tức thực tế
           categories:
-            item_0: Danh mục 1 (cần thay đổi trong Cài đặt Dự án)
+            item_0: Loại 1 (sẽ được thay đổi trong cài đặt Dự án)
           queries:
             item_0:
-              name: Kế hoạch dự án
+              name: kế hoạch dự án
             item_1:
-              name: Cột mốc
+              name: Các cột mốc quan trọng
             item_2:
               name: Nhiệm vụ
             item_3:
-              name: Kế hoạch nhóm
+              name: Người lập kế hoạch nhóm
           project-overview:
             widgets:
               item_0:
@@ -453,13 +453,13 @@ vi:
                     Xin hãy cho chúng tôi biết nếu bạn có bất kỳ câu hỏi nào hoặc cần hỗ trợ. Liên hệ với chúng tôi: [support\[at\]openproject.com](mailto:support@openproject.com).
               item_4:
                 options:
-                  name: Thành viên
+                  name: thành viên
               item_5:
                 options:
-                  name: Gói công việc
+                  name: Work Packages
               item_6:
                 options:
-                  name: Cột mốc
+                  name: Các cột mốc quan trọng
           work_packages:
             item_0:
               subject: Khởi động dự án tạo mô hình BIM
@@ -469,237 +469,237 @@ vi:
                 Bước tiếp theo có thể là kiểm tra lịch trình và điều chỉnh các cuộc hẹn, bằng cách xem [Biểu đồ Gantt]({{opSetting:base_url}}/projects/demo-bim-project/work_packages?query_props=%7B%22c%22%3A%5B%22id%22%2C%22subject%22%2C%22startDate%22%2C%22dueDate%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22status%22%2C%22o%22%3A%22o%22%2C%22v%22%3A%5B%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%7D).
             item_1:
               subject: Chuẩn bị dự án
-              description: Kiểu này về mặt phân cấp là kiểu cha của kiểu &quot;Clash&quot; và &quot;Request&quot;, do đó thể hiện một lưu ý chung.
+              description: Loại này được phân cấp theo cấp bậc cha của các loại &quot;Clash&quot; và &quot;Request&quot;, do đó đại diện cho một ghi chú chung.
               children:
                 item_0:
                   subject: Thu thập dữ liệu và thông tin cụ thể của dự án cho mô hình BIM
                   description: |-
                     ## Mục tiêu
 
-                    *   Xác định chiến lược thông tin cho khách hàng (ví dụ: bằng cách sử dụng các câu hỏi bằng ngôn ngữ đơn giản)
-                    *   Nếu có, phân tích yêu cầu thông tin của khách hàng cho mô hình BIM
-                    *   Xác định chiến lược cung cấp thông tin phù hợp với nhu cầu của khách hàng
+                    * Xác định chiến lược thông tin cho khách hàng (ví dụ: bằng cách sử dụng các câu hỏi bằng ngôn ngữ đơn giản)
+                    * Nếu được cung cấp, hãy phân tích yêu cầu thông tin khách hàng đối với mô hình BIM
+                    * Xác định chiến lược cung cấp thông tin theo nhu cầu của khách hàng
 
                     ## Mô tả
 
-                    *   Phân tích nhu cầu và mục tiêu của khách hàng khi sử dụng phương pháp BIM
-                    *   Kết quả của nhiệm vụ này nên là:
-                    *   Các yêu cầu cho dự án
-                    *   Một chiến lược cho giai đoạn cung cấp
-                    *   ...
+                    * Phân tích nhu cầu và mục tiêu của khách hàng khi sử dụng phương pháp BIM
+                    * Kết quả của nhiệm vụ này là:
+                    * Yêu cầu của dự án
+                    * Chiến lược cho giai đoạn giao hàng
+                    * ...
                 item_1:
                   subject: Tạo kế hoạch thực hiện BIM
                   description: |-
-                    # Mục tiêu
+                    # mục tiêu
 
-                    *   Một kế hoạch thực hiện BIM sẽ được xác định theo các yêu cầu trao đổi (ERS)
-                    *   Tất cả các thành viên trong nhóm và các đối tác có một kế hoạch về cách đạt được từng mục tiêu của dự án
+                    * Kế hoạch thực hiện BIM sẽ được xác định theo thông số kỹ thuật yêu cầu trao đổi (ERS)
+                    * Tất cả các thành viên trong nhóm và đối tác đều có kế hoạch về cách đạt được từng mục tiêu của dự án
 
                     # Mô tả
 
-                    *   Tùy thuộc vào các trường hợp sử dụng đã xác định, các Hướng dẫn Cung cấp Thông tin cá nhân sẽ được xác định
-                    *   Để xử lý các giao diện công nghệ, một phần mềm sẽ được xác định và phân tích, và xác minh
-                    *   ...
+                    * Tùy thuộc vào các trường hợp sử dụng được xác định, Sổ tay hướng dẫn cung cấp thông tin riêng lẻ sẽ được xác định
+                    * Để xử lý các giao diện công nghệ, cấu trúc liên kết phần mềm sẽ được xác định, phân tích và xác minh
+                    * ...
                 item_2:
                   subject: Hoàn thành kế hoạch thực hiện BIM
-                  description: Kiểu này về mặt phân cấp là kiểu cha của kiểu &quot;Clash&quot; và &quot;Request&quot;, do đó thể hiện một lưu ý chung.
+                  description: Loại này được phân cấp theo cấp bậc cha của các loại &quot;Clash&quot; và &quot;Request&quot;, do đó đại diện cho một ghi chú chung.
             item_2:
               subject: Kết thúc giai đoạn chuẩn bị
-              description: Kiểu này về mặt phân cấp là kiểu cha của kiểu &quot;Clash&quot; và &quot;Request&quot;, do đó thể hiện một lưu ý chung.
+              description: Loại này được phân cấp theo cấp bậc cha của các loại &quot;Clash&quot; và &quot;Request&quot;, do đó đại diện cho một ghi chú chung.
             item_3:
               subject: Tạo mô hình BIM ban đầu
-              description: Kiểu này về mặt phân cấp là kiểu cha của kiểu &quot;Clash&quot; và &quot;Request&quot;, do đó thể hiện một lưu ý chung.
+              description: Loại này được phân cấp theo cấp bậc cha của các loại &quot;Clash&quot; và &quot;Request&quot;, do đó đại diện cho một ghi chú chung.
               children:
                 item_0:
-                  subject: Mô hình hóa mô hình BIM ban đầu
+                  subject: Lập mô hình mô hình BIM ban đầu
                   description: |-
-                    # Mục tiêu
+                    # mục tiêu
 
-                    *   Mô hình hóa mô hình BIM ban đầu
-                    *   Tạo một mô hình BIM cho toàn bộ nhóm dự án
+                    * Lập mô hình mô hình BIM ban đầu
+                    * Tạo mô hình BIM cho toàn bộ nhóm dự án
 
                     # Mô tả
 
-                    *   Theo dữ liệu đã thu thập từ khách hàng, mô hình ban đầu sẽ được mô hình hóa
-                    *   Mô hình sẽ được mô hình hóa theo Ma trận LOD và chứa các thông tin cần thiết
-                    *   ...
+                    * Theo dữ liệu thu thập được từ khách hàng, mô hình ban đầu sẽ được mô hình hóa
+                    * Mô hình phải được mô hình hóa theo Ma trận LOD và chứa thông tin cần thiết
+                    * ...
                 item_1:
-                  subject: Kiểm tra nội bộ mô hình ban đầu và sửa đổi
+                  subject: Kiểm tra và sửa đổi mô hình ban đầu, nội bộ
                   description: |-
-                    # Mục tiêu
+                    # mục tiêu
 
-                    *   Gửi mô hình BIM theo các tiêu chuẩn đã xác định
+                    * Đệ trình mô hình BIM theo tiêu chuẩn đã xác định
 
                     # Mô tả
 
-                    *   Mô hình sẽ được kiểm tra theo các tiêu chuẩn đã xác định (quy ước, LOD, ...) và sửa đổi
-                    *   ...
+                    * Mô hình sẽ được kiểm tra, tuân theo các tiêu chuẩn đã xác định (quy ước, LOD, ...) và sửa đổi
+                    * ...
                 item_2:
                   subject: Gửi mô hình BIM ban đầu
-                  description: Kiểu này về mặt phân cấp là kiểu cha của kiểu &quot;Clash&quot; và &quot;Request&quot;, do đó thể hiện một lưu ý chung.
+                  description: Loại này được phân cấp theo cấp bậc cha của các loại &quot;Clash&quot; và &quot;Request&quot;, do đó đại diện cho một ghi chú chung.
             item_4:
-              subject: Mô hình hóa, chu kỳ đầu tiên
-              description: Kiểu này về mặt phân cấp là kiểu cha của kiểu &quot;Clash&quot; và &quot;Request&quot;, do đó thể hiện một lưu ý chung.
+              subject: Lập mô hình, chu kỳ đầu tiên
+              description: Loại này được phân cấp theo cấp bậc cha của các loại &quot;Clash&quot; và &quot;Request&quot;, do đó đại diện cho một ghi chú chung.
               children:
                 item_0:
-                  subject: Tham chiếu các mô hình BIM bên ngoài
+                  subject: Tham khảo các mô hình BIM bên ngoài
                   description: |-
-                    # Mục tiêu
+                    # mục tiêu
 
-                    *   Có cơ sở để phát triển mô hình nội bộ / cung cấp câu trả lời
-                    *   Sử dụng mô hình bên ngoài để phát triển mô hình nội bộ
+                    * Có nền tảng phát triển mô hình nội bộ/ đưa ra câu trả lời
+                    * Sử dụng mô hình bên ngoài để phát triển mô hình bên trong
 
                     # Mô tả
 
-                    *   Mô hình bên ngoài sẽ được tham chiếu trên nền tảng BIM, do đó được sử dụng để mô hình hóa mô hình nội bộ
-                    *   ...
+                    * Mô hình bên ngoài sẽ được tham chiếu trong nền tảng BIM, do đó được sử dụng để mô hình hóa mô hình bên trong
+                    * ...
                 item_1:
-                  subject: Mô hình hóa mô hình BIM
+                  subject: Lập mô hình mô hình BIM
                   description: |-
-                    # Mục tiêu
+                    # mục tiêu
 
-                    *   Tạo một mô hình BIM cho dự án
-                    *   Tạo một mô hình BIM cho toàn bộ nhóm dự án
+                    * Tạo mô hình BIM cho dự án
+                    * Tạo mô hình BIM cho toàn bộ nhóm dự án
 
                     # Mô tả
 
-                    *   Mô hình sẽ được tạo ra theo kế hoạch thực hiện BIM
-                    *   ...
+                    * Mô hình sẽ được tạo theo kế hoạch thực hiện BIM
+                    * ...
                 item_2:
-                  subject: Chu kỳ đầu tiên, kiểm tra mô hình nội bộ và sửa đổi
+                  subject: Chu kỳ đầu tiên, kiểm tra và sửa đổi mô hình nội bộ
                   description: |-
-                    # Mục tiêu
+                    # mục tiêu
 
-                    *   Nộp mô hình BIM theo các tiêu chuẩn đã xác định
+                    * Đệ trình mô hình BIM theo tiêu chuẩn đã xác định
 
                     # Mô tả
 
-                    *   Mô hình sẽ được kiểm tra theo các tiêu chuẩn đã xác định (quy ước, LOD, ...) và sửa đổi.
-                    *   ...
+                    * Mô hình sẽ được kiểm tra, theo các tiêu chuẩn đã xác định (quy ước, LOD, ...) và sửa đổi.
+                    * ...
                 item_3:
-                  subject: Nộp mô hình BIM
-                  description: Kiểu này về mặt phân cấp là kiểu cha của kiểu &quot;Clash&quot; và &quot;Request&quot;, do đó thể hiện một lưu ý chung.
+                  subject: Đệ trình mô hình BIM
+                  description: Loại này được phân cấp theo cấp bậc cha của các loại &quot;Clash&quot; và &quot;Request&quot;, do đó đại diện cho một ghi chú chung.
             item_5:
               subject: Phối hợp, chu kỳ đầu tiên
-              description: Kiểu này về mặt phân cấp là kiểu cha của kiểu &quot;Clash&quot; và &quot;Request&quot;, do đó thể hiện một lưu ý chung.
+              description: Loại này được phân cấp theo cấp bậc cha của các loại &quot;Clash&quot; và &quot;Request&quot;, do đó đại diện cho một ghi chú chung.
               children:
                 item_0:
                   subject: Phối hợp các mô hình BIM khác nhau
                   description: |-
-                    # Mục tiêu
+                    # mục tiêu
 
-                    *   Tập hợp các mô hình BIM của toàn bộ nhóm dự án
-                    *   Phối hợp các vấn đề được xác định
+                    * Lắp ráp các mô hình BIM khác nhau của toàn bộ nhóm dự án
+                    * Phối hợp các vấn đề được xác định
 
                     # Mô tả
 
-                    *   Các mô hình BIM khác nhau sẽ được tập hợp và kiểm tra
-                    *   Các vấn đề cụ thể của mô hình được xác định sẽ được truyền đạt qua các tệp BCF
-                    *   ...
+                    * Các mô hình BIM khác nhau sẽ được lắp ráp và kiểm tra
+                    * Các vấn đề cụ thể của mô hình được xác định sẽ được thông báo qua tệp BCF
+                    * ...
                 item_1:
                   subject: Quản lý vấn đề, chu kỳ đầu tiên
                 item_2:
-                  subject: Hoàn thành phối hợp, chu kỳ đầu tiên
-                  description: Kiểu này về mặt phân cấp là kiểu cha của kiểu &quot;Clash&quot; và &quot;Request&quot;, do đó thể hiện một lưu ý chung.
+                  subject: Kết thúc phối hợp, chu kỳ đầu tiên
+                  description: Loại này được phân cấp theo cấp bậc cha của các loại &quot;Clash&quot; và &quot;Request&quot;, do đó đại diện cho một ghi chú chung.
             item_6:
-              subject: Mô hình hóa & phối hợp, chu kỳ thứ hai
-              description: "## Mục tiêu\r\n\r\n*   ...\r\n\r\n## Mô tả\r\n\r\n* \\  ..."
+              subject: Lập mô hình & điều phối, chu kỳ thứ hai
+              description: "## Mục tiêu\r\n\r\n* ...\r\n\r\n## Mô tả\r\n\r\n* \\ ..."
             item_7:
-              subject: Mô hình hóa & phối hợp, ... chu kỳ
-              description: Kiểu này về mặt phân cấp là kiểu cha của kiểu &quot;Clash&quot; và &quot;Request&quot;, do đó thể hiện một lưu ý chung.
+              subject: Lập mô hình & điều phối, ... chu trình
+              description: Loại này được phân cấp theo cấp bậc cha của các loại &quot;Clash&quot; và &quot;Request&quot;, do đó đại diện cho một ghi chú chung.
             item_8:
-              subject: Mô hình hóa & phối hợp, (n-th trừ 1) chu kỳ
-              description: "## Mục tiêu\r\n\r\n*   ...\r\n\r\n## Mô tả\r\n\r\n* \\  ..."
+              subject: Lập mô hình & điều phối, chu trình (n-th trừ 1)
+              description: "## Mục tiêu\r\n\r\n* ...\r\n\r\n## Mô tả\r\n\r\n* \\ ..."
             item_9:
-              subject: Mô hình hóa & phối hợp chu kỳ n-th
-              description: Kiểu này về mặt phân cấp là kiểu cha của kiểu &quot;Clash&quot; và &quot;Request&quot;, do đó thể hiện một lưu ý chung.
+              subject: Lập mô hình và điều phối chu kỳ thứ n
+              description: Loại này được phân cấp theo cấp bậc cha của các loại &quot;Clash&quot; và &quot;Request&quot;, do đó đại diện cho một ghi chú chung.
             item_10:
-              subject: Hoàn thành mô hình hóa & phối hợp, chu kỳ n-th
-              description: Kiểu này về mặt phân cấp là kiểu cha của kiểu &quot;Clash&quot; và &quot;Request&quot;, do đó thể hiện một lưu ý chung.
+              subject: Hoàn thiện mô hình hóa và điều phối, chu kỳ thứ n
+              description: Loại này được phân cấp theo cấp bậc cha của các loại &quot;Clash&quot; và &quot;Request&quot;, do đó đại diện cho một ghi chú chung.
             item_11:
               subject: Sử dụng mô hình cho giai đoạn xây dựng
               children:
                 item_0:
-                  subject: Bàn giao mô hình cho đội xây dựng
+                  subject: Mô hình bàn giao cho đội thi công
                   description: |-
                     ## Mục tiêu
 
-                    *   Mọi người đều biết mô hình và nhiệm vụ của họ
-                    *   Mọi người đều nhận được tất cả thông tin liên quan, dựa trên mô hình
-                    *   ...
+                    * Mọi người đều biết mô hình và nhiệm vụ của mình
+                    * Mọi người đều nhận được tất cả thông tin liên quan, dựa trên mô hình
+                    * ...
 
                     ## Mô tả
 
-                    *   Khởi động tại công trường bao gồm giới thiệu mô hình
-                    *   Tất cả các đối tượng nên có thông tin cần thiết cho các nhiệm vụ được phân công. Nếu không, cần làm giàu dữ liệu của mô hình
-                    *   ...
+                    * Lễ khai mạc tại công trường bao gồm phần giới thiệu về mô hình
+                    * Tất cả các đối tượng cần có thông tin cần thiết cho nhiệm vụ được giao. Nếu không, cần phải làm giàu dữ liệu của mô hình
+                    * ...
                 item_1:
                   subject: Xây dựng tòa nhà
                   description: |-
                     ## Mục tiêu
 
-                    *   Các vấn đề mới phát hiện trên công trường sẽ được xử lý dựa trên mô hình
-                    *   Các vấn đề sẽ được tài liệu hóa bằng cách sử dụng các tệp BCF và mô hình BIM
+                    * Các vấn đề mới phát hiện trên công trường sẽ được xử lý dựa trên mô hình
+                    * Các vấn đề sẽ được ghi lại bằng cách sử dụng tệp BCF và mô hình BIM
 
                     ## Mô tả
 
-                    *   Các vấn đề mới sẽ được tài liệu hóa bằng các tệp BCF như ghi chú dán cho mô hình
-                    *   Các tệp BCF sẽ được sử dụng để phân công, theo dõi và sửa chữa các vấn đề
-                    *   ...
+                    * Các vấn đề mới sẽ được ghi lại bằng tệp BCF làm ghi chú dán cho mô hình
+                    * Các tệp BCF sẽ được sử dụng để chỉ định, theo dõi và khắc phục sự cố
+                    * ...
                 item_2:
-                  subject: Hoàn thành xây dựng
+                  subject: Hoàn thiện công trình
             item_12:
               subject: Quản lý vấn đề, giai đoạn xây dựng
             item_13:
-              subject: Bàn giao cho Quản lý Cơ sở
+              subject: Bàn giao cho quản lý cơ sở
               description: |-
                 ## Mục tiêu
 
-                *   Mô hình BIM sẽ được sử dụng cho Quản lý Cơ sở
-                *   Mô hình cung cấp tất cả thông tin liên quan cho việc đưa vào sử dụng và vận hành tòa nhà
-                *   ...
+                * Mô hình BIM sẽ được sử dụng cho Quản lý cơ sở vật chất
+                * Mô hình cung cấp tất cả các thông tin liên quan cho việc vận hành và vận hành tòa nhà
+                * ...
 
                 ## Mô tả
 
-                *   Mô hình chứa thông tin liên quan cho quản lý cơ sở
-                *   Mô hình có thể được sử dụng cho hệ thống vận hành của tòa nhà
-                *   ...
+                * Mô hình chứa thông tin liên quan cho người quản lý cơ sở
+                *Mô hình có thể sử dụng cho hệ điều hành của tòa nhà
+                * ...
             item_14:
               subject: Quản lý tài sản
               description: Tận hưởng tòa nhà của bạn :)
         demo-bcf-management-project:
           name: "(Demo) Quản lý BCF"
-          status_explanation: Tất cả các nhiệm vụ đang theo đúng tiến độ. Những người liên quan biết nhiệm vụ của họ. Hệ thống đã được thiết lập hoàn chỉnh.
-          description: Đây là một tóm tắt ngắn gọn về các mục tiêu của dự án quản lý BCF demo này.
+          status_explanation: Mọi công việc đều đúng tiến độ. Những người liên quan biết nhiệm vụ của họ. Hệ thống đã được thiết lập hoàn chỉnh.
+          description: Đây là bản tóm tắt ngắn gọn về các mục tiêu của dự án quản lý BCF demo này.
           ifc_models:
             item_0:
               name: Bệnh viện - Kiến trúc (cc-by-sa-3.0 Autodesk Inc.)
             item_1:
               name: Bệnh viện - Kết cấu (cc-by-sa-3.0 Autodesk Inc.)
             item_2:
-              name: Bệnh viện - Cơ điện (cc-by-sa-3.0 Autodesk Inc.)
+              name: Bệnh viện - Cơ khí (cc-by-sa-3.0 Autodesk Inc.)
           categories:
-            item_0: Danh mục 1 (cần thay đổi trong cài đặt Dự án)
+            item_0: Loại 1 (sẽ được thay đổi trong cài đặt Dự án)
           queries:
             item_0:
-              name: Các vấn đề
+              name: vấn đề
             item_1:
-              name: Va chạm
+              name: Đụng độ
             item_2:
-              name: Yêu cầu
+              name: yêu cầu
             item_3:
-              name: Ghi chú
+              name: Bình luận
             item_4:
-              name: Kế hoạch dự án
+              name: kế hoạch dự án
             item_5:
-              name: Các mốc thời gian
+              name: Các cột mốc quan trọng
             item_6:
               name: Nhiệm vụ
             item_7:
-              name: Lịch trình nhóm
+              name: Người lập kế hoạch nhóm
           boards:
             bcf:
-              name: Các vấn đề BCF
+              name: vấn đề BCF
           project-overview:
             widgets:
               item_0:
@@ -728,7 +728,7 @@ vi:
                     Xin vui lòng cho chúng tôi biết nếu bạn có bất kỳ câu hỏi nào hoặc cần hỗ trợ. Liên hệ với chúng tôi: [support\[at\]openproject.com](mailto:support@openproject.com).
               item_4:
                 options:
-                  name: Thành viên
+                  name: thành viên
               item_5:
                 options:
-                  name: Nhiệm vụ
+                  name: Gói công việc

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,7 +29,27 @@
 #++
 class BasicDataSeeder < CompositeSeeder
   def data_seeder_classes
-    raise NotImplementedError
+    [
+      ::BasicData::BuiltinUsersSeeder,
+      ::BasicData::ProjectRoleSeeder,
+      ::BasicData::WorkPackageRoleSeeder,
+      ::BasicData::ProjectQueryRoleSeeder,
+      ::BasicData::GlobalRoleSeeder,
+      ::BasicData::TimeEntryActivitySeeder,
+      ::BasicData::ColorSeeder,
+      ::BasicData::ColorSchemeSeeder,
+      ::BasicData::PluginAuthProviderSeeder,
+      ::BasicData::ProjectPhaseColorSeeder,
+      ::BasicData::ProjectPhaseDefinitionSeeder,
+      ::BasicData::StatusSeeder,
+      ::BasicData::TypeSeeder,
+      ::BasicData::WorkflowSeeder,
+      ::BasicData::PrioritySeeder,
+      ::BasicData::SettingSeeder,
+      ::BasicData::ProjectCustomFieldSectionSeeder,
+      ::BasicData::UserCustomFieldSectionSeeder,
+      ::BasicData::AiTextTransformActionSeeder
+    ]
   end
 
   def namespace

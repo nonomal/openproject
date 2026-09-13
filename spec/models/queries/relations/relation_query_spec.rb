@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -84,12 +86,13 @@ RSpec.describe Queries::Relations::RelationQuery do
     end
 
     describe "#results" do
-      it "is the same as handwriting the query (with visibility checked within the filter query)" do
+      it "is the same as handwriting the query (with relation visibility enforced)" do
         visible_sql = WorkPackage.visible(current_user).select(:id).to_sql
 
+        sql = "from_id IN (1) AND from_id IN (#{visible_sql}) AND to_id IN (#{visible_sql})"
         expected = base_scope
                    .merge(Relation
-                          .where("from_id IN ('1') AND to_id IN (#{visible_sql})"))
+                          .where(sql))
 
         expect(instance.results.to_sql).to eql expected.to_sql
       end

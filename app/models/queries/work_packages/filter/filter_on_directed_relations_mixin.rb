@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -45,7 +47,7 @@ module Queries::WorkPackages::Filter::FilterOnDirectedRelationsMixin
   end
 
   def relation_type
-    raise NotImplementedError
+    raise SubclassResponsibilityError
   end
 
   def normalized_relation_type
@@ -55,10 +57,10 @@ module Queries::WorkPackages::Filter::FilterOnDirectedRelationsMixin
   private
 
   def relation_filter
-    raise NotImplementedError
+    raise SubclassResponsibilityError
   end
 
   def relation_select
-    raise NotImplementedError
+    raise SubclassResponsibilityError
   end
 end

@@ -102,7 +102,7 @@ RSpec.shared_examples_for "ifc model contract" do
     let(:ifc_file) { FileHelpers.mock_uploaded_file name: "model.ifc", content_type: "application/binary", binary: true }
     let(:ifc_attachment) do
       Attachments::BuildService
-        .bypass_whitelist(user: current_user)
+        .bypass_allowlist(user: current_user)
         .call(file: ifc_file, filename: "model.ifc")
         .result
     end
@@ -118,7 +118,7 @@ RSpec.shared_examples_for "ifc model contract" do
     end
     let(:ifc_attachment) do
       Attachments::BuildService
-        .bypass_whitelist(user: current_user)
+        .bypass_allowlist(user: current_user)
         .call(file: ifc_file, filename: "model.ifc")
         .result
     end

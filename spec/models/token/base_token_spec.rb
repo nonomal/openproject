@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -40,9 +42,23 @@ RSpec.describe Token::Base do
 
   it "create_should_remove_existing_tokenses" do
     subject.save!
-    t2 = Token::AutoLogin.create(user:)
+    t2 = described_class.create(user:)
     expect(subject.value).not_to eq(t2.value)
-    expect(Token::AutoLogin.exists?(subject.id)).to be false
-    expect(Token::AutoLogin.exists?(t2.id)).to be true
+    expect(described_class.exists?(subject.id)).to be false
+    expect(described_class.exists?(t2.id)).to be true
+  end
+
+  context "when defining a prefix" do
+    subject { subclass.new(user:) }
+
+    let(:subclass) { Class.new(described_class) { prefix :test } }
+
+    it "has a plaintext value starting with the prefix" do
+      expect(subject.value).to start_with("test-")
+    end
+
+    it "has the regular token value after the prefix" do
+      expect(subject.value.delete_prefix("test-").length).to eq(64)
+    end
   end
 end

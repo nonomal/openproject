@@ -21,12 +21,13 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { Injectable, Injector } from '@angular/core';
+import { groupBy } from 'lodash-es';
+import { Injectable, Injector, inject } from '@angular/core';
 import { debounceTime, defaultIfEmpty, distinctUntilChanged, map, mapTo, switchMap, take, tap } from 'rxjs/operators';
 import { forkJoin, from, Observable, Subject } from 'rxjs';
 import { ID, Query } from '@datorama/akita';
@@ -62,6 +63,9 @@ import { FrameElement } from '@hotwired/turbo';
 import { PathHelperService } from 'core-app/core/path-helper/path-helper.service';
 import { UrlParamsService } from 'core-app/core/navigation/url-params.service';
 import { IanBellService } from 'core-app/features/in-app-notifications/bell/state/ian-bell.service';
+import { WP_ID_URL_PATTERN } from 'core-app/shared/helpers/work-package-id-pattern';
+
+const DETAILS_URL_PATTERN = new RegExp(`/details/(${WP_ID_URL_PATTERN})(?:/|$)`);
 
 export interface INotificationPageQueryParameters {
   filter?:string|null;
@@ -71,6 +75,18 @@ export interface INotificationPageQueryParameters {
 @Injectable({ providedIn: 'root' })
 @EffectHandler
 export class IanCenterService extends UntilDestroyedMixin {
+  readonly I18n = inject(I18nService);
+  readonly injector = inject(Injector);
+  readonly resourceService = inject(InAppNotificationsResourceService);
+  readonly actions$ = inject(ActionsService);
+  readonly apiV3Service = inject(ApiV3Service);
+  readonly toastService = inject(ToastService);
+  readonly urlParams = inject(UrlParamsService);
+  readonly state = inject(StateService);
+  readonly deviceService = inject(DeviceService);
+  readonly pathHelper = inject(PathHelperService);
+  readonly ianBellService = inject(IanBellService);
+
   readonly id = 'ian-center';
 
   readonly store = new IanCenterStore();
@@ -101,7 +117,7 @@ export class IanCenterService extends UntilDestroyedMixin {
     .selectNotifications$
     .pipe(
       map((notifications) => (
-        _.groupBy(notifications, (notification) => notification._links.resource?.href || 'none')
+        groupBy(notifications, (notification) => notification._links.resource?.href || 'none')
       )),
       distinctUntilChanged(),
     );
@@ -180,21 +196,9 @@ export class IanCenterService extends UntilDestroyedMixin {
 
   public selectedNotification:INotification;
 
-  selectedWorkPackage$ = this.urlParams.pathMatching$(/\/details\/(\d+)/);
+  selectedWorkPackage$ = this.urlParams.pathMatching$(DETAILS_URL_PATTERN);
 
-  constructor(
-    readonly I18n:I18nService,
-    readonly injector:Injector,
-    readonly resourceService:InAppNotificationsResourceService,
-    readonly actions$:ActionsService,
-    readonly apiV3Service:ApiV3Service,
-    readonly toastService:ToastService,
-    readonly urlParams:UrlParamsService,
-    readonly state:StateService,
-    readonly deviceService:DeviceService,
-    readonly pathHelper:PathHelperService,
-    readonly ianBellService:IanBellService,
-  ) {
+  constructor() {
     super();
     this.reload.subscribe();
 
@@ -216,13 +220,6 @@ export class IanCenterService extends UntilDestroyedMixin {
     this.onReload.pipe(take(1)).subscribe((collection) => {
       this.store.update({ activeCollection: collection });
     });
-
-    if (facet === 'unread') {
-      if (this.selectedNotification?.readIAN) {
-        this.goToCenter();
-      }
-    }
-    this.reload.next(true);
   }
 
   markAsRead(notifications:ID[]):void {
@@ -231,18 +228,13 @@ export class IanCenterService extends UntilDestroyedMixin {
     );
   }
 
-  openSplitScreen(workPackageId:string, tabIdentifier:string = 'activity'):void {
+  openSplitScreen(workPackageId:string, tabIdentifier = 'activity'):void {
     const link = this.pathHelper.notificationsDetailsPath(workPackageId, tabIdentifier) + window.location.search;
     Turbo.visit(link, { frame: 'content-bodyRight', action: 'advance' });
   }
 
   openFullView(workPackageId:string|null):void {
     void this.state.go('work-packages.show', { workPackageId });
-  }
-
-  goToCenter():void {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-argument
-    void this.state.go(this.state.current.data.baseRoute);
   }
 
   showNextNotification():void {
@@ -255,7 +247,15 @@ export class IanCenterService extends UntilDestroyedMixin {
           return;
         }
         if (notifications[0][0]._links.resource || notifications[this.selectedNotificationIndex][0]._links.resource) {
-          const wpId = idFromLink(notifications[this.selectedNotificationIndex >= notifications.length ? 0 : this.selectedNotificationIndex][0]._links.resource.href);
+          let index:number;
+          if (this.selectedNotificationIndex === notifications.length) {
+            // If the last notification is marked as read, we do not jump to the top, but rather show the new last notification
+            index = notifications.length - 1;
+          } else {
+            index = this.selectedNotificationIndex > notifications.length ? 0 : this.selectedNotificationIndex;
+          }
+
+          const wpId = idFromLink(notifications[index][0]._links.resource.href);
           this.openSplitScreen(wpId);
         }
       });
@@ -326,12 +326,11 @@ export class IanCenterService extends UntilDestroyedMixin {
     const promise = this
       .apiV3Service
       .work_packages
-      .requireAll(_.compact(wpIds));
+      .requireAll(wpIds.filter(Boolean));
 
     wpIds.forEach((id) => {
       cache.clearAndLoad(
         id,
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         from(promise).pipe(map(() => cache.current(id)!)),
       );
     });

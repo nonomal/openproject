@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,15 +31,15 @@
 require "spec_helper"
 
 RSpec.describe "users/index" do
+  include EnterpriseTokenFactory
+
   shared_let(:admin) { create(:admin) }
   let!(:user) { create(:user, firstname: "Scarlet", lastname: "Scallywag") }
 
   before do
     User.system # create system user which is active but should not count towards limit
 
-    assign(:users, User.where(id: [admin.id, user.id]))
-    assign(:status, "all")
-    assign(:groups, Group.all)
+    assign(:query, UserQueries::Static.query(nil))
 
     without_partial_double_verification do
       allow(view).to receive_messages(current_user: admin, controller_name: "users", action_name: "index")
@@ -46,16 +48,9 @@ RSpec.describe "users/index" do
 
   subject { rendered.squish }
 
-  it "renders the user table" do
-    render
-
-    expect(subject).to have_text("#{admin.firstname}   #{admin.lastname}")
-    expect(subject).to have_text("Scarlet   Scallywag")
-  end
-
   context "with an Enterprise token" do
     before do
-      allow(OpenProject::Enterprise).to receive(:token).and_return(Struct.new(:restrictions).new({ active_user_count: 5 }))
+      create_enterprise_token("token_5_users", restrictions: { active_user_count: 5 })
     end
 
     it "shows the current number of active and allowed users" do

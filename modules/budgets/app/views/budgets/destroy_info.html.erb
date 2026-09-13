@@ -58,7 +58,7 @@ See COPYRIGHT and LICENSE files for more details.
           <%= styled_radio_button_tag "todo", "reassign", true %>
         </div>
 
-        <%= label_tag "reassign_to_id", t(:text_budget_reassign_to), class: "hidden-for-sighted" %>
+        <%= label_tag "reassign_to_id", t(:text_budget_reassign_to), class: "sr-only" %>
         <%= styled_select_tag "reassign_to_id", options_from_collection_for_select(@possible_other_budgets, "id", "name"), container_class: "-middle" %>
 
         <% csp_onclick("document.getElementById('todo_reassign').checked = true", "#reassign_to_id") %>

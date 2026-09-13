@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -61,10 +63,11 @@ RSpec.describe "Project templates", :js, with_good_job_batches: [CopyProjectJob,
   describe "instantiating templates" do
     let!(:template) do
       create(:template_project,
+             :with_internal_wiki,
              status_code: "on_track",
              status_explanation: "some explanation",
              name: "My template",
-             enabled_module_names: %w[wiki work_package_tracking])
+             enabled_module_names: %w[work_package_tracking])
     end
     let!(:other_project) { create(:project, name: "Some other project") }
     let!(:work_package) { create(:work_package, project: template) }
@@ -83,56 +86,33 @@ RSpec.describe "Project templates", :js, with_good_job_batches: [CopyProjectJob,
       create(:user, member_with_roles: { template => role })
     end
 
-    let(:name_field) { FormFields::InputFormField.new :name }
-    let(:template_field) { FormFields::SelectFormField.new :use_template }
-    let(:status_field) { FormFields::SelectFormField.new :status }
-    let(:parent_field) { FormFields::SelectFormField.new :parent }
-
     current_user do
       create(:user,
              member_with_roles: { template => role, other_project => role },
              global_permissions:)
     end
 
+    it "does not show a special heading when the project initiation feature is enabled" do
+      visit new_project_path(template_id: template.id)
+      expect(page).to have_heading "New project"
+    end
+
     it "can instantiate the project with the copy permission" do
-      visit new_project_path
+      visit new_project_path(template_id: template.id)
 
-      name_field.set_value "Foo bar"
+      # Step 2: Project details
+      expect(page).to have_heading "New project"
+      expect(page).to have_text("2 of 2")
+      fill_in "Name", with: "Foo bar"
 
-      expect(page)
-        .to have_no_content("COPY OPTIONS")
+      click_on "Complete"
 
-      template_field.select_option "My template"
+      expect(page).to have_dialog "Background job status"
 
-      # Only when a template is selected, the options are displayed.
-      # Using this to know when the copy form has been fetched from the backend.
-      expect(page)
-        .to have_content("COPY OPTIONS")
-
-      # It keeps the name
-      name_field.expect_value "Foo bar"
-      template_field.expect_selected "My template"
-
-      # Updates the identifier in advanced settings
-      page.find(".op-fieldset--toggle", text: "ADVANCED SETTINGS").click
-      status_field.expect_selected "ON TRACK"
-
-      # Update status to off track
-      status_field.select_option "Off track"
-      parent_field.select_option other_project.name
-
-      page.find(".op-fieldset--toggle", text: "COPY OPTIONS").click
-
-      # Now shows the send notifications field.
-      expect(page).to have_css('[data-qa-field-name="sendNotifications"]')
-
-      # And allows to deselect copying the members.
-      uncheck I18n.t(:"projects.copy.members")
-
-      page.find("button:not([disabled])", text: "Save").click
-
-      expect(page).to have_content I18n.t(:label_copy_project)
-      expect(page).to have_content I18n.t("job_status_dialog.generic_messages.in_queue")
+      within_dialog "Background job status" do
+        expect(page).to have_heading "Applying template"
+        expect(page).to have_text "The job has been queued and will be processed shortly."
+      end
 
       # Run background jobs twice: the background job which itself enqueues the mailer job
       GoodJob.perform_inline
@@ -148,8 +128,8 @@ RSpec.describe "Project templates", :js, with_good_job_batches: [CopyProjectJob,
       project = Project.find_by identifier: "foo-bar"
       expect(project.name).to eq "Foo bar"
       expect(project).not_to be_templated
-      # Does not include the member excluded from being copied but sets the copying user as member.
-      expect(project.users).to match_array(current_user)
+      # Members are copied by default from the template
+      expect(project.users).to contain_exactly(current_user, other_user)
       expect(project.enabled_module_names.sort).to eq(template.enabled_module_names.sort)
 
       wp_source = template.work_packages.first.attributes.except(*%w[id author_id project_id updated_at created_at])
@@ -160,6 +140,36 @@ RSpec.describe "Project templates", :js, with_good_job_batches: [CopyProjectJob,
       wiki_target = project.wiki.pages.first
       expect(wiki_source.title).to eq(wiki_target.title)
       expect(wiki_source.text).to eq(wiki_target.text)
+    end
+
+    it "skips custom field validation when creating from template" do
+      # Create a required custom field on the template
+      custom_field = create(:string_project_custom_field, is_required: true)
+      template.project_custom_field_ids = [custom_field.id]
+
+      visit new_project_path(template_id: template.id)
+
+      # Step 2: Project details
+      expect(page).to have_text("2 of 2")
+      fill_in "Name", with: "Project from template"
+
+      click_on "Complete"
+
+      # Step 3: Custom fields - should not show custom field form when creating from template
+      expect(page).to have_no_field custom_field.name
+
+      # Templates submit automatically on step 3 since custom fields are skipped
+      expect(page).to have_dialog "Background job status"
+
+      GoodJob.perform_inline
+
+      expect(page).to have_current_path /\/projects\/project-from-template\/?/, wait: 20
+
+      # Project should be created successfully even though required custom field is empty
+      project = Project.find_by(identifier: "project-from-template")
+      expect(project).to be_present
+      expect(project.template).to eq(template)
+      expect(project.send(custom_field.attribute_getter)).to be_blank
     end
   end
 end

@@ -34,11 +34,19 @@ module My
       form do |new_access_token_form|
         new_access_token_form.text_field(
           name: :token_name,
-          label: I18n.t("my.access_token.new_access_token_dialog_text_field_label"),
-          placeholder: I18n.t("my.access_token.new_access_token_dialog_text_field_placeholder_text"),
+          autofocus: true,
+          autocomplete: "off",
+          label: I18n.t(:name_label, scope: i18n_scope),
+          caption: I18n.t(:name_caption, scope: i18n_scope, default: ""),
           visually_hide_label: false,
           required: true
         )
+      end
+
+      private
+
+      def i18n_scope
+        [:my, :access_token, :dialog, model.model_name.i18n_key]
       end
     end
   end

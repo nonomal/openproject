@@ -104,6 +104,10 @@ module Components
       expect(container).to have_link("Start date")
     end
 
+    def expect_add_finish_date_button_visible
+      expect(container).to have_link("Finish date")
+    end
+
     def enable_due_date
       retry_block do
         page.find_test_selector("wp-datepicker--show-due-date").click
@@ -174,6 +178,13 @@ module Components
       end
     end
 
+    def toggle_scheduling_mode_via_keyboard
+      page.within_test_selector "op-datepicker-modal--scheduling" do
+        el = page.find('[data-qa-selected="false"]')
+        el.native.send_keys(:enter)
+      end
+    end
+
     def click_manual_scheduling_mode
       container.click_link I18n.t("work_packages.datepicker_modal.mode.manual")
     end
@@ -217,6 +228,19 @@ module Components
 
     def clear_duration
       set_duration("")
+    end
+
+    def wait_for_preview_update
+      # we no visual clue that informs that the preview is in progress. With
+      # cuprite we can wait for the network idle, but otherwise we need to sleep
+      # an arbitrary amount of time.
+      if using_cuprite?
+        wait_for_network_idle
+      else
+        # TODO: find a better mechanism to wait for the preview to finish and
+        # update the datepicker values.
+        sleep 0.350
+      end
     end
 
     private

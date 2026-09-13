@@ -31,15 +31,15 @@ module Bim::Bcf
     class CreateService < ::BaseServices::Create
       private
 
-      def before_perform(params, service_result)
+      def before_perform(service_result)
         journal_call = create_journal(params[:issue].work_package,
                                       params[:comment])
         return journal_call if journal_call.failure?
 
-        input = { journal: journal_call.result }
-                  .merge(params)
-                  .slice(*::Bim::Bcf::Comment::CREATE_ATTRIBUTES)
-        super(input, service_result)
+        self.params = { journal: journal_call.result }
+                        .merge(params)
+                        .slice(*::Bim::Bcf::Comment::CREATE_ATTRIBUTES)
+        super
       end
 
       def create_journal(work_package, comment)

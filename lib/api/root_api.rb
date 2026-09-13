@@ -40,11 +40,10 @@ module API
 
     insert_before Grape::Middleware::Error,
                   ::GrapeLogging::Middleware::RequestLogger,
-                  { instrumentation_key: "openproject_grape_logger" }
+                  { instrumentation_key: "openproject_grape_logger",
+                    include: [API::Utilities::Loggers::EndpointName.new] }
 
     content_type :json, "application/json; charset=utf-8"
-
-    use OpenProject::Authentication::Manager
 
     helpers API::Caching::Helpers
     module Helpers
@@ -268,14 +267,19 @@ module API
           raise_query_errors(service)
         end
       end
+
+      def guard_feature_flag(feature_key)
+        unless OpenProject::FeatureDecisions.public_send("#{feature_key}_active?")
+          raise API::Errors::NotFound
+        end
+      end
     end
 
     helpers Helpers
 
     def self.auth_headers
       lambda do
-        header = OpenProject::Authentication::WWWAuthenticate
-                   .response_header(scope: authentication_scope, request_headers: env)
+        header = OpenProject::Authentication::WWWAuthenticate.response_header(env:, scope: authentication_scope)
 
         { "WWW-Authenticate" => header }
       end
@@ -299,9 +303,11 @@ module API
 
     error_response ActiveRecord::RecordNotFound, ::API::Errors::NotFound, log: false
     error_response ActiveRecord::StaleObjectError, ::API::Errors::Conflict, log: false
+
+    # TODO: Where do we expect this to be raised and **not** be a programming error?
     error_response NotImplementedError, ::API::Errors::NotImplemented, log: false
 
-    error_response MultiJson::ParseError, ::API::Errors::ParseError
+    error_response MultiJSON::ParseError, ::API::Errors::ParseError
 
     error_response ::API::Errors::Unauthenticated, headers: auth_headers, log: false
     error_response ::API::Errors::ErrorBase, rescue_subclasses: true, log: false

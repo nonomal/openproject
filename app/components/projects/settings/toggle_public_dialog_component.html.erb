@@ -31,8 +31,9 @@ See COPYRIGHT and LICENSE files for more details.
   render(
     Primer::OpenProject::DangerDialog.new(
       id: "projects_toggle_public_confirmation",
+      size: :medium_portrait,
       title: t(:title, scope: i18n_scope),
-      confirm_button_text: t(:'js.button_confirm'),
+      confirm_button_text: t(:"js.button_confirm"),
       form_arguments: {
         action: toggle_public_project_settings_general_path(@project),
         method: :post,

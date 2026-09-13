@@ -35,7 +35,9 @@ Rails.application.routes.draw do
   end
 
   resources :budgets, only: %i[show update destroy edit] do
-    get :copy, on: :member
-    get :destroy_info, on: :member
+    member do
+      get :copy
+      get :destroy_info
+    end
   end
 end

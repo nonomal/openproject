@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -43,9 +45,9 @@ module WorkPackages
         WorkingDays.new.lag(predecessor_date, successor_date)
       end
 
-      def add_lag(date, lag)
+      def with_lag(date, lag)
         # lag is *always* excluding non-working days (at least for now)
-        WorkingDays.new.add_lag(date, lag)
+        WorkingDays.new.with_lag(date, lag)
       end
 
       def start_date(due_date, duration)

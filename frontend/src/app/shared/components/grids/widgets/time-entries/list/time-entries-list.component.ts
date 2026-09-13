@@ -1,20 +1,40 @@
-import {
-  AfterViewInit,
-  ChangeDetectorRef,
-  Directive,
-  Injector,
-  OnDestroy,
-  OnInit,
-} from '@angular/core';
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
+import { AfterViewInit, ChangeDetectorRef, Directive, Injector, OnDestroy, OnInit, inject } from '@angular/core';
 import { AbstractWidgetComponent } from 'core-app/shared/components/grids/widgets/abstract-widget.component';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { PathHelperService } from 'core-app/core/path-helper/path-helper.service';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
 import { ApiV3Service } from 'core-app/core/apiv3/api-v3.service';
 import { FilterOperator } from 'core-app/shared/helpers/api-v3/api-v3-filter-builder';
 import { TimezoneService } from 'core-app/core/datetime/timezone.service';
 import { ConfirmDialogService } from 'core-app/shared/components/modals/confirm-dialog/confirm-dialog.service';
-import { TimeEntryResource } from 'core-app/features/hal/resources/time-entry-resource';
+import { TimeEntryResource, formatTimeEntryEntityName } from 'core-app/features/hal/resources/time-entry-resource';
 import idFromLink from 'core-app/features/hal/helpers/id-from-link';
 import { SchemaResource } from 'core-app/features/hal/resources/schema-resource';
 import {
@@ -22,9 +42,19 @@ import {
   Observable,
 } from 'rxjs';
 import { TurboRequestsService } from 'core-app/core/turbo/turbo-requests.service';
+import { WorkPackageResource } from 'core-app/features/hal/resources/work-package-resource';
+import { MeetingResource } from 'core-app/features/hal/resources/meeting-resource';
+import { DialogCloseDetail } from 'core-turbo/dialog-stream-action';
 
 @Directive()
 export abstract class WidgetTimeEntriesListComponent extends AbstractWidgetComponent implements OnInit, AfterViewInit, OnDestroy {
+  readonly injector = inject(Injector);
+  readonly timezone = inject(TimezoneService);
+  readonly i18n = inject(I18nService);
+  readonly pathHelper = inject(PathHelperService);
+  readonly confirmDialog = inject(ConfirmDialogService);
+  protected readonly cdr = inject(ChangeDetectorRef);
+
   public text = {
     edit: this.i18n.t('js.button_edit'),
     delete: this.i18n.t('js.button_delete'),
@@ -46,19 +76,8 @@ export abstract class WidgetTimeEntriesListComponent extends AbstractWidgetCompo
 
   private closeDialogHandler:EventListener = this.handleDialogClose.bind(this);
 
-  @InjectField() public readonly apiV3Service:ApiV3Service;
-  @InjectField() public readonly turboRequests:TurboRequestsService;
-
-  constructor(
-    readonly injector:Injector,
-    readonly timezone:TimezoneService,
-    readonly i18n:I18nService,
-    readonly pathHelper:PathHelperService,
-    readonly confirmDialog:ConfirmDialogService,
-    protected readonly cdr:ChangeDetectorRef,
-  ) {
-    super(i18n, injector);
-  }
+  public readonly apiV3Service = inject(ApiV3Service);
+  public readonly turboRequests = inject(TurboRequestsService);
 
   ngOnInit():void {
     this.loadTimeEntries();
@@ -93,8 +112,8 @@ export abstract class WidgetTimeEntriesListComponent extends AbstractWidgetCompo
 
   public get total():string {
     const duration = this.entries.reduce((current, entry) => current + this.timezone.toHours(entry.hours), 0);
-
-    return this.i18n.t('js.units.hour', { count: duration });
+    const amount = this.i18n.t('js.units.hour', { count: duration });
+    return this.i18n.t('js.label_total_amount', { amount });
   }
 
   public get anyEntries():boolean {
@@ -109,12 +128,12 @@ export abstract class WidgetTimeEntriesListComponent extends AbstractWidgetCompo
     return entry.project.name;
   }
 
-  public workPackageName(entry:TimeEntryResource):string {
-    return `#${entry.workPackage.id as string}: ${entry.workPackage.name}`;
+  public entityName(entry:TimeEntryResource):string {
+    return formatTimeEntryEntityName(entry.entity);
   }
 
-  public workPackageId(entry:TimeEntryResource):string {
-    return entry.workPackage.id as string;
+  public entityId(entry:TimeEntryResource):string {
+    return entry.entity.id!;
   }
 
   public comment(entry:TimeEntryResource):string | undefined {
@@ -125,8 +144,14 @@ export abstract class WidgetTimeEntriesListComponent extends AbstractWidgetCompo
     return this.formatNumber(this.timezone.toHours(entry.hours));
   }
 
-  public workPackagePath(entry:TimeEntryResource):string {
-    return this.pathHelper.workPackagePath(idFromLink(entry.workPackage.href));
+  public entityPath(entry:TimeEntryResource):string {
+    if (entry.entity instanceof WorkPackageResource) {
+      return this.pathHelper.workPackagePath(idFromLink(entry.entity.href));
+    } if (entry.entity instanceof MeetingResource) {
+      return this.pathHelper.meetingPath(idFromLink(entry.entity.href));
+    }
+
+    return '';
   }
 
   public get isEditable():boolean {
@@ -135,7 +160,7 @@ export abstract class WidgetTimeEntriesListComponent extends AbstractWidgetCompo
 
   public editTimeEntry(entry:TimeEntryResource):void {
     void this.turboRequests.request(
-      `${this.pathHelper.timeEntryEditDialog(entry.id as string)}`,
+      `${this.pathHelper.timeEntryEditDialog(entry.id!)}`,
       { method: 'GET' },
     );
   }
@@ -148,7 +173,7 @@ export abstract class WidgetTimeEntriesListComponent extends AbstractWidgetCompo
       showClose: true,
       closeByDocument: true,
       passedData: [
-        `#${idFromLink(entry.workPackage?.href)} ${entry.workPackage?.name}`,
+        entry.entity ? this.entityName(entry) : '',
         `${this.i18n.t(
           'js.units.hour',
           { count: this.timezone.toHours(entry.hours) },
@@ -167,11 +192,11 @@ export abstract class WidgetTimeEntriesListComponent extends AbstractWidgetCompo
       });
   }
 
-  protected abstract dmFilters():Array<[string, FilterOperator, [string]]>;
+  protected abstract dmFilters():[string, FilterOperator, [string]][];
 
   private buildEntries(entries:TimeEntryResource[]) {
     this.entries = entries;
-    const sumsByDateSpent:{ [key:string]:number } = {};
+    const sumsByDateSpent:Record<string, number> = {};
 
     entries.forEach((entry) => {
       const date = entry.spentOn;
@@ -217,8 +242,8 @@ export abstract class WidgetTimeEntriesListComponent extends AbstractWidgetCompo
       .get();
   }
 
-  private handleDialogClose(event:CustomEvent):void {
-    const { detail: { dialog, submitted } } = event as { detail:{ dialog:HTMLDialogElement; submitted:boolean } };
+  private handleDialogClose(event:CustomEvent<DialogCloseDetail>):void {
+    const { detail: { dialog, submitted } } = event;
     if (dialog.id === 'time-entry-dialog' && submitted) {
       this.loadTimeEntries();
     }

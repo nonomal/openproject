@@ -4,6 +4,13 @@ module OpenProject::Bim::Patches::WorkPackageBoardSeederPatch
   end
 
   module InstanceMethods
+    BCF_BOARD_STATUS_REFERENCES = %i[
+      default_status_new
+      default_status_in_progress
+      default_status_resolved
+      default_status_closed
+    ].freeze
+
     def seed_data!
       super
 
@@ -15,6 +22,15 @@ module OpenProject::Bim::Patches::WorkPackageBoardSeederPatch
           Setting.boards_demo_data_available = "true"
         end
       end
+    end
+
+    def all_required_references
+      required_refs = super
+      if OpenProject::Configuration.bim? && project_data.lookup("boards.bcf")
+        required_refs += BCF_BOARD_STATUS_REFERENCES
+        required_refs.uniq!
+      end
+      required_refs
     end
 
     def seed_bcf_board(board_data)
@@ -42,12 +58,7 @@ module OpenProject::Bim::Patches::WorkPackageBoardSeederPatch
     end
 
     def seed_bcf_board_queries
-      statuses(
-        :default_status_new,
-        :default_status_in_progress,
-        :default_status_resolved,
-        :default_status_closed
-      ).map do |status|
+      seed_data.find_references(BCF_BOARD_STATUS_REFERENCES).map do |status|
         Query.new_default(project:, user: admin_user).tap do |query|
           # Make it public so that new members can see it too
           query.public = true

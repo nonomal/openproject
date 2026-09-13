@@ -1,23 +1,23 @@
 <%= render(Primer::OpenProject::SubHeader.new) do |subheader|
       subheader.with_filter_button(
-        label: I18n.t(:description_filter),
         id: "filter-member-button",
-        aria: { label: I18n.t(:description_filter) },
         class: "toggle-member-filter-link",
-        data: filter_button_data_attributes
+        data: filter_button_data_attributes,
+        scheme: :secondary # Remove once there is a search in the SubHeader
       ) do
-        I18n.t(:description_filter)
+        I18n.t(:button_all_filters)
       end
 
-      subheader.with_action_button(
-        scheme: :primary,
-        aria: { label: I18n.t(:button_add_member) },
-        title: I18n.t(:button_add_member),
-        id: "add-member-button",
-        data: add_button_data_attributes
-      ) do |button|
-        button.with_leading_visual_icon(icon: :plus)
-        t("activerecord.models.member")
+      if authorize_for(:members, :new)
+        subheader.with_action_button(
+          scheme: :primary,
+          leading_icon: :plus,
+          label: t(:button_add_member),
+          id: "add-member-button",
+          data: add_button_data_attributes
+        ) do
+          Member.model_name.human
+        end
       end
 
       subheader.with_bottom_pane_component do

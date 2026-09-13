@@ -21,12 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { getType } from 'mime';
+import mime from 'mime';
 import { Observable, of } from 'rxjs';
 import { map, share, switchMap } from 'rxjs/operators';
 import { HttpClient, HttpEvent, HttpEventType } from '@angular/common/http';
@@ -69,7 +69,7 @@ export class FogUploadService extends OpUploadService {
 
   private prepareUpload(href:string, uploadFile:AttachmentUploadFile):Observable<PrepareUploadData> {
     const fileName = uploadFile.file.name;
-    const contentType = (uploadFile.file.type || (fileName && getType(fileName)) || '' as string);
+    const contentType = uploadFile.file.type ?? (fileName && mime.getType(fileName)) ?? '';
     const metadata = {
       fileName,
       contentType,
@@ -118,7 +118,8 @@ export class FogUploadService extends OpUploadService {
         observe: 'events',
         headers: { [EXTERNAL_REQUEST_HEADER]: 'true' },
         responseType: 'text',
-        reportProgress: true,
+        reportUploadProgress: true,
+        reportDownloadProgress: true,
       },
     );
   }

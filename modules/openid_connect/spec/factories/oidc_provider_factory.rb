@@ -30,29 +30,26 @@
 
 FactoryBot.define do
   factory :oidc_provider, class: "OpenIDConnect::Provider" do
-    display_name { "Foobar" }
-    slug { "oidc-foobar" }
+    sequence(:display_name) { |n| "Foobar ##{n}" }
+    sequence(:slug) { |n| "oidc-foobar-#{n}" }
     limit_self_registration { true }
     creator factory: :user
 
-    options do
-      {
-        "issuer" => "https://keycloak.local/realms/master",
-        "jwks_uri" => "https://keycloak.local/realms/master/protocol/openid-connect/certs",
-        "client_id" => "https://openproject.local",
-        "client_secret" => "9AWjVC3A4U1HLrZuSP4xiwHfw6zmgECn",
-        "oidc_provider" => "custom",
-        "token_endpoint" => "https://keycloak.local/realms/master/protocol/openid-connect/token",
-        "userinfo_endpoint" => "https://keycloak.local/realms/master/protocol/openid-connect/userinfo",
-        "end_session_endpoint" => "https://keycloak.local/realms/master/protocol/openid-connect/logout",
-        "authorization_endpoint" => "https://keycloak.local/realms/master/protocol/openid-connect/auth"
-      }
-    end
+    host { "https://keycloak.local" }
+    issuer { "https://keycloak.local/realms/master" }
+    jwks_uri { "https://keycloak.local/realms/master/protocol/openid-connect/certs" }
+    client_id { "https://openproject.local" }
+    client_secret { "9AWjVC3A4U1HLrZuSP4xiwHfw6zmgECn" }
+    oidc_provider { "custom" }
+    token_endpoint { "https://keycloak.local/realms/master/protocol/openid-connect/token" }
+    userinfo_endpoint { "https://keycloak.local/realms/master/protocol/openid-connect/userinfo" }
+    end_session_endpoint { "https://keycloak.local/realms/master/protocol/openid-connect/logout" }
+    authorization_endpoint { "https://keycloak.local/realms/master/protocol/openid-connect/auth" }
 
     trait :token_exchange_capable do
       callback(:after_build) do |provider|
         provider.options["grant_types_supported"] ||= []
-        provider.options["grant_types_supported"] << OpenIDConnect::Provider::TOKEN_EXCHANGE_GRANT_TYPE
+        provider.options["grant_types_supported"] << OpenProject::OAuth2::TOKEN_EXCHANGE_GRANT_TYPE
       end
     end
   end

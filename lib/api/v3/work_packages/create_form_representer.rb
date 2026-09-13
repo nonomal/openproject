@@ -78,7 +78,7 @@ module API
              represented.type_id &&
              represented.type_id != 0
             {
-              href: edit_type_path(represented.type_id, tab: "form_configuration"),
+              href: edit_type_form_configuration_path(represented.type_id),
               type: "text/html",
               title: "Configure form"
             }

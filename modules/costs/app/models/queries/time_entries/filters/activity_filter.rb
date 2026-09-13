@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -52,7 +54,7 @@ class Queries::TimeEntries::Filters::ActivityFilter < Queries::TimeEntries::Filt
                 .or(shared_values)
                 .pluck(:id)
 
-    operator_strategy.sql_for_field(db_values, self.class.model.table_name, self.class.key)
+    operator_strategy.sql_for_field(db_values, self.class.model.table_name, key)
   end
 
   private

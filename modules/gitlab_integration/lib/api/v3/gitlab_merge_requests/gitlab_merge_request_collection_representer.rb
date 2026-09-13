@@ -1,4 +1,4 @@
-#-- encoding: UTF-8
+# frozen_string_literal: true
 
 #-- copyright
 # OpenProject is an open source project management software.
@@ -33,7 +33,6 @@ module API
   module V3
     module GitlabMergeRequests
       class GitlabMergeRequestCollectionRepresenter < ::API::Decorators::Collection
-        self.to_eager_load = ::API::V3::GitlabMergeRequests::GitlabMergeRequestRepresenter.to_eager_load
       end
     end
   end

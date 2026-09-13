@@ -50,13 +50,13 @@ RSpec.describe Activities::Fetcher, "integration" do
       .not_to include("budgets")
   end
 
-  describe "#events", with_flag: { internal_comments: true } do
+  describe "#events" do
     let(:event_user) { user }
     let(:work_package) { create(:work_package, project:, author: event_user) }
     let(:forum) { create(:forum, project:) }
     let(:message) { create(:message, forum:, author: event_user) }
     let(:news) { create(:news, project:, author: event_user) }
-    let(:time_entry) { create(:time_entry, project:, work_package:, user: event_user) }
+    let(:time_entry) { create(:time_entry, project:, entity: work_package, user: event_user) }
     let(:repository) { create(:repository_subversion, project:) }
     let(:changeset) { create(:changeset, committer: event_user.login, repository:) }
     let(:wiki) { create(:wiki, project:) }
@@ -117,15 +117,6 @@ RSpec.describe Activities::Fetcher, "integration" do
         it "finds only events matching the scope" do
           expect(event_journables)
             .to match_array(activities_of_types(Message, TimeEntry, Project))
-        end
-      end
-
-      context "with scope of compatibility alias of project_attributes for project_details" do
-        before { options[:scope] = %w[project_attributes] }
-
-        it "finds only events matching the scope" do
-          expect(event_journables)
-            .to match_array(activities_of_types(Project))
         end
       end
     end

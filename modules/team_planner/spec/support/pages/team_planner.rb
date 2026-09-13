@@ -180,10 +180,18 @@ module Pages
     end
 
     def expect_views_listed_in_order(*queries)
-      within ".generic-table tbody" do
-        listed_view_names = all("tr td.name").map(&:text)
+      expected_names = queries.map(&:name)
 
-        expect(listed_view_names).to eq(queries.map(&:name))
+      # Sorting reloads the whole page (the sort links navigate via a full
+      # browser visit, not a Turbo Stream), so the rows are replaced
+      # asynchronously. Asserting against a one-shot snapshot of the rows races
+      # the reload and intermittently reads the previous order. Use retrying
+      # matchers that re-query the document until the new order settles.
+      within ".generic-table tbody" do
+        expect(page).to have_css("tr td.name", count: expected_names.size)
+        expected_names.each_with_index do |name, index|
+          expect(page).to have_css("tr:nth-of-type(#{index + 1}) td.name", exact_text: name)
+        end
       end
     end
 
@@ -203,6 +211,7 @@ module Pages
       select_autocomplete(find('[data-test-selector="project_id"]'),
                           query: project,
                           results_selector: "body",
+                          wait_dropdown_open: true,
                           wait_for_fetched_options: false)
     end
 
@@ -249,6 +258,7 @@ module Pages
     def select_user_to_add(name)
       select_autocomplete page.find('[data-test-selector="tp-add-assignee"]'),
                           query: name,
+                          wait_dropdown_open: false,
                           results_selector: "body"
     end
 

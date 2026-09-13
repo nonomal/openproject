@@ -87,14 +87,14 @@ module Storages::Admin::Forms
       I18n.t(
         "storages.instructions.#{provider_type}.provider_configuration",
         application_link_text: application_link_text_for(
-          ::OpenProject::Static::Links[:storage_docs][:"#{provider_type}_oauth_application"][:href],
+          ::OpenProject::Static::Links.url_for(:storage_docs, :"#{provider_type}_oauth_application"),
           I18n.t("storages.instructions.#{provider_type}.application_link_text")
         )
       ).html_safe
     end
 
     def application_link_text_for(href, link_text)
-      render(Primer::Beta::Link.new(href:, target: "_blank")) { link_text }
+      render(Primer::Beta::Link.new(href:, target: "_blank", underline: true)) { link_text }
     end
   end
 end

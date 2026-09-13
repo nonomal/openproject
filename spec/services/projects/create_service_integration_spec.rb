@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -33,9 +35,7 @@ RSpec.describe Projects::CreateService, "integration", type: :model do
   let(:new_project) { service_result.result }
   let(:service_result) { instance.call(**attributes) }
 
-  before do
-    login_as(user)
-  end
+  current_user { user }
 
   describe "writing created_at timestamp" do
     shared_let(:user) { create(:admin) }
@@ -45,7 +45,8 @@ RSpec.describe Projects::CreateService, "integration", type: :model do
     let(:attributes) do
       {
         name: "test",
-        created_at:
+        created_at:,
+        workspace_type: "project"
       }
     end
 

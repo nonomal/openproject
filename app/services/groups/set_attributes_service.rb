@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,10 +30,13 @@
 
 module Groups
   class SetAttributesService < ::BaseServices::SetAttributes
+    include ::UserAuthProviderLinksSetter
+
     private
 
     def set_attributes(params)
-      set_users(params) if params.key?(:user_ids)
+      set_users(params)
+      set_user_auth_provider_links(params.delete(:identity_url))
       super
     end
 
@@ -41,23 +46,37 @@ module Groups
     # Note that due to the way we handle members, via a specific AddUsersService
     # the group should no longer simply be saved after group_users have been added.
     def set_users(params)
-      user_ids = (params.delete(:user_ids) || []).map(&:to_i)
+      if params.key?(:replace_user_ids)
+        user_ids = extract_user_ids(params, :replace_user_ids)
+        existing_user_ids = model.group_users.map(&:user_id)
+        added_user_ids = user_ids - existing_user_ids
+        removed_user_ids = existing_user_ids - user_ids
+      else
+        added_user_ids = extract_user_ids(params, :add_user_ids)
+        removed_user_ids = extract_user_ids(params, :remove_user_ids)
+      end
 
-      existing_user_ids = model.group_users.map(&:user_id)
-      build_new_users user_ids - existing_user_ids
-      mark_outdated_users existing_user_ids - user_ids
+      build_new_users(added_user_ids)
+      mark_outdated_users(removed_user_ids)
     end
 
     def build_new_users(new_user_ids)
+      existing_user_ids = model.group_users.to_set(&:user_id)
       new_user_ids.each do |id|
+        next if existing_user_ids.include?(id)
+
         model.group_users.build(user_id: id)
       end
     end
 
     def mark_outdated_users(removed_user_ids)
       removed_user_ids.each do |id|
-        model.group_users.find { |gu| gu.user_id == id }.mark_for_destruction
+        model.group_users.find { |gu| gu.user_id == id }&.mark_for_destruction
       end
+    end
+
+    def extract_user_ids(params, key)
+      (params.delete(key) || []).map(&:to_i)
     end
   end
 end

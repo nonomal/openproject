@@ -125,8 +125,13 @@
   .router--work-packages-partitioned-split-view
     // Ensure the WP cards can span the complete width on mobile
     #content-body
-      padding: 15px 0 !important
+      padding: var(--main-menu-toggler-top-spacing) 0 15px 0 !important
 
     .toolbar-container,
-    .work-packages--filters-optional-container
+    .work-packages--filters-optional-container,
+    .op-breadcrumbs
       margin-left: 15px
+
+    #wrapper .hidden-navigation
+      .op-breadcrumbs
+        margin-left: 45px

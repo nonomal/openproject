@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -217,12 +219,12 @@ RSpec.describe PlaceholderUsersController do
 
     describe "GET deletion_info" do
       before do
-        get :deletion_info, params: { id: placeholder_user.id }
+        get :deletion_info, params: { id: placeholder_user.id }, format: :turbo_stream
       end
 
-      it "renders the deletion info response" do
+      it "renders a dialog" do
         expect(response).to be_successful
-        expect(response).to render_template "placeholder_users/deletion_info"
+        expect(response).to have_turbo_stream action: "dialog", target: "placeholder-users-delete-dialog-component"
       end
     end
 
@@ -272,7 +274,11 @@ RSpec.describe PlaceholderUsersController do
     end
 
     describe "GET show" do
-      it_behaves_like "renders the show template"
+      before do
+        get :show, params: { id: placeholder_user.id }
+      end
+
+      it { expect(response).to have_http_status :not_found }
     end
 
     describe "GET edit" do

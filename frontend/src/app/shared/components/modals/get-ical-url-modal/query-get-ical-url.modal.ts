@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -31,10 +31,8 @@ import { States } from 'core-app/core/states/states.service';
 import { HalResourceNotificationService } from 'core-app/features/hal/services/hal-resource-notification.service';
 import { ToastService } from 'core-app/shared/components/toaster/toast.service';
 import { OpModalComponent } from 'core-app/shared/components/modal/modal.component';
-import { OpModalLocalsToken } from 'core-app/shared/components/modal/modal.service';
-import { OpModalLocalsMap } from 'core-app/shared/components/modal/modal.types';
 import {
-  ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Inject, OnInit,
+  ChangeDetectionStrategy, Component, OnInit, inject,
 } from '@angular/core';
 import {
   UntypedFormGroup,
@@ -47,6 +45,7 @@ import { IsolatedQuerySpace } from 'core-app/features/work-packages/directives/q
 import { ApiV3Service } from 'core-app/core/apiv3/api-v3.service';
 import { QueryResource } from 'core-app/features/hal/resources/query-resource';
 import { CopyToClipboardService } from 'core-app/shared/components/copy-to-clipboard/copy-to-clipboard.service';
+import { PathHelperService } from 'core-app/core/path-helper/path-helper.service';
 
 interface TokenNameFormValue {
   name:string;
@@ -55,9 +54,19 @@ interface TokenNameFormValue {
 @Component({
   templateUrl: './query-get-ical-url.modal.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
-
 export class QueryGetIcalUrlModalComponent extends OpModalComponent implements OnInit {
+  public readonly I18n = inject(I18nService);
+  public readonly states = inject(States);
+  public readonly querySpace = inject(IsolatedQuerySpace);
+  public readonly wpListService = inject(WorkPackagesListService);
+  public readonly halNotification = inject(HalResourceNotificationService);
+  public readonly toastService = inject(ToastService);
+  public readonly pathService = inject(PathHelperService);
+  protected apiV3Service = inject(ApiV3Service);
+  protected copyToClipboardService = inject(CopyToClipboardService);
+
   public tokenName = '';
 
   public query:QueryResource;
@@ -70,7 +79,10 @@ export class QueryGetIcalUrlModalComponent extends OpModalComponent implements O
     ical_sharing_warning: this.I18n.t('js.ical_sharing_modal.warning'),
     token_name: this.I18n.t('js.ical_sharing_modal.token_name_label'),
     token_name_placeholder: this.I18n.t('js.ical_sharing_modal.token_name_placeholder'),
-    token_name_description_text: this.I18n.t('js.ical_sharing_modal.token_name_description_text'),
+    token_name_description_text: this.I18n.t(
+      'js.ical_sharing_modal.token_name_description_text',
+      { myAccessTokensUrl: this.pathService.myAccessTokensPath() }
+    ),
     token_name_already_in_use_error_text: this.I18n.t('js.ical_sharing_modal.token_name_already_in_use_error_text'),
     button_copy: this.I18n.t('js.ical_sharing_modal.copy_url_label'),
     button_cancel: this.I18n.t('js.button_cancel'),
@@ -84,22 +96,6 @@ export class QueryGetIcalUrlModalComponent extends OpModalComponent implements O
 
   get nameControl():AbstractControl|null {
     return this.tokenNameForm.get('name');
-  }
-
-  constructor(
-    readonly elementRef:ElementRef,
-    @Inject(OpModalLocalsToken) public locals:OpModalLocalsMap,
-    readonly I18n:I18nService,
-    readonly states:States,
-    readonly querySpace:IsolatedQuerySpace,
-    readonly cdRef:ChangeDetectorRef,
-    readonly wpListService:WorkPackagesListService,
-    readonly halNotification:HalResourceNotificationService,
-    readonly toastService:ToastService,
-    protected apiV3Service:ApiV3Service,
-    protected copyToClipboardService:CopyToClipboardService,
-  ) {
-    super(locals, cdRef, elementRef);
   }
 
   ngOnInit():void {
@@ -122,7 +118,6 @@ export class QueryGetIcalUrlModalComponent extends OpModalComponent implements O
     if (this.isBusy) {
       return;
     }
-
 
     const tokenName = (this.tokenNameForm.value as TokenNameFormValue)?.name;
 

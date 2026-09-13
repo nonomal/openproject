@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -40,5 +42,12 @@ module Queries::Filters::Shared::BooleanFilter
 
   def type_strategy
     @type_strategy ||= ::Queries::Filters::Strategies::BooleanList.new self
+  end
+
+  private
+
+  def filtering_for_true?
+    (operator_strategy == ::Queries::Operators::BooleanEquals && values == [OpenProject::Database::DB_VALUE_TRUE]) ||
+      (operator_strategy == ::Queries::Operators::BooleanNotEquals && values == [OpenProject::Database::DB_VALUE_FALSE])
   end
 end

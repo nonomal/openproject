@@ -19,140 +19,319 @@
 #Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #See COPYRIGHT and LICENSE files for more details.
 #++
+---
 vi:
-  plugin_openproject_backlogs:
-    name: "OpenProject Backlogs"
-    description: "Mô-đun này bổ sung các tính năng cho phép các nhóm agile làm việc với OpenProject trong các dự án Scrum."
   activerecord:
     attributes:
+      project:
+        allow_multiple_active_sprints: Allow multiple active sprints
+        backlog_excluded_types: Các loại gói công việc bị loại trừ khỏi Backlog
+        sprint_sharing: Chia sẻ Sprint
+        statuses_considered_closed: Các trạng thái được xem là đã đóng
+      sprint:
+        duration: Thời lượng
+        finish_date: Ngày kết thúc
+        goal: Mục tiêu Sprint
+        name: Tên Sprint
+        sharing: Chia sẻ
+        statuses:
+          active: Đang hoạt động
+          completed: Đã hoàn thành
+          in_planning: Đang lập kế hoạch
+        work_packages: Work packages
+      sprint_goal:
+        text: Sprint goal
       work_package:
-        position: "Vị trí"
-        story_points: "Điểm Story"
-        backlogs_work_package_type: "Loại Backlog"
+        backlog_bucket: Backlog bucket
+        backlog_inbox: Backlog inbox
+        backlogs_work_package_type: Loại Backlog
+        position: Vị trí
+        sprint: Sprint
+        story_points: Điểm cốt truyện
     errors:
+      messages:
+        cannot_start_while_receiving_shared_sprints: cannot be started while the project is receiving shared sprints.
+        dates_required: Bắt buộc phải có ngày bắt đầu và ngày kết thúc để bắt đầu Sprint.
+        must_be_in_planning: phải ở trạng thái đang lập kế hoạch để bắt đầu.
+        only_one_active_sprint_allowed: mỗi dự án chỉ được phép có một Sprint hoạt động tại một thời điểm.
       models:
+        project:
+          attributes:
+            allow_multiple_active_sprints:
+              locked_by_multiple_active_sprints: cannot be changed while multiple active sprints are running.
+              requires_no_sharing: can only be enabled when sprint sharing is set to 'Don't share'.
+            sprint_sharing:
+              active_or_borrowed_sprint_blocks_receiving: cannot be set to receive because the project has an active or borrowed sprint. Close or unassign the work packages first.
+              locked_by_multiple_active_sprints: cannot be changed while multiple active sprints are enabled.
+              share_all_projects_already_taken: không thể thiết lập vì dự án "%{name}" đã được chia sẻ với tất cả các dự án.
+              share_all_projects_already_taken_anonymous: không thể thiết lập vì một dự án khác đã được chia sẻ với tất cả các dự án.
+              work_packages_still_linked_to_shared_sprints: cannot be changed because work packages are still linked to shared sprints. Unassign them first.
+          receiving_sprints: đang nhận các Sprint được chia sẻ. Không thể tạo Sprint riêng.
+        sprint:
+          attributes:
+            base:
+              format: "%{message}"
+              unfinished_work_packages:
+                other: Có %{count} gói công việc chưa hoàn thành trong Sprint này.
+            status:
+              not_active: không hoạt động nên không thể đóng.
+        sprint_goal:
+          project_already_has_goal: already has a goal for this sprint.
         work_package:
           attributes:
+            backlog_bucket:
+              backlog_bucket_from_another_project: phải thuộc cùng một dự án với gói công việc.
             blocks_ids:
-              can_only_contain_work_packages_of_current_sprint: "chỉ có thể chứa ID của các gói công việc trong sprint hiện tại.\n"
-              must_block_at_least_one_work_package: "bắt buộc phải chứa ID của ít nhất một việc"
+              can_only_contain_work_packages_of_current_sprint: 'chỉ có thể chứa ID của các gói công việc trong sprint hiện tại.
+
+                '
+              must_block_at_least_one_work_package: bắt buộc phải chứa ID của ít nhất một việc
+            sprint:
+              not_assignable: không thể gán vì nó chưa được chia sẻ với dự án hoặc đã kết thúc.
+              not_eligible_for_moving: không phải là một Sprint hoạt động trong dự án chứa Sprint mà gói công việc bị chuyển đi.
             version_id:
-              task_version_must_be_the_same_as_story_version: "phải giống với phiên bản của bảng cha."
-        sprint:
-          cannot_end_before_it_starts: "Sprint không thể kết thúc trước khi nó bắt đầu."
+              task_version_must_be_the_same_as_story_version: phải giống với phiên bản của bảng cha.
+          backlog_bucket_xor_sprint: không thể gán đồng thời cho cả một Sprint và một nhóm Backlog (bucket).
+    models:
+      backlog_bucket:
+        other: Backlog buckets
+      sprint:
+        other: Sprints
+      sprint_goal:
+        other: Sprint goals
   backlogs:
-    add_new_story: "Câu chuyện mới"
-    any: "bất kỳ"
-    backlog_settings: "Lịch sử cài đặt"
-    burndown_graph: "Đồ thị Burndown"
-    card_paper_size: "Kích thước giấy cho in thẻ"
-    chart_options: "Tùy chọn biểu đồ"
-    close: "Đóng"
-    column_width: "Chiều rộng cột:"
-    date: "Ngày"
-    definition_of_done: "Định nghĩa về Hoàn thành"
-    generating_chart: "Tạo đồ thị..."
-    hours: "Giờ"
-    impediment: "Trở ngại"
-    label_versions_default_fold_state: "Hiển thị các phiên bản \n"
-    work_package_is_closed: "Gói công việc đã hoàn thành, khi"
-    label_is_done_status: "Trạng thái %{status_name} có nghĩa đã hoàn thành"
-    no_burndown_data: "Không có dữ liệu biểu đồ giảm dần. Cần phải thiết lập ngày bắt đầu và kết thúc cao điểm."
-    points: "Điểm"
-    positions_could_not_be_rebuilt: "Không thể tạo lại vị trí."
-    positions_rebuilt_successfully: "Tạo lại vị trí thành công."
-    properties: "Thuộc tính"
-    rebuild: "Dựng lại"
-    rebuild_positions: "Xây dựng lại vị trí"
-    remaining_hours: "Công việc còn lại"
-    remaining_hours_ideal: "Công việc còn lại (lý tưởng)"
-    show_burndown_chart: "Biểu đồ giảm dần"
-    story: "Câu chuyện"
-    story_points: "Điểm câu chuyện"
-    story_points_ideal: "Điểm câu chuyện (lý tưởng)"
-    task: "Nhiệm vụ"
-    task_color: "Màu nhiệm vụ"
-    unassigned: "Chưa được phân công"
-    x_more: "%{count} thêm..."
-  backlogs_active: "đang hoạt động"
-  backlogs_any: "bất kỳ"
-  backlogs_inactive: "Dự án không có hoạt động"
-  backlogs_points_burn_direction: "Điểm giảm lên/xuống"
-  backlogs_product_backlog: "Product backlog"
-  backlogs_product_backlog_is_empty: "Không có Product backlog"
-  backlogs_product_backlog_unsized: "Phần đầu của bảng nhiệm vụ tồn đọng với sản phẩm có những câu chuyện chưa được ước lượng kích thước"
-  backlogs_sizing_inconsistent: "Kích thước câu chuyện không khớp với ước lượng của chúng"
-  backlogs_sprint_notes_missing: "Cao điểm đã đóng mà không có ghi chép/nhận xét"
-  backlogs_sprint_unestimated: "Cao điểm đã đóng hoặc đang hoạt động có những câu chuyện chưa được ước lượng"
-  backlogs_sprint_unsized: "Dự án có những câu chuyện trên các cao điểm đang hoạt động hoặc đã đóng gần đây mà chưa được ước lượng"
-  backlogs_sprints: "Cao điểm"
-  backlogs_story: "Story"
-  backlogs_story_type: "Loại câu truyện tóm tắt"
-  backlogs_task: "Nhiệm vụ"
-  backlogs_task_type: "Loại công việc"
-  backlogs_velocity_missing: "Không có tốc độ hoàn thành nào được tính cho dự án này"
-  backlogs_velocity_varies: "Tốc độ thay đổi đáng kể qua các đợt cao điểm"
-  backlogs_wiki_template: "Mẫu cho trang wiki cao điểm"
-  backlogs_empty_title: "Không có phiên bản nào được xác định để sử dụng trong các nhiệm vụ tồn đọng"
-  backlogs_empty_action_text: "Để bắt đầu vớicác nhiệm vụ tồn đọng, hãy tạo một phiên bản mới và gán nó vào một cột các nhiệm vụ tồn đọng"
-  button_edit_wiki: "Sửa trang wiki"
-  error_backlogs_task_cannot_be_story: "Cài đặt không hợp lệ. Loại nhiệm vụ đã chọn không thể đồng thời là loại câu chuyện."
-  error_intro_plural: "Các lỗi đã gặp phải:"
-  error_intro_singular: "Lỗi sau đã được gặp phải:"
-  error_outro: "Vui lòng sửa các lỗi trên trước khi gửi lại."
-  event_sprint_description: "%{summary}: %{url}\n%{description}"
-  event_sprint_summary: "%{project}: %{summary}"
-  ideal: "lý tưởng"
-  inclusion: "không được bao gồm trong danh sách"
-  label_back_to_project: "Quay lại trang dự án"
-  label_backlog: "Nhiệm vụ tồn đọng"
-  label_backlogs: "Bảng nhiệm vụ tồn đọng"
-  label_backlogs_unconfigured: "Bạn chưa cấu hình Bảng nhiệm vụ tồn đọng. Vui lòng vào %{administration} > %{plugins}, sau đó nhấp vào liên kết %{configure} cho gắn thêm này. Khi bạn đã thiết lập các trường, quay lại trang này để bắt đầu sử dụng công cụ."
-  label_blocks_ids: "ID của các gói công việc bị chặn"
-  label_burndown: "Giảm dần"
-  label_column_in_backlog: "Cột trong nhiệm vụ tồn đọng"
-  label_hours: "giờ"
-  label_work_package_hierarchy: "Hệ thống phân cấp gói công việc"
-  label_master_backlog: "Các nhiệm vụ tồn đọng chính"
-  label_not_prioritized: "không được ưu tiên"
-  label_points: "điểm"
-  label_points_burn_down: "Xuống"
-  label_points_burn_up: "Tăng"
-  label_product_backlog: "tồn đọng sản phẩm"
-  label_select_all: "Chọn tất cả"
-  label_sprint_backlog: "Cao điểm nhiệm vụ tồn đọng"
-  label_sprint_cards: "Xuất thẻ"
-  label_sprint_impediments: "Vướng mắc của Cao điểm"
-  label_sprint_name: "Cao điểm \"%{name}\""
-  label_sprint_velocity: "Tốc độ %{velocity}, dựa trên %{sprints} cao điểm với trung bình %{days} ngày"
-  label_stories: "Những câu chuyện"
-  label_stories_tasks: "Câu chuyện/Nhiệm vụ"
-  label_task_board: "Bảng nhiệm vụ"
-  label_version_setting: "Các phiên bản"
-  label_version: '0886055830 '
-  label_webcal: "Webcal Feed"
-  label_wiki: "Wiki"
-  permission_view_master_backlog: "Xem tồn đọng chính"
-  permission_view_taskboards: "Xem bảng tác vụ"
-  permission_select_done_statuses: "Chọn trạng thái hoàn thành"
-  permission_update_sprints: "Cập nhật các cao điểm"
-  points_accepted: "điểm đã chấp nhận"
-  points_committed: "điểm đã cam kết"
-  points_resolved: "điểm đã giải quyết"
-  points_to_accept: "điểm không được chấp nhận"
-  points_to_resolve: "điểm chưa được giải quyết"
-  project_module_backlogs: "Các nhiệm vụ tồn đọng"
-  rb_label_copy_tasks: "Sao chép work packages"
-  rb_label_copy_tasks_all: "Toàn bộ"
-  rb_label_copy_tasks_none: "Không có"
-  rb_label_copy_tasks_open: "Mở"
-  rb_label_link_to_original: "Bao gồm liên kết đến câu chuyện gốc"
-  remaining_hours: "công việc còn lại"
-  required_burn_rate_hours: "tốc độ ghi yêu cầu (giờ)"
-  required_burn_rate_points: "tốc độ ghi yêu cầu (điểm)"
-  todo_work_package_description: "%{summary}: %{url}\n%{description}"
-  todo_work_package_summary: "%{type}: %{summary}"
-  version_settings_display_label: "Cột trong các nhiệm vụ tồn đọng"
-  version_settings_display_option_left: "trái"
-  version_settings_display_option_none: "không có"
-  version_settings_display_option_right: "phải"
+    add_existing_work_package_dialog_component:
+      title_without_container: Add existing work package
+    administration_blankslate:
+      text: Chúng tôi hiện đang thiết kế lại mô-đun Backlogs. Các thiết lập quản trị cho Sprint và Backlog sẽ hiển thị ở đây trong thời gian tới. Các thiết lập ở cấp độ dự án vẫn khả dụng.
+      title: Các thiết lập quản trị Backlog đang được phát triển
+    backlog_component:
+      button_new_backlog_bucket: New backlog bucket
+    backlog_filter_select_panel_component:
+      label_backlog_bucket_filter:
+        one: Backlog bucket
+        other: Backlog buckets
+        zero: All backlog buckets
+      label_sprint_filter:
+        one: Sprint
+        other: Sprints
+        zero: All sprints
+      select_panel_title: Select items
+    blankslate_filtered_title: No work packages match the filter criteria.
+    bucket_component:
+      action_menu:
+        add_existing_work_package: Add existing work package
+        add_new_work_package: Add new work package
+        delete_backlog_bucket: Xóa nhóm Backlog
+        edit_backlog_bucket: Chỉnh sửa nhóm Backlog
+      blankslate_description: Drag items here to add them
+      blankslate_title: Nhóm Backlog đang trống
+      drop_zone_label: Drop here to add this item
+      label_actions: Thao tác với nhóm Backlog
+    bucket_destroy_modal_component:
+      details: The backlog bucket '%{name}' will be deleted and all work packages will be moved to the backlog inbox. No work package will be deleted.
+      title: Xóa nhóm Backlog (bucket)?
+    burndown_chart:
+      show:
+        blankslate_description: Thiết lập ngày bắt đầu và kết thúc cho Sprint để tạo biểu đồ burndown.
+        blankslate_title: Không có dữ liệu biểu đồ burndown
+    excluded_work_package_types_caption: 'Chọn các loại gói công việc muốn ẩn khỏi Backlog. Các mục thuộc loại được chọn sẽ không tự động xuất hiện trong Backlog, giúp đội ngũ tập trung vào những phần việc quan trọng hơn. Ví dụ: các loại như Epic hoặc Milestone được quản lý ở cấp cao hơn có thể được ẩn đi để giữ Backlog tập trung vào các hạng mục có thể thực hiện ngay.
+
+      '
+    finish_sprint_dialog_component:
+      actions:
+        move_to_bottom_of_backlog: Di chuyển chúng xuống cuối Backlog
+        move_to_sprint: Di chuyển chúng sang một Sprint khác
+        move_to_top_of_backlog: Di chuyển chúng lên đầu Backlog
+      body: "%{message} What would you like to do with these?"
+      button_complete_sprint: Hoàn thành Sprint
+      legend: Hành động cho các gói công việc chưa hoàn thành trong Sprint
+      select_sprint_label: Chọn Sprint
+      title: Có các hạng mục đang được thực hiện (Work in Progress)
+    inbox_component:
+      action_menu:
+        add_existing_work_package: Add existing work package
+        add_new_work_package: Add new work package
+      blankslate_description: Open work packages that are not in a sprint or backlog bucket automatically appear here
+      blankslate_title: Hộp thư đến Backlog đang trống
+      drop_zone_label: Drop here to add this item
+      label_actions: Inbox actions
+      show_more:
+        other: Hiển thị thêm %{count} mục
+      title: Hộp thư đến
+    index_subheader_component:
+      label_search_by_subject: Search work packages by subject
+    label_burndown_chart: Biểu đồ Burndown
+    label_is_done_status: Trạng thái %{status_name} nghĩa là đã xong
+    label_sprint_board: Bảng Sprint
+    label_sprint_report: Sprint report
+    move_to_bucket_dialog_component:
+      title: Move to backlog bucket
+    move_to_sprint_dialog_component:
+      label_sprint: Sprint
+      title: Di chuyển sang Sprint
+    multiple_active_sprints: Multiple active sprints
+    points_label:
+      other: điểm (points)
+    positions_could_not_be_rebuilt: Không thể tạo lại vị trí.
+    positions_rebuilt_successfully: Tạo lại vị trí thành công.
+    rebuild: Dựng lại
+    rebuild_positions: Xây dựng lại vị trí
+    remaining_hours: Công việc còn lại
+    sharing: Sprint sharing
+    show_burndown_chart: Biểu đồ Burndown
+    sprint_component:
+      action_menu:
+        add_existing_work_package: Add existing work package
+        add_new_work_package: Add new work package
+        edit_sprint: Edit sprint
+      blankslate_description: No items planned yet. Drag items here to add them.
+      blankslate_title: "%{name} is empty"
+      drop_zone_label: Drop here to add this item
+      label_actions: Sprint actions
+      label_complete_sprint: Hoàn thành Sprint
+      label_start_sprint: Start sprint
+      start_sprint_disabled_reason_active_sprint: Another sprint is already active.
+      start_sprint_disabled_reason_missing_dates: Bắt buộc phải có ngày bắt đầu và ngày kết thúc để bắt đầu Sprint.
+      start_sprint_disabled_reason_receiving_shared_sprints: This project's own sprints cannot be started while it is receiving shared sprints.
+      start_sprint_disabled_reason_shared_sprint: This sprint is from another project that doesn't support multiple active sprints.
+    sprint_form:
+      goal_caption: The sprint goal is unique to this project and is not shared with other projects also using this sprint.
+      goal_for_this_project_label: "%{attribute} (for this project)"
+    sprint_form_component:
+      shared_sprint_info_banner: This is a shared sprint. Modifications will be reflected in all projects using it.
+      shared_sprint_warning_banner: This is a shared sprint. You do not have the necessary permissions to edit it.
+    sprint_reports:
+      page_header_component:
+        breadcrumb: Report
+        title: "%{sprint} report"
+    sprints:
+      row_component:
+        action_menu:
+          edit_sprint: Edit sprint
+          sprint_report: Sprint report
+    sprints_component:
+      blankslate:
+        create_and_manage_description_html: To start planning your sprint, create one here or go to the %{settings_link} to receive sprints from a different project.
+        create_description_text: To start planning your sprint, create one here.
+        manage_description_html: To start planning your sprint, go to the %{settings_link} to receive sprints from a different project.
+        no_actions_description_text: No sprints are available for this project yet.
+        receive_and_manage_description_html: This project receives sprints from a different project. Manage this in the %{settings_link}.
+        receive_description_text: This project receives shared sprints from a different project, but none are available right now.
+        settings_link_text: project thiết lập
+        title: No sprints present yet
+      button_new_sprint: New sprint
+    statuses_considered_closed_caption: 'Choose the statuses that represent a closed or finished state in your workflow. These will be treated as the "Closed" state across reporting (e.g. burndown) and sprint planning. For example, statuses like Done, Resolved, or Won''t Fix may all represent a closed work item in your process.
+
+      '
+    story_points:
+      other: "%{count} story points"
+    types_and_statuses: Types and statuses
+    unassigned: Chưa được chỉ định
+    user_preference:
+      button_update_backlogs: Cập nhật Mô-đun Backlogs
+      header_backlogs: Mô-đun Backlogs
+    work_package_card_menu_component:
+      action_menu:
+        copy_url_to_clipboard: Copy URL to clipboard
+        copy_work_package_id: Copy gói công việc (work package) ID
+        move_menu: Di chuyển đến vị trí
+        move_to_backlog_bucket: Move to backlog bucket
+        move_to_inbox: Move to backlog inbox
+        move_to_sprint: Di chuyển sang Sprint
+    work_package_is_closed: Gói công việc được thực hiện, khi
+    work_packages:
+      add_existing_dialog:
+        invalid_target: The target you are trying to add to is invalid.
+        target_not_found: The sprint or backlog you are trying to add to was not found.
+      move:
+        moved_announcement: "%{label} moved to %{list}, position %{position} of %{total}"
+      update_service:
+        invalid_target_type: 'list_type must be one of: backlog_bucket with a list_id, sprint with a list_id, or inbox without a list_id.'
+        missing_target: list_type or list_id must be present.
+  burndown:
+    story_points: Story points
+    story_points_ideal: Story points (ideal)
+  ee:
+    features:
+      multiple_active_sprints: Multiple active sprints
+      sprint_sharing: Chia sẻ Sprint
+    upsell:
+      multiple_active_sprints:
+        description: Run multiple sprints in parallel for different teams in your project for more control and flexibility.
+      sprint_sharing:
+        description: Share sprints across projects to align teams and coordinate work in scaled agile setups (SAFe).
+  label_all_sprints: All sprints
+  label_backlog: Backlog
+  label_backlog_and_sprints: Backlog and sprints
+  label_backlog_bucket_edit: Chỉnh sửa nhóm Backlog
+  label_backlog_bucket_new: New backlog bucket
+  label_backlogs: Backlog
+  label_burndown_chart: Biểu đồ Burndown
+  label_inbox: Hộp thư đến
+  label_points_burn_down: Xuống
+  label_points_burn_up: lên
+  label_sprint_board: Bảng Sprint
+  label_sprint_edit: Edit sprint
+  label_sprint_new: New sprint
+  label_task_board: Bảng nhiệm vụ
+  notice_successful_finish: The sprint was completed.
+  notice_successful_start: The sprint was started.
+  notice_unsuccessful_finish: The sprint could not be completed.
+  notice_unsuccessful_finish_with_reason: 'The sprint could not be completed: %{reason}'
+  notice_unsuccessful_start: The sprint could not be started.
+  notice_unsuccessful_start_with_reason: 'The sprint could not be started: %{reason}'
+  notice_work_package_invisible_after_move: 'The work package was moved to %{backlog} but is not visible because its type or status is excluded from the backlog.
+
+    '
+  permission_create_sprints: Create sprints
+  permission_manage_sprint_items: Manage sprint items
+  permission_select_backlog_types_and_statuses: Select backlog types and statuses
+  permission_select_backlog_types_and_statuses_explanation: 'Allows choosing which gói công việc (work package) types to hide from the backlog. Also allows defining which statuses represent a closed or finished state in the project''s workflow.
+
+    '
+  permission_share_sprint: Share sprint
+  permission_start_complete_sprint: Start/complete sprint
+  permission_view_sprints: View sprints
+  plugin_openproject_backlogs:
+    description: Mô-đun này bổ sung các tính năng cho phép các nhóm linh hoạt làm việc với OpenProject trong các dự án Scrum.
+    name: Tồn đọng dự án mở
+  project_module_backlogs: Backlog
+  projects:
+    copy:
+      backlog_buckets: Backlog buckets
+      sprints: Sprints
+    settings:
+      backlog_sharing:
+        options:
+          no_sharing:
+            caption: Sprints created in this project will only be available and visible to this project. They will also not be visible to subprojects.
+            label: Don't share
+          receive_shared:
+            caption: This project can only use sprints shared by other projects.
+            label: Receive shared sprints
+            warning: This project can only use sprints shared by other projects. Unused sprints created in this project in the past, will no longer be visible.
+          share_all_projects:
+            caption: Sprints created in this project will be available to all projects in this instance. If you select this option, it will no longer be available to other projects.
+            disabled_caption: Option not available since project "%{name}" is currently sharing with all projects and only one project can do this.
+            disabled_caption_anonymous: Option not available since another project is currently sharing with all projects and only one project can do this.
+            label: All projects
+          share_subprojects:
+            caption: Sprints created in this project will be available to all subprojects of the current project.
+            info: Sharing a sprint will share the name, status and the start and finish dates in all projects. These cannot be modified in projects that receive and use these sprints.
+            label: Subprojects
+        sprint_sharing: Share sprints
+      backlogs:
+        multiple_active_sprints:
+          description: By default, only one sprint can be active at a time per project. You can change this so that multiple sprints can be active in parallel in this project.
+          heading: Number of active sprints
+        multiple_active_sprints_component:
+          cannot_turn_off: Multiple sprints are currently active. To switch back to allow only one active sprint at a time, please first ensure that at most one sprint is active.
+          not_available_html: Multiple active sprints are not available when <a href=%{sprint_sharing_url}>sprint sharing</a> or receiving is enabled.
+        sharing_form_component:
+          disabled_due_to_multiple_active_sprints: Sprint sharing is not available when multiple active sprints are enabled.
+          sharing_description: This project can either share its own sprints, receive shared sprints or handle sprints independently (no sharing).
+          sharing_fallback_description: Lacking a corporate enterprise plan, the sharing options are limited to the project's own sprints. The currently active setting remains active.
+  query_fields:
+    backlog_inbox: Backlog inbox
+  remaining_hours: công việc còn lại

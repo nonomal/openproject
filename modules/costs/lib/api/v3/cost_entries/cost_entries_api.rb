@@ -35,7 +35,7 @@ module API
         resources :cost_entries do
           route_param :id, type: Integer, desc: "Cost entry ID" do
             after_validation do
-              @cost_entry = CostEntry.find(params[:id])
+              @cost_entry = CostEntry.visible.find(params[:id])
 
               authorize_in_project(:view_cost_entries, project: @cost_entry.project) do
                 if current_user == @cost_entry.user
@@ -47,7 +47,7 @@ module API
             end
 
             get do
-              CostEntryRepresenter.new(@cost_entry, current_user:)
+              CostEntryRepresenter.new(@cost_entry, current_user:, embed_links: true)
             end
           end
         end

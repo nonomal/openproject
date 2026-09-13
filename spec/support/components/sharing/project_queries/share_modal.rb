@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # -- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -60,8 +62,12 @@ module Components
           end
         end
 
-        def expect_upsell_banner
-          expect(page).to have_css("[data-test-selector='op-share-dialog-upsell-block']")
+        def expect_toggle_public_on
+          expect(page).to have_css("toggle-switch", text: "On")
+        end
+
+        def expect_toggle_public_off
+          expect(page).to have_css("toggle-switch", text: "Off")
         end
       end
     end

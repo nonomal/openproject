@@ -43,6 +43,7 @@ module ApplicationHelper
   include IconsHelper
   include AdditionalUrlHelpers
   include OpenProject::PageHierarchyHelper
+  include PermittedParamsHelper
 
   # Return true if user is authorized for controller/action, otherwise false
   def authorize_for(controller, action, project: @project)
@@ -99,8 +100,7 @@ module ApplicationHelper
 
   def delete_link(url, options = {})
     options = {
-      method: :delete,
-      data: { confirm: I18n.t(:text_are_you_sure) },
+      data: { turbo_method: :delete, turbo_confirm: I18n.t(:text_are_you_sure) },
       class: "icon icon-delete"
     }.merge(options)
 
@@ -125,38 +125,14 @@ module ApplicationHelper
     Project.project_tree(projects, &)
   end
 
-  def project_nested_ul(projects, &)
-    s = +""
-    if projects.any?
-      ancestors = []
-      Project.project_tree(projects) do |project, _level|
-        if ancestors.empty? || project.is_descendant_of?(ancestors.last)
-          s << "<ul>\n"
-        else
-          ancestors.pop
-          s << "</li>"
-          while ancestors.any? && !project.is_descendant_of?(ancestors.last)
-            ancestors.pop
-            s << "</ul></li>\n"
-          end
-        end
-        s << "<li>"
-        s << yield(project).to_s
-        ancestors << project
-      end
-      s << ("</li></ul>\n" * ancestors.size)
-    end
-    s.html_safe
-  end
-
   def principals_check_box_tags(name, principals)
     labeled_check_box_tags(name, principals,
                            title: :user_status_i18n,
                            class: :user_status_class)
   end
 
-  def labeled_check_box_tags(name, collection, options = {})
-    collection.sort.map do |object|
+  def labeled_check_box_tags(name, collection, options = {}) # rubocop:disable Metrics/AbcSize
+    fields = collection.sort.map do |object|
       id = name.gsub(/[\[\]]+/, "_") + object.id.to_s
 
       object_options = options.inject({}) do |h, (k, v)|
@@ -171,44 +147,47 @@ module ApplicationHelper
           styled_check_box_tag(name, object.id, false, id:) + object.to_s
         end
       end
-    end.join.html_safe
-  end
-
-  def html_safe_gsub(string, *gsub_args, &)
-    html_safe = string.html_safe?
-    result = string.gsub(*gsub_args, &)
-
-    # We only mark the string as safe if the previous string was already safe
-    if html_safe
-      result.html_safe # rubocop:disable Rails/OutputSafety
-    else
-      result
     end
+
+    safe_join(fields)
   end
 
   def authoring(created, author, options = {})
     label = options[:label] || :label_added_time_by
-    I18n.t(label, author: link_to_user(author), age: time_tag(created)).html_safe
+    # Ensure we pass inputs here to html_escape
+    # which will respect html_safe?
+    author = ERB::Util.html_escape link_to_user(author)
+    age = ERB::Util.html_escape time_tag(created)
+
+    # OG: html_safe is used here with explicitly escaped inputs except for the translation file
+    I18n.t(label, author:, age:).html_safe
   end
 
   def authoring_at(creation_date, author)
     return if author.nil?
 
-    I18n.t(:label_added_by_on, author: link_to_user(author), date: creation_date).html_safe
+    author = ERB::Util.html_escape link_to_user(author)
+    date = ERB::Util.html_escape creation_date
+
+    # OG: html_safe is used here to avoid having to change this reusable key
+    I18n.t(:label_added_by_on, author:, date:).html_safe
   end
 
   def time_tag(time)
     text = distance_of_time_in_words(Time.now, time)
-    if @project and @project.module_enabled?("activity")
+    if @project&.module_enabled?("activity") # rubocop:disable Rails/HelperInstanceVariable
       link_to(text, { controller: "/activities",
                       action: "index",
-                      project_id: @project,
+                      project_id: @project, # rubocop:disable Rails/HelperInstanceVariable
                       from: time.to_date },
               title: format_time(time))
     else
       datetime = time.acts_like?(:time) ? time.xmlschema : time.iso8601
-      content_tag(:time, text, datetime:,
-                               title: format_time(time), class: "timestamp")
+      content_tag(:time,
+                  text,
+                  datetime:,
+                  title: format_time(time),
+                  class: "timestamp")
     end
   end
 
@@ -219,6 +198,12 @@ module ApplicationHelper
     end
   end
 
+  # Backward compatibility helper for secure_headers gem migration
+  # Rails built-in CSP equivalent of nonced_javascript_tag
+  def nonced_javascript_tag(**, &)
+    javascript_tag(nonce: true, **, &)
+  end
+
   def to_path_param(path)
     path.to_s
   end
@@ -227,7 +212,8 @@ module ApplicationHelper
     formats = capture(Redmine::Views::OtherFormatsBuilder.new(self), &)
     unless formats.nil? || formats.strip.empty?
       content_tag "p", class: "other-formats" do
-        (I18n.t(:label_export_to) + formats).html_safe
+        concat I18n.t(:label_export_to)
+        concat formats
       end
     end
   end
@@ -238,8 +224,8 @@ module ApplicationHelper
     css = ["theme-#{OpenProject::CustomStyles::Design.identifier}"]
 
     if controller_path && action_name
-      css << ("controller-#{controller_path}")
-      css << ("action-#{action_name}")
+      css << "controller-#{controller_path}"
+      css << "action-#{action_name}"
     end
 
     if EnterpriseToken.hide_banners?
@@ -260,43 +246,54 @@ module ApplicationHelper
 
   # Same as Rails' simple_format helper without using paragraphs
   def simple_format_without_paragraph(text)
-    html_safe_gsub(text.to_s, /\r\n?/, "\n")
-      .then { |res| html_safe_gsub(res, /\n\n+/, "<br /><br />") }
-      .then { |res| html_safe_gsub(res, /([^\n]\n)(?=[^\n])/, '\1<br />') }
+    text.to_s.html_safe_gsub(/\r\n?/, "\n")
+        .then { it.html_safe_gsub(/\n\n+/, "<br /><br />") }
+        .then { it.html_safe_gsub(/([^\n]\n)(?=[^\n])/, '\1<br />') }
   end
 
   def lang_options_for_select(blank = true)
-    auto =
-      if blank && (valid_languages - all_languages) == (all_languages - valid_languages)
-        [["(auto)", ""]]
-      else
-        []
-      end
+    options = valid_languages.map { |lang| [*translate_language(lang), { lang: }] }
+    options.sort_by!(&:first)
 
-    mapped_languages = valid_languages.map { |lang| translate_language(lang) }
+    if blank && valid_languages.to_set == all_languages.to_set
+      options.unshift([I18n.t(:label_auto_option), ""])
+    end
 
-    auto + mapped_languages.sort_by(&:last)
+    options
   end
 
   def all_lang_options_for_select
     all_languages
       .map { |lang| translate_language(lang) }
-      .sort_by(&:last)
+      .sort_by(&:first)
+  end
+
+  def blank_select_option
+    content_tag(:option,
+                "--- #{t(:actionview_instancetag_blank_option)} ---",
+                disabled: true)
   end
 
   def theme_options_for_select
     [
-      [t("themes.light"), "light"],
-      [t("themes.light_high_contrast"), "light_high_contrast"],
-      [t("themes.dark"), "dark"]
+      [I18n.t("themes.light"), "light"],
+      [I18n.t("themes.dark"), "dark"],
+      [I18n.t("themes.sync_with_os"), "sync_with_os"]
     ]
+  end
+
+  def comment_sort_order_options
+    [[I18n.t("activities.work_packages.activity_tab.label_sort_asc"), "asc"],
+     [I18n.t("activities.work_packages.activity_tab.label_sort_desc"), "desc"]]
   end
 
   def body_data_attributes(local_assigns)
     {
-      controller: "application hover-card-trigger",
+      controller: ["application auto-theme-switcher hover-card-trigger beforeunload external-links highlight-target-element",
+                   stimulus_body_controller].compact.join(" "),
       relative_url_root: root_path,
       overflowing_identifier: ".__overflowing_body",
+      external_links_enabled_value: Setting.capture_external_links?,
       rendered_at: Time.zone.now.iso8601,
       turbo: local_assigns[:turbo_opt_out] ? "false" : nil
     }.merge(user_theme_data_attributes)
@@ -304,21 +301,25 @@ module ApplicationHelper
   end
 
   def user_theme_data_attributes
-    mode, _theme_suffix = User.current.pref.theme.split("_", 2)
-    {
-      color_mode: mode,
-      "#{mode}_theme": User.current.pref.theme
-    }
-  end
+    pref = User.current.pref
+    theme = pref.theme
 
-  def highlight_default_language(lang_options)
-    lang_options.map do |(language_name, code)|
-      if code == Setting.default_language
-        [I18n.t("settings.language_name_being_default", language_name:), code, { disabled: true, checked: true }]
-      else
-        [language_name, code]
-      end
+    theme_options = {
+      auto_theme_switcher_theme_value: theme,
+      auto_theme_switcher_desktop_light_high_contrast_logo_class: "op-logo--link_high_contrast",
+      auto_theme_switcher_mobile_white_logo_class: "op-logo--icon_white"
+    }
+
+    if pref.sync_with_os_theme?
+      theme_options[:auto_theme_switcher_force_light_contrast_value] = pref.force_light_theme_contrast?
+      theme_options[:auto_theme_switcher_force_dark_contrast_value] = pref.force_dark_theme_contrast?
+    else
+      theme_options[:color_mode] = theme
+      theme_options[:"#{theme}_theme"] = theme
+      theme_options[:auto_theme_switcher_increase_contrast_value] = pref.increase_theme_contrast?
     end
+
+    theme_options
   end
 
   def labelled_tabular_form_for(record, options = {}, &)
@@ -339,21 +340,12 @@ module ApplicationHelper
     hidden_field_tag("back_url", CGI.escape(back_url), id: nil) if back_url.present?
   end
 
-  def back_url_to_current_page_hidden_field_tag
-    back_url = params[:back_url]
-    if back_url.present?
-      back_url = back_url.to_s
-    elsif request.get? and params.present?
-      back_url = request.url
-    end
-
-    hidden_field_tag("back_url", back_url) if back_url.present?
+  def back_url_to_current_page
+    params[:back_url].presence&.to_s
   end
 
-  def check_all_links(form_name)
-    link_to_function(t(:button_check_all), "OpenProject.helpers.checkAll('#{form_name}', true)") +
-      " | " +
-      link_to_function(t(:button_uncheck_all), "OpenProject.helpers.checkAll('#{form_name}', false)")
+  def check_all_links(form_id = nil, &)
+    render(OpenProject::Common::CheckAllComponent.new(checkable_id: form_id), &)
   end
 
   def current_layout
@@ -430,10 +422,10 @@ module ApplicationHelper
     end
   end
 
-  # To avoid the menu flickering, disable it
-  # by default unless we're in test mode
-  def initial_menu_styles(side_displayed)
-    Rails.env.test? || !side_displayed ? "" : "display:none"
+  # To avoid FOUC (menu flickering / dark mode on logout), hide page
+  # wrapper on load except in test environment.
+  def initial_menu_styles
+    Rails.env.test? || "display:none"
   end
 
   def initial_menu_classes(side_displayed, show_decoration)
@@ -449,37 +441,46 @@ module ApplicationHelper
   # @param [optional, String] content the content of the ROBOTS tag.
   #   defaults to no index, follow, and no archive
   def robot_exclusion_tag(content = "NOINDEX,FOLLOW,NOARCHIVE")
-    "<meta name='ROBOTS' content='#{h(content)}' />".html_safe
+    tag(:meta, name: "ROBOTS", content:)
   end
 
-  def permitted_params
-    PermittedParams.new(params, current_user)
-  end
-
-  # Returns the language name in its own language for a given locale
-  #
-  # @param lang_code [String] the locale for the desired language, like `en`,
-  #   `de`, `fil`, `zh-CN`, and so on.
-  # @return [String] the language name translated in its own language
-  def translate_language(lang_code)
-    # rename in-context translation language name for the language select box
-    if lang_code.to_sym == Redmine::I18n::IN_CONTEXT_TRANSLATION_CODE &&
-      ::I18n.locale != Redmine::I18n::IN_CONTEXT_TRANSLATION_CODE
-      [Redmine::I18n::IN_CONTEXT_TRANSLATION_NAME, lang_code.to_s]
-    else
-      [I18n.t("cldr.language_name", locale: lang_code), lang_code.to_s]
-    end
-  end
-
-  def link_to_content_update(text, url_params = {}, html_options = {})
-    link_to(text, url_params, html_options.reverse_merge(target: "_top"))
+  def link_to_content_update(name, options = {}, html_options = {}, &)
+    link_to(name, options, html_options.reverse_merge(target: "_top"), &)
   end
 
   def password_complexity_requirements
-    rules = OpenProject::Passwords::Evaluator.rules_description
+    render_password_requirements
+  end
 
-    s = raw "<em>" + OpenProject::Passwords::Evaluator.min_length_description + "</em>"
-    s += raw "<br /><em>" + rules + "</em>" unless rules.empty?
-    s
+  def render_password_requirements
+    evaluator = OpenProject::Passwords::Evaluator
+    content_tag(:ul, class: "op-password-requirements") do
+      concat password_requirement_item(evaluator.min_length_description,
+                                       data: { "requirement-type": "length",
+                                               "min-length": evaluator.min_length })
+      evaluator.active_rules.each do |rule|
+        concat password_requirement_item(I18n.t("label_password_requirement_#{rule}"),
+                                         data: { "requirement-type": "rule", rule: })
+      end
+    end
+  end
+
+  private
+
+  def password_requirement_item(label, data: {})
+    content = safe_join(
+      [
+        content_tag(:span, render(Primer::Beta::Octicon.new(icon: :check)),
+                    class: "op-password-requirements--item-check"),
+        content_tag(:span, render(Primer::Beta::Octicon.new(icon: :x)),
+                    class: "op-password-requirements--item-cross"),
+        label
+      ]
+    )
+
+    content_tag(:li,
+                content,
+                class: "op-password-requirements--item",
+                data: data.merge("password-requirements-target": "requirement"))
   end
 end

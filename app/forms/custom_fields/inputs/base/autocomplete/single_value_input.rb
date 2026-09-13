@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,21 +33,24 @@ class CustomFields::Inputs::Base::Autocomplete::SingleValueInput < CustomFields:
     base_input_attributes.merge(
       autocomplete_options:,
       wrapper_data_attributes: {
-        "qa-field-name": qa_field_name
+        "custom-field-id": @custom_field.id,
+        "test-selector": test_selector
       }
     )
   end
 
   def autocomplete_options
-    {
+    opts = {
       multiple: false,
       decorated: decorated?,
       focusDirectly: false,
       append_to:
     }
+    opts[:disabled] = true if options[:disabled]
+    opts
   end
 
   def decorated?
-    raise NotImplementedError
+    raise SubclassResponsibilityError
   end
 end

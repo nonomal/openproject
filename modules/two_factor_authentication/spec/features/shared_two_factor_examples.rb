@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module SharedTwoFactorExamples
   def first_login_step
     visit signin_path
@@ -19,19 +21,21 @@ module SharedTwoFactorExamples
   def two_factor_step(token)
     expect(page).to have_css("input#otp")
     fill_in "otp", with: token
-    click_button I18n.t(:button_login)
+    click_button I18n.t(:button_login), type: "submit"
     wait_for_network_idle
   end
 
   def expect_logged_in
     wait_for_network_idle
     visit my_account_path
-    expect(page).to have_css(".form--field-container", text: user.login)
+    within_test_selector "my-account-form" do
+      expect(page).to have_field "user_login", with: user.login
+    end
   end
 
   def expect_not_logged_in
     visit my_account_path
-    expect(page).to have_no_css(".form--field-container", text: user.login)
+    expect(page).to have_no_test_selector("my-account-form")
   end
 end
 
@@ -44,12 +48,14 @@ end
 
 RSpec.shared_examples "create enforced sms device" do
   it do
-    expect_flash(type: :info,
-                 message: I18n.t("two_factor_authentication.forced_registration.required_to_add_device"))
+    expect(page)
+      .to have_test_selector "banner--2fa-required",
+                             text: I18n.t("two_factor_authentication.forced_registration.required_to_add_device")
 
     SeleniumHubWaiter.wait
     # Create SMS device
-    find(".mobile-otp-new-device-sms .button--tiny").click
+    choose I18n.t("two_factor_authentication.devices.sms.title")
+    click_button accessible_name: "Next"
     SeleniumHubWaiter.wait
     fill_in "device_phone_number", with: "invalid"
     click_on "Continue"

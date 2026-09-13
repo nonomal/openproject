@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -33,13 +33,14 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
     <button class="button"
             id="wp-fold-toggle-button"
             wpGroupToggleDropdown>
-      <op-icon icon-classes="button--icon icon-outline"></op-icon>
+      <op-icon icon-classes="button--icon icon-outline" />
       <span class="button--text"></span>
-      <op-icon icon-classes="button--icon icon-small icon-pulldown"></op-icon>
+      <op-icon icon-classes="button--icon icon-small icon-pulldown" />
     </button>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'wp-fold-toggle-view-button',
+  standalone: false,
 })
 export class WorkPackageFoldToggleButtonComponent {
 }

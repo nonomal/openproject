@@ -26,20 +26,19 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 See COPYRIGHT and LICENSE files for more details.
 
 ++#%>
-<%= render(Settings::ProjectWorkPackages::HeaderComponent.new(@project, selected: :categories)) %>
+<%= render(Settings::ProjectWorkPackages::HeaderComponent.new(@project)) %>
 
 <% if current_user.allowed_in_project?(:manage_categories, @project) %>
   <%=
     render(Primer::OpenProject::SubHeader.new) do |subheader|
       subheader.with_action_button(
         scheme: :primary,
-        aria: { label: t(:label_work_package_category_new) },
-        title: t(:label_work_package_category_new),
+        leading_icon: :plus,
+        label: t(:label_work_package_category_new),
         tag: :a,
         href: url_for({ controller: "/categories", action: "new", project_id: @project })
-      ) do |button|
-        button.with_leading_visual_icon(icon: :plus)
-        t("activerecord.models.category")
+      ) do
+        Category.model_name.human
       end
     end
   %>
@@ -90,8 +89,10 @@ See COPYRIGHT and LICENSE files for more details.
                                             title: t(:button_edit) %>
                   <%= link_to_if_authorized "",
                                             { controller: "/categories", action: "destroy", id: category },
-                                            data: { confirm: t(:text_are_you_sure) },
-                                            method: :delete,
+                                            data: {
+                                              turbo_method: :delete,
+                                              turbo_confirm: t(:text_are_you_sure)
+                                            },
                                             class: "icon icon-delete",
                                             title: t(:button_delete) %>
                 </td>

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,11 +29,17 @@
 #++
 require "spec_helper"
 
+require_relative "enumerations/shared_enumeration_examples"
+
 RSpec.describe IssuePriority do
   shared_let(:priority) { create(:priority) }
   shared_let(:default_priority) { create(:default_priority) }
 
   let(:stubbed_priority) { build_stubbed(:priority) }
+
+  it_behaves_like "enumeration#active handling", true do
+    let(:enumeration) { described_class.new(attributes_for(:priority)) }
+  end
 
   describe ".ancestors" do
     it "is an enumeration" do

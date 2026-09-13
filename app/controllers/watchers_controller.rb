@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -58,7 +60,7 @@ class WatchersController < ApplicationController
 
   def set_watcher(user, watching)
     @watched.set_watcher(user, watching)
-    redirect_back(fallback_location: home_url)
+    redirect_back(fallback_location: home_url, status: :see_other)
   end
 
   def deny_access_unless_visible

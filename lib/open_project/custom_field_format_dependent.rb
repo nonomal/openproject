@@ -32,18 +32,20 @@ module OpenProject
       allowNonOpenVersions: [:only, %w[version]],
       defaultBool: [:only, %w[bool]],
       defaultLongText: [:only, %w[text]],
-      defaultText: [:except, %w[list bool date text user version hierarchy]],
-      length: [:except, %w[list bool date user version link hierarchy]],
+      defaultText: [:except, %w[list bool date text user version hierarchy calculated_value]],
+      enterpriseBanner: [:only, %w[hierarchy]],
+      formula: [:only, %w[calculated_value]],
+      length: [:except, %w[list bool date user version link hierarchy calculated_value]],
       multiSelect: [:only, %w[list user version hierarchy]],
       possibleValues: [:only, %w[list]],
-      regexp: [:except, %w[list bool date user version hierarchy]],
-      searchable: [:except, %w[bool date float int user version hierarchy]],
-      textOrientation: [:only, %w[text]],
-      enterpriseBanner: [:only, %w[hierarchy]]
+      regexp: [:except, %w[list bool date user version hierarchy calculated_value]],
+      searchable: [:except, %w[bool date float int user version hierarchy calculated_value]],
+      textOrientation: [:only, %w[text]]
     }.freeze
 
     def self.stimulus_config
-      CONFIG.map { |target_name, (operator, formats)| [target_name, operator, formats] }.to_json
+      CONFIG
+        .map { |target_name, (operator, formats)| [target_name, operator, formats] }.to_json
     end
 
     attr_reader :format

@@ -21,14 +21,13 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { ChangeDetectionStrategy, Component, forwardRef, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, forwardRef, OnInit, inject } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { OpInviteUserModalService } from 'core-app/features/invite-user-modal/invite-user-modal.service';
 import {
   OpAutocompleterComponent,
 } from 'core-app/shared/components/autocompleter/op-autocompleter/op-autocompleter.component';
@@ -39,7 +38,6 @@ import idFromLink from 'core-app/features/hal/helpers/id-from-link';
 import { CollectionResource } from 'core-app/features/hal/resources/collection-resource';
 import { TimeEntryResource } from 'core-app/features/hal/resources/time-entry-resource';
 import { IAPIFilter } from 'core-app/shared/components/autocompleter/op-autocompleter/typings';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
 import { HalResourceSortingService } from 'core-app/features/hal/services/hal-resource-sorting.service';
 import {
   TimeEntriesWorkPackageAutocompleterTemplateComponent,
@@ -59,15 +57,13 @@ const RECENT_TIME_ENTRIES_MAGIC_NUMBER = 30;
       useExisting: forwardRef(() => TimeEntriesWorkPackageAutocompleterComponent),
       multi: true,
     },
-    // Provide a new version of the modal invite service,
-    // as otherwise the close event will be shared across all instances
-    OpInviteUserModalService,
   ],
+  standalone: false,
 })
 export class TimeEntriesWorkPackageAutocompleterComponent extends OpAutocompleterComponent implements OnInit, ControlValueAccessor {
   public mode:TimeEntryWorkPackageAutocompleterMode = 'all';
 
-  @InjectField() halSorting:HalResourceSortingService;
+  readonly halSorting = inject(HalResourceSortingService);
 
   labelAll = this.I18n.t('js.label_all');
   labelRecent = this.I18n.t('js.label_recent');
@@ -127,7 +123,7 @@ export class TimeEntriesWorkPackageAutocompleterComponent extends OpAutocomplete
     const base = this.filters ?? [];
     const isRecent = this.mode === 'recent';
     if (isRecent && this.recentWorkPackageIds.length > 0) {
-      return [...base, { name: 'id', operator: '=', values: this.recentWorkPackageIds } as IAPIFilter];
+      return [...base, { name: 'id', operator: '=', values: this.recentWorkPackageIds }];
     }
 
     return base;

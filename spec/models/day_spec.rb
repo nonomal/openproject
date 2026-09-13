@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 
 RSpec.describe Day do
@@ -118,6 +120,80 @@ RSpec.describe Day do
           expect(subject.date).to eq(current_time.prev_occurring(:friday))
         end
       end
+    end
+  end
+
+  describe ".next_working" do
+    shared_examples_for "calculating the next working day" do |as:|
+      context "when #{as} is Monday" do
+        let(:time) { Time.current.monday }
+
+        context "and tomorrow is a working day" do
+          it "returns Tuesday (tomorrow)" do
+            expect(subject.date).to eq(time.tomorrow)
+          end
+        end
+      end
+
+      context "when #{as} is Friday" do
+        let(:time) { Time.current.monday.next_occurring(:friday) }
+
+        context "and tomorrow is a weekend day" do
+          it "returns next Monday" do
+            expect(subject.date).to eq(time.next_occurring(:monday))
+          end
+        end
+      end
+
+      context "when #{as} is Thursday" do
+        let(:time) { Time.current.monday.next_occurring(:thursday) }
+
+        context "and tomorrow is working" do
+          it "returns Friday (tomorrow)" do
+            expect(subject.date).to eq(time.tomorrow)
+          end
+        end
+
+        context "and #{as} is non-working" do
+          before do
+            create(:non_working_day, date: time.tomorrow)
+          end
+
+          it "returns next Monday" do
+            expect(subject.date).to eq(time.next_occurring(:monday))
+          end
+        end
+      end
+
+      context "when #{as} is Saturday" do
+        let(:time) { Time.current.monday.next_occurring(:saturday) }
+
+        context "and tomorrow is non-working" do
+          before do
+            create(:non_working_day, date: time.tomorrow)
+          end
+
+          it "returns next Monday" do
+            expect(subject.date).to eq(time.next_occurring(:monday))
+          end
+        end
+      end
+    end
+
+    context "without providing a :from date" do
+      around do |ex|
+        Timecop.travel(time, &ex)
+      end
+
+      subject { described_class.next_working }
+
+      it_behaves_like "calculating the next working day", as: "today"
+    end
+
+    context "when providing a :from date" do
+      subject { described_class.next_working(from: time) }
+
+      it_behaves_like "calculating the next working day", as: "the from argument"
     end
   end
 

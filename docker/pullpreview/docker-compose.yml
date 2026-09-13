@@ -13,8 +13,6 @@ volumes:
 x-defaults: &defaults
   build:
     context: .
-    args:
-      OPENPROJECT_ANGULAR_BUILD: "fast"
   restart: unless-stopped
   env_file:
     - .env.pullpreview
@@ -23,6 +21,9 @@ x-defaults: &defaults
   environment:
     - "DATABASE_URL=postgresql://app:p4ssw0rd@db:5432/app?encoding=utf8&pool=5&timeout=5000&reconnect=true"
     - "OPENPROJECT_RAILS__CACHE__STORE=file_store"
+    - "OPENPROJECT_COLLABORATIVE__EDITING__HOCUSPOCUS__URL=wss://${PULLPREVIEW_PUBLIC_DNS}/hocuspocus"
+    - "OPENPROJECT_COLLABORATIVE__EDITING__HOCUSPOCUS__SECRET=secret12345"
+    - "OPENPROJECT_ADDITIONAL__HOSTS=web"
     - "RAILS_ENV=production"
     - "SECRET_KEY_BASE=d4e74f017910ac56c6ebad01165b7e1b37f4c9c02e9716836f8670cdc8d65a231e64e4f6416b19c8"
   networks:
@@ -32,20 +33,24 @@ services:
   proxy:
     image: caddy:2
     restart: unless-stopped
-    command: "caddy reverse-proxy --from '${PULLPREVIEW_URL}' --to web:8080"
+    command: "caddy run --config /etc/caddy/Caddyfile"
     networks:
       - frontend
       - backend
     depends_on:
       - web
+      - hocuspocus
+    environment:
+      - "PULLPREVIEW_PUBLIC_DNS=${PULLPREVIEW_PUBLIC_DNS}"
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - "caddy_data:/data"
+      - "./Caddyfile:/etc/caddy/Caddyfile:ro"
 
   db:
-    image: postgres:13
+    image: postgres:17
     environment:
       POSTGRES_USER: app
       POSTGRES_PASSWORD: p4ssw0rd
@@ -71,3 +76,17 @@ services:
     command: "./docker/prod/worker --seed --set attachment_max_size=262144,host_name=${PULLPREVIEW_PUBLIC_DNS}"
     depends_on:
       - db
+
+  hocuspocus:
+    image: openproject/hocuspocus:latest
+    depends_on:
+      - web
+    networks:
+      - frontend
+      - backend
+    environment:
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+      - SECRET=secret12345
+      - OPENPROJECT_URL=http://web:8080
+    expose:
+      - "1234"

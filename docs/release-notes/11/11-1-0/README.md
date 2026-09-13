@@ -50,7 +50,7 @@ Luckily, we now automated this process in order to reduce manual effort on both 
 
 Furthermore, we have extended the authentication profile with an **OpenID Connect provider.** Also, the printing, e.g. for wiki pages, has been optimized via the browser print function.
 
-## As always,…… there’s much more!
+## As always, there’s much more
 
 There are a lot more things we packed into 11.1 to tell you about.
 
@@ -92,7 +92,7 @@ Here you can find the [Installation guidelines](../../../installation-and-operat
 
 Want to upgrade from your self-managed Community version to try out the Enterprise Enterprise add-ons? [Get a 14 days free trial token directly out of your current Community installation.](https://www.openproject.org/blog/enterprise-edition-upgrade-test-free/)
 
-Navigate to the -> *Administration*-> *Enterprise Edition* and request your trial token.
+Navigate to the -> _Administration_-> _Enterprise Edition_ and request your trial token.
 
 ## Migrating to OpenProject 11.0
 

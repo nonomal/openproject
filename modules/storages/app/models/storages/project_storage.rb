@@ -56,6 +56,7 @@ module Storages
         .active
         .where(storage: Storage.automatic_management_enabled)
     end
+    scope :with_project_folder, -> { where.not(project_folder_id: [nil, ""]) }
 
     def project_folder_mode_possible?(project_folder_mode)
       storage.present? && storage.available_project_folder_modes&.include?(project_folder_mode)
@@ -82,44 +83,33 @@ module Storages
     end
 
     def open(user)
-      auth_strategy = Peripherals::Registry.resolve("#{storage}.authentication.user_bound").call(user:, storage:)
+      auth_strategy = Adapters::Registry.resolve("#{storage}.authentication.user_bound").call(user, storage)
 
-      if project_folder_not_accessible?(user)
-        Peripherals::Registry
-          .resolve("#{storage}.queries.open_storage")
-          .call(storage:, auth_strategy:)
-      else
-        Peripherals::Registry
-          .resolve("#{storage}.queries.open_file_link")
-          .call(storage:, auth_strategy:, file_id: project_folder_id)
-      end
+      result = if project_folder_not_accessible?(user)
+                 Adapters::Registry.resolve("#{storage}.queries.open_storage").call(storage:, auth_strategy:, input_data: nil)
+               else
+                 open_file_link(auth_strategy)
+               end
+
+      # FIXME: We probably could make this into a service by itself.
+      #   so errors can be more descriptive. 2025-05-05 @mereghost
+      result.either(-> { ServiceResult.success(result: it) }, -> { ServiceResult.failure(errors: it) })
     end
 
-    def open_with_connection_ensured
-      return unless storage.configured?
-      return open_project_storage_url if storage.authenticate_via_idp?
-
-      OpenProject::StaticRouting::StaticRouter.new.url_helpers.oauth_clients_ensure_connection_path(
-        oauth_client_id: storage.oauth_client.client_id,
-        storage_id: storage.id,
-        destination_url: open_project_storage_url
-      )
+    def open_project_storage_url
+      OpenProject::StaticRouting::StaticRouter.new.url_helpers.open_project_storage_url(project_id: project.identifier, id:)
     end
 
     private
 
-    def open_project_storage_url
-      OpenProject::StaticRouting::StaticRouter
-        .new
-        .url_helpers.open_project_storage_url(host: Setting.host_name,
-                                              protocol: "https",
-                                              project_id: project.identifier,
-                                              id:)
+    def open_file_link(auth_strategy)
+      Adapters::Input::OpenFileLink.build(file_id: project_folder_id).bind do |input_data|
+        Adapters::Registry.resolve("#{storage}.queries.open_file_link").call(storage:, auth_strategy:, input_data:)
+      end
     end
 
     def managed_folder_identifier
-      @managed_folder_identifier ||=
-        Peripherals::Registry.resolve("#{storage}.models.managed_folder_identifier").new(self)
+      @managed_folder_identifier ||= Adapters::Registry.resolve("#{storage}.models.managed_folder_identifier").new(self)
     end
 
     def project_folder_not_accessible?(user)

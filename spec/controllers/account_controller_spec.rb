@@ -126,6 +126,24 @@ RSpec.describe AccountController, :skip_2fa_stage do
         expect(session[:internal_login]).not_to be_present
       end
     end
+
+    context "when password login is none with a whitelist",
+            with_settings: { password_login: "none" } do
+      before do
+        Setting.password_login_bypass_principal_ids = [admin.id.to_s]
+      end
+
+      it "allows the internal login route" do
+        get :internal_login
+
+        expect(response).to render_template "account/login"
+      end
+
+      it "allows to post to login" do
+        post :login, params: { username: admin.login, password: "adminADMIN!" }
+        expect(response).to redirect_to home_path
+      end
+    end
   end
 
   describe "POST #login" do
@@ -137,6 +155,57 @@ RSpec.describe AccountController, :skip_2fa_stage do
         expect(response).to have_http_status :unprocessable_entity
         expect(response).to render_template "login"
         expect(flash[:error]).to include "Invalid user or password"
+      end
+
+      context "with unrestricted password login", with_settings: { password_login: "all" } do
+        it "does not hint at single sign-on" do
+          post :login, params: { username: "admin", password: "bad" }
+
+          expect(flash[:error]).to include "Invalid user or password"
+          expect(flash[:error]).not_to include I18n.t(:notice_account_invalid_credentials_sso_hint)
+        end
+      end
+
+      context "with password login restricted to non-SSO accounts",
+              with_settings: { password_login: "except_sso" } do
+        it "hints that the account might be set up for single sign-on" do
+          post :login, params: { username: "admin", password: "bad" }
+
+          expect(flash[:error]).to include I18n.t(:notice_account_invalid_credentials_sso_hint)
+        end
+      end
+
+      context "with password login restricted to the bypass allowlist",
+              with_settings: { password_login: "none" } do
+        before do
+          Setting.password_login_bypass_principal_ids = [admin.id.to_s]
+        end
+
+        it "hints that the account might be set up for single sign-on" do
+          post :login, params: { username: admin.login, password: "bad" }
+
+          expect(flash[:error]).to include I18n.t(:notice_account_invalid_credentials_sso_hint)
+        end
+      end
+
+      context "when the account is connected to an authentication provider",
+              with_settings: { password_login: "except_sso" } do
+        shared_let(:auth_provider) { create(:oidc_provider) }
+        shared_let(:sso_user) do
+          create(:user,
+                 login: "sso_user",
+                 password: "adminADMIN!",
+                 password_confirmation: "adminADMIN!",
+                 authentication_provider: auth_provider)
+        end
+
+        it "hints at single sign-on even though the password is correct" do
+          post :login, params: { username: sso_user.login, password: "adminADMIN!" }
+
+          expect(response).to have_http_status :unprocessable_entity
+          expect(flash[:error]).to include "Invalid user or password"
+          expect(flash[:error]).to include I18n.t(:notice_account_invalid_credentials_sso_hint)
+        end
       end
     end
 
@@ -309,7 +378,7 @@ RSpec.describe AccountController, :skip_2fa_stage do
       end
 
       context "with a user with an SSO provider attached" do
-        let(:user) { build_stubbed(:user, login: "bob", identity_url: "saml:foo") }
+        let(:user) { build_stubbed(:user, login: "bob", authentication_provider: sso_provider) }
         let(:slo_callback) { nil }
         let(:sso_provider) do
           { name: "saml", single_sign_out_callback: slo_callback }
@@ -409,7 +478,7 @@ RSpec.describe AccountController, :skip_2fa_stage do
 
     context "with disabled password login" do
       before do
-        allow(OpenProject::Configuration).to receive(:disable_password_login?).and_return(true)
+        allow(Setting).to receive(:password_login).and_return("none")
 
         post :login
       end
@@ -423,10 +492,15 @@ RSpec.describe AccountController, :skip_2fa_stage do
   describe "#login with omniauth_direct_login enabled",
            with_config: { omniauth_direct_login_provider: "some_provider" } do
     describe "GET" do
-      it "redirects to some_provider" do
+      render_views
+
+      it "renders an auto-submitting POST form to some_provider" do
         get :login
 
-        expect(response).to redirect_to "/auth/some_provider"
+        expect(response).to render_template "omniauth_direct_login"
+        expect(response.body).to include('action="/auth/some_provider"')
+        expect(response.body).to include('method="post"')
+        expect(response.body).to include('data-controller="omniauth-direct-login"')
       end
     end
 
@@ -462,7 +536,7 @@ RSpec.describe AccountController, :skip_2fa_stage do
       before do
         post "change_password",
              flash: {
-               _password_change_user_id: nil
+               _password_change_user: nil
              },
              params: {
                username: admin.login,
@@ -481,8 +555,7 @@ RSpec.describe AccountController, :skip_2fa_stage do
       before do
         post "change_password",
              params: {
-               password_change_user_id: admin.id,
-               username: admin.login,
+               password_change_user: admin.login,
                password: "adminADMIN!",
                new_password: "adminADMIN!New",
                new_password_confirmation: "adminADMIN!New"
@@ -508,7 +581,7 @@ RSpec.describe AccountController, :skip_2fa_stage do
   describe "POST #change_password" do
     context "with disabled password login" do
       before do
-        allow(OpenProject::Configuration).to receive(:disable_password_login?).and_return(true)
+        allow(Setting).to receive(:password_login).and_return("none")
         post :change_password
       end
 
@@ -516,16 +589,181 @@ RSpec.describe AccountController, :skip_2fa_stage do
         expect(response).to have_http_status :not_found
       end
     end
+
+    context "with brute force protection",
+            with_settings: { brute_force_block_minutes: 30, brute_force_block_after_failed_logins: 20 } do
+      shared_let(:user) { create(:user, login: "testuser", password: "ValidPass123!", password_confirmation: "ValidPass123!") }
+
+      describe "blocks password change attempts after too many failures" do
+        before do
+          user.update_columns(
+            failed_login_count: 20,
+            last_failed_login_on: 1.minute.ago
+          )
+
+          post :change_password,
+               params: {
+                 password_change_user: user.login,
+                 password: "ValidPass123!",
+                 new_password: "NewPass123!",
+                 new_password_confirmation: "NewPass123!"
+               }
+        end
+
+        it "blocks the attempt even with correct password" do
+          expect(response).to have_http_status :unprocessable_entity
+        end
+
+        it "does not change the password" do
+          user.reload
+          expect(user.check_password?("ValidPass123!")).to be true
+          expect(user.check_password?("NewPass123!")).to be false
+        end
+
+        it "shows an error message" do
+          if Setting.brute_force_block_after_failed_logins.to_i > 0
+            expected_message = I18n.t(:notice_account_invalid_credentials_or_blocked)
+          else
+            expected_message = I18n.t(:notice_account_invalid_credentials)
+          end
+          expect(flash[:error]).to eq(expected_message)
+        end
+      end
+
+      describe "logs failed password attempts" do
+        before do
+          user.update_columns(
+            failed_login_count: 0,
+            last_failed_login_on: nil
+          )
+
+          post :change_password,
+               params: {
+                 password_change_user: user.login,
+                 password: "WrongPassword!",
+                 new_password: "NewPass123!",
+                 new_password_confirmation: "NewPass123!"
+               }
+        end
+
+        it "increments failed login count" do
+          user.reload
+          expect(user.failed_login_count).to eq(1)
+        end
+
+        it "updates last failed login timestamp" do
+          user.reload
+          expect(user.last_failed_login_on).to be_within(1.second).of(Time.zone.now)
+        end
+
+        it "does not change the password" do
+          user.reload
+          expect(user.check_password?("ValidPass123!")).to be true
+          expect(user.check_password?("NewPass123!")).to be false
+        end
+      end
+
+      describe "accumulates multiple failed attempts" do
+        it "blocks after reaching the threshold" do
+          user.update_columns(
+            failed_login_count: 0,
+            last_failed_login_on: nil
+          )
+
+          # Make 20 failed attempts
+          20.times do
+            post :change_password,
+                 params: {
+                   password_change_user: user.login,
+                   password: "WrongPassword!",
+                   new_password: "NewPass123!",
+                   new_password_confirmation: "NewPass123!"
+                 }
+          end
+
+          user.reload
+          expect(user.failed_login_count).to eq(20)
+
+          # Next attempt should be blocked even with correct password
+          post :change_password,
+               params: {
+                 password_change_user: user.login,
+                 password: "ValidPass123!",
+                 new_password: "NewPass123!",
+                 new_password_confirmation: "NewPass123!"
+               }
+
+          user.reload
+          expect(user.check_password?("ValidPass123!")).to be true
+          expect(user.check_password?("NewPass123!")).to be false
+        end
+      end
+
+      describe "resets failed login count on successful password change" do
+        before do
+          user.update_columns(
+            failed_login_count: 5,
+            last_failed_login_on: 1.minute.ago
+          )
+
+          post :change_password,
+               params: {
+                 password_change_user: user.login,
+                 password: "ValidPass123!",
+                 new_password: "NewPass123!",
+                 new_password_confirmation: "NewPass123!"
+               }
+        end
+
+        it "resets the failed login count to zero" do
+          user.reload
+          expect(user.failed_login_count).to eq(0)
+        end
+
+        it "changes the password successfully" do
+          user.reload
+          expect(user.check_password?("NewPass123!")).to be true
+          expect(user.check_password?("ValidPass123!")).to be false
+        end
+      end
+
+      describe "allows password change after block time expires" do
+        before do
+          user.update_columns(
+            failed_login_count: 20,
+            last_failed_login_on: 31.minutes.ago
+          )
+
+          post :change_password,
+               params: {
+                 password_change_user: user.login,
+                 password: "ValidPass123!",
+                 new_password: "NewPass123!",
+                 new_password_confirmation: "NewPass123!"
+               }
+        end
+
+        it "allows the password change" do
+          user.reload
+          expect(user.check_password?("NewPass123!")).to be true
+        end
+
+        it "resets the failed login count" do
+          user.reload
+          expect(user.failed_login_count).to eq(0)
+        end
+      end
+    end
   end
 
-  describe "POST #lost_password" do
+  describe "POST #set_recovered_password" do
     context "when the user has been invited but not yet activated" do
       shared_let(:admin) { create(:admin, status: :invited) }
       shared_let(:token) { create(:recovery_token, user: admin) }
 
       context "with a valid token" do
         before do
-          post :lost_password, params: { token: token.value }
+          post :set_recovered_password, params: { token: token.value }
         end
 
         it "redirects to the login page" do
@@ -567,7 +805,7 @@ RSpec.describe AccountController, :skip_2fa_stage do
 
       context "and password login disabled" do
         before do
-          allow(OpenProject::Configuration).to receive(:disable_password_login?).and_return(true)
+          allow(Setting).to receive(:password_login).and_return("none")
 
           get :register
         end
@@ -608,7 +846,7 @@ RSpec.describe AccountController, :skip_2fa_stage do
     context "with self registration on automatic",
             with_settings: { self_registration: Setting::SelfRegistration.automatic } do
       before do
-        allow(OpenProject::Configuration).to receive(:disable_password_login?).and_return(false)
+        allow(Setting).to receive(:password_login).and_return("all")
       end
 
       context "with password login enabled" do
@@ -659,6 +897,36 @@ RSpec.describe AccountController, :skip_2fa_stage do
           end
         end
 
+        context "with a message-only registration failure" do
+          let(:service) do
+            instance_double(
+              Users::RegisterUserService,
+              call: ServiceResult.failure(message: "Registration failed")
+            )
+          end
+
+          before do
+            allow(Users::RegisterUserService).to receive(:new).and_return(service)
+
+            post :register,
+                 params: {
+                   user: {
+                     login: "register",
+                     password: "adminADMIN!",
+                     password_confirmation: "adminADMIN!",
+                     firstname: "John",
+                     lastname: "Doe",
+                     mail: "register@example.com"
+                   }
+                 }
+          end
+
+          it "adds the message to the user base errors" do
+            expect(response).to render_template :register
+            expect(assigns(:user).errors[:base]).to contain_exactly("Registration failed")
+          end
+        end
+
         context "with user limit reached" do
           let!(:admin) { create(:admin) }
 
@@ -704,7 +972,7 @@ RSpec.describe AccountController, :skip_2fa_stage do
 
       context "with password login disabled" do
         before do
-          allow(OpenProject::Configuration).to receive(:disable_password_login?).and_return(true)
+          allow(Setting).to receive(:password_login).and_return("none")
 
           post :register
         end
@@ -752,7 +1020,7 @@ RSpec.describe AccountController, :skip_2fa_stage do
 
       context "with password login disabled" do
         before do
-          allow(OpenProject::Configuration).to receive(:disable_password_login?).and_return(true)
+          allow(Setting).to receive(:password_login).and_return("none")
 
           post :register
         end
@@ -812,7 +1080,7 @@ RSpec.describe AccountController, :skip_2fa_stage do
 
       context "with password login disabled" do
         before do
-          allow(OpenProject::Configuration).to receive(:disable_password_login?).and_return(true)
+          allow(Setting).to receive(:password_login).and_return("none")
 
           post :register
         end
@@ -840,6 +1108,80 @@ RSpec.describe AccountController, :skip_2fa_stage do
       it_behaves_like "registration disabled"
     end
 
+    context "with an ongoing invitation activation",
+            with_settings: { self_registration: Setting::SelfRegistration.disabled } do
+      let(:user) { create(:invited_user, mail: "invited@example.com") }
+      let(:token) { Token::Invitation.create!(user:) }
+
+      before do
+        session[:invitation_token] = token.value
+
+        post :register,
+             params: {
+               user: {
+                 password: "adminADMIN!",
+                 password_confirmation: "adminADMIN!",
+                 firstname: "John",
+                 lastname: "Doe",
+                 mail: "self.chosen@example.com"
+               }
+             }
+      end
+
+      context "when users may change their email", with_settings: { user_can_change_email: true } do
+        it "activates the account with the email the user entered" do
+          expect(user.reload.mail).to eq "self.chosen@example.com"
+          expect(user).to be_active
+        end
+      end
+
+      context "when users may not change their email", with_settings: { user_can_change_email: false } do
+        it "activates the account with the invited email, ignoring the submitted one" do
+          expect(user.reload.mail).to eq "invited@example.com"
+          expect(user).to be_active
+        end
+      end
+    end
+
+    context "with self registration and no invitation",
+            with_settings: { self_registration: Setting::SelfRegistration.automatic } do
+      before do
+        allow(Setting).to receive(:password_login).and_return("all")
+
+        post :register,
+             params: {
+               user: {
+                 login: "register",
+                 password: "adminADMIN!",
+                 password_confirmation: "adminADMIN!",
+                 firstname: "John",
+                 lastname: "Doe",
+                 mail: "self.chosen@example.com"
+               }
+             }
+      end
+
+      shared_examples "self registration with a freely chosen email" do
+        it "creates the account with the email the user entered" do
+          user = User.find_by(login: "register")
+
+          expect(user).to be_present
+          expect(user.mail).to eq "self.chosen@example.com"
+          expect(user).to be_active
+        end
+      end
+
+      context "when users may change their email", with_settings: { user_can_change_email: true } do
+        it_behaves_like "self registration with a freely chosen email"
+      end
+
+      # Self-registration creates a new account rather than changing an existing one, so there is
+      # no invited address to pin the user to. They must still be able to pick their own email.
+      context "when users may not change their email", with_settings: { user_can_change_email: false } do
+        it_behaves_like "self registration with a freely chosen email"
+      end
+    end
+
     context "with on-the-fly registration",
             with_settings: { self_registration: Setting::SelfRegistration.disabled } do
       before do
@@ -848,7 +1190,7 @@ RSpec.describe AccountController, :skip_2fa_stage do
 
       context "with password login disabled" do
         before do
-          allow(OpenProject::Configuration).to receive(:disable_password_login?).and_return(true)
+          allow(Setting).to receive(:password_login).and_return("none")
         end
 
         describe "registration" do
@@ -1020,8 +1362,8 @@ RSpec.describe AccountController, :skip_2fa_stage do
 
         expect(session[:auth_source_sso_failure]).not_to be_present
 
-        expect(response.body).to have_text "Create a new account"
-        expect(response.body).to have_text "This field is invalid: Email has already been taken."
+        expect(Capybara.string(response.body)).to have_test_selector("registration-form")
+        expect(response.body).to have_text "Email has already been taken."
       end
     end
 
@@ -1041,18 +1383,20 @@ RSpec.describe AccountController, :skip_2fa_stage do
 
         expect(session[:auth_source_sso_failure]).not_to be_present
 
-        expect(response.body).to have_text "Create a new account"
-        expect(response.body).to have_text "This field is invalid: Email can't be blank."
+        expect(Capybara.string(response.body)).to have_test_selector("registration-form")
+        expect(response.body).to have_text "Email can't be blank."
       end
     end
   end
 
   describe "registering through auth source" do
     context "when not providing all required fields" do
-      let(:omniauth_strategy) { double("Google Strategy", name: "google") } # rubocop:disable RSpec/VerifiedDoubles
+      let(:slug) { "google" }
+      let(:omniauth_strategy) { double("Google Strategy", name: slug) } # rubocop:disable RSpec/VerifiedDoubles
+      let!(:oidc_google) { create(:oidc_provider_google, slug:) }
       let(:omniauth_hash) do
         OmniAuth::AuthHash.new(
-          provider: "google",
+          provider: slug,
           strategy: omniauth_strategy,
           uid: "123545",
           info: { name: "foo",
@@ -1092,6 +1436,85 @@ RSpec.describe AccountController, :skip_2fa_stage do
         expect(user).to be_an_instance_of(User)
         expect(user.ldap_auth_source_id).to be_nil
         expect(user.current_password).to be_nil
+        expect(user.identity_url).to eql("google:123545")
+      end
+
+      context "when after a timeout expired" do
+        before do
+          session[:auth_source_registration] = omniauth_hash.merge(
+            omniauth: true,
+            timestamp: 42.days.ago
+          )
+        end
+
+        it "does not register the user when providing all the missing fields" do
+          post :register,
+               params: {
+                 user: {
+                   firstname: "Foo",
+                   lastname: "Smith",
+                   mail: "foo@bar.com"
+                 }
+               }
+
+          expect(response).to redirect_to signin_path
+          expect(flash[:error]).to eq(I18n.t(:error_omniauth_registration_timed_out))
+          expect(User.find_by_login("foo@bar.com")).to be_nil
+        end
+      end
+    end
+
+    context "when there are missing required custom fields" do
+      let(:slug) { "google" }
+      let(:omniauth_strategy) { double("Google Strategy", name: slug) } # rubocop:disable RSpec/VerifiedDoubles
+      let!(:oidc_google) { create(:oidc_provider_google, slug:) }
+      let(:omniauth_hash) do
+        OmniAuth::AuthHash.new(
+          provider: slug,
+          strategy: omniauth_strategy,
+          uid: "123545",
+          info: { name: "foo",
+                  email: "foo@bar.com",
+                  first_name: "foo",
+                  last_name: "bar" }
+        )
+      end
+      let(:custom_field) { create(:user_custom_field, :string, is_required: true) }
+
+      before do
+        custom_field.save!
+
+        request.env["omniauth.auth"] = omniauth_hash
+        request.env["omniauth.strategy"] = omniauth_strategy
+      end
+
+      it "registers user via post" do
+        allow(OpenProject::OmniAuth::Authorization).to receive(:after_login!)
+
+        auth_source_registration = omniauth_hash.merge(
+          omniauth: true,
+          timestamp: Time.current
+        )
+        session[:auth_source_registration] = auth_source_registration
+        post :register,
+             params: {
+               user: {
+                 login: "login@bar.com",
+                 firstname: "Foo",
+                 lastname: "Smith",
+                 mail: "foo@bar.com",
+                 custom_field_values: { custom_field.id => "A string" }
+               }
+             }
+        expect(response).to redirect_to home_url(first_time_user: true)
+
+        user = User.find_by_login("login@bar.com")
+        expect(OpenProject::OmniAuth::Authorization)
+          .to have_received(:after_login!).with(user, a_hash_including(omniauth_hash), any_args)
+        expect(user).to be_an_instance_of(User)
+        expect(user.ldap_auth_source_id).to be_nil
+        expect(user.current_password).to be_nil
+        expect(user.custom_field_values).to include(have_attributes(custom_field_id: custom_field.id, value: "A string"))
         expect(user.identity_url).to eql("google:123545")
       end
 

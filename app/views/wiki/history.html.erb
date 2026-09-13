@@ -1,4 +1,4 @@
-<%#-- copyright
+<%# -- copyright
 OpenProject is an open source project management software.
 Copyright (C) the OpenProject GmbH
 
@@ -25,8 +25,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 See COPYRIGHT and LICENSE files for more details.
 
-++#%>
-<% html_title t("activerecord.models.wiki"), t(:label_history) %>
+++# %>
+<% html_title Wiki.model_name.human, t(:label_history) %>
 <%=
   render Primer::OpenProject::PageHeader.new do |header|
     header.with_title { t(:label_history) }
@@ -38,7 +38,6 @@ See COPYRIGHT and LICENSE files for more details.
 
 <%= form_tag({ action: "diff" }, method: :get) do %>
   <div class="generic-table--container"
-       data-application-target="dynamic"
        data-controller="journal-history">
     <div class="generic-table--results-container">
       <table class="generic-table wiki-page-versions">
@@ -51,9 +50,9 @@ See COPYRIGHT and LICENSE files for more details.
           <col>
           <col data-highlight="false">
         </colgroup>
-        <caption class="hidden-for-sighted">
+        <caption class="sr-only">
           <span>
-            <%= t(:text_table_difference_description, entries: t(:label_wiki_page) + " " + t(:label_version_plural)) %>
+            <%= t(:text_table_difference_description, entries: t(:label_wiki_page_versions)) %>
           </span>
         </caption>
         <thead>
@@ -64,18 +63,17 @@ See COPYRIGHT and LICENSE files for more details.
                   <span aria-describedby="wiki-id--description">
                     #
                   </span>
-                  <label id="wiki-id--description" class="hidden-for-sighted">
+                  <label id="wiki-id--description" class="sr-only">
                     <%= t(:label_wiki_page_id) %>
                   </label>
                 </div>
               </div>
             </th>
-            </th>
             <th>
               <div class="generic-table--empty-header">
                 <div class="generic-table--header">
                   <span>
-                    <%= t(:description_compare_from) + " " + t(:label_version) %>
+                    <%= t(:description_compare_version_from) %>
                   </span>
                 </div>
               </div>
@@ -84,7 +82,7 @@ See COPYRIGHT and LICENSE files for more details.
               <div class="generic-table--empty-header">
                 <div class="generic-table--header">
                   <span>
-                    <%= t(:description_compare_to) + " " + t(:label_version) %>
+                    <%= t(:description_compare_version_to) %>
                   </span>
                 </div>
               </div>
@@ -127,11 +125,11 @@ See COPYRIGHT and LICENSE files for more details.
               <td class="id"><%= link_to h(ver.version), action: "show", id: @page, project_id: @page.project, version: ver.version %></td>
               <td class="checkbox">
                 <% if show_diff && (line_num < @versions.size) %>
-                  <label for="<%= "cb-#{line_num}" %>" class="hidden-for-sighted"><%= t(:description_compare_from) + " " + t(:label_version) + " " + h(ver.version.to_s) %></label>
+                  <label for="<%= "cb-#{line_num}" %>" class="sr-only"><%= t(:description_compare_specific_version_from, version: ver.version) %></label>
                   <%= radio_button_tag(
                         "version_from",
                         ver.version,
-                        (line_num == 1),
+                        line_num == 1,
                         class: "history-cb-from",
                         id: "cb-#{line_num}",
                         data: {
@@ -143,11 +141,11 @@ See COPYRIGHT and LICENSE files for more details.
               </td>
               <td class="checkbox">
                 <% if show_diff && (line_num > 1) %>
-                  <label for="<%= "cbto-#{line_num}" %>" class="hidden-for-sighted"><%= t(:description_compare_to) + " " + t(:label_version) + " " + h(ver.version.to_s) %></label>
+                  <label for="<%= "cbto-#{line_num}" %>" class="sr-only"><%= t(:description_compare_specific_version_to, version: ver.version) %></label>
                   <%= radio_button_tag(
                         "version_to",
                         ver.version,
-                        (line_num == 2),
+                        line_num == 2,
                         id: "cbto-#{line_num}",
                         data: {
                           "journal-history-target": "toVersion",

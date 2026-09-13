@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,96 +31,167 @@
 require "spec_helper"
 
 RSpec.describe API::V3::Reminders::RemindersAPI do
-  let!(:project) { create(:project) }
+  include API::V3::Utilities::PathHelper
 
-  let!(:role_with_permissions) { create(:project_role, permissions: %i[view_work_packages]) }
-  let!(:role_without_permissions) { create(:project_role, permissions: %i[view_project]) }
+  shared_let(:project) { create(:project) }
+  shared_let(:work_package) { create(:work_package, project:) }
+  shared_let(:user_with_permissions) { create(:user, member_with_permissions: { project => %i[view_work_packages] }) }
+  shared_let(:other_user) { create(:user, member_with_permissions: { project => %i[view_work_packages] }) }
+  shared_let(:other_user_without_permissions) { create(:user, member_with_permissions: { project: %i[view_projects] }) }
 
-  let!(:user_with_permissions) do
-    create(:user, member_with_roles: { project => role_with_permissions })
-  end
-  let!(:other_user_without_permissions) do
-    create(:user, member_with_roles: { project => role_without_permissions })
-  end
+  describe "GET /api/v3/reminders" do
+    let!(:user_reminders) do
+      create_list(:reminder, 2, creator: user_with_permissions, remind_at: 1.day.from_now, remindable: work_package)
+    end
 
-  let!(:work_package) { create(:work_package, project:) }
-  let!(:other_work_package) { create(:work_package, project:) }
+    let!(:user_reminders_completed) do
+      create_list(:reminder, 2, creator: user_with_permissions, remind_at: 1.day.ago, completed_at: 1.day.ago,
+                                remindable: work_package)
+    end
 
-  let!(:user_with_permissions_past_reminder) do
-    Reminders::CreateService.new(user: user_with_permissions, contract_class: nil)
-                           .call(remindable: work_package,
-                                 remind_at: 1.day.ago,
-                                 creator: user_with_permissions,
-                                 note: "I'm the user with permissions and my reminder is in the past")
-                           .result
-  end
-  let!(:user_with_permissions_future_reminder) do
-    Reminders::CreateService.new(user: user_with_permissions, contract_class: nil)
-                           .call(remindable: work_package,
-                                 remind_at: 1.day.from_now,
-                                 creator: user_with_permissions,
-                                 note: "I'm the user with permissions and my reminder is in the future")
-                           .result
-  end
-  let!(:user_with_permissions_future_reminder_in_other_work_package) do
-    Reminders::CreateService.new(user: user_with_permissions, contract_class: nil)
-                           .call(remindable: other_work_package,
-                                 remind_at: 1.day.from_now,
-                                 creator: user_with_permissions,
-                                 note: "I'm the user with permissions and my reminder is in the future in another work package")
-                           .result
-  end
-  let!(:other_user_without_permissions_reminder) do
-    Reminders::CreateService.new(user: other_user_without_permissions, contract_class: nil)
-                           .call(remindable: other_work_package,
-                                 remind_at: 1.day.from_now,
-                                 creator: other_user_without_permissions,
-                                 note: "I'm the other user without permissions and my reminder is in the future")
-                           .result
-  end
-  let!(:other_user_without_permissions_reminder_past) do
-    Reminders::CreateService.new(user: other_user_without_permissions, contract_class: nil)
-                           .call(remindable: other_work_package,
-                                 remind_at: 1.day.ago,
-                                 creator: other_user_without_permissions,
-                                 note: "I'm the other user without permissions and my reminder is in the past")
-                           .result
-  end
-  let!(:other_user_without_permissions_reminder_in_other_work_package) do
-    Reminders::CreateService.new(user: other_user_without_permissions, contract_class: nil)
-                           .call(remindable: other_work_package,
-                                 remind_at: 1.day.from_now,
-                                 creator: other_user_without_permissions,
-                                 note: "I'm the other user without permissions and my reminder is in the" \
-                                       "future in another work package")
-                           .result
+    let(:path) { api_v3_paths.reminders }
+
+    context "with logged in user" do
+      current_user { user_with_permissions }
+
+      before { get path }
+
+      it_behaves_like "API V3 collection response", 2, 2, "Reminder" do
+        let(:elements) { user_reminders }
+      end
+    end
+
+    it_behaves_like "handling anonymous user"
   end
 
-  let(:href) { "/api/v3/work_packages/#{work_package.id}/reminders" }
-  let(:request) { get href }
-  let(:result) do
-    request
-    JSON.parse last_response.body
-  end
-  let(:subjects) { reminders.pluck("id") }
+  describe "PATCH /api/v3/reminders/:id" do
+    let(:headers) { { "CONTENT_TYPE" => "application/json" } }
 
-  def reminders
-    result["_embedded"]["elements"]
-  end
+    let!(:reminder) { create(:reminder, remindable: work_package, creator: user_with_permissions) }
+    let!(:other_user_reminder) { create(:reminder, remindable: work_package, creator: other_user_without_permissions) }
+    let!(:completed_reminder) do
+      create(:reminder, :completed, remindable: work_package, creator: user_with_permissions)
+    end
 
-  context "with no permissions" do
-    current_user { other_user_without_permissions }
+    def make_request
+      patch path, params.to_json, headers
+    end
 
-    it "responds with unprocessable entity" do
-      expect(result["errorIdentifier"]).to eq("urn:openproject-org:api:v3:errors:NotFound")
+    context "with permissions updating own reminder" do
+      let(:path) { api_v3_paths.reminder(reminder.id) }
+      let(:params) { { note: "UPDATED reminder note!" } }
+
+      current_user { user_with_permissions }
+
+      before { make_request }
+
+      it_behaves_like "successful response", 200, "Reminder" do
+        it "returns updated reminder attributes" do
+          expect(last_response.body)
+            .to be_json_eql("UPDATED reminder note!".to_json)
+            .at_path("note")
+        end
+      end
+    end
+
+    context "with permissions updating completed reminder" do
+      let(:path) { api_v3_paths.reminder(completed_reminder.id) }
+      let(:params) { { note: "UPDATED reminder note!" } }
+
+      current_user { user_with_permissions }
+
+      before { make_request }
+
+      it_behaves_like "error response",
+                      404, "NotFound",
+                      "The reminder you are looking for cannot be found or has been deleted."
+    end
+
+    context "with permissions updating other user's reminder" do
+      let(:path) { api_v3_paths.reminder(other_user_reminder.id) }
+      let(:params) { { note: "CANNOT update!" } }
+
+      current_user { user_with_permissions }
+
+      before { make_request }
+
+      it_behaves_like "error response",
+                      404, "NotFound",
+                      "The reminder you are looking for cannot be found or has been deleted."
+    end
+
+    context "with no permissions updating own reminder" do
+      let(:path) { api_v3_paths.reminder(other_user_reminder.id) }
+      let(:params) { { note: "UPDATED reminder note!" } }
+
+      current_user { other_user_without_permissions }
+
+      before { make_request }
+
+      it_behaves_like "error response",
+                      404, "NotFound",
+                      "The reminder you are looking for cannot be found or has been deleted."
     end
   end
 
-  context "with permissions" do
-    current_user { user_with_permissions }
+  describe "DELETE /api/v3/reminders/:id" do
+    let(:headers) { { "CONTENT_TYPE" => "application/json" } }
 
-    it "returns the future reminders for the current user in the given work package" do
-      expect(subjects).to contain_exactly(user_with_permissions_future_reminder.id)
+    let(:reminder) { create(:reminder, remindable: work_package, creator: user_with_permissions) }
+    let(:other_user_reminder) { create(:reminder, remindable: work_package, creator: other_user_without_permissions) }
+
+    let(:completed_reminder) do
+      create(:reminder, :completed, remindable: work_package, creator: user_with_permissions)
+    end
+
+    def make_request
+      delete path, headers
+    end
+
+    context "with permissions deleting own reminder" do
+      let(:path) { api_v3_paths.reminder(reminder.id) }
+
+      current_user { user_with_permissions }
+
+      before { make_request }
+
+      it_behaves_like "successful no content response"
+    end
+
+    context "with permissions deleting completed reminder" do
+      let(:path) { api_v3_paths.reminder(completed_reminder.id) }
+
+      current_user { user_with_permissions }
+
+      before { make_request }
+
+      it_behaves_like "error response",
+                      404, "NotFound",
+                      "The reminder you are looking for cannot be found or has been deleted."
+    end
+
+    context "with permissions deleting other user's reminder" do
+      let(:path) { api_v3_paths.reminder(other_user_reminder.id) }
+
+      current_user { user_with_permissions }
+
+      before { make_request }
+
+      it_behaves_like "error response",
+                      404, "NotFound",
+                      "The reminder you are looking for cannot be found or has been deleted."
+    end
+
+    context "with no permissions deleting own reminder" do
+      let(:path) { api_v3_paths.reminder(other_user_reminder.id) }
+
+      current_user { other_user_without_permissions }
+
+      before { make_request }
+
+      it_behaves_like "error response",
+                      404, "NotFound",
+                      "The reminder you are looking for cannot be found or has been deleted."
     end
   end
 end

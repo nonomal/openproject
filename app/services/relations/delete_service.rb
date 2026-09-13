@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,7 +31,7 @@
 class Relations::DeleteService < BaseServices::Delete
   include Relations::Concerns::Rescheduling
 
-  def after_perform(_result)
+  def after_perform(_call)
     result = super
     if result.success? && deleted_relation.follows?
       reschedule_result = reschedule_successor(deleted_relation)

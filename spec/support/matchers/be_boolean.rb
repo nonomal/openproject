@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec::Matchers.define :be_boolean do
   match do |value|
     [true, false].include? value

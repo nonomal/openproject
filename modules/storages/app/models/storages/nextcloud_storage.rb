@@ -23,7 +23,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
 # See COPYRIGHT and LICENSE files for more details.
 #++
@@ -42,16 +42,26 @@ module Storages
       AUTHENTICATION_METHOD_OAUTH2_SSO = "oauth2_sso"
     ].freeze
 
-    store_attribute :provider_fields, :automatically_managed, :boolean
     store_attribute :provider_fields, :username, :string
     store_attribute :provider_fields, :password, :string
     store_attribute :provider_fields, :group, :string
     store_attribute :provider_fields, :group_folder, :string
     store_attribute :provider_fields, :authentication_method, :string, default: "two_way_oauth2"
     store_attribute :provider_fields, :storage_audience, :string
+    store_attribute :provider_fields, :token_exchange_scope, :string
+
+    # Default has been chosen to maximize compatibility with Windows-based Nextcloud clients
+    # also see https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file#naming-conventions
+    store_attribute :provider_fields, :forbidden_file_name_characters, :string, default: "<>:\"\\/|?*"
+
+    def self.short_provider_name = :nextcloud
+
+    def self.non_confidential_provider_fields
+      super + %i[username group group_folder authentication_method storage_audience token_exchange_scope]
+    end
 
     def oauth_configuration
-      Peripherals::OAuthConfigurations::NextcloudConfiguration.new(self)
+      Adapters::Providers::Nextcloud::OAuthConfiguration.new(self)
     end
 
     def automatic_management_new_record?
@@ -73,6 +83,10 @@ module Storages
 
     def audience
       storage_audience
+    end
+
+    def exchanges_token?
+      storage_audience.present? && storage_audience != OpenIDConnect::UserToken::IDP_AUDIENCE
     end
 
     def authenticate_via_idp?

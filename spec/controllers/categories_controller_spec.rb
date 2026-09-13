@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -205,7 +207,7 @@ RSpec.describe CategoriesController do
       describe "#response" do
         subject { response }
 
-        it { is_expected.to be_successful }
+        it { is_expected.to have_http_status(:unprocessable_entity) }
 
         it { is_expected.to render_template("destroy") }
       end

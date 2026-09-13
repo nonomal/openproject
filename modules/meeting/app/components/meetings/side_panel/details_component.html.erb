@@ -131,23 +131,25 @@
                 render(Primer::Beta::Text.new) do
                   Meeting.human_attribute_name(
                     :participant,
-                    count: @meeting.invited_or_attended_participants.count
+                    count: @meeting.participants.count
                   )
                 end
               end
 
-              people.with_column(mr: 2) do
-                render(
-                  Primer::Beta::Button.new(
-                    scheme: :link,
-                    underline: false,
-                    tag: :a,
-                    href: participants_dialog_project_meeting_path(@project, @meeting),
-                    classes: "hide-when-print",
-                    data: { controller: "async-dialog" }
-                  )
-                ) do
-                  t("label_meeting_show_all_participants")
+              if @meeting.editable?
+                people.with_column(mr: 2) do
+                  render(
+                    Primer::Beta::Button.new(
+                      scheme: :link,
+                      underline: false,
+                      tag: :a,
+                      href: manage_participants_dialog_project_meeting_participants_path(@meeting.project, @meeting),
+                      classes: "hide-when-print",
+                      data: { controller: "async-dialog" }
+                    )
+                  ) do
+                    t("meeting.participants.label.show_all")
+                  end
                 end
               end
             end

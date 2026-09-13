@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,13 +31,13 @@
 class LdapAuthSourcesController < ApplicationController
   menu_item :ldap_authentication
   include PaginationHelper
+
   layout "admin"
 
   before_action :require_admin
   before_action :block_if_password_login_disabled
 
-  self._model_object = LdapAuthSource
-  before_action :find_model_object, only: %i(edit update destroy)
+  before_action :find_ldap_auth_source, only: %i(edit update destroy)
   before_action :prevent_editing_when_seeded, only: %i(update)
 
   def index
@@ -94,10 +96,14 @@ class LdapAuthSourcesController < ApplicationController
     else
       flash[:warning] = t(:notice_wont_delete_auth_source)
     end
-    redirect_to action: "index"
+    redirect_to action: "index", status: :see_other
   end
 
   protected
+
+  def find_ldap_auth_source
+    @ldap_auth_source = LdapAuthSource.find(params[:id])
+  end
 
   def prevent_editing_when_seeded
     if @ldap_auth_source.seeded_from_env?
@@ -107,6 +113,6 @@ class LdapAuthSourcesController < ApplicationController
   end
 
   def block_if_password_login_disabled
-    render_404 if OpenProject::Configuration.disable_password_login?
+    render_404 if Users::PasswordLogin.none?
   end
 end

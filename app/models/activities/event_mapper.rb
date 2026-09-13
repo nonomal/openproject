@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -75,11 +77,11 @@ module Activities
     end
 
     def event_data(journal)
-      raise NotImplementedError
+      raise SubclassResponsibilityError
     end
 
     def event_title(journal, data)
-      raise NotImplementedError
+      raise SubclassResponsibilityError
     end
   end
 end

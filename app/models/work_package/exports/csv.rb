@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,8 +31,17 @@
 module WorkPackage::Exports
   class CSV < QueryExporter
     include ::Exports::Concerns::CSV
+    include AdditionalColumns
 
     alias :records :work_packages
+
+    def get_columns
+      if with_descriptions
+        super + [description_column]
+      else
+        super
+      end
+    end
 
     private
 
@@ -38,29 +49,12 @@ module WorkPackage::Exports
       query.new_record? ? I18n.t(:label_work_package_plural) : query.name
     end
 
-    def csv_headers
-      return super unless with_descriptions
-
-      super + [WorkPackage.human_attribute_name(:description)]
-    end
-
     def with_descriptions
       ActiveModel::Type::Boolean.new.cast(options[:show_descriptions])
     end
 
-    # fetch all row values
-    def csv_row(work_package)
-      return super unless with_descriptions
-
-      super.tap do |row|
-        if row.any?
-          row << if work_package.description
-                   work_package.description.squish
-                 else
-                   ""
-                 end
-        end
-      end
+    def description_column
+      Queries::WorkPackages::Selects::PropertySelect.new(:description)
     end
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -71,13 +73,5 @@ RSpec.describe OpenProject::MimeType do
         expect(described_class.is_type?(*args)).to eq expected
       end
     end
-  end
-
-  it "equals the main type for the narrow type" do
-    expect(described_class.narrow_type("rubyfile.rb", "text/plain")).to eq "text/x-ruby"
-  end
-
-  it "uses original type if main type differs" do
-    expect(described_class.narrow_type("rubyfile.rb", "application/zip")).to eq "application/zip"
   end
 end

@@ -21,14 +21,14 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
 import { PrincipalLike } from 'core-app/shared/components/principal/principal-types';
 import { IPrincipal } from 'core-app/core/state/principals/principal.model';
-import { HalSourceLink } from 'core-app/features/hal/resources/hal-resource';
+import { HalSourceLink } from 'core-app/features/hal/interfaces';
 
 export type PrincipalType = 'user'|'placeholder_user'|'group'|'external_user';
 

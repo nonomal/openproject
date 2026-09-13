@@ -35,4 +35,15 @@ module RootSeederTestHelpers
       yield
     end
   end
+
+  # The example needs to have the :settings_reset metadata to have
+  # `reset(:default_language)` working.
+  def with_locale_env(locale, env_var_name: "OPENPROJECT_SEED_LOCALE", &)
+    with_env(env_var_name => locale) do
+      reset(:default_language) # Settings are a pain to reset
+      yield
+    ensure
+      reset(:default_language)
+    end
+  end
 end

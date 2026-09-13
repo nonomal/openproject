@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -50,7 +52,7 @@ RSpec.describe WorkPackages::Shared::WorkingDays do
       end
     end
 
-    context "with weekend days (Saturday and Sunday)", :weekend_saturday_sunday do
+    context "with Saturday and Sunday being non-working days", :weekend_saturday_sunday do
       include_examples "it returns duration", 0, sunday_2022_07_31, sunday_2022_07_31
       include_examples "it returns duration", 5, sunday_2022_07_31, Date.new(2022, 8, 5)
       include_examples "it returns duration", 5, sunday_2022_07_31, Date.new(2022, 8, 6)
@@ -122,7 +124,7 @@ RSpec.describe WorkPackages::Shared::WorkingDays do
       end
     end
 
-    context "with weekend days (Saturday and Sunday)", :weekend_saturday_sunday do
+    context "with Saturday and Sunday being non-working days", :weekend_saturday_sunday do
       include_examples "start_date", due_date: monday_2022_08_01, duration: 1, expected: monday_2022_08_01
       include_examples "start_date", due_date: monday_2022_08_01, duration: 5, expected: monday_2022_08_01 - 6.days
       include_examples "start_date", due_date: wednesday_2022_08_03, duration: 10, expected: wednesday_2022_08_03 - 13.days
@@ -166,7 +168,7 @@ RSpec.describe WorkPackages::Shared::WorkingDays do
       end
     end
 
-    context "with weekend days (Saturday and Sunday)", :weekend_saturday_sunday do
+    context "with Saturday and Sunday being non-working days", :weekend_saturday_sunday do
       include_examples "due_date", start_date: monday_2022_08_01, duration: 1, expected: monday_2022_08_01
       include_examples "due_date", start_date: monday_2022_08_01, duration: 5, expected: monday_2022_08_01 + 4.days
       include_examples "due_date", start_date: wednesday_2022_08_03, duration: 10, expected: wednesday_2022_08_03 + 13.days
@@ -192,7 +194,7 @@ RSpec.describe WorkPackages::Shared::WorkingDays do
       expect(subject.soonest_working_day(nil)).to be_nil
     end
 
-    context "with weekend days (Saturday and Sunday)", :weekend_saturday_sunday do
+    context "with Saturday and Sunday being non-working days", :weekend_saturday_sunday do
       include_examples "soonest working day", date: friday_2022_07_29, expected: friday_2022_07_29
       include_examples "soonest working day", date: saturday_2022_07_30, expected: monday_2022_08_01
       include_examples "soonest working day", date: sunday_2022_07_31, expected: monday_2022_08_01

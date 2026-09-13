@@ -48,9 +48,9 @@ RSpec.describe My::TimeTrackingController do
           allow(TimeEntry).to receive(:can_track_start_and_end_time?).and_return(true)
         end
 
-        it "renders the calendar week view" do
+        it "renders the work week view" do
           get :index
-          expect(assigns(:mode)).to eq(:week)
+          expect(assigns(:mode)).to eq(:workweek)
           expect(assigns(:view_mode)).to eq(:calendar)
         end
       end
@@ -60,9 +60,9 @@ RSpec.describe My::TimeTrackingController do
           allow(TimeEntry).to receive(:can_track_start_and_end_time?).and_return(false)
         end
 
-        it "renders the week list view" do
+        it "renders the work week list view" do
           get :index
-          expect(assigns(:mode)).to eq(:week)
+          expect(assigns(:mode)).to eq(:workweek)
           expect(assigns(:view_mode)).to eq(:list)
         end
       end
@@ -117,9 +117,9 @@ RSpec.describe My::TimeTrackingController do
   end
 
   describe "GET /my/time-tracking/week" do
-    it "without a date param it uses the beginning of current week" do
+    it "without a date param it uses the current day" do
       get :index, params: { mode: :week }
-      expect(assigns(:date)).to eq(Date.current.beginning_of_week)
+      expect(assigns(:date)).to eq(Date.current)
     end
 
     it "with a date param it uses the given date" do
@@ -127,16 +127,16 @@ RSpec.describe My::TimeTrackingController do
       expect(assigns(:date)).to eq(Date.parse("2023-12-31"))
     end
 
-    it "with an invalid date param it uses the beginning of current week" do
+    it "with an invalid date param it uses the current day" do
       get :index, params: { mode: :week, date: "invalid-date" }
-      expect(assigns(:date)).to eq(Date.current.beginning_of_week)
+      expect(assigns(:date)).to eq(Date.current)
     end
   end
 
   describe "GET /my/time-tracking/month" do
-    it "without a date param it uses the beginning of current month" do
+    it "without a date param it uses the current day" do
       get :index, params: { mode: :month }
-      expect(assigns(:date)).to eq(Date.current.beginning_of_month)
+      expect(assigns(:date)).to eq(Date.current)
     end
 
     it "with a date param it uses the given date" do
@@ -144,9 +144,9 @@ RSpec.describe My::TimeTrackingController do
       expect(assigns(:date)).to eq(Date.parse("2023-12-31"))
     end
 
-    it "with an invalid date param it uses the beginning of current month" do
+    it "with an invalid date param it uses the current day" do
       get :index, params: { mode: :month, date: "invalid-date" }
-      expect(assigns(:date)).to eq(Date.current.beginning_of_month)
+      expect(assigns(:date)).to eq(Date.current)
     end
   end
 end

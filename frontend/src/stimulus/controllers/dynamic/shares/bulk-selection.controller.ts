@@ -1,32 +1,30 @@
-/*
- * -- copyright
- * OpenProject is an open source project management software.
- * Copyright (C) the OpenProject GmbH
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License version 3.
- *
- * OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
- * Copyright (C) 2006-2013 Jean-Philippe Lang
- * Copyright (C) 2010-2013 the ChiliProject Team
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *
- * See COPYRIGHT and LICENSE files for more details.
- * ++
- */
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
 
 import { Controller } from '@hotwired/stimulus';
 
@@ -104,7 +102,7 @@ export default class BulkSelectionController extends Controller {
   }
 
   bulkUpdateRoleLabelValueChanged(current:string, _old:string) {
-    const label = this.bulkUpdateRoleLabelTarget.querySelector('.Button-label') as HTMLElement;
+    const label = this.bulkUpdateRoleLabelTarget.querySelector('.Button-label')!;
     label.textContent = current;
   }
 
@@ -158,8 +156,8 @@ export default class BulkSelectionController extends Controller {
       this.bulkUpdateRoleLabelValue = this.selectedPermissions[0];
       const bulkUpdateRoleForm = this.bulkUpdateRoleFormTargets.find((form) => {
         return form.getAttribute('data-role-name') === this.bulkUpdateRoleLabelValue.trim();
-      }) as HTMLFormElement;
-      const button = bulkUpdateRoleForm.querySelector('button[type=submit]') as HTMLButtonElement;
+      })!;
+      const button = bulkUpdateRoleForm.querySelector('button[type=submit]')!;
       button.setAttribute('aria-checked', 'true');
     }
   }
@@ -209,23 +207,23 @@ export default class BulkSelectionController extends Controller {
 
   private get bulkPermissionButtons():HTMLButtonElement[] {
     return this.bulkUpdateRoleFormTargets.map((bulkUpdateForm) => {
-      return bulkUpdateForm.querySelector('button[type=submit]') as HTMLButtonElement;
+      return bulkUpdateForm.querySelector('button[type=submit]')!;
     });
   }
 
-  private get selectedPermissions() {
+  private get selectedPermissions():string[] {
     return this.selectedRoleButtons.map((button) => {
-      const label = button.querySelector('.Button-label') as HTMLElement;
+      const label = button.querySelector('.Button-label')!;
 
-      return label.textContent;
-    }) as string[];
+      return label.textContent ?? '';
+    });
   }
 
   private get selectedRoleButtons() {
     const checkedShareIds = this.checked.map((checkbox) => checkbox.value);
 
     return this.userRowRoleTargets.filter((button) => {
-      const shareId = button.getAttribute('data-share-id') as string;
+      const shareId = button.getAttribute('data-share-id')!;
       return checkedShareIds.includes(shareId);
     });
   }

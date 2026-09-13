@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,7 +29,13 @@
 #++
 
 module ProjectQueries
-  class PublishContract < BaseContract
+  class PublishContract < ::ModelContract
+    include PermissionsGuard
+
     attribute :public
+
+    def validate_model?
+      false
+    end
   end
 end

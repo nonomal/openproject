@@ -31,25 +31,27 @@
 require "spec_helper"
 require_module_spec_helper
 
-RSpec.describe "GET /projects/:project_id/settings/project_storages/:id/oauth_access_grant", :webmock do
-  shared_let(:user) { create(:user, preferences: { time_zone: "Etc/UTC" }) }
+RSpec.describe "GET /projects/:project_id/settings/project_storages/:id/oauth_access_grant", :disable_ssrf_filter, :webmock do
+  let(:user) { create(:user, preferences: { time_zone: "Etc/UTC" }) }
 
-  shared_let(:role) do
+  let(:role) do
     create(:project_role, permissions: %i[manage_files_in_project
                                           oauth_access_grant
                                           select_project_modules
                                           edit_project])
   end
 
-  shared_let(:storage) { create(:nextcloud_storage_with_complete_configuration) }
+  let(:storage) do
+    create(:nextcloud_storage_with_local_connection, :as_automatically_managed, oauth_client_token_user: user)
+  end
 
-  shared_let(:project) do
+  let(:project) do
     create(:project,
            name: "Project name without sequence",
            members: { user => role },
            enabled_module_names: %i[storages work_package_tracking])
   end
-  shared_let(:project_storage) { create(:project_storage, project:, storage:) }
+  let(:project_storage) { create(:project_storage, project:, storage:) }
 
   context "when user is not logged in" do
     it "requires login" do
@@ -57,7 +59,7 @@ RSpec.describe "GET /projects/:project_id/settings/project_storages/:id/oauth_ac
         project_id: project_storage.project.id,
         id: project_storage
       )
-      expect(last_response).to have_http_status(:unauthorized)
+      expect(last_response).to have_http_status(:found)
     end
   end
 
@@ -73,6 +75,9 @@ RSpec.describe "GET /projects/:project_id/settings/project_storages/:id/oauth_ac
       before do
         allow(SecureRandom).to receive(:uuid).and_call_original.ordered
         allow(SecureRandom).to receive(:uuid).and_return(nonce).ordered
+        Storages::Adapters::Registry
+          .stub("nextcloud.queries.user",
+                ->(_) { Failure(SimpleError.new(code: :unauthorized, source: self)) })
       end
 
       it "redirects to storage authorization_uri with oauth_state_* cookie set" do
@@ -82,25 +87,25 @@ RSpec.describe "GET /projects/:project_id/settings/project_storages/:id/oauth_ac
         )
         expect(last_response).to have_http_status(:found)
         expect(last_response.location).to eq(
-          "#{storage.host}/index.php/apps/oauth2/authorize?client_id=#{storage.oauth_client.client_id}&" \
+          "#{storage.host}index.php/apps/oauth2/authorize?client_id=#{storage.oauth_client.client_id}&" \
           "redirect_uri=#{redirect_uri}&response_type=code&state=#{nonce}"
         )
 
         expect(last_response.cookies["oauth_state_#{nonce}"])
           .to eq([CGI.escape({ href: "http://#{Setting.host_name}/projects/#{project.id}/settings/project_storages/external_file_storages",
-                               storageId: project_storage.storage_id }.to_json)])
+                               integrationId: project_storage.storage_id }.to_json)])
       end
     end
 
     context "when user is 'connected'" do
-      shared_let(:oauth_client_token) { create(:oauth_client_token, oauth_client: storage.oauth_client, user:) }
+      let(:oauth_client_token) { create(:oauth_client_token, oauth_client: storage.oauth_client, user:) }
 
       before do
-        Storages::Peripherals::Registry.stub("nextcloud.queries.user", ->(_) { ServiceResult.success })
+        Storages::Adapters::Registry.stub("nextcloud.queries.user", ->(_) { Success() })
         create(:remote_identity, user:, integration: storage)
       end
 
-      it "redirects to destination_url" do
+      it "redirects to destination_url", vcr: "nextcloud/user_query_success" do
         get oauth_access_grant_project_settings_project_storage_path(
           project_id: project_storage.project.id,
           id: project_storage

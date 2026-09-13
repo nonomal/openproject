@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,6 +30,11 @@
 
 module BaseServices
   class Create < Write
+    def initialize(user:, model: nil, contract_class: nil, contract_options: {})
+      self.model = model
+      super(user:, contract_class:, contract_options:)
+    end
+
     protected
 
     def service_context(send_notifications:, &)
@@ -35,7 +42,7 @@ module BaseServices
     end
 
     def instance(_params)
-      instance_class.new
+      model || instance_class.new
     end
 
     def default_contract_class

@@ -36,7 +36,8 @@ class Budgets::ActualLaborBudgetItemsComponent < ApplicationComponent
       .time_entries
       .not_ongoing
       .visible(User.current)
-      .group_by(&:work_package)
+      .where(entity_type: "WorkPackage")
+      .group_by(&:entity)
       .each do |work_package, time_entries|
         consolidate_time_entries(time_entries).each do |t|
           yield work_package, t

@@ -16,6 +16,7 @@ class OpenProject::XlsExport::XlsViews
     when :project_id                then project_representation(value)
     when :user_id, :assigned_to_id  then user_representation(value)
     when :work_package_id           then work_package_representation(value)
+    when :entity_gid                then entity_global_id_representation(value)
     else super
     end
   end
@@ -68,6 +69,14 @@ class OpenProject::XlsExport::XlsViews
     "0.00"
   end
 
+  def date_format
+    @date_format ||= Spreadsheet::Format.new(
+      number_format: "yyyy-mm-dd",
+      horizontal_align: :left,
+      vertical_align: :top
+    )
+  end
+
   def project_representation(value)
     ar_presentation(Project, value, &:name)
   end
@@ -78,7 +87,17 @@ class OpenProject::XlsExport::XlsViews
 
   def work_package_representation(value)
     ar_presentation(WorkPackage, value) do |work_package|
-      "#{work_package.type} ##{work_package.id}: #{work_package.subject}"
+      "#{work_package.type} #{work_package.formatted_id}: #{work_package.subject}"
+    end
+  end
+
+  def entity_global_id_representation(value)
+    # TODO: All possible time entry associations need to be checked here
+    entity = GlobalID::Locator.locate(value, only: TimeEntry::ALLOWED_ENTITY_TYPES.map(&:safe_constantize))
+    if entity.is_a?(WorkPackage)
+      "#{entity.type} #{entity.formatted_id}: #{entity.subject}"
+    elsif entity.is_a?(Meeting)
+      "#{Meeting.model_name.human} ##{entity.id}: #{entity.title}"
     end
   end
 

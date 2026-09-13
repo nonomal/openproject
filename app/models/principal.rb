@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,6 +30,9 @@
 
 class Principal < ApplicationRecord
   include ::Scopes::Scoped
+  include HasDetailsTable
+
+  default_scope -> { where.not(status: Principal.statuses[:deleted]) }
 
   # Account statuses
   # Disables enum scopes to include not_builtin (cf. Principals::Scopes::Status)
@@ -35,7 +40,8 @@ class Principal < ApplicationRecord
     active: 1,
     registered: 2,
     locked: 3,
-    invited: 4
+    invited: 4,
+    deleted: 5
   }, scopes: false
 
   self.table_name = "#{table_name_prefix}users#{table_name_suffix}"
@@ -65,6 +71,14 @@ class Principal < ApplicationRecord
            foreign_key: "user_id"
   has_many :projects, through: :memberships
   has_many :categories, foreign_key: "assigned_to_id", dependent: :nullify, inverse_of: :assigned_to
+  has_many :user_auth_provider_links,
+           dependent: :destroy,
+           foreign_key: :user_id,
+           inverse_of: :principal
+  has_many :auth_providers, through: :user_auth_provider_links
+
+  has_many :persisted_views, inverse_of: :principal, dependent: :nullify
+  has_many :persisted_queries, inverse_of: :principal, dependent: :nullify
 
   has_paper_trail
 
@@ -122,11 +136,13 @@ class Principal < ApplicationRecord
 
   before_create :set_default_empty_values
 
+  self.ignored_columns += [:identity_url]
+
   # Columns required for formatting the principal's name.
   def self.columns_for_name(formatter = nil)
-    raise NotImplementedError, "Redefine in subclass" unless self == Principal
+    raise SubclassResponsibilityError, "Redefine in subclass" unless self == Principal
 
-    [User, Group, PlaceholderUser].map { _1.columns_for_name(formatter) }.inject(:|)
+    [User, Group, PlaceholderUser].map { it.columns_for_name(formatter) }.inject(:|)
   end
 
   # Select columns for formatting the user's name.
@@ -155,6 +171,33 @@ class Principal < ApplicationRecord
       .or(me)
   end
 
+  def self.in_visible_project_or_me_or_same_groups(user = User.current)
+    in_visible_project(user)
+      .or(me)
+      .or(in_same_groups(user))
+  end
+
+  def self.in_same_groups(user = User.current)
+    group_ids = user.group_ids
+    return none if group_ids.empty?
+
+    where(id: GroupUser.where(group_id: group_ids).select(:user_id))
+  end
+
+  def active_user_auth_provider_link
+    # note: order("updated_at") is not used, because it returns nil if relation is not persisted
+    user_auth_provider_links.max_by(&:updated_at)
+  end
+
+  def identity_url
+    link = active_user_auth_provider_link
+    "#{link.auth_provider.slug}:#{link.external_id}" if link.present?
+  end
+
+  def authentication_provider
+    active_user_auth_provider_link&.auth_provider
+  end
+
   # Helper method to identify internal users
   def builtin?
     false
@@ -163,7 +206,7 @@ class Principal < ApplicationRecord
   ##
   # Allows the API and other sources to determine locking actions
   # on represented collections of children of Principals.
-  # Must be overridden by User
+  # Must be overridden by descendants
   def lockable?
     false
   end
@@ -190,7 +233,34 @@ class Principal < ApplicationRecord
     end
   end
 
+  def scim_external_id
+    active_user_auth_provider_link&.external_id
+  end
+
+  def scim_external_id=(external_id)
+    oidc_provider = User.current.service_account_association.service.auth_provider
+
+    "::#{self.class}s::SetAttributesService"
+      .constantize
+      .new(user: User.current, model: self, contract_class: EmptyContract)
+      .call(identity_url: "#{oidc_provider.slug}:#{external_id}")
+      .on_failure { |result| raise result.to_s }
+    external_id
+  end
+
   class << self
+    def scim_mutable_attributes
+      # Allow mutation of everything with a write accessor
+      nil
+    end
+
+    def scim_timestamps_map
+      {
+        created: :created_at,
+        lastModified: :updated_at
+      }
+    end
+
     # Hack to exclude the Users::InexistentUser
     # from showing up on filters for type.
     # The method is copied over from rails changed only

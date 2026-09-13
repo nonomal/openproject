@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,6 +32,8 @@ module Queries::Roles
   ::Queries::Register.register(RoleQuery) do
     filter Filters::AllowsBecomingAssigneeFilter
     filter Filters::GrantableFilter
+    filter Filters::NameFilter
+    filter Filters::TypeFilter
     filter Filters::UnitFilter
   end
 end

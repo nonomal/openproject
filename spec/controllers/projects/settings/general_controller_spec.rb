@@ -42,10 +42,9 @@ RSpec.describe Projects::Settings::GeneralController do
     let(:project) { build_stubbed(:project) }
 
     before do
-      allow(Project)
-        .to receive(:find)
-              .with(project.identifier)
-              .and_return(project)
+      visible_relation = instance_double(ActiveRecord::Relation)
+      allow(Project).to receive(:visible).and_return(visible_relation)
+      allow(visible_relation).to receive(:find).with(project.identifier).and_return(project)
 
       update_service = instance_double(Projects::UpdateService, call: service_result)
 
@@ -58,7 +57,7 @@ RSpec.describe Projects::Settings::GeneralController do
     context "when service call succeeds" do
       let(:service_result) { ServiceResult.success(result: project) }
 
-      it "redirects to show" do
+      it "redirects to show", :aggregate_failures do
         patch :update, params: { project_id: project.identifier, project: { name: "new name" } }
 
         expect(response).to redirect_to action: :show
@@ -73,12 +72,13 @@ RSpec.describe Projects::Settings::GeneralController do
         project.name = ""
       end
 
-      it "renders show template with errors" do
+      it "renders show template with errors", :aggregate_failures do
         patch :update, params: { project_id: project.identifier, project: { name: "" } }
 
         expect(response).not_to be_successful
         expect(response).to have_http_status :unprocessable_entity
         expect(assigns(:project)).not_to be_valid
+        expect(flash[:error]).to start_with I18n.t(:notice_unsuccessful_update_with_reason, reason: "")
         expect(response).to render_template "projects/settings/general/show"
       end
     end

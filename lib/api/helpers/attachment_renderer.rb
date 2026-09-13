@@ -92,21 +92,15 @@ module API
 
         content_type attachment_content_type(attachment)
         header["Content-Disposition"] = attachment.content_disposition
+        # Ensure we set nosniff on attachments served from our app
+        # so that browsers do not reinterpret the content
+        header["X-Content-Type-Options"] = "nosniff"
         env["api.format"] = :binary
         sendfile attachment.diskfile.path
       end
 
       def attachment_content_type(attachment)
-        if attachment.is_text?
-          # Even if the text mime type might differ, always output plain text
-          # so this doesn't get interpreted as e.g., a script or html file
-          "text/plain"
-        elsif attachment.inlineable?
-          attachment.content_type
-        else
-          # For security reasons, mark all non-inlinable files as an octet-stream first
-          "application/octet-stream"
-        end
+        attachment.served_content_type
       end
 
       def set_cache_headers
@@ -134,7 +128,7 @@ module API
       end
 
       def avatar_link_expires_in
-        seconds = avatar_link_expiry_seconds
+        seconds = avatar_link_expiration_seconds
 
         if seconds == 0
           nil
@@ -143,8 +137,8 @@ module API
         end
       end
 
-      def avatar_link_expiry_seconds
-        @avatar_link_expiry_seconds ||= OpenProject::Configuration.avatar_link_expiry_seconds.to_i
+      def avatar_link_expiration_seconds
+        @avatar_link_expiration_seconds ||= OpenProject::Configuration.avatar_link_expiration_seconds.to_i
       end
     end
   end

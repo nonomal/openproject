@@ -33,7 +33,7 @@ With this guide for contributing to the OpenProject documentation we followed an
 
 ## OpenProject documentation overview
 
-The OpenProject documentation provides comprehensive resources, including user guides, system administration, installation and operation instructions, API references, development guides, and release notes. It is available online at [OpenProject Documentation](https://www.openproject.org/docs/), and can also be accessed directly from your OpenProject application via the **Help** menu (question mark icon in the top-right corner).
+The OpenProject documentation provides comprehensive resources, including user guides, system administration, installation and operation instructions, API references, development guides, and release notes. It is available online at [OpenProject Documentation](https://www.openproject.org/docs), and can also be accessed directly from your OpenProject application via the **Help** menu (question mark icon in the top-right corner).
 
 The documentation supports current and future users by offering step-by-step instructions for setup, configuration, and integration of OpenProject. It also provides detailed use cases, feature guides, and instructions for using OpenProject alongside other applications.
 
@@ -53,7 +53,7 @@ If you would like to report a typo or an inconsistency in our documentation, the
 
 ### Let us know through the OpenProject Community installation
 
-You can also join us directly through the [OpenProject Community installation](https://community.openproject.org). Here you can **leave a message on the [Forum](https://community.openproject.org/projects/openproject/forums)**, or **create a work package with the type *Documentation* ** and describe or request a documentation change.
+You can also join us directly through the [OpenProject Community installation](https://community.openproject.org). Here you can **leave a message on the [Forum](https://community.openproject.org/projects/openproject/forums)**, or **create a work package with the type _Documentation_ and describe or request a documentation change.
 
 To gain access to the Community installation at, please send an email to [support@openproject.com](mailto:support@openproject.com) with the subject line **"Joining Community"**. Our team will review your request and send you an invitation as soon as possible.
 

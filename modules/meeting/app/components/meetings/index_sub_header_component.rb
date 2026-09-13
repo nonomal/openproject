@@ -32,13 +32,22 @@ module Meetings
   # rubocop:disable OpenProject/AddPreviewForViewComponent
   class IndexSubHeaderComponent < ApplicationComponent
     # rubocop:enable OpenProject/AddPreviewForViewComponent
+    include OpTurbo::Streamable
     include ApplicationHelper
 
-    def initialize(query:, params:, project: nil)
+    def initialize(query:, params:, project: nil, lazy: true)
       super
       @query = query
       @project = project
       @params = params
+      @lazy = lazy
+    end
+
+    private
+
+    # Load inline for morph updates to prevent an additional flicker
+    def lazy_loaded_path
+      @lazy ? :meetings_filters_path : false
     end
 
     def render_create_button?
@@ -47,10 +56,6 @@ module Meetings
       else
         User.current.allowed_in_any_project?(:create_meetings)
       end
-    end
-
-    def dynamic_path
-      polymorphic_path([:new, @project, :meeting])
     end
 
     def id
@@ -63,6 +68,10 @@ module Meetings
 
     def label_text
       I18n.t(:label_meeting)
+    end
+
+    def filters_expanded?
+      params[:filters].present?
     end
   end
 end

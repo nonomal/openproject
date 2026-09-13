@@ -37,7 +37,7 @@
         end
 
         def foo
-          concat render(Primer::Beta::Link.new(scheme: :primary, href: "#")) { "Some link" }
+          concat render(Primer::Beta::Link.new(href: "#", font_weight: :bold)) { "Some link" }
 
           render(Primer::Beta::Text.new(tag: :p, font_size: :small, color: :subtle)) { "Hello there" }
         end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -204,6 +206,27 @@ RSpec.describe "API::V3::CustomActions::CustomActionsAPI" do
       it "returns a 422 error" do
         expect(last_response.status)
           .to be 422
+      end
+    end
+
+    context "when conditions are not fulfilled for the user" do
+      let(:admin_role) { create(:project_role) }
+      let(:action) do
+        create(:custom_action,
+               actions: [CustomActions::Actions::AssignedTo.new(nil)],
+               conditions: [CustomActions::Conditions::Role.new(admin_role.id)])
+      end
+
+      include_context "post request"
+
+      it "returns a 403 error" do
+        expect(last_response.status)
+          .to be 403
+      end
+
+      it "does not modify the work package" do
+        expect { work_package.reload }
+          .not_to change(work_package, :assigned_to_id)
       end
     end
   end

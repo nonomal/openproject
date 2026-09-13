@@ -29,8 +29,8 @@
 class Grids::UpdateService < BaseServices::Update
   protected
 
-  def perform(attributes)
-    set_type_for_error_message(attributes.delete(:scope))
+  def perform
+    set_type_for_error_message(params.delete(:scope))
 
     super
   end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.shared_context "model contract" do
   shared_examples_for "is not writable" do
     before do

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,10 +30,8 @@
 
 module Cron
   class ClearUploadedFilesJob < ApplicationJob
-    include ::RakeJob
-
     def perform
-      super("attachments:clear")
+      Attachment.clean_cached_files!
     end
   end
 end

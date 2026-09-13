@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,8 +29,14 @@
 #++
 
 class Document < ApplicationRecord
+  enum :kind, {
+    classic: "classic",
+    collaborative: "collaborative"
+  }
+
   belongs_to :project
-  belongs_to :category, class_name: "DocumentCategory"
+  belongs_to :type, class_name: "DocumentType", optional: true, counter_cache: :documents_count
+
   acts_as_attachable delete_permission: :manage_documents,
                      add_permission: :manage_documents
 
@@ -44,8 +52,9 @@ class Document < ApplicationRecord
                      references: :projects,
                      date_column: "#{table_name}.created_at"
 
-  validates_presence_of :project, :title, :category
-  validates_length_of :title, maximum: 60
+  normalizes :title, with: OpenProject::RemoveInvisibleCharacters
+
+  validates :title, presence: true, length: { maximum: 255 }
 
   scope :visible, ->(user = User.current) {
     includes(:project)
@@ -59,13 +68,13 @@ class Document < ApplicationRecord
       .references(:attachments)
   }
 
-  after_initialize :set_default_category
+  after_initialize :set_default_type
 
   def visible?(user = User.current)
     !user.nil? && user.allowed_in_project?(:view_documents, project)
   end
 
-  def set_default_category
-    self.category ||= DocumentCategory.default if new_record?
+  def set_default_type
+    self.type ||= DocumentType.default if new_record?
   end
 end

@@ -258,6 +258,38 @@ module TableHelpers
       end
     end
 
+    describe "#hierarchy_levels" do
+      it "returns 0 for each identifier when there is not hierarchy defined" do
+        table_representation = <<~TABLE
+          | subject |
+          | wp1     |
+          | wp2     |
+        TABLE
+        table_data = described_class.for(table_representation)
+        expect(table_data.hierarchy_levels).to eq({ wp1: 0, wp2: 0 })
+      end
+
+      it "when using hierarchy column, returns 0 for root level work packages, and 1 more for each hierarchy level" do
+        table_representation = <<~TABLE
+          | hierarchy |
+          | parent    |
+          |   child   |
+        TABLE
+        table_data = described_class.for(table_representation)
+        expect(table_data.hierarchy_levels).to eq({ parent: 0, child: 1 })
+
+        table_representation = <<~TABLE
+          | hierarchy        |
+          | parent           |
+          |   child1         |
+          |     grandchild11 |
+          |   child2         |
+        TABLE
+        table_data = described_class.for(table_representation)
+        expect(table_data.hierarchy_levels).to eq({ parent: 0, child1: 1, grandchild11: 2, child2: 1 })
+      end
+    end
+
     describe "#order_like" do
       it "orders the table data like the given table" do
         table_representation = <<~TABLE
@@ -319,6 +351,80 @@ module TableHelpers
 
         table_data.order_like!(other_table_data)
         expect(table_data.work_package_identifiers).to eq(%i[another_one work_package extra_one])
+      end
+
+      it "deals well with hierarchies when present" do
+        table_representation = <<~TABLE
+          | hierarchy |
+          | parent    |
+          |   child   |
+          | other     |
+        TABLE
+        table_data = described_class.for(table_representation)
+
+        other_table_representation = <<~TABLE
+          | hierarchy       |
+          | parent          |
+          |   child renamed |
+          | other           |
+        TABLE
+        other_table_data = described_class.for(other_table_representation)
+
+        expect(table_data.work_package_identifiers)
+          .to eq(%i[parent child other])
+
+        table_data.order_like!(other_table_data)
+        expect(table_data.work_package_identifiers)
+          .to eq(%i[parent child other])
+      end
+
+      it "deals well with big hierarchies when present" do # rubocop:disable RSpec/ExampleLength
+        table_representation = <<~TABLE
+          | hierarchy                |
+          | wp1                      |
+          | wp3                      |
+          | parent                   |
+          |   child2                 |
+          |     grandchild21         |
+          |   child1                 |
+          |     grandchild13         |
+          |     grandchild12         |
+          |       grandgrandchild121 |
+          |   child3                 |
+        TABLE
+        table_data = described_class.for(table_representation)
+
+        other_table_representation = <<~TABLE
+          | hierarchy                |
+          | wp1                      |
+          | parent                   |
+          |   child1                 |
+          |     grandchild11         |
+          |     grandchild12         |
+          |   child2                 |
+          |   child3                 |
+          |     grandchild31         |
+          |     grandchild32         |
+          | wp3                      |
+        TABLE
+        other_table_data = described_class.for(other_table_representation)
+
+        expect(table_data.work_package_identifiers)
+          .to eq(%i[wp1
+                    wp3
+                    parent
+                    child2 grandchild21
+                    child1 grandchild13 grandchild12 grandgrandchild121
+                    child3])
+
+        table_data.order_like!(other_table_data)
+        expect(table_data.work_package_identifiers)
+          .to eq(%i[wp1
+                    parent
+                    child1 grandchild12 grandgrandchild121 grandchild13
+                    child2 grandchild21
+                    child3
+                    wp3])
       end
     end
   end

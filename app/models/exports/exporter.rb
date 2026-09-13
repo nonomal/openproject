@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -51,14 +53,17 @@ module Exports
     def sane_filename(name)
       parts = name.split /(?<=.)\.(?=[^.])(?!.*\.[^.])/m
 
-      parts.map! { |s| s.gsub /[^a-z0-9-]+/i, "_" }
+      parts.map! do |s|
+        # Preserve the file extension avoid eg. .xls => .khls for some languages
+        s.match?(/\A\.[a-zA-Z]+\z/) ? s : I18n.transliterate(s).gsub(/[^a-z0-9-]+/i, "_")
+      end
 
       parts.join "."
     end
 
     # Run the export, yielding the result of the render output
     def export!
-      raise NotImplementedError
+      raise SubclassResponsibilityError
     end
 
     protected

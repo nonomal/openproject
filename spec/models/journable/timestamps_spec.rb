@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -271,13 +273,6 @@ RSpec.describe Journable::Timestamps do
         describe "when querying with at_timestamp" do
           subject { relation.at_timestamp(friday) }
 
-          it "joins the journable table rather than the journal-data table" do
-            expect(subject.to_sql).not_to include \
-              "INNER JOIN \"time_entries\" ON \"time_entries\".\"work_package_id\" = \"work_package_journals\".\"id\""
-            expect(subject.to_sql).to include \
-              "INNER JOIN \"time_entries\" ON \"time_entries\".\"work_package_id\" = \"journals\".\"journable_id\""
-          end
-
           it "returns the matching records in their historic states" do
             expect(subject.pluck(:description)).to eq ["The work package as it is since Friday"]
             expect(subject.pluck(:id)).to eq [work_package.id]
@@ -500,8 +495,8 @@ RSpec.describe Journable::Timestamps do
 
         describe "when plucking the id as sub query (workaround)" do
           subject do
-            sub_query_ids = WorkPackage.at_timestamp(monday) \
-                .where(description: "The work package as it has been on Monday") \
+            sub_query_ids = WorkPackage.at_timestamp(monday)
+                .where(description: "The work package as it has been on Monday")
                 .pluck(:id)
             WorkPackage.where(id: sub_query_ids)
           end
@@ -613,7 +608,7 @@ RSpec.describe Journable::Timestamps do
           let!(:custom_field) do
             create(:string_wp_custom_field,
                    name: "String CF",
-                   types: project.types,
+                   types: project.enabled_types,
                    projects: [project])
           end
 

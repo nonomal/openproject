@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,6 +32,7 @@ module OpenProject::TextFormatting::Matchers
   module LinkHandlers
     class Base
       include ::OpenProject::TextFormatting::Truncation
+      include ::OpenProject::TextFormatting::Helpers::AccessibleLinkLabel
       # used for the work package quick links
       include WorkPackagesHelper
       # Used for escaping helper 'h()'
@@ -55,14 +58,12 @@ module OpenProject::TextFormatting::Matchers
         []
       end
 
-      def allowed_prefixes
-        self.class.allowed_prefixes
-      end
+      delegate :allowed_prefixes, to: :class
 
       ##
       # Test whether we should try to resolve the given link
       def applicable?
-        raise NotImplementedError
+        raise SubclassResponsibilityError
       end
 
       ##
@@ -70,13 +71,11 @@ module OpenProject::TextFormatting::Matchers
       # and matchers.
       # If nil is returned, the link remains as-is.
       def call
-        raise NotImplementedError
+        raise SubclassResponsibilityError
       end
 
       def oid
-        unless identifier.nil?
-          identifier.to_i
-        end
+        identifier&.to_i
       end
 
       delegate :identifier, to: :matcher
@@ -99,6 +98,22 @@ module OpenProject::TextFormatting::Matchers
       end
 
       def controller; end
+
+      private
+
+      def link_to(name = nil, options = nil, html_options = nil, &)
+        html_options ||= {}
+        title = html_options.delete(:title) || html_options.delete("title")
+        description = [resource_link_aria_label, title].compact.join(" ")
+        aria = (html_options[:aria] || {}).merge(label: accessible_link_label(name, description))
+
+        super(name, options, html_options.merge(aria:), &)
+      end
+
+      def resource_link_aria_label
+        resource = matcher.prefix.presence || (matcher.sep == "r" ? "revision" : "work_package")
+        I18n.t(resource, scope: "accessibility.macro.resource_links")
+      end
     end
   end
 end

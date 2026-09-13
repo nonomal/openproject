@@ -70,8 +70,31 @@ module Users
       helpers.format_time user.created_at
     end
 
+    def consented_at
+      helpers.format_time user.consented_at unless user.consented_at.nil?
+    end
+
     def status
       helpers.full_user_status user
+    end
+
+    def department
+      return if user.department.nil?
+
+      safe_join(
+        [
+          render(Primer::Beta::Octicon.new(icon: :briefcase, color: :muted, mr: 1)),
+          user.department.name
+        ]
+      )
+    end
+
+    def member_of_group
+      joined_names user.regular_groups
+    end
+
+    def member_of_project
+      joined_names user.projects
     end
 
     def button_links
@@ -79,23 +102,54 @@ module Users
     end
 
     def status_link
-      # Don't show for current user
-      return if user.id == table.current_user.id
-
-      # Don't show if non-admin
-      return unless table.current_user.admin?
+      return if user_is_current_user?
+      return unless current_user_allowed_to_manage_users?
+      return if user_is_admin_and_current_user_is_no_admin?
 
       helpers.change_user_status_links user
     end
 
+    def user_is_current_user?
+      user.id == table.current_user.id
+    end
+
+    def current_user_allowed_to_manage_users?
+      table.current_user.allowed_globally?(:manage_user)
+    end
+
+    def user_is_admin_and_current_user_is_no_admin?
+      user.admin? && !table.current_user.admin?
+    end
+
+    def column_value(column)
+      return custom_field_column(column) if custom_field_column?(column)
+
+      attribute = column_attribute(column)
+
+      respond_to?(attribute) ? send(attribute) : user.public_send(attribute)
+    end
+
     def column_css_class(column)
-      if column == :mail
-        "email"
-      elsif column == :login
-        "username"
-      else
-        super
+      attribute = column_attribute(column)
+      case attribute
+      when :mail then "email"
+      when :login then "username"
+      else attribute.to_s
       end
+    end
+
+    private
+
+    def column_attribute(column)
+      column.respond_to?(:attribute) ? column.attribute : column
+    end
+
+    def joined_names(records)
+      records.map(&:name).sort.join(", ")
+    end
+
+    def custom_field_column_subject
+      user
     end
   end
 end

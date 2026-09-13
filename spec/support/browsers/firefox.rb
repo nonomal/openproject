@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "socket"
 
 def register_firefox(language, name: :"firefox_#{language}")

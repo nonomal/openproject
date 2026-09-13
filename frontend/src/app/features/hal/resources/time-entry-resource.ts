@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -31,6 +31,9 @@ import { ProjectResource } from 'core-app/features/hal/resources/project-resourc
 import { InputState } from '@openproject/reactivestates';
 import { WorkPackageResource } from 'core-app/features/hal/resources/work-package-resource';
 import Formattable = api.v3.Formattable;
+import { MeetingResource } from 'core-app/features/hal/resources/meeting-resource';
+import idFromLink from 'core-app/features/hal/helpers/id-from-link';
+import { formatWorkPackageId } from 'core-app/shared/helpers/work-package-id-pattern';
 
 export class TimeEntryResource extends HalResource {
   project:ProjectResource;
@@ -39,24 +42,30 @@ export class TimeEntryResource extends HalResource {
 
   comment:Formattable;
 
-  workPackage:WorkPackageResource;
+  entity:WorkPackageResource|MeetingResource;
 
   spentOn:string;
 
   ongoing:boolean;
 
   public get state():InputState<this> {
-    return this.states.timeEntries.get(this.id as string) as unknown as InputState<this>;
+    return this.states.timeEntries.get(this.id!) as unknown as InputState<this>;
   }
 
   /**
    * Exclude the schema _link from the linkable Resources.
    */
   public $linkableKeys():string[] {
-    return _.without(super.$linkableKeys(), 'schema');
+    return super.$linkableKeys().filter((key) => key !== 'schema');
   }
 }
 
 export interface TimeEntryResource {
   delete():Promise<unknown>;
+}
+
+export function formatTimeEntryEntityName(entity:WorkPackageResource|MeetingResource):string {
+  const displayId = entity.$link?.displayId;
+  const formattedId = displayId ? formatWorkPackageId(displayId) : `#${idFromLink(entity.href)}`;
+  return `${formattedId}: ${entity.name}`;
 }

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -34,7 +36,7 @@ module Queries::Projects
     filter Filters::AvailableProjectAttributesFilter
     filter Filters::CreatedAtFilter
     filter Filters::CustomFieldFilter
-    filter Filters::FavoredFilter
+    filter Filters::FavoritedFilter
     filter Filters::IdFilter
     filter Filters::LatestActivityAtFilter
     filter Filters::ProjectPhaseAnyFilter
@@ -44,12 +46,16 @@ module Queries::Projects
     filter Filters::NameAndIdentifierFilter
     filter Filters::NameFilter
     filter Filters::ParentFilter
+    filter Filters::PortfolioFilter
     filter Filters::PrincipalFilter
+    filter Filters::ProgramFilter
     filter Filters::ProjectStatusFilter
     filter Filters::PublicFilter
     filter Filters::TemplatedFilter
     filter Filters::TypeFilter
+    filter Filters::TypeVariantFilter
     filter Filters::TypeaheadFilter
+    filter Filters::UpdatedAtFilter
     filter Filters::UserActionFilter
     filter Filters::VisibleFilter
 
@@ -61,14 +67,17 @@ module Queries::Projects
     order Orders::ProjectStatusOrder
     order Orders::RequiredDiskSpaceOrder
     order Orders::TypeaheadOrder
+    order Orders::UpdatedAtOrder
 
     select Selects::CreatedAt
     select Selects::CustomField
+    select Selects::CustomComment
     select Selects::Default
-    select Selects::Favored
+    select Selects::Favorited
     select Selects::LatestActivityAt
     select Selects::ProjectPhase
     select Selects::RequiredDiskSpace
     select Selects::Status
+    select Selects::UpdatedAt
   end
 end

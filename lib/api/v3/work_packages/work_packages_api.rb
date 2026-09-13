@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -53,15 +55,15 @@ module API
             call.result
           end
 
-          post &::API::V3::Utilities::Endpoints::Create.new(model: WorkPackage,
+          post(&::API::V3::Utilities::Endpoints::Create.new(model: WorkPackage,
                                                             parse_service: WorkPackages::ParseParamsService,
                                                             params_modifier: ->(attributes) {
                                                               attributes[:send_notifications] = notify_according_to_params
                                                               attributes
                                                             })
-                                                       .mount
+                                                       .mount)
 
-          route_param :id, type: Integer, desc: "Work package ID" do
+          route_param :id, type: String, desc: "Work package ID or semantic identifier (e.g. PROJ-42)" do
             helpers WorkPackagesSharedHelpers
 
             helpers do
@@ -69,7 +71,7 @@ module API
             end
 
             after_validation do
-              @work_package = WorkPackage.find(declared_params[:id])
+              @work_package = WorkPackage.visible.find(declared_params[:id])
 
               authorize_in_work_package(:view_work_packages, work_package: @work_package) do
                 raise API::Errors::NotFound.new model: :work_package
@@ -98,7 +100,8 @@ module API
             mount ::API::V3::WorkPackages::AvailableProjectsOnEditAPI
             mount ::API::V3::WorkPackages::AvailableRelationCandidatesAPI
             mount ::API::V3::WorkPackages::WorkPackageRelationsAPI
-            mount ::API::V3::Reminders::RemindersAPI
+            mount ::API::V3::Reminders::RemindersByWorkPackageAPI
+            mount ::API::V3::EmojiReactions::EmojiReactionsByWorkPackageCommentsAPI
           end
 
           mount ::API::V3::WorkPackages::CreateFormAPI

@@ -14,7 +14,7 @@ module OpenProject::LdapGroups
            :plugin_ldap_groups,
            { controller: "/ldap_groups/synchronized_groups", action: :index },
            parent: :authentication,
-           last: true,
+           after: :ldap_authentication,
            caption: ->(*) { I18n.t("ldap_groups.label_menu_item") },
            enterprise_feature: "ldap_groups"
     end

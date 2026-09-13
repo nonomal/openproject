@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -155,7 +157,7 @@ RSpec.shared_examples "it supports direct uploads" do
         end
       end
 
-      context "with an attachment whitelist", with_settings: { attachment_whitelist: ["text/csv"] } do
+      context "with an attachment allowlist", with_settings: { attachment_whitelist: ["text/csv"] } do
         context "with an allowed content type" do
           let(:metadata) { { fileName: "cats.csv", fileSize: file.size, contentType: "text/csv" } }
 
@@ -169,14 +171,14 @@ RSpec.shared_examples "it supports direct uploads" do
 
           it "fails" do
             expect(subject.status).to eq 422
-            expect(subject.body).to include "not whitelisted"
+            expect(subject.body).to include "'text/plain' is not allowed for upload."
           end
         end
 
-        context "with a non-specific content type not on the whitelist" do
+        context "with a non-specific content type not on the allowlist" do
           let(:metadata) { { fileName: "cats.bin", fileSize: file.size, contentType: "application/binary" } }
 
-          # the actual whitelist check will be performed in the FinishDirectUpload job in this case
+          # the actual allowlist check will be performed in the FinishDirectUpload job in this case
           it "still succeeds" do
             expect(subject.status).to eq 201
           end
@@ -246,7 +248,7 @@ RSpec.shared_examples "an APIv3 attachment resource", content_type: :json, type:
       end
 
       context "requesting nonexistent attachment" do
-        let(:get_path) { api_v3_paths.attachment 9999 }
+        let(:get_path) { api_v3_paths.attachment(not_existing_id(Attachment)) }
 
         it_behaves_like "not found"
       end
@@ -394,7 +396,7 @@ RSpec.shared_examples "an APIv3 attachment resource", content_type: :json, type:
       it_behaves_like "deletes the attachment"
 
       context "for a non-existent attachment" do
-        let(:path) { api_v3_paths.attachment 1337 }
+        let(:path) { api_v3_paths.attachment(not_existing_id(Attachment)) }
 
         it_behaves_like "not found"
       end
@@ -467,6 +469,10 @@ RSpec.shared_examples "an APIv3 attachment resource", content_type: :json, type:
           expect(expires_time > Time.now.utc + max_age - 60).to be_truthy
         end
 
+        it "includes X-Content-Type-Options nosniff header to prevent content type sniffing" do
+          expect(subject.headers["X-Content-Type-Options"]).to eq "nosniff"
+        end
+
         it "sends the file in binary" do
           expect(subject.body)
             .to match(mock_file.read)
@@ -480,19 +486,75 @@ RSpec.shared_examples "an APIv3 attachment resource", content_type: :json, type:
         end
       end
 
-      context "for a local text file" do
+      context "for a local text file (no stored charset, uses configured default)" do
         it_behaves_like "for a local file" do
-          let(:expected_content_type) { "text/plain" }
+          let(:expected_content_type) { "text/plain; charset=#{Setting.attachment_default_charset}" }
           let(:mock_file) { FileHelpers.mock_uploaded_file name: "foobar.txt" }
           let(:content_disposition) { "inline; filename=foobar.txt" }
+          let(:attachment) do
+            att = create(:attachment, container:, file: mock_file, author: current_user)
+            att.file.store!
+            att.send :write_attribute, :file, mock_file.original_filename
+            att.send :write_attribute, :content_type, "text/plain"
+            att.send :write_attribute, :charset, nil
+            att.save!
+            att
+          end
         end
       end
 
-      context "for a local JS file" do
+      context "for a local JS file (normalised to text/plain, uses configured default charset)" do
         it_behaves_like "for a local file" do
-          let(:expected_content_type) { "text/plain" }
+          let(:expected_content_type) { "text/plain; charset=#{Setting.attachment_default_charset}" }
           let(:mock_file) { FileHelpers.mock_uploaded_file name: "foobar.js", content_type: "text/x-javascript" }
           let(:content_disposition) { "inline; filename=foobar.js" }
+          let(:attachment) do
+            att = create(:attachment, container:, file: mock_file, author: current_user)
+            att.file.store!
+            att.send :write_attribute, :file, mock_file.original_filename
+            att.send :write_attribute, :content_type, "text/x-javascript"
+            att.send :write_attribute, :charset, nil
+            att.save!
+            att
+          end
+        end
+      end
+
+      context "for a local UTF-8 text file" do
+        it_behaves_like "for a local file" do
+          let(:expected_content_type) { "text/plain; charset=utf-8" }
+          let(:mock_file) { FileHelpers.mock_uploaded_file name: "foobar.txt" }
+          let(:content_disposition) { "inline; filename=foobar.txt" }
+          let(:attachment) do
+            att = create(:attachment, container:, file: mock_file, author: current_user)
+            att.file.store!
+            att.send :write_attribute, :file, mock_file.original_filename
+            att.send :write_attribute, :content_type, "text/plain"
+            att.send :write_attribute, :charset, "utf-8"
+            att.save!
+            att
+          end
+        end
+      end
+
+      context "for a local ISO-8859-1 text file" do
+        it_behaves_like "for a local file" do
+          let(:expected_content_type) { "text/plain; charset=iso-8859-1" }
+          let(:mock_file) do
+            FileHelpers.mock_uploaded_file name: "iso.txt",
+                                           content: Rails.root.join("spec/fixtures/encoding/iso-8859-1.txt").binread,
+                                           binary: true
+          end
+          let(:content_disposition) { "inline; filename=iso.txt" }
+          let(:attachment) do
+            att = create(:attachment, container:, file: mock_file, author: current_user)
+            att.file.store!
+            att.send :write_attribute, :file, mock_file.original_filename
+            att.send :write_attribute, :content_type, "text/plain"
+            att.send :write_attribute, :charset, "iso-8859-1"
+            att.save!
+            att
+          end
         end
       end
 

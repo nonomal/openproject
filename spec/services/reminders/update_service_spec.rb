@@ -39,15 +39,22 @@ RSpec.describe Reminders::UpdateService do
   describe "remind_at changed" do
     subject { described_class.new(user:, model: model_instance).call(call_attributes) }
 
+    let(:business_day_at_noon) { Time.zone.local(2025, 1, 8, 12, 0, 0) }
     let(:model_instance) { create(:reminder, :scheduled, :with_unread_notifications, creator: user) }
     let(:user) { create(:admin) }
-    let(:call_attributes) { { remind_at: 2.days.from_now } }
+    let(:remind_at) { business_day_at_noon + 2.days }
+    let(:call_attributes) { { remind_at_date: remind_at.to_date, remind_at_time: remind_at.strftime("%H:%M") } }
 
     before do
-      model_instance.update(job_id: 1)
+      travel_to(business_day_at_noon)
+      model_instance.update!(job_id: 1)
       allow(Reminders::ScheduleReminderJob).to receive(:schedule)
         .with(model_instance)
         .and_return(instance_double(Reminders::ScheduleReminderJob, job_id: 2))
+    end
+
+    after do
+      travel_back
     end
 
     context "with an existing unfinished scheduled job" do
@@ -71,7 +78,7 @@ RSpec.describe Reminders::UpdateService do
         end
 
         aggregate_failures "schedule new job" do
-          expect(model_instance.remind_at.to_i).to eq(call_attributes[:remind_at].to_i)
+          expect(model_instance.remind_at.to_i).to eq(remind_at.to_i)
           expect(Reminders::ScheduleReminderJob).to have_received(:schedule).with(model_instance)
         end
       end
@@ -93,14 +100,14 @@ RSpec.describe Reminders::UpdateService do
         end
 
         aggregate_failures "schedule new job" do
-          expect(model_instance.remind_at.to_i).to eq(call_attributes[:remind_at].to_i)
+          expect(model_instance.remind_at.to_i).to eq(remind_at.to_i)
           expect(Reminders::ScheduleReminderJob).to have_received(:schedule).with(model_instance)
         end
       end
     end
 
     context "with remind_at attribute in non-utc timezone" do
-      let(:call_attributes) { { remind_at: 2.days.from_now.in_time_zone("Africa/Nairobi") } }
+      let(:call_attributes) { { remind_at: remind_at.in_time_zone("Africa/Nairobi") } }
 
       it "reschedules the reminder" do
         expect { subject }.to change(model_instance, :job_id).from("1").to("2")

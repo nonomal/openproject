@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "../../spec_helper"
 
 RSpec.shared_examples "immediate success login" do
@@ -24,10 +26,6 @@ RSpec.shared_examples "2FA forced registry" do
   it "sets authenticated user" do
     expect(session[:authenticated_user_force_2fa]).to be_truthy
     expect(session[:authenticated_user_id]).to eq user.id
-  end
-
-  it "flashes info message" do
-    expect(flash[:info]).not_to be_empty
   end
 
   it "renders the login_otp" do

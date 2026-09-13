@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -46,7 +48,7 @@ RSpec.describe Projects::IdentifierController do
     context "with an invalid identifier" do
       it "does not change the project identifier and correctly renders the view" do
         previous_identifier = project.identifier
-        put :update, params: { project_id: project.id, project: { identifier: "bad identifier" } }
+        put :update, params: { project_id: project.id, project: { identifier: "bad identifier" }, format: :turbo_stream }
 
         expect(response).to have_http_status(:unprocessable_entity)
         expect(response.body).to include("Identifier is invalid")

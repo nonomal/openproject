@@ -40,8 +40,8 @@ class Queries::SortByComponent < ApplicationComponent
     3
   end
 
-  def queried_model_name
-    query.class.model.model_name
+  def queried_plural_model_human_name
+    query.class.model.model_name.human(count: :other).downcase
   end
 
   def available_orders

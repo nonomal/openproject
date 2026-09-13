@@ -48,7 +48,7 @@ RSpec.shared_context "with basic seed data" do |edition: "standard"|
   shared_let(:needed_seeders_keys) do
     # warning: there is one limitation: RoleSeeder will only pick 'roles' key,
     # and not 'modules_permissions' key.
-    needed_seeders.map { _1.try(:seed_data_model_key) }.compact
+    needed_seeders.map { it.try(:seed_data_model_key) }.compact
   end
   shared_let(:basic_seed_data) do
     Source::SeedDataLoader.get_data(edition:).only(*needed_seeders_keys)

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -33,7 +35,8 @@ class ProjectCustomFieldSections::NameForm < ApplicationForm
       placeholder: ProjectCustomFieldSection.human_attribute_name(:name),
       label: ProjectCustomFieldSection.human_attribute_name(:name),
       required: true,
-      autofocus: true
+      autofocus: true,
+      autocomplete: "off"
     )
   end
 end

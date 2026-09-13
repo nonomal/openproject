@@ -27,7 +27,7 @@ See COPYRIGHT and LICENSE files for more details.
 
 ++#%>
 <%= content_tag("turbo-stream", action: @action, target: @target, **@turbo_stream_args) do %>
-  <% if @template %>
+  <% if @template.present? %>
     <template>
       <%= @template %>
     </template>

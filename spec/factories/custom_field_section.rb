@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,9 +31,11 @@
 FactoryBot.define do
   factory :custom_field_section do
     sequence(:name) { |n| "Section No. #{n}" }
+    overview { "sidebar" }
     created_at { Time.zone.now }
     updated_at { Time.zone.now }
 
     factory :project_custom_field_section, class: "ProjectCustomFieldSection"
+    factory :user_custom_field_section, class: "UserCustomFieldSection"
   end
 end

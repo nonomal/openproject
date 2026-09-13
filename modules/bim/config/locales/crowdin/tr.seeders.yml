@@ -44,15 +44,15 @@ tr:
         item_5:
           name: Talep
         item_6:
-          name: Clash
+          name: Çatışma
       global_queries:
         item_0:
-          name: 'Embedded table: Children'
+          name: 'Gömülü tablo: Alt'
       type_configuration:
         item_0:
           form_configuration:
             item_0:
-              group_name: Çocuk
+              group_name: Alt
       groups:
         item_0:
           name: Mimarlar
@@ -73,21 +73,21 @@ tr:
       welcome:
         title: OpenProject BIM sürümüne hoş geldiniz!
         text: |
-          Checkout the demo projects to get started with some examples.
+          Bazı örneklerle başlamak için demo projelere göz atın.
 
-          * [(Demo) Construction project]({{opSetting:base_url}}/projects/demo-construction-project): Planning, BIM process, BCF management, and constructing, all at a glance.
-              * [(Demo) Planning & constructing]({{opSetting:base_url}}/projects/demo-planning-constructing-project): Classical planning and construction management.
-              * [(Demo) Bim project]({{opSetting:base_url}}/projects/demo-bim-project): BIM process and coordination.
-                  * [(Demo) BCF management]({{opSetting:base_url}}/projects/demo-bcf-management-project): BCF management.
+          * [(Demo) İnşaat projesi]({{opSetting:base_url}}/projects/demo-construction-project): Planlama, BIM süreci, BCF yönetimi ve inşaat, hepsi bir bakışta.
+              * [(Demo) Planlama ve inşaat]({{opSetting:base_url}}/projects/demo-planlama-inşaat-projesi): Klasik planlama ve inşaat yönetimi.
+              * [(Demo) Bim projesi]({{opSetting:base_url}}/projects/demo-bim-project): BIM süreci ve koordinasyonu.
+                  * [(Demo) BCF yönetimi]({{opSetting:base_url}}/projects/demo-bcf-management-project): BCF yönetimi.
 
-          Also, you can create a blank [new project]({{opSetting:base_url}}/projects/new).
+          Ayrıca, boş bir [yeni proje]({{opSetting:base_url}}/projects/new) oluşturabilirsiniz.
 
-          Never stop collaborating. With open source and open mind.
+          İşbirliğini asla bırakmayın. Açık kaynak ve açık fikirle.
 
-          You can change this welcome text [here]({{opSetting:base_url}}/admin/settings/general).
+          Bu karşılama metnini [buradan] değiştirebilirsiniz({{opSetting:base_url}}/admin/settings/general).
       projects:
         demo-construction-project:
-          name: "(Demo) Construction project"
+          name: "(Demo) Yapılandırma projesi"
           status_explanation: Tüm görevler ve alt projeler programa uygundur. İlgili kişiler görevlerini biliyor. Sistem tamamen kurulmuştur.
           description: Bu, bu demo inşaat projesinin hedeflerinin kısa bir özetidir.
           news:
@@ -115,30 +115,30 @@ tr:
             widgets:
               item_0:
                 options:
-                  name: Hoş geldiniz 
+                  name: Hoş geldiniz
               item_1:
                 options:
                   name: Başlarken
                   text: |
-                    We are glad you joined! We suggest to try a few things to get started in OpenProject.
+                    Katıldığınız için çok mutluyuz! OpenProject'e başlamak için birkaç şey denemenizi öneririz.
 
-                    But before you jump right into it, you should know that this exemplary project is split up into two different projects:
+                    Ancak hemen başlamadan önce, bu örnek projenin iki farklı projeye ayrıldığını bilmelisiniz:
 
-                    1.  [Construction project]({{opSetting:base_url}}/projects/demo-planning-constructing-project): Here you will find the classical roles, some workflows and work packages for your construction project.
-                    2.  [Creating BIM Model]({{opSetting:base_url}}/projects/demo-bim-project): This project also offers roles, workflows and work packages but especially in the BIM context.
+                    1.  [İnşaat projesi]({{opSetting:base_url}}/projects/demo-planlama-inşaat-projesi): Burada inşaat projeniz için klasik rolleri, bazı iş akışlarını ve iş paketlerini bulacaksınız.
+                    2.  [BIM Modeli Oluşturma]({{opSetting:base_url}}/projects/demo-bim-project): Bu proje de roller, iş akışları ve iş paketleri sunar, ancak özellikle BIM bağlamında.
 
-                    _Try the following steps:_
+                    Aşağıdaki adımları deneyin:_
 
-                    1.  _Invite new members to your project_: → Go to [Members]({{opSetting:base_url}}/projects/demo-construction-project/members) in the project navigation.
-                    2.  _View the work in your projects_: → Go to [Work packages]({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) in the project navigation.
-                    3.  _Create a new work package_: → Go to [Work packages → Create]({{opSetting:base_url}}/projects/demo-construction-project/work_packages/new?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D&type=11).
-                    4.  _Create and update a Gantt chart_: → Go to [Gantt chart]({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22assignee%22%2C%22responsible%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) in the project navigation.
-                    5.  _Activate further modules_: → Go to [Project settings → Modules]({{opSetting:base_url}}/projects/demo-construction-project/settings/modules).
-                    6.  _Check out the tile view to get an overview of your BCF issues:_ → Go to [Work packages]({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22id%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22card%22%7D)
-                    7.  _Agile working? Check out our brand new boards:_ → Go to [Boards]({{opSetting:base_url}}/projects/demo-construction-project/boards)
+                    1.  Projenize yeni üyeler davet edin_: → Proje navigasyonunda [Üyeler]({{opSetting:base_url}}/projects/demo-construction-project/members) bölümüne gidin.
+                    2.  Projelerinizdeki çalışmaları görüntüleyin_: → [İş paketleri]({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) proje navigasyonunda.
+                    3.  Yeni bir iş paketi oluşturun_: → [İş paketleri → Oluştur]({{opSetting:base_url}}/projects/demo-construction-project/work_packages/new?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D&type=11).
+                    4.  Bir Gantt şeması oluşturun ve güncelleyin_: → [Gantt şeması]'na gidin({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22assignee%22%2C%22responsible%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) proje navigasyonuna gidin.
+                    5.  Diğer modülleri etkinleştirin_: → [Proje ayarları → Modüller]({{opSetting:base_url}}/projects/demo-construction-project/settings/modules) bölümüne gidin.
+                    6.  BCF sorunlarınıza genel bir bakış için kutucuk görünümüne göz atın:_ → [İş paketleri]({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22id%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22card%22%7D)
+                    7.  _Agile mi çalışıyorsunuz? Yepyeni panolarımıza göz atın:_ → [Panolar]({{opSetting:base_url}}/projects/demo-construction-project/boards)
 
-                    Here you will find our [User Guides](https://www.openproject.org/docs/user-guide/).
-                    Please let us know if you have any questions or need support. Contact us: [support\[at\]openproject.com](mailto:support@openproject.com).
+                    adresine gidin Burada [Kullanıcı Kılavuzlarımızı](https://www.openproject.org/docs/user-guide/) bulacaksınız.
+                    Herhangi bir sorunuz varsa veya desteğe ihtiyacınız varsa lütfen bize bildirin. Bize ulaşın: [support\[at\]openproject.com](mailto:support@openproject.com).
               item_4:
                 options:
                   name: Üyeler
@@ -149,7 +149,7 @@ tr:
                 options:
                   name: Aşamalar
         demo-planning-constructing-project:
-          name: "(Demo) Planning & constructing"
+          name: "(Demo) Planlama ve yapılandırma"
           status_explanation: Tüm görevler programa uygundur. İlgili kişiler görevlerini biliyor. Sistem tamamen kurulmuştur.
           description: Bu, bu demo planlama ve inşa projesinin hedeflerinin kısa bir özetidir.
           news:
@@ -174,26 +174,26 @@ tr:
             widgets:
               item_0:
                 options:
-                  name: Hoş geldiniz 
+                  name: Hoş geldiniz
               item_1:
                 options:
                   name: Başlarken
                   text: |
-                    We are glad you joined! We suggest to try a few things to get started in OpenProject.
+                    Katıldığınız için çok mutluyuz! OpenProject'e başlamak için birkaç şey denemenizi öneririz.
 
-                    Here you will find the classical roles, some workflows and work packages for your construction project.
+                    Burada inşaat projeniz için klasik rolleri, bazı iş akışlarını ve iş paketlerini bulacaksınız.
 
-                    _Try the following steps:_
+                    Aşağıdaki adımları deneyin:_
 
-                    1.  _Invite new members to your project:_ → Go to [Members]({{opSetting:base_url}}/projects/demo-planning-constructing-project/members) in the project navigation.
-                    2.  _View the work in your projects:_ → Go to [Work packages]({{opSetting:base_url}}/projects/demo-planning-constructing-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) in the project navigation.
-                    3.  _Create a new work package:_ → Go to [Work packages → Create]({{opSetting:base_url}}/projects/demo-planning-constructing-project/work_packages/new?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D&type=11).
-                    4.  _Create and update a Gantt chart:_ → Go to [Gantt chart]({{opSetting:base_url}}/projects/demo-planning-constructing-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22assignee%22%2C%22responsible%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) in the project navigation.
-                    5.  _Activate further modules:_ → Go to [Project settings → Modules]({{opSetting:base_url}}/projects/demo-planning-constructing-project/settings/modules).
-                    6.  _Working agile? Create a new board:_ → Go to [Boards]({{opSetting:base_url}}/projects/demo-planning-constructing-project/boards)
+                    1.  Projenize yeni üyeler davet edin:_ → Proje navigasyonunda [Üyeler]({{opSetting:base_url}}/projects/demo-planning-constructing-project/members) bölümüne gidin.
+                    2.  Projelerinizdeki çalışmaları görüntüleyin:_ → [İş paketleri]({{opSetting:base_url}}/projects/demo-planning-constructing-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) proje navigasyonunda.
+                    3.  Yeni bir iş paketi oluşturun:_ → [İş paketleri → Oluştur]({{opSetting:base_url}}/projects/demo-planning-constructing-project/work_packages/new?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D&type=11).
+                    4.  Bir Gantt şeması oluşturun ve güncelleyin:_ → [Gantt şeması]'na gidin({{opSetting:base_url}}/projects/demo-planning-constructing-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22assignee%22%2C%22responsible%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) proje navigasyonunda.
+                    5.  Diğer modülleri etkinleştirin:_ → [Proje ayarları → Modüller]({{opSetting:base_url}}/projects/demo-planning-constructing-project/settings/modules) bölümüne gidin.
+                    6.  Çevik mi çalışıyorsunuz? Yeni bir pano oluşturun:_ → [Panolar]({{opSetting:base_url}}/projects/demo-planning-constructing-project/boards)
 
-                    Here you will find our [User Guides](https://www.openproject.org/docs/user-guide/).
-                    Please let us know if you have any questions or need support. Contact us: [support\[at\]openproject.com](mailto:support@openproject.com).
+                    Burada [Kullanıcı Kılavuzlarımızı](https://www.openproject.org/docs/user-guide/) bulacaksınız.
+                    Herhangi bir sorunuz varsa veya desteğe ihtiyacınız varsa lütfen bize bildirin. Bize ulaşın: [support\[at\]openproject.com](mailto:support@openproject.com).
               item_4:
                 options:
                   name: Üyeler
@@ -205,17 +205,17 @@ tr:
                   name: Aşamalar
           work_packages:
             item_0:
-              subject: Project kick off construction project
+              subject: Proje başlangıç inşaat projesi
               description: |-
-                The project kick off initializes the start of the project in your company. Everybody being part of this project should be invited to the kick off for a first briefing.
+                Proje başlangıcı, şirketinizde projenin başlangıcını başlatır. Bu projenin bir parçası olan herkes ilk brifing için başlangıç toplantısına davet edilmelidir.
 
-                The next step could be checking out the timetable and adjusting the appointments, by looking at the [Gantt chart]({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B%22id%22%2C%22subject%22%2C%22startDate%22%2C%22dueDate%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22status%22%2C%22o%22%3A%22o%22%2C%22v%22%3A%5B%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%7D).
+                Bir sonraki adım, [Gantt şemasına] bakarak zaman çizelgesini kontrol etmek ve randevuları ayarlamak olabilir ({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B%22id%22%2C%22subject%22%2C%22startDate%22%2C%22dueDate%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22status%22%2C%22o%22%3A%22o%22%2C%22v%22%3A%5B%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%7D).
             item_1:
               subject: Temel Değerleme
-              description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
+              description: Bu tür hiyerarşik olarak &quot;Clash&quot; ve &quot;Request&quot;türlerinin bir üstüdür, dolayısıyla genel bir notu temsil eder.
               children:
                 item_0:
-                  subject: Gathering first project information
+                  subject: İlk proje bilgilerinin toplanması
                   description: |-
                     ## Hedef
 
@@ -228,63 +228,63 @@ tr:
                     * Her ihtiyaç, ilgili iş paketleriyle birlikte bir görevi temsil etmelidir
                     * Maliyet tahmini ve zaman çerçevesi türetilmelidir
                 item_1:
-                  subject: Summarize the results
+                  subject: Sonuçları özetleyin
                   description: |-
-                    ## Goal
+                    ## Hedef
 
-                    *   Create a useful overview of the results
-                    *   Check what has been done and summarize the results
-                    *   Communicate all the relevant results with the customer
-                    *   Identify the fundamental boundary conditions of the project
+                    * Sonuçlara faydalı bir genel bakış oluşturmak
+                    * Ne yapıldığını kontrol etmek ve sonuçları özetlemek
+                    * İlgili tüm sonuçları müşteriye iletmek
+                    * Projenin temel sınır koşullarını belirlemek
 
-                    ## Description
+                    ## Açıklama
 
-                    *   Each topic gets its own overview which will be used as a catalogue of results
-                    *   This overview informs all participants about the decisions made
-                    *   ...
+                    * Her konu, sonuçların bir kataloğu olarak kullanılacak kendi genel bakışına sahip olur
+                    * Bu genel bakış, tüm katılımcıları alınan kararlar hakkında bilgilendirir
+                    * ...
                 item_2:
-                  subject: End of basic evaluation
-                  description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
+                  subject: Temel değerlendirmenin sonu
+                  description: Bu tür hiyerarşik olarak &quot;Clash&quot; ve &quot;Request&quot;türlerinin bir üstüdür, dolayısıyla genel bir notu temsil eder.
             item_2:
               subject: Ön planlama
-              description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
+              description: Bu tür hiyerarşik olarak &quot;Clash&quot; ve &quot;Request&quot;türlerinin bir üstüdür, dolayısıyla genel bir notu temsil eder.
               children:
                 item_0:
                   subject: İlk taslağın geliştirilmesi
                   description: |-
-                    ## Goal
+                    ## Hedef
 
-                    *   Create a useful overview of the results
-                    *   Check what has been done and summarize the results
-                    *   Communicate all the relevant results with the customer
-                    *   Identify the fundamental boundary conditions of the project
+                    * Sonuçlara faydalı bir genel bakış oluşturmak
+                    * Ne yapıldığını kontrol etmek ve sonuçları özetlemek
+                    * İlgili tüm sonuçları müşteriye iletmek
+                    * Projenin temel sınır koşullarını belirlemek
 
-                    ## Description
+                    ## Açıklama
 
-                    *   Each topic gets its own overview which will be used as a catalogue of results
-                    *   This overview informs all participants about the decisions made
-                    *   ...
+                    * Her konu, sonuçların bir kataloğu olarak kullanılacak kendi genel bakışına sahip olur
+                    * Bu genel bakış, tüm katılımcıları alınan kararlar hakkında bilgilendirir
+                    * ...
                 item_1:
                   subject: Sonuçların özetlenmesi
                   description: |-
-                    ## Goal
+                    ## Hedef
 
-                    *   Create a useful overview of the results
-                    *   Check what has been done and summarize the results
-                    *   Communicate all the relevant results with the customer
-                    *   Identify the fundamental boundary conditions of the project
+                    * Sonuçlara faydalı bir genel bakış oluşturmak
+                    * Ne yapıldığını kontrol etmek ve sonuçları özetlemek
+                    * İlgili tüm sonuçları müşteriye iletmek
+                    * Projenin temel sınır koşullarını belirlemek
 
-                    ## Description
+                    ## Açıklama
 
-                    *   Each topic gets its own overview which will be used as a catalogue of results
-                    *   This overview informs all participants about the decisions made
-                    *   ...
+                    * Her konu, sonuçların bir kataloğu olarak kullanılacak kendi genel bakışına sahip olur
+                    * Bu genel bakış, tüm katılımcıları alınan kararlar hakkında bilgilendirir
+                    * ...
             item_3:
-              subject: Passing of preliminary planning
-              description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
+              subject: Ön planlamanın geçmesi
+              description: Bu tür hiyerarşik olarak &quot;Clash&quot; ve &quot;Request&quot;türlerinin bir üstüdür, dolayısıyla genel bir notu temsil eder.
             item_4:
               subject: Tasarım planlaması
-              description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
+              description: Bu tür hiyerarşik olarak &quot;Clash&quot; ve &quot;Request&quot;türlerinin bir üstüdür, dolayısıyla genel bir notu temsil eder.
               children:
                 item_0:
                   subject: Bitirme tasarımı
@@ -302,7 +302,7 @@ tr:
                     * ...
                 item_1:
                   subject: Tasarım dondurma
-                  description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
+                  description: Bu tür hiyerarşik olarak &quot;Clash&quot; ve &quot;Request&quot;türlerinin bir üstüdür, dolayısıyla genel bir notu temsil eder.
             item_5:
               subject: İnşaat aşaması
               children:
@@ -321,89 +321,89 @@ tr:
                     * Ekibin bir araya getirilmesi
                     * ...
                 item_1:
-                  subject: Foundation
+                  subject: Yapı Temeli
                   description: |-
-                    ## Goal
+                    ## Hedef
 
-                    *   Laying of the foundation stone
-                    *   ...
+                    * Temel taşının döşenmesi
+                    * ...
 
-                    ## Description
+                    ## Açıklama
 
-                    *   Setting up the concrete mixer
-                    *   Setting up the supply chain for the concrete
-                    *   ...
+                    * Beton mikserinin kurulması
+                    * Beton için tedarik zincirinin kurulması
+                    * ...
                 item_2:
-                  subject: Building construction
+                  subject: Bina İnşası
                   description: |-
-                    ## Goal
+                    ## Hedef
 
-                    *   Topping out ceremony
-                    *   Walls and ceilings are done
-                    *   ...
+                    * Tamamlama töreni
+                    * Duvarlar ve tavanlar tamamlandı
+                    * ...
 
-                    ## Description
+                    ## Açıklama
 
-                    *   Creating all structural levels of the building
-                    *   Installing doors and windows
-                    *   Finishing the roof structure
-                    *   ...
+                    * Binanın tüm yapısal seviyelerinin oluşturulması
+                    * Kapı ve pencerelerin takılması
+                    * Çatı yapısının bitirilmesi
+                    * ...
                 item_3:
-                  subject: Finishing the facade
+                  subject: Dış cephenin tamamlanması
                   description: |-
-                    ## Goal
+                    ## Hedef
 
-                    *   Facade is done
-                    *   Whole building is waterproof
-                    *   ...
+                    * Cephe tamamlandı
+                    * Tüm bina su geçirmez
+                    * ...
 
-                    ## Description
+                    ## Açıklama
 
-                    *   Install all elements for the facade
-                    *   Finish the roof
-                    *   ...
+                    * Cephe için tüm elemanları kurun
+                    * Çatıyı bitirin
+                    * ...
                 item_4:
-                  subject: Installing the building service systems
+                  subject: Bina servis sistemlerinin kurulması
                   description: |-
-                    ## Goal
+                    ## Hedef
 
-                    *   All building service systems are ready to be used
+                    * Tüm bina servis sistemleri kullanıma hazır
 
-                    ## Description
+                    ## Açıklama
 
-                    *   Installing the heating system
-                    *   Installing the climate system
-                    *   Electrical installation
-                    *   ...
+                    * Isıtma sisteminin kurulması
+                    * İklimlendirme sisteminin kurulması
+                    * Elektrik tesisatı
+                    * ...
                 item_5:
-                  subject: Final touches
+                  subject: Son rötuşlar
                   description: |-
-                    ## Goal
+                    ## Hedef
 
-                    *   Handover of the keys
-                    *   The customer is happy with his building
-                    *   ...
+                    * Anahtarların teslim edilmesi
+                    * Müşterinin binasından memnun olması
+                    * ...
 
-                    ## Description
+                    ## Açıklama
 
-                    *   Finishing the installation of the building service systems
-                    *   Finishing the interior construction
-                    *   Finishing the facade
-                    *   ...
+                    * Bina servis sistemlerinin kurulumunun tamamlanması
+                    * İç inşaatın tamamlanması
+                    * Dış cephenin tamamlanması
+                    * ...
                 item_6:
-                  subject: House warming party
+                  subject: Ev ısınma partisi
                   description: |-
-                    ## Goal
+                    ## Hedef
 
-                    *   Have a blast!
+                    * Eğlenin!
 
-                    ## Description
+                    ## Açıklama
 
-                    *   Invite the construction team
-                    *   Invite your friends
-                    *   Bring some drinks, snacks and your smile
+                    * İnşaat ekibini davet edin
+                    * Arkadaşlarınızı davet edin
+                    * Biraz içecek, atıştırmalık ve gülümsemenizi getirin
         demo-bim-project:
-          name: "(Demo) BIM project"
+          name: "(Demo) BIM projesi"
           status_explanation: Tüm görevler ve alt projeler programa uygundur. İlgili kişiler görevlerini biliyor. Sistem tamamen kurulmuştur.
           description: Bu, bu demo BIM projesinin hedeflerinin kısa bir özetidir.
           news:
@@ -428,29 +428,29 @@ tr:
             widgets:
               item_0:
                 options:
-                  name: Hoş geldiniz 
+                  name: Hoş geldiniz
               item_1:
                 options:
                   name: Başlarken
                   text: |
-                    We are glad you joined! We suggest to try a few things to get started in OpenProject.
+                    Katıldığınız için çok mutluyuz! OpenProject'e başlamak için birkaç şey denemenizi öneririz.
 
-                    This demo project offers roles, workflows and work packages that are specialized for BIM.
+                    Bu demo proje, BIM için özelleşmiş roller, iş akışları ve iş paketleri sunmaktadır.
 
-                    _Try the following steps:_
+                    Aşağıdaki adımları deneyin:_
 
-                    1.  _Invite new members to your project:_ → Go to [Members]({{opSetting:base_url}}/projects/demo-bim-project/members) in the project navigation.
-                    2.  _Upload and view 3D-models in IFC format:_ → Go to [BCF]({{opSetting:base_url}}/projects/demo-bim-project/bcf) in the project navigation.
-                    3.  _Create and manage BCF issues linked directly in the IFC model:_ → Go to [BCF]({{opSetting:base_url}}/projects/demo-bim-project/bcf) → Create.
-                    4.  _View the work in your projects:_ → Go to [Work packages]({{opSetting:base_url}}/projects/demo-bim-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) in the project navigation.
-                    5.  _Create a new work package:_ → Go to [Work packages → Create]({{opSetting:base_url}}/projects/demo-bim-project/work_packages/new?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D&type=11).
-                    6.  _Create and update a Gantt chart:_ → Go to [Gantt chart]({{opSetting:base_url}}/projects/demo-bim-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22assignee%22%2C%22responsible%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) in the project navigation.
-                    7.  _Activate further modules:_ → Go to [Project settings → Modules]({{opSetting:base_url}}/projects/demo-bim-project/settings/modules).
-                    8.  _Check out the tile view to get an overview of your BCF issues:_ → Go to [Work packages]({{opSetting:base_url}}/projects/demo-bim-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22id%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22card%22%7D)
-                    9.  _Working agile? Create a new board:_ → Go to [Boards]({{opSetting:base_url}}/projects/demo-bim-project/boards)
+                    1.  Projenize yeni üyeler davet edin:_ → Proje navigasyonunda [Üyeler]({{opSetting:base_url}}/projects/demo-bim-project/members) bölümüne gidin.
+                    2.  3D modelleri IFC formatında yükleyin ve görüntüleyin:_ → Proje navigasyonunda [BCF]({{opSetting:base_url}}/projects/demo-bim-project/bcf) bölümüne gidin.
+                    3.  Doğrudan IFC modeline bağlı BCF sorunlarını oluşturun ve yönetin:_ → [BCF]({{opSetting:base_url}}/projects/demo-bim-project/bcf) → Oluştur'a gidin.
+                    4.  Projelerinizdeki çalışmaları görüntüleyin:_ → [İş paketleri]({{opSetting:base_url}}/projects/demo-bim-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) proje navigasyonunda.
+                    5.  Yeni bir iş paketi oluşturun:_ → [İş paketleri → Oluştur]({{opSetting:base_url}}/projects/demo-bim-project/work_packages/new?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D&type=11).
+                    6.  Bir Gantt şeması oluşturun ve güncelleyin:_ → [Gantt şeması]'na gidin({{opSetting:base_url}}/projects/demo-bim-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22assignee%22%2C%22responsible%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) proje navigasyonunda.
+                    7.  Diğer modülleri etkinleştirin:_ → [Proje ayarları → Modüller]({{opSetting:base_url}}/projects/demo-bim-project/settings/modules) bölümüne gidin.
+                    8.  BCF sorunlarınıza genel bir bakış için kutucuk görünümüne göz atın:_ → [İş paketleri]({{opSetting:base_url}}/projects/demo-bim-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22id%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22card%22%7D)
+                    9.  Çevik mi çalışıyorsunuz? Yeni bir pano oluşturun:_ → [Panolar]({{opSetting:base_url}}/projects/demo-bim-project/boards)
 
-                    Here you will find our [User Guides](https://www.openproject.org/docs/user-guide/).
-                    Please let us know if you have any questions or need support. Contact us: [support\[at\]openproject.com](mailto:support@openproject.com).
+                    adresine gidin Burada [Kullanıcı Kılavuzlarımızı](https://www.openproject.org/docs/user-guide/) bulacaksınız.
+                    Herhangi bir sorunuz varsa veya desteğe ihtiyacınız varsa lütfen bize bildirin. Bize ulaşın: [support\[at\]openproject.com](mailto:support@openproject.com).
               item_4:
                 options:
                   name: Üyeler
@@ -462,17 +462,17 @@ tr:
                   name: Aşamalar
           work_packages:
             item_0:
-              subject: Project kick off creating BIM model
+              subject: BIM modeli oluşturarak proje başlangıcı
               description: |-
-                The project Kickoff initializes the start of the project in your company. The whole project team should be invited to the Kickoff for a first briefing.
+                Proje başlangıcı, şirketinizde projenin başlangıcını başlatır. Bu projenin bir parçası olan herkes ilk brifing için başlangıç toplantısına davet edilmelidir.
 
-                The next step could be to check out the timetable and adjusting the appointments, by looking at the [Gantt chart]({{opSetting:base_url}}/projects/demo-bim-project/work_packages?query_props=%7B%22c%22%3A%5B%22id%22%2C%22subject%22%2C%22startDate%22%2C%22dueDate%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22status%22%2C%22o%22%3A%22o%22%2C%22v%22%3A%5B%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%7D).
+                Bir sonraki adım, [Gantt şemasına] bakarak zaman çizelgesini kontrol etmek ve randevuları ayarlamak olabilir ({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B%22id%22%2C%22subject%22%2C%22startDate%22%2C%22dueDate%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22status%22%2C%22o%22%3A%22o%22%2C%22v%22%3A%5B%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%7D).
             item_1:
               subject: Proje hazırlığı
-              description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
+              description: Bu tür hiyerarşik olarak &quot;Clash&quot; ve &quot;Request&quot;türlerinin bir üstüdür, dolayısıyla genel bir notu temsil eder.
               children:
                 item_0:
-                  subject: Gathering the project specific data and information for the BIM model
+                  subject: BIM modeli için projeye özel veri ve bilgilerin toplanması
                   description: |-
                     ## Hedef
 
@@ -488,139 +488,139 @@ tr:
                     * Teslim aşaması için bir strateji
                     * ...
                 item_1:
-                  subject: Creating the BIM execution plan
+                  subject: BIM yürütme planının oluşturulması
                   description: |-
-                    # Goal
+                    # Hedef
 
-                    *   A BIM execution plan will be defined according to the exchange requirements specifications (ERS)
-                    *   All team members and partners have a plan on how to reach each of the project goals
+                    * Değişim gereksinimleri spesifikasyonlarına (ERS) göre bir BIM yürütme planı tanımlanacaktır
+                    * Tüm ekip üyeleri ve ortakları, proje hedeflerinin her birine nasıl ulaşılacağına dair bir plana sahiptir
 
-                    # Description
+                    # Açıklama
 
-                    *   Depending on the identifies use cases, the individual Information Delivery Manuals will be defined
-                    *   To handle the technological interfaces, a software topology will be defined and analyzed and verified
-                    *   ...
+                    * Tanımlanan kullanım durumlarına bağlı olarak, bireysel Bilgi Teslim Kılavuzları tanımlanacaktır
+                    * Teknolojik arayüzleri ele almak için bir yazılım topolojisi tanımlanacak ve analiz edilip doğrulanacaktır
+                    * ...
                 item_2:
-                  subject: Completion of the BIM execution plan
-                  description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
+                  subject: BIM yürütme planının oluşturulması
+                  description: Bu tür hiyerarşik olarak &quot;Clash&quot; ve &quot;Request&quot;türlerinin bir üstüdür, dolayısıyla genel bir notu temsil eder.
             item_2:
-              subject: End of preparation phase
-              description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
+              subject: Hazırlık aşamasının sonu
+              description: Bu tür hiyerarşik olarak &quot;Clash&quot; ve &quot;Request&quot;türlerinin bir üstüdür, dolayısıyla genel bir notu temsil eder.
             item_3:
-              subject: Creating initial BIM model
-              description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
+              subject: İlk BIM modelinin oluşturulması
+              description: Bu tür hiyerarşik olarak &quot;Clash&quot; ve &quot;Request&quot;türlerinin bir üstüdür, dolayısıyla genel bir notu temsil eder.
               children:
                 item_0:
-                  subject: Modelling initial BIM model
+                  subject: İlk BIM modelinin oluşturulması
                   description: |-
-                    # Goal
+                    # Hedef
 
-                    *   Modelling the initial BIM model
-                    *   Creating a BIM model for the whole project team
+                    * İlk BIM modelinin modellenmesi
+                    * Tüm proje ekibi için bir BIM modeli oluşturulması
 
-                    # Description
+                    # Açıklama
 
-                    *   According to the gathered data from the customer, the initial model will be modelled
-                    *   The model shall be modelled according to the LOD Matrices and contain the information needed
-                    *   ...
+                    * Müşteriden toplanan verilere göre ilk model modellenecektir
+                    * Model, LOD Matrislerine göre modellenecek ve ihtiyaç duyulan bilgileri içerecektir
+                    * ...
                 item_1:
-                  subject: Initial, internal model check and revising
+                  subject: Başlangıç, dahili model kontrolü ve revizyonu
                   description: |-
-                    # Goal
+                    # Hedef
 
-                    *   Submitting a BIM model according to the defined standards
+                    * Tanımlanan standartlara göre bir BIM modelinin sunulması
 
-                    # Description
+                    # Açıklama
 
-                    *   The model shall be checked, according to the defined standards (conventions, LOD, ...) and revised
-                    *   ...
+                    * Model, tanımlanan standartlara (konvansiyonlar, LOD, ...) göre kontrol edilecek ve revize edilecektir
+                    * ...
                 item_2:
-                  subject: Submitting initial BIM model
-                  description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
+                  subject: İlk BIM modelinin oluşturulması
+                  description: Bu tür hiyerarşik olarak &quot;Clash&quot; ve &quot;Request&quot;türlerinin bir üstüdür, dolayısıyla genel bir notu temsil eder.
             item_4:
-              subject: Modelling, first cycle
-              description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
+              subject: Modelleme, ilk döngü
+              description: Bu tür hiyerarşik olarak &quot;Clash&quot; ve &quot;Request&quot;türlerinin bir üstüdür, dolayısıyla genel bir notu temsil eder.
               children:
                 item_0:
-                  subject: Referencing external BIM models
+                  subject: Harici BIM modellerine referans verme
                   description: |-
-                    # Goal
+                    # Hedef
 
-                    *   Having a foundation for developing the internal model/ offering answers
-                    *   Using the external model to develop the internal model
+                    * Dahili modeli geliştirmek için bir temele sahip olmak / cevaplar sunmak
+                    * Dahili modeli geliştirmek için harici modeli kullanmak
 
-                    # Description
+                    # Açıklama
 
-                    *   The external model will be referenced in the BIM platform, thus used for modelling the internal model
-                    *   ...
+                    * Harici model BIM platformunda referans alınacak, böylece dahili modelin modellenmesi için kullanılacaktır
+                    * ...
                 item_1:
-                  subject: Modelling the BIM model
+                  subject: İlk BIM modelinin oluşturulması
                   description: |-
-                    # Goal
+                    # Hedef
 
-                    *   Creating a BIM model for the project
-                    *   Creating a BIM model for the whole project team
+                    * Proje için bir BIM modeli oluşturmak
+                    * Tüm proje ekibi için bir BIM modeli oluşturmak
 
-                    # Description
+                    # Açıklama
 
-                    *   The model will be created according to the BIM execution plan
-                    *   ...
+                    * Model, BIM yürütme planına göre oluşturulacaktır
+                    * ...
                 item_2:
-                  subject: First Cycle, internal model check and revising
+                  subject: Başlangıç, dahili model kontrolü ve revizyonu
                   description: |-
-                    # Goal
+                    # Hedef
 
-                    *   Submitting a BIM model according to the defined standards
+                    * Tanımlanan standartlara göre bir BIM modelinin sunulması
 
-                    # Description
+                    # Açıklama
 
-                    *   The model shall be checked, according to the defined standards (conventions, LOD, ...) and revised.
-                    *   ...
+                    * Model, tanımlanan standartlara (konvansiyonlar, LOD, ...) göre kontrol edilecek ve revize edilecektir
+                    * ...
                 item_3:
-                  subject: Submitting BIM model
-                  description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
+                  subject: BIM modelinin gönderilmesi
+                  description: Bu tür hiyerarşik olarak &quot;Clash&quot; ve &quot;Request&quot;türlerinin bir üstüdür, dolayısıyla genel bir notu temsil eder.
             item_5:
-              subject: Coordination, first cycle
-              description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
+              subject: Koordinasyon, ilk döngü
+              description: Bu tür hiyerarşik olarak &quot;Clash&quot; ve &quot;Request&quot;türlerinin bir üstüdür, dolayısıyla genel bir notu temsil eder.
               children:
                 item_0:
-                  subject: Coordinate the different BIM models
+                  subject: Farklı BIM modellerini koordine edin
                   description: |-
-                    # Goal
+                    # Hedef
 
-                    *   Assemble the different BIM models of the whole project team
-                    *   Coordinate the identified issues
+                    * Tüm proje ekibinin farklı BIM modellerini bir araya getirin
+                    * Belirlenen sorunları koordine edin
 
-                    # Description
+                    # Açıklama
 
-                    *   The different BIM models will be assembled and checked
-                    *   The identified model specific issues will be communicated via BCF files
-                    *   ...
+                    * Farklı BIM modelleri bir araya getirilecek ve kontrol edilecektir
+                    * Belirlenen modele özgü sorunlar BCF dosyaları aracılığıyla iletilecektir
+                    * ...
                 item_1:
                   subject: Sorun yönetimi, ilk döngü
                 item_2:
-                  subject: Finishing coordination, first cycle
-                  description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
+                  subject: Koordinasyonun sonlanması, ilk döngü
+                  description: Bu tür hiyerarşik olarak &quot;Clash&quot; ve &quot;Request&quot;türlerinin bir üstüdür, dolayısıyla genel bir notu temsil eder.
             item_6:
-              subject: Modelling & coordinating, second cycle
-              description: "## Goal\r\n\r\n*   ...\r\n\r\n## Description\r\n\r\n* \\  ..."
+              subject: Modelleme ve koordinasyon, ikinci döngü
+              description: "## Hedef\r\n\r\n* ...\r\n\r\n## Açıklama\r\n\r\n* \\ ..."
             item_7:
-              subject: Modelling & coordinating, ... cycle
-              description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
+              subject: Modelleme ve koordinasyon, ... döngü
+              description: Bu tür hiyerarşik olarak &quot;Clash&quot; ve &quot;Request&quot;türlerinin bir üstüdür, dolayısıyla genel bir notu temsil eder.
             item_8:
-              subject: Modelling & coordinating, (n-th minus 1) cycle
-              description: "## Goal\r\n\r\n*   ...\r\n\r\n## Description\r\n\r\n* \\  ..."
+              subject: Modelleme ve koordinasyon, (n'inci eksi 1) döngü
+              description: "## Hedef\r\n\r\n* ...\r\n\r\n## Açıklama\r\n\r\n* \\ ..."
             item_9:
-              subject: Modelling & coordinating n-th cycle
-              description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
+              subject: Modelleme ve koordinasyon (n'inci) döngü
+              description: Bu tür hiyerarşik olarak &quot;Clash&quot; ve &quot;Request&quot;türlerinin bir üstüdür, dolayısıyla genel bir notu temsil eder.
             item_10:
-              subject: Finishing modelling & coordinating, n-th cycle
-              description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
+              subject: Modelleme ve koordinasyon tamamlanıyor (n'inci) döngü
+              description: Bu tür hiyerarşik olarak &quot;Clash&quot; ve &quot;Request&quot;türlerinin bir üstüdür, dolayısıyla genel bir notu temsil eder.
             item_11:
-              subject: Use model for construction phase
+              subject: İnşaat aşaması için model kullanın
               children:
                 item_0:
-                  subject: Handover model for construction crew
+                  subject: İnşaat ekibi için devir teslim modeli
                   description: |-
                     ## Hedef
 
@@ -634,36 +634,36 @@ tr:
                     * Tüm nesneler, atanan görevler için gereken bilgilere sahip olmalıdır. Eğer yoksa, modelin veri zenginleştirmesinin yapılması gerekir
                     * ...
                 item_1:
-                  subject: Construct the building
+                  subject: Binanın inşası
                   description: |-
-                    ## Goal
+                    ## Hedef
 
-                    *   New issues realized on construction site will be handled model based
-                    *   Issues will be documented by using the BCF files and the BIM model
+                    * Şantiyede gerçekleşen yeni sorunlar model tabanlı olarak ele alınacaktır
+                    * Sorunlar BCF dosyaları ve BIM modeli kullanılarak belgelenecektir
 
-                    ## Description
+                    ## Açıklama
 
-                    *   New issues will be documented using BCF files as sticky notes for the model
-                    *   The BCF files will be used to assign, track and correct issues
-                    *   ...
+                    * Yeni sorunlar BCF dosyaları model için yapışkan notlar olarak kullanılarak belgelenecektir
+                    * BCF dosyaları sorunları atamak, izlemek ve düzeltmek için kullanılacaktır
+                    * ...
                 item_2:
-                  subject: Finish construction
+                  subject: Binanın tamamlanması
             item_12:
-              subject: Issue management, construction phase
+              subject: Sorun yönetimi, inşaat aşaması
             item_13:
-              subject: Handover for Facility Management
+              subject: Tesis Yönetimi için Devir Teslim
               description: |-
-                ## Goal
+                ## Hedef
 
-                *   The BIM model will be used for the Facility Management
-                *   The model provides all the relevant information for commissioning and operating the building
-                *   ...
+                * BIM modeli Tesis Yönetimi için kullanılacaktır
+                * Model, binanın devreye alınması ve işletilmesi için ilgili tüm bilgileri sağlar
+                * ...
 
-                ## Description
+                ## Açıklama
 
-                *   The model contains the relevant information for the facility manager
-                *   The model can be used for the operating system of the building
-                *   ...
+                * Model, tesis yöneticisi için ilgili bilgileri içerir
+                * Model, binanın işletim sistemi için kullanılabilir
+                * ...
             item_14:
               subject: Varlık Yönetimi
               description: Binanızın keyfini çıkarın :)
@@ -684,11 +684,11 @@ tr:
             item_0:
               name: Sorunlar
             item_1:
-              name: Clashes
+              name: Çatışmalar
             item_2:
-              name: Requests
+              name: Talepler
             item_3:
-              name: Remarks
+              name: Açıklamalar
             item_4:
               name: Proje planı
             item_5:
@@ -699,33 +699,33 @@ tr:
               name: Takım planlayıcısı
           boards:
             bcf:
-              name: BCF issues
+              name: BCF sorunları
           project-overview:
             widgets:
               item_0:
                 options:
-                  name: Hoş geldiniz 
+                  name: Hoş geldiniz
               item_1:
                 options:
                   name: Başlarken
                   text: |
-                    We are glad you joined! We suggest to try a few things to get started in OpenProject.
+                    Katıldığınız için çok mutluyuz! OpenProject'e başlamak için birkaç şey denemenizi öneririz.
 
-                    This demo project shows BCF management functionalities.
+                    Bu demo proje BCF yönetim işlevlerini göstermektedir.
 
-                    _Try the following steps:_
+                    Aşağıdaki adımları deneyin:_
 
-                    1.  _Invite new members to your project:_ → Go to [Members]({{opSetting:base_url}}/projects/demo-bcf-management-project/members?show_add_members=true) in the project navigation.
-                    2.  _Upload and view 3D-models in IFC format:_ → Go to [BCF]({{opSetting:base_url}}/projects/demo-bim-project/bcf) in the project navigation.
-                    3.  _Create and manage BCF issues linked directly in the IFC model:_ → Go to [BCF]({{opSetting:base_url}}/projects/demo-bim-project/bcf) → Create.
-                    4.  _View the BCF files in your project:_ → Go to [BCF]({{opSetting:base_url}}/projects/demo-bcf-management-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22status%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22id%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22card%22%7D) in the project navigation.
-                    5.  _Load your BCF files:_ → Go to [BCF → Import.]({{opSetting:base_url}}/projects/demo-bcf-management-project/issues/upload)
-                    6.  _Create and update a Gantt chart:_ → Go to [Gantt chart]({{opSetting:base_url}}/projects/demo-bcf-management-project/work_packages?query_props=%7B%22c%22%3A%5B%22id%22%2C%22subject%22%2C%22startDate%22%2C%22dueDate%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22days%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22status%22%2C%22o%22%3A%22o%22%2C%22v%22%3A%5B%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%7D) in the project navigation.
-                    7.  _Activate further modules:_ → Go to [Project settings → Modules.]({{opSetting:base_url}}/projects/demo-bcf-management-project/settings/modules)
-                    8.  _You love the agile approach? Create a board:_ → Go to [Boards]({{opSetting:base_url}}/projects/demo-bcf-management-project/boards).
+                    1.  Projenize yeni üyeler davet edin:_ → Proje navigasyonunda [Üyeler]({{opSetting:base_url}}/projects/demo-bcf-management-project/members?show_add_members=true) bölümüne gidin.
+                    2.  3D modelleri IFC formatında yükleyin ve görüntüleyin:_ → Proje navigasyonunda [BCF]({{opSetting:base_url}}/projects/demo-bim-project/bcf) seçeneğine gidin.
+                    3.  Doğrudan IFC modeline bağlı BCF sorunlarını oluşturun ve yönetin:_ → [BCF]({{opSetting:base_url}}/projects/demo-bim-project/bcf) → Oluştur'a gidin.
+                    4.  Projenizdeki BCF dosyalarını görüntüleyin:_ → [BCF]({{opSetting:base_url}}/projects/demo-bcf-management-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22status%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22id%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22card%22%7D) proje navigasyonuna gidin.
+                    5.  BCF dosyalarınızı yükleyin:_ → [BCF → İçe Aktar]({{opSetting:base_url}}/projects/demo-bcf-management-project/issues/upload)
+                    adresine gidin.  Bir Gantt şeması oluşturun ve güncelleyin:_ → [Gantt şeması] bölümüne gidin({{opSetting:base_url}}/projects/demo-bcf-management-project/work_packages?query_props=%7B%22c%22%3A%5B%22id%22%2C%22subject%22%2C%22startDate%22%2C%22dueDate%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22days%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22status%22%2C%22o%22%3A%22o%22%2C%22v%22%3A%5B%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%7D) proje navigasyonuna gidin.
+                    7.  Diğer modülleri etkinleştirin:_ → [Proje ayarları → Modüller.]({{opSetting:base_url}}/projects/demo-bcf-management-project/settings/modules)
+                    8.  Çevik yaklaşımı seviyor musunuz? Bir pano oluşturun:_ → [Panolar]({{opSetting:base_url}}/projects/demo-bcf-management-project/boards) adresine gidin.
 
-                    Here you will find our [User Guides](https://www.openproject.org/docs/user-guide/).
-                    Please let us know if you have any questions or need support. Contact us: [support\[at\]openproject.com](mailto:support@openproject.com).
+                    Burada [Kullanıcı Kılavuzlarımızı](https://www.openproject.org/docs/user-guide/) bulacaksınız.
+                    Herhangi bir sorunuz varsa veya desteğe ihtiyacınız varsa lütfen bize bildirin. Bize ulaşın: [support\[at\]openproject.com](mailto:support@openproject.com).
               item_4:
                 options:
                   name: Üyeler

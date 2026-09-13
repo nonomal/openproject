@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -350,6 +352,7 @@ RSpec.describe RolesController do
         expect(enqueued_jobs.count).to eq(1)
         expect(enqueued_jobs[0][:job]).to eq(Storages::ManageStorageIntegrationsJob)
         expect(response).to redirect_to roles_path
+        expect(response).to have_http_status(:see_other)
         expect(Role.count).to eq(0)
       end
     end
@@ -366,6 +369,7 @@ RSpec.describe RolesController do
         expect(enqueued_jobs.count).to eq(0)
         expect(Role.count).to eq(1)
         expect(response).to redirect_to roles_path
+        expect(response).to have_http_status(:see_other)
         expect(flash[:error]).to eq I18n.t(:error_can_not_remove_role)
       end
     end

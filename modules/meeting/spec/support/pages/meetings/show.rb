@@ -33,6 +33,7 @@ require_relative "base"
 module Pages::Meetings
   class Show < Base
     include ::Components::Autocompleter::NgSelectAutocompleteHelpers
+
     attr_accessor :meeting
 
     def initialize(meeting)
@@ -116,14 +117,16 @@ module Pages::Meetings
         click_on type.model_name.human
       end
 
+      created_id = nil
       in_agenda_form do
         yield
-        click_on("Save") if save
+        created_id = click_save_and_wait_for_agenda_item_creation if save
       end
+      expect(page).to have_css("#meeting-agenda-item-#{created_id}") if created_id
     end
 
     def expect_modal(...)
-      expect(page).to have_modal(...)
+      Components::Common::Modal.new.expect_modal(...)
     end
 
     def expect_no_add_form
@@ -131,13 +134,15 @@ module Pages::Meetings
     end
 
     def add_agenda_item_to_section(section:, type: MeetingAgendaItem, save: true, &)
-      select_section_action(section, type.model_name.human)
+      select_section_action(section, "Add #{type.model_name.human.downcase}")
 
       within("#meeting-sections-show-component-#{section.id}") do
+        created_id = nil
         in_agenda_form do
           yield
-          click_on("Save") if save
+          created_id = click_save_and_wait_for_agenda_item_creation if save
         end
+        expect(page).to have_css("#meeting-agenda-item-#{created_id}") if created_id
       end
     end
 
@@ -149,14 +154,16 @@ module Pages::Meetings
     end
 
     def in_edit_form(item, &)
-      page.within("#meeting-agenda-items-item-component-#{item.id}", &)
+      page.within("#meeting-agenda-item-#{item.id}", &)
     end
 
     def in_agenda_form(&)
-      page.within("#meeting-agenda-items-form-component", &)
+      page.within("#meeting-agenda-items-form-component-new", &)
     end
 
     def assert_agenda_order!(*titles)
+      wait_for_network_idle
+
       retry_block do
         found = page.all(:test_id, "op-meeting-agenda-title").map(&:text)
         raise "Expected order of agenda items #{titles.inspect}, but found #{found.inspect}" if titles != found
@@ -165,12 +172,16 @@ module Pages::Meetings
 
     def remove_agenda_item(item)
       accept_confirm(I18n.t("text_are_you_sure")) do
-        action = item.work_package ? I18n.t(:label_agenda_item_remove) : I18n.t(:button_delete)
+        action = item.work_package ? wp_agenda_item_delete_label(item) : I18n.t(:button_delete)
         select_action(item, action)
       end
 
       title = item.work_package ? item.work_package.subject : item.title
       expect_no_agenda_item(title:)
+    end
+
+    def wp_agenda_item_delete_label(item)
+      item.in_backlog? ? I18n.t(:label_agenda_item_remove_from_backlog) : I18n.t(:label_agenda_item_remove_from_agenda)
     end
 
     def expect_agenda_item(title:)
@@ -187,7 +198,7 @@ module Pages::Meetings
       if item.is_a?(WorkPackage)
         expect(page).to have_css("[id^='meeting-agenda-items-item-component-']", text: item.subject)
       else
-        expect(page).to have_css("#meeting-agenda-items-item-component-#{item.id}", text: item.work_package.subject)
+        expect(page).to have_css("#meeting-agenda-item-#{item.id}", text: item.work_package.subject)
       end
     end
 
@@ -196,7 +207,7 @@ module Pages::Meetings
     end
 
     def expect_undisclosed_agenda_link(item)
-      expect(page).to have_css("#meeting-agenda-items-item-component-#{item.id}",
+      expect(page).to have_css("#meeting-agenda-item-#{item.id}",
                                text: I18n.t(:label_agenda_item_undisclosed_wp, id: item.work_package_id))
     end
 
@@ -204,31 +215,66 @@ module Pages::Meetings
       expect(page).not_to have_test_selector("op-meeting-agenda-title", text: title)
     end
 
+    def expect_no_agenda_item_in_section(title:, section:)
+      within("#meeting-sections-show-component-#{section.id}") do
+        expect_no_agenda_item(title:)
+      end
+    end
+
     def expect_agenda_action_menu(item)
       expect(page)
-        .to have_css("#meeting-agenda-items-item-component-#{item.id} #{test_selector('op-meeting-agenda-actions')}")
+        .to have_css("#meeting-agenda-item-#{item.id} #{test_selector('op-meeting-agenda-actions')}")
     end
 
     def expect_no_agenda_action_menu(item)
       expect(page)
-        .to have_no_css("#meeting-agenda-items-item-component-#{item.id} #{test_selector('op-meeting-agenda-actions')}")
+        .to have_no_css("#meeting-agenda-item-#{item.id} #{test_selector('op-meeting-agenda-actions')}")
     end
 
     def select_action(item, action)
       open_menu(item) do
+        if action.downcase.include?("move")
+          click_on "Move"
+        elsif action.downcase.include?("outcome")
+          click_on "Add outcome"
+        end
         click_on action
+      end
+    end
+
+    def move_item_to_next_meeting(item)
+      select_action(item, "Move to next meeting")
+      expect_modal("Move to next meeting?")
+
+      retry_block do
+        page.within_modal "Move to next meeting?" do
+          click_on "Move"
+        end
+      end
+    end
+
+    def duplicate_item_in_next_meeting(item)
+      open_menu(item) do
+        click_on "Duplicate"
+        click_on "Duplicate in next meeting"
+      end
+      expect_modal("Duplicate in next meeting?")
+
+      retry_block do
+        page.within_modal "Duplicate in next meeting?" do
+          click_on "Duplicate"
+        end
       end
     end
 
     def open_menu(item, &)
       retry_block do
-        page.within("#meeting-agenda-items-item-component-#{item.id}") do
+        page.within("#meeting-agenda-item-#{item.id}") do
           page.find_test_selector("op-meeting-agenda-actions").click
         end
         page.find(".Overlay")
+        page.within(".Overlay", &)
       end
-
-      page.within(".Overlay", &)
     end
 
     def select_outcome_action(action)
@@ -248,7 +294,7 @@ module Pages::Meetings
 
     def expect_no_outcome_action(item)
       retry_block do
-        page.within("#meeting-agenda-items-item-component-#{item.id}") do
+        page.within("#meeting-agenda-item-#{item.id}") do
           page.find_test_selector("op-meeting-agenda-actions").trigger("click")
         end
         page.find(".Overlay")
@@ -277,19 +323,25 @@ module Pages::Meetings
     end
 
     def in_outcome_component(item, &)
-      page.within("#meeting-agenda-items-outcomes-base-component-#{item.id}", &)
+      page.within("#meeting-agenda-items-outcomes-wrapper-component-#{item.id}", &)
     end
 
     def add_outcome(item, &)
-      page.within("#meeting-agenda-items-outcomes-base-component-#{item.id}") do
-        click_link_or_button "Outcome"
+      page.within("#meeting-agenda-items-outcomes-new-button-component-#{item.id}") do
+        click_on "Outcome"
       end
+      expect(page).to have_text("Write outcome", wait: 2)
+      page.find("a", text: "Write outcome").click
       expect_outcome_form(item)
       page.within("#meeting-agenda-items-outcomes-input-component-#{item.id}", &)
     end
 
     def add_outcome_from_menu(item, &)
-      select_action item, "Add outcome"
+      open_menu(item) do
+        click_on "Add outcome"
+        expect(page).to have_text("Write outcome", wait: 2)
+        click_on "Write outcome"
+      end
       expect_outcome_form(item)
       page.within("#meeting-agenda-items-outcomes-input-component-#{item.id}", &)
     end
@@ -300,11 +352,11 @@ module Pages::Meetings
     end
 
     def expect_outcome(text)
-      expect(page).to have_css("#meeting-agenda-items-outcomes-show-notes-component", text:)
+      expect(page).to have_css(".op-meeting-outcome-notes--content", text:)
     end
 
     def expect_no_outcome(text)
-      expect(page).to have_no_css("#meeting-agenda-items-outcomes-show-notes-component", text:)
+      expect(page).to have_no_css(".op-meeting-outcome-notes--content", text:)
     end
 
     def expect_no_outcome_button
@@ -315,10 +367,10 @@ module Pages::Meetings
       expect(page).to have_css(".CollapsibleHeader", text: I18n.t("label_agenda_backlog"))
 
       if collapsed
-        expect(page).to have_css(".CollapsibleHeader.CollapsibleHeader--collapsed")
+        expect(page).to have_css(".CollapsibleHeader[data-collapsed]")
         expect(page).to have_no_text(I18n.t("text_agenda_backlog"))
       else
-        expect(page).to have_no_css(".CollapsibleHeader.CollapsibleHeader--collapsed")
+        expect(page).to have_no_css(".CollapsibleHeader[data-collapsed]")
         expect(page).to have_text(I18n.t("text_agenda_backlog"))
       end
     end
@@ -327,10 +379,10 @@ module Pages::Meetings
       expect(page).to have_css(".CollapsibleHeader", text: I18n.t("label_series_backlog"))
 
       if collapsed
-        expect(page).to have_css(".CollapsibleHeader.CollapsibleHeader--collapsed")
+        expect(page).to have_css(".CollapsibleHeader[data-collapsed]")
         expect(page).to have_no_text(I18n.t("text_series_backlog"))
       else
-        expect(page).to have_no_css(".CollapsibleHeader.CollapsibleHeader--collapsed")
+        expect(page).to have_no_css(".CollapsibleHeader[data-collapsed]")
         expect(page).to have_text(I18n.t("text_series_backlog"))
       end
     end
@@ -347,30 +399,57 @@ module Pages::Meetings
 
     def expect_empty_backlog
       within_backlog do
-        expect(page).to have_text("Drag items here or create a new one")
-        expect(page).to have_button("Add")
+        retry_block do
+          expect(page).to have_text("Drag items here or create a new one")
+          expect(page).to have_button("Add")
+        end
       end
     end
 
     def add_agenda_item_to_backlog(type: MeetingAgendaItem, &)
-      select_backlog_action(type.model_name.human)
+      select_backlog_action("Add #{type.model_name.human.downcase}")
 
       within("#meeting-sections-backlogs-container-component") do
+        created_id = nil
         in_agenda_form do
           yield
-          click_on("Save")
+          created_id = click_save_and_wait_for_agenda_item_creation
         end
+        expect(page).to have_css("#meeting-agenda-item-#{created_id}")
       end
+    end
+
+    # Clicks "Save" button and waits until the number of agenda items in the database has
+    # changed.
+    def click_save_and_wait_for_agenda_item_creation
+      initial_db_items_count = MeetingAgendaItem.count
+      click_on("Save")
+
+      # wait for db save
+      wait_for { MeetingAgendaItem.count }.not_to eq(initial_db_items_count)
+
+      # return created item id so that caller can wait for it (can't do it here
+      # because of being "in_agenda_form" scope)
+      MeetingAgendaItem.maximum(:id)
+    end
+
+    # Clicks "Save" button and waits until some agenda items have a different
+    # `lock_version` value in the database.
+    def click_save_and_wait_for_agenda_item_update
+      initial_db_items_versions = MeetingAgendaItem.order(:id).pluck(:lock_version)
+      click_on("Save")
+
+      # wait for db save
+      wait_for { MeetingAgendaItem.order(:id).pluck(:lock_version) }.not_to eq(initial_db_items_versions)
     end
 
     def select_backlog_action(action)
       retry_block do
         click_on_backlog_menu
         page.find(".Overlay")
-      end
-
-      page.within(".Overlay") do
-        click_on action
+        page.within(".Overlay") do
+          click_on action
+        end
       end
     end
 
@@ -391,19 +470,25 @@ module Pages::Meetings
     end
 
     def clear_backlog
-      retry_block do
-        select_backlog_action(I18n.t("label_backlog_clear"))
-        expect(page).to have_modal(I18n.t("label_backlog_clear"))
-        page.within_modal(I18n.t("label_backlog_clear")) do
-          click_on "Clear all"
-        end
+      select_backlog_action(I18n.t("label_backlog_clear"))
+      expect(page).to have_modal(I18n.t("label_backlog_clear"), wait: 3)
+      page.within_modal(I18n.t("label_backlog_clear")) do
+        click_on "Clear all"
       end
     end
 
-    def edit_agenda_item(item, &)
-      select_action item, "Edit"
+    def edit_agenda_item(item, save: true, wait_for_reference_update: false, &)
+      wait_for_turbo_stream { select_action item, "Edit" }
       expect_item_edit_form(item)
-      page.within("#meeting-agenda-items-form-component-#{item.id}", &)
+      reference_value = meeting_reference_value
+      page.within("#meeting-agenda-items-form-component-#{item.id}") do
+        yield
+        if save
+          click_save_and_wait_for_agenda_item_update
+        end
+      end
+
+      wait_for_reference_changed(reference_value) if save && wait_for_reference_update
     end
 
     def expect_item_edit_form(item, visible: true)
@@ -421,8 +506,12 @@ module Pages::Meetings
     end
 
     def expect_item_edit_field_error(item, text)
-      page.within("#meeting-agenda-items-form-component-#{item.id}") do
-        expect(page).to have_css(".FormControl-inlineValidation", text:)
+      # retry because the #meeting-agenda-items-form-component-<id> may not be
+      # updated yet and then becomes stale while checking for field error.
+      retry_block do
+        page.within("#meeting-agenda-items-form-component-#{item.id}") do
+          expect(page).to have_css(".FormControl-inlineValidation", text:)
+        end
       end
     end
 
@@ -433,17 +522,30 @@ module Pages::Meetings
 
     def open_participant_form
       page.find_test_selector("manage-participants-button").click
-      expect_modal("Participants")
+      retry_block do
+        expect_modal("Manage participants")
+      end
     end
 
     def in_participant_form(&)
-      page.within_modal("Participants", &)
+      page.within_modal("Manage participants", &)
     end
 
-    def expect_participant(participant, invited: false, attended: false, editable: true)
+    def expect_participant(participant, attended: false, editable: true)
       expect(page).to have_text(participant.name)
-      expect(page).to have_field(id: "checkbox_invited_#{participant.id}", checked: invited, disabled: !editable)
-      expect(page).to have_field(id: "checkbox_attended_#{participant.id}", checked: attended, disabled: !editable)
+
+      if !editable
+        expect(page).to have_no_selector("[data-test-selector='attendance_button_#{participant.id}']", text: "Attended")
+        expect(page).to have_no_selector("[data-test-selector='attendance_button_#{participant.id}']", text: "Mark as attended")
+
+        return
+      end
+
+      if attended
+        expect(page).to have_css("[data-test-selector='attendance_button_#{participant.id}']", text: "Attended")
+      else
+        expect(page).to have_css("[data-test-selector='attendance_button_#{participant.id}']", text: "Mark as attended")
+      end
     end
 
     def expect_participant_invited(participant, invited: true)
@@ -459,8 +561,45 @@ module Pages::Meetings
       end
     end
 
+    def toggle_attendance(participant)
+      expect(page).to have_text(participant.name)
+      click_link_or_button("attendance_button_#{participant.id}")
+    end
+
+    def select_participant(participant)
+      select_autocomplete page.find('[data-test-selector="participants-dialog-autocomplete"]'),
+                          query: participant.firstname,
+                          select_text: participant.name,
+                          results_selector: "body"
+
+      click_on "Add"
+    end
+
+    def uncheck_apply_to_upcoming
+      page.find('input[type="checkbox"][name="meeting_participant[apply_to_upcoming]"]').set(false)
+    end
+
+    def expect_apply_to_upcoming_checked
+      expect(page).to have_checked_field("meeting_participant[apply_to_upcoming]")
+    end
+
+    def expect_apply_to_upcoming_unchecked
+      expect(page).to have_unchecked_field("meeting_participant[apply_to_upcoming]")
+    end
+
+    def expect_no_participant(participant)
+      autocomplete = page.find('[data-test-selector="participants-dialog-autocomplete"]')
+      search_autocomplete(autocomplete, query: participant.lastname, results_selector: "body")
+      expect_no_ng_option(autocomplete, participant.name, results_selector: "body")
+    end
+
+    def remove_participant(participant)
+      expect(page).to have_text(participant.name)
+      click_link_or_button("remove_button_#{participant.id}")
+    end
+
     def expect_available_participants(count:)
-      expect(page).to have_link(class: "op-principal--name", count:)
+      expect(page).to have_link(class: "meeting-participant-user-link", count:)
     end
 
     def close_meeting
@@ -481,9 +620,36 @@ module Pages::Meetings
       end
     end
 
+    def open_meeting
+      page.within("#meetings-side-panel-state-component") do
+        click_on("Open meeting")
+      end
+
+      expect(page).to have_dialog(I18n.t("text_exit_draft_mode_dialog_title"))
+      page.within_dialog(I18n.t("text_exit_draft_mode_dialog_title")) do
+        click_on "Open meeting"
+      end
+
+      page.within("#meetings-side-panel-state-component") do
+        expect(page).to have_link("Start meeting")
+      end
+    end
+
+    def open_first_meeting
+      page.within("#meetings-side-panel-state-component") do
+        click_on("Open first meeting")
+      end
+
+      expect(page).to have_dialog(I18n.t("text_exit_draft_mode_dialog_template_title"))
+      page.within_dialog(I18n.t("text_exit_draft_mode_dialog_template_title")) do
+        click_on "Open meeting"
+      end
+    end
+
     def start_meeting
       page.within("#meetings-side-panel-state-component") do
         click_on("Start meeting")
+        expect(page).to have_link("Close meeting")
       end
     end
 
@@ -534,7 +700,7 @@ module Pages::Meetings
     end
 
     def edit_section(section, &)
-      select_section_action(section, "Edit")
+      select_section_action(section, "Rename section")
 
       page.within_test_selector("meeting-section-header-container-#{section.id}", &)
     end
@@ -545,8 +711,23 @@ module Pages::Meetings
       end
     end
 
+    def check_add_section_path(meeting)
+      retry_block do
+        page.within("#meeting-agenda-items-new-button-component") do
+          click_on I18n.t(:button_add)
+
+          add_section_link = find_link("Section")
+          url = add_section_link[:href]
+
+          expect(URI.parse(url).path).to eq(project_meeting_sections_path(meeting.project, meeting))
+        end
+      end
+    end
+
     def expect_backlog_actions(item, series: false)
       open_menu(item) do
+        click_on "Move"
+
         expect(page).to have_css(".ActionListItem-label", text: "Edit")
         expect(page).to have_css(".ActionListItem-label", text: "Add notes")
         expect(page).to have_css(".ActionListItem-label", text: "Move to current meeting")
@@ -554,26 +735,30 @@ module Pages::Meetings
 
         expect(page).to have_no_css(".ActionListItem-label", text: "Move to backlog")
         expect(page).to have_no_css(".ActionListItem-label", text: "Add outcome")
+
         if series
           expect(page).to have_no_css(".ActionListItem-label", text: "Move to next meeting")
         end
       end
 
-      page.within("#meeting-agenda-items-item-component-#{item.id}") do
+      page.within("#meeting-agenda-item-#{item.id}") do
         page.find_test_selector("op-meeting-agenda-actions").click
       end
     end
 
     def expect_non_backlog_actions(item, series: false)
       open_menu(item) do
+        click_on "Move"
+
         expect(page).to have_css(".ActionListItem-label", text: "Move to backlog")
         expect(page).to have_no_css(".ActionListItem-label", text: "Move to current meeting")
+
         if series
           expect(page).to have_css(".ActionListItem-label", text: "Move to next meeting")
         end
       end
 
-      page.within("#meeting-agenda-items-item-component-#{item.id}") do
+      page.within("#meeting-agenda-item-#{item.id}") do
         page.find_test_selector("op-meeting-agenda-actions").click
       end
     end
@@ -586,6 +771,45 @@ module Pages::Meetings
 
     def expect_blankslate
       expect(page).to have_test_selector("meeting-blankslate")
+    end
+
+    def expect_focused_input(input_id)
+      retry_block do
+        expect(page.evaluate_script("document.activeElement.id")).to eq(input_id)
+      end
+    end
+
+    # still a bit ambiguous, but better than nothing
+    def expect_focused_ckeditor
+      retry_block do
+        expect(page.evaluate_script("document.activeElement.classList.contains('ck-focused')")).to be true
+      end
+    end
+
+    def expect_notes(text)
+      expect(page).to have_css(".op-meeting-agenda-item--notes", text:)
+    end
+
+    def set_start_time(time)
+      input = page.find_by_id("meeting_start_time_hour")
+      page.execute_script("arguments[0].value = arguments[1]", input.native, time)
+      page.execute_script("arguments[0].dispatchEvent(new Event('input'))", input.native)
+    end
+
+    def meeting_reference_value
+      page_header = page.find("#meetings-header-component page-header")
+      page_header["data-reference-value"]
+    end
+
+    def wait_for_reference_changed(old_reference_value)
+      expect(page).to have_css("#meetings-header-component page-header") do |element|
+        element["data-reference-value"] != old_reference_value
+      end
+    end
+
+    def section_headers
+      page.all(".op-meeting-section-container[data-test-selector^='meeting-section-header-container-']")
+          .map(&:text)
     end
   end
 end

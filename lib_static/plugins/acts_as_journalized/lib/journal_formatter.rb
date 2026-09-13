@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -59,6 +61,7 @@ require_relative "journal_formatter/decimal"
 require_relative "journal_formatter/fraction"
 require_relative "journal_formatter/id"
 require_relative "journal_formatter/named_association"
+require_relative "journal_formatter/polymorphic_association"
 require_relative "journal_formatter/percentage"
 require_relative "journal_formatter/plaintext"
 
@@ -69,10 +72,12 @@ module JournalFormatter
     formatters.merge!(hash)
   end
 
-  def self.register_formatted_field(journal_data_type, field, formatter_key)
+  def self.register_formatted_field(journal_data_type:, field:, formatter_key:, view_permission:)
     field_key = field.is_a?(Regexp) ? field : Regexp.new("^#{field}$")
 
-    registered_fields[journal_data_type].merge!(field_key => formatter_key.to_sym)
+    registered_fields[journal_data_type].merge!(
+      field_key => { formatter_key: formatter_key.to_sym, view_permission: }
+    )
   end
 
   def self.default_formatters
@@ -84,6 +89,7 @@ module JournalFormatter
       fraction: JournalFormatter::Fraction,
       id: JournalFormatter::Id,
       named_association: JournalFormatter::NamedAssociation,
+      polymorphic_association: JournalFormatter::PolymorphicAssociation,
       percentage: JournalFormatter::Percentage,
       plaintext: JournalFormatter::Plaintext
     }
@@ -94,8 +100,8 @@ module JournalFormatter
     hash[journal_data_type] = {}
   end
 
-  def render_detail(detail, options = {})
-    options = options.reverse_merge(html: true, only_path: true, cache: JournalFormatterCache.request_instance)
+  def render_detail(detail, options = {}) # rubocop:disable Metrics/AbcSize
+    options = options.reverse_merge(html: true, only_path: true)
 
     if detail.respond_to? :to_ary
       field = detail.first
@@ -105,23 +111,20 @@ module JournalFormatter
       values = details[field.to_s]
     end
 
-    formatter = formatter_instance(field)
+    config = lookup_formatter_config(field)
+    return if config.nil?
 
+    formatter = formatter_instance(config[:formatter_key])
     return if formatter.nil?
 
+    formatter_options = options.merge(view_permission: config[:view_permission])
+
     formatter
-      .render(field, values, options)
+      .render(field, values, formatter_options)
       &.html_safe # rubocop:disable Rails/OutputSafety
   end
 
-  def formatter_instance(field)
-    # Some attributes on a model are named dynamically.
-    # This is especially true for associations created by plugins.
-    # Those are sometimes named according to the schema "association_name[n]" or
-    # "association_name_[n]" where n is an integer representing an id.
-    # Using regexp we are able to handle those fields with the rest.
-    formatter_key = lookup_formatter_key(field)
-
+  def formatter_instance(formatter_key)
     formatter_instances[formatter_key] if formatter_key
   end
 
@@ -129,11 +132,16 @@ module JournalFormatter
     data_type
   end
 
-  def lookup_formatter_key(field)
+  def lookup_formatter_config(field)
+    # Some attributes on a model are named dynamically.
+    # This is especially true for associations created by plugins.
+    # Those are sometimes named according to the schema "association_name[n]" or
+    # "association_name_[n]" where n is an integer representing an id.
+    # Using regexp we are able to handle those fields with the rest.
     JournalFormatter
       .registered_fields[journal_data_type]
-      .find { |regexp, _formatter_key| field.match(regexp) }
-      .then { |_regexp, formatter_key| formatter_key }
+      .find { |regexp, _config| field.match(regexp) }
+      .then { |_regexp, config| config }
   end
 
   def formatter_instances

@@ -26,13 +26,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 See COPYRIGHT and LICENSE files for more details.
 
 ++#%>
-<% gon.contentTabs = { tabs: tabs.to_json.html_safe, selected: selected_tab.to_json.html_safe } %>
-
-<% if with_tab_nav %>
-  <opce-content-tabs></opce-content-tabs>
-<% end %>
-
 <%= content_tag "div",
-                render(partial: selected_tab[:partial], locals: { f: f, tab: selected_tab }),
+                render(partial: selected_tab[:partial], locals: local_assigns.merge(tab: selected_tab)),
                 id: "tab-content-#{selected_tab[:name]}",
                 class: "tab-content" %>

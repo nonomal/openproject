@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "edit_field"
 
 class TextAreaField < EditField

@@ -23,19 +23,19 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-require "rails_helper"
+require "spec_helper"
 
-RSpec.describe CustomFields::Hierarchy::GenerateRootContract do
+RSpec.describe CustomFields::Hierarchy::GenerateRootContract, with_ee: [:custom_field_hierarchies] do
   subject { described_class.new }
 
   describe "#call" do
     context "when hierarchy_root is nil" do
-      let(:custom_field) { create(:custom_field, field_format: "hierarchy", hierarchy_root: nil) }
+      let(:custom_field) { create(:hierarchy_wp_custom_field, hierarchy_root: nil) }
 
       it "is valid" do
         result = subject.call(custom_field:)
@@ -45,17 +45,27 @@ RSpec.describe CustomFields::Hierarchy::GenerateRootContract do
 
     context "when hierarchy_root is not nil" do
       let(:hierarchy_root) { create(:hierarchy_item) }
-      let(:custom_field) { create(:custom_field, field_format: "hierarchy", hierarchy_root:) }
+      let(:custom_field) { create(:hierarchy_wp_custom_field, hierarchy_root:) }
 
       it "is invalid" do
         result = subject.call(custom_field:)
         expect(result).to be_failure
-        expect(result.errors[:custom_field]).to match_array("cannot be defined")
+        expect(result.errors[:custom_field]).to match_array("must not be defined.")
       end
     end
 
-    context "when inputs are valid" do
-      let(:custom_field) { create(:custom_field, field_format: "hierarchy", hierarchy_root: nil) }
+    context "when custom field format is not supported" do
+      let(:custom_field) { create(:string_wp_custom_field) }
+
+      it "is invalid" do
+        result = subject.call(custom_field:)
+        expect(result).to be_failure
+        expect(result.errors[:custom_field]).to match_array("format 'string' is unsupported.")
+      end
+    end
+
+    context "when inputs are valid", with_ee: %i[weighted_item_lists] do
+      let(:custom_field) { create(:weighted_item_list_wp_custom_field, hierarchy_root: nil) }
 
       it "creates a success result" do
         expect(subject.call(custom_field:)).to be_success

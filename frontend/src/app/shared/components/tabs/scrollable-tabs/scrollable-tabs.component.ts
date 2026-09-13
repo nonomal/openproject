@@ -1,19 +1,33 @@
-import {
-  AfterViewInit,
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-  ElementRef,
-  EventEmitter,
-  Input,
-  Injector,
-  OnChanges,
-  Output,
-  SimpleChanges,
-  ViewChild,
-} from '@angular/core';
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, Input, Injector, OnChanges, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
 import { TabDefinition } from 'core-app/shared/components/tabs/tab.interface';
-import { trackByProperty } from 'core-app/shared/helpers/angular/tracking-functions';
 import {
   RawParams,
   StateService,
@@ -22,23 +36,26 @@ import {
 import { Observable } from 'rxjs';
 import { share } from 'rxjs/operators';
 import { UntilDestroyedMixin } from 'core-app/shared/helpers/angular/until-destroyed.mixin';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
 
 @Component({
   templateUrl: 'scrollable-tabs.component.html',
   selector: 'op-scrollable-tabs',
   styleUrls: ['./scrollable-tabs.component.sass'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
-
 export class ScrollableTabsComponent extends UntilDestroyedMixin implements AfterViewInit, OnChanges {
-  @ViewChild('scrollContainer', { static: true }) scrollContainer:ElementRef;
+  protected readonly $state = inject(StateService);
+  private cdRef = inject(ChangeDetectorRef);
+  injector = inject(Injector);
 
-  @ViewChild('scrollPane', { static: true }) scrollPane:ElementRef;
+  @ViewChild('scrollContainer', { static: true }) scrollContainer:ElementRef<HTMLElement>;
 
-  @ViewChild('scrollRightBtn', { static: true }) scrollRightBtn:ElementRef;
+  @ViewChild('scrollPane', { static: true }) scrollPane:ElementRef<HTMLUListElement>;
 
-  @ViewChild('scrollLeftBtn', { static: true }) scrollLeftBtn:ElementRef;
+  @ViewChild('scrollRightBtn', { static: true }) scrollRightBtn:ElementRef<HTMLButtonElement>;
+
+  @ViewChild('scrollLeftBtn', { static: true }) scrollLeftBtn:ElementRef<HTMLButtonElement>;
 
   @Input() public currentTabId:string|null = null;
 
@@ -52,9 +69,7 @@ export class ScrollableTabsComponent extends UntilDestroyedMixin implements Afte
 
   @Output() public tabSelected = new EventEmitter<TabDefinition>();
 
-  @InjectField() uiRouterGlobals:UIRouterGlobals;
-
-  trackById = trackByProperty('id');
+  readonly uiRouterGlobals = inject(UIRouterGlobals);
 
   counters:Record<string, Observable<number>> = {};
 
@@ -62,23 +77,19 @@ export class ScrollableTabsComponent extends UntilDestroyedMixin implements Afte
 
   private pane:Element;
 
+  private resizeObserver:ResizeObserver;
+
   private debouncedTabActivationTimeout:ReturnType<typeof setTimeout>|null;
 
   private dragTargetStack = 0;
 
-  constructor(
-    protected readonly $state:StateService,
-    private cdRef:ChangeDetectorRef,
-    public injector:Injector,
-  ) {
-    super();
-  }
-
   ngAfterViewInit():void {
-    this.container = this.scrollContainer.nativeElement as HTMLElement;
-    this.pane = this.scrollPane.nativeElement as HTMLElement;
+    this.container = this.scrollContainer.nativeElement;
+    this.pane = this.scrollPane.nativeElement;
 
-    this.updateScrollableArea();
+    this.resizeObserver = new ResizeObserver(() => this.updateScrollableArea());
+    this.resizeObserver.observe(this.container);
+
     this
       .uiRouterGlobals
       .params$
@@ -90,6 +101,11 @@ export class ScrollableTabsComponent extends UntilDestroyedMixin implements Afte
           this.currentTabId = params.tabIdentifier as string;
         }
       });
+  }
+
+  override ngOnDestroy():void {
+    this.resizeObserver?.disconnect();
+    super.ngOnDestroy();
   }
 
   ngOnChanges(_changes:SimpleChanges):void {
@@ -110,7 +126,11 @@ export class ScrollableTabsComponent extends UntilDestroyedMixin implements Afte
     return this.counters[tab.id];
   }
 
-  private updateScrollableArea() {
+  private updateScrollableArea():void {
+    if (!this.pane || !this.container) {
+      return;
+    }
+
     this.determineScrollButtonVisibility();
     if (this.currentTabId != null) {
       this.scrollIntoVisibleArea(this.currentTabId);
@@ -121,10 +141,12 @@ export class ScrollableTabsComponent extends UntilDestroyedMixin implements Afte
     this.currentTabId = tab.id;
     this.tabSelected.emit(tab);
 
-    // If the tab does not provide its own link,
-    // avoid propagation
-    if (!tab.path) {
-      event.preventDefault();
+    event.preventDefault();
+
+    // Override history to avoid that browser back leads you to a different tab instead of the page you originated from
+    if (tab.path) {
+      const historyMethod = document.referrer !== '' ? 'replaceState' : 'pushState';
+      history[historyMethod](null, '', tab.path);
     }
   }
 
@@ -194,13 +216,27 @@ export class ScrollableTabsComponent extends UntilDestroyedMixin implements Afte
   }
 
   private scrollIntoVisibleArea(tabId:string) {
-    const tab:JQuery<Element> = jQuery(this.pane).find(`[data-tab-id=${tabId}]`);
-    const position:JQueryCoordinates = tab.position();
+    const tab = this.pane.querySelector<HTMLElement>(`[data-tab-id=${tabId}]`);
+    if (!tab) {
+      return;
+    }
 
-    const tabRightBorderAt:number = position.left + Number(tab.outerWidth());
+    const position = getPosition(tab);
+    const tabRightBorderAt = position.left + tab.offsetWidth;
 
     if (this.pane.scrollLeft + this.container.clientWidth < tabRightBorderAt) {
       this.pane.scrollLeft = tabRightBorderAt - this.container.clientWidth + 40; // 40px to not overlap by buttons
     }
   }
+}
+
+function getPosition(el:HTMLElement) {
+  const offsetParent = el.offsetParent || document.body;
+  const elRect = el.getBoundingClientRect();
+  const parentRect = offsetParent.getBoundingClientRect();
+
+  return {
+    top: elRect.top - parentRect.top - parseFloat(getComputedStyle(offsetParent).borderTopWidth),
+    left: elRect.left - parentRect.left - parseFloat(getComputedStyle(offsetParent).borderLeftWidth)
+  };
 }

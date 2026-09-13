@@ -47,8 +47,7 @@ module OpPrimer
 
     def wrapper_data_attributes
       {
-        controller: "expandable-list",
-        "application-target": "dynamic"
+        controller: "expandable-list"
       }
     end
   end

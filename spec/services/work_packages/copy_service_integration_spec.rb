@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,7 +33,7 @@ require "spec_helper"
 RSpec.describe WorkPackages::CopyService, "integration", type: :model do
   shared_let(:custom_field) { create(:work_package_custom_field) }
   shared_let(:type) do
-    create(:type_standard,
+    create(:type_task,
            custom_fields: [custom_field])
   end
   shared_let(:project) { create(:project, types: [type]) }
@@ -46,8 +48,9 @@ RSpec.describe WorkPackages::CopyService, "integration", type: :model do
     set_factory_default(:user, user)
   end
 
-  shared_let(:work_package) do
-    create(:work_package, author: user, project:, type:)
+  shared_let(:project_phase_definition) { create(:project_phase_definition) }
+  shared_let(:work_package, reload: true) do
+    create(:work_package, author: user, project:, type:, project_phase_definition:)
   end
 
   let(:instance) { described_class.new(work_package:, user:) }
@@ -103,6 +106,52 @@ RSpec.describe WorkPackages::CopyService, "integration", type: :model do
             .to contain_exactly(watcher_user)
         end
       end
+
+      describe "#project_phase_definition" do
+        it "is the one of the copied work package" do
+          expect(copy.project_phase_definition)
+            .to eql project_phase_definition
+        end
+      end
+
+      describe "copied version references",
+               with_settings: { work_package_multiple_versions: true } do
+        shared_let(:assign_versions_user) do
+          create(:user,
+                 member_with_permissions: {
+                   project => %i[view_work_packages add_work_packages assign_versions]
+                 })
+        end
+
+        let(:instance) { described_class.new(work_package:, user: assign_versions_user) }
+        let(:version_one) { create(:version, project:, name: "Target 1") }
+        let(:version_two) { create(:version, project:, name: "Target 2") }
+        let(:observed_version) { create(:version, project:, name: "Observed") }
+
+        current_user { assign_versions_user }
+
+        before do
+          work_package.target_versions = [version_one, version_two]
+          work_package.observed_in_versions = [observed_version]
+        end
+
+        it "copies all target and observed_in versions" do
+          expect(copy.target_versions).to contain_exactly(version_one, version_two)
+          expect(copy.observed_in_versions).to contain_exactly(observed_version)
+        end
+
+        context "when the copying user lacks the assign_versions permission" do
+          let(:instance) { described_class.new(work_package:, user:) }
+
+          current_user { user }
+
+          it "copies the work package without any versions instead of failing" do
+            expect(service_result).to be_success
+            expect(copy.target_versions).to be_empty
+            expect(copy.observed_in_versions).to be_empty
+          end
+        end
+      end
     end
 
     describe "to a different project" do
@@ -143,21 +192,14 @@ RSpec.describe WorkPackages::CopyService, "integration", type: :model do
           custom_value
         end
 
-        subject { copy.custom_value_for(custom_field.id) }
+        subject { copy.custom_value_for(custom_field) }
 
         it { is_expected.to be_nil }
       end
 
       context "required custom field in the target project" do
+        let(:custom_field) { create(:work_package_custom_field, field_format: "text", is_required: true, is_for_all: false) }
         let(:target_custom_fields) { [custom_field] }
-
-        before do
-          custom_field.update(
-            field_format: "text",
-            is_required: true,
-            is_for_all: false
-          )
-        end
 
         it "does not copy the work package" do
           expect(service_result).to be_failure
@@ -194,9 +236,16 @@ RSpec.describe WorkPackages::CopyService, "integration", type: :model do
         end
       end
 
+      describe "#project_phase_definition" do
+        it "is the one of the copied work package" do
+          expect(copy.project_phase_definition)
+            .to eql project_phase_definition
+        end
+      end
+
       describe "#attributes" do
         before do
-          target_project.types << work_package.type
+          target_project.project_types.create!(type: work_package.type)
         end
 
         context "assigned_to" do
@@ -375,6 +424,27 @@ RSpec.describe WorkPackages::CopyService, "integration", type: :model do
           expect(copy.attachments.length)
             .to eq 0
         end
+      end
+    end
+
+    context "with a type auto-generating subjects" do
+      let(:type_with_pattern) do
+        create(:type, patterns: { subject: { blueprint: "{{type}} {{id}} {{project_name}}", enabled: true } }) do |type|
+          project.project_types.create!(type:)
+        end
+      end
+
+      before do
+        work_package.update!(type: type_with_pattern)
+      end
+
+      it "is success" do
+        expect(service_result)
+          .to be_success
+      end
+
+      it "sets the auto generated subject" do
+        expect(copy.subject).to eq("#{type_with_pattern.name} #{copy.id} #{project.name}")
       end
     end
   end

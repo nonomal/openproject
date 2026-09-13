@@ -1,7 +1,7 @@
 ---
 sidebar_navigation:
   title: Excel synchronization
-  priority: 599
+  priority: 400
 description: Excel synchronization with OpenProject
 keywords: Excel
 ---
@@ -13,19 +13,19 @@ keywords: Excel
 
 See how to set up the synchronization between OpenProject work packages and MS Excel.
 
-<video src="https://openproject-docs.s3.eu-central-1.amazonaws.com/videos/OpenProject-Excel-synchronization-1.-download-and-upload.mp4" type="video/mp4" controls="" style="width:100%"></video>
+<video src="https://openproject-docs.s3.eu-central-1.amazonaws.com/videos/OpenProject-Excel-synchronization-1.-download-and-upload.mp4"></video>
 
 ### Synchronize custom queries (views)
 
 See how to synchronize custom work package queries from OpenProject in MS Excel.
 
-<video src="https://openproject-docs.s3.eu-central-1.amazonaws.com/videos/OpenProject-Excel-Synchronization-2.-custom-queries.mp4" type="video/mp4" controls="" style="width:100%"></video>
+<video src="https://openproject-docs.s3.eu-central-1.amazonaws.com/videos/OpenProject-Excel-Synchronization-2.-custom-queries.mp4"></video>
 
 ### Synchronize hierarchies
 
 See how to synchronize work package hierarchies in OpenProject with MS Excel.
 
-<video src="https://openproject-docs.s3.eu-central-1.amazonaws.com/videos/OpenProject-Excel-synchronization-3.-hierarchies.mp4" type="video/mp4" controls="" style="width:100%"></video>
+<video src="https://openproject-docs.s3.eu-central-1.amazonaws.com/videos/OpenProject-Excel-synchronization-3.-hierarchies.mp4"></video>
 
 ### Synchronize relations
 
@@ -59,7 +59,7 @@ terms instead, defined in the [relations model](https://github.com/opf/openproje
 - requires
 - required
 
-<video src="https://openproject-docs.s3.eu-central-1.amazonaws.com/videos/OpenProject-Excel-Relations.mp4" type="video/mp4" controls="" style="width:100%"></video>
+<video src="https://openproject-docs.s3.eu-central-1.amazonaws.com/videos/OpenProject-Excel-Relations.mp4"></video>
 
 ## Step-by-step guide
 
@@ -88,8 +88,8 @@ terms instead, defined in the [relations model](https://github.com/opf/openproje
 ![Choose-project-900x479@2x](Choose-project-900x479@2x.png)
 
 **URL**: the URL of your OpenProject instance.
- **API-Token**: can be generated within your OpenProject installation ->*Account settings* -> *Access token*. Generate a new API token and copy & paste it to this form.
- **Project**: this is the project identifier which can be found within the project you want to synchronize -> *Project settings* -> *Information*. It is also shown in the URL if you open a project.
+ **API-Token**: can be generated within your OpenProject installation ->_Account settings_ -> _Access token_. Generate a new API token and copy & paste it to this form.
+ **Project**: this is the project identifier which can be found within the project you want to synchronize -> _Project settings_ -> _Information_. It is also shown in the URL if you open a project.
  Query ID (this field is optional): enter the ID of a work package query  within a project with that you want to synchronize your Excel list.
 
 8. Set as default: enable to remember the settings as default.
@@ -135,13 +135,13 @@ To add or edit a new parent-child relation, you have two possibilities:
 
 13. Pressing **Ctrl + B** and selecting **Upload / update work packages** will open a window to define a new character for setting a parent-child-relationship (default is 4 empty spaces).
 
-Click *OK* when the screen for the Search characters (screen 13) appears. The IDs in the *Parent* column will then be automatically updated.
+Click _OK_ when the screen for the Search characters (screen 13) appears. The IDs in the _Parent_ column will then be automatically updated.
 
 ![Search-character-parent](Search-character-parent.png)
 
 Pressing **Cancel** will ignore the Hierarchy – no matter what has been inserted. This is relevant for option B:
 
-**B)** you can edit the IDs in the parent column manually. If you have edited the IDs manually in the parent column, just click *Cancel* when the above Search character option (screen 13) appears. Then, the  hierarchy will be updated according to the IDs in the column *Parent*.
+**B)** you can edit the IDs in the parent column manually. If you have edited the IDs manually in the parent column, just click _Cancel_ when the above Search character option (screen 13) appears. Then, the  hierarchy will be updated according to the IDs in the column _Parent_.
 
 14. The parent-child-relation will be displayed in OpenProject.
 

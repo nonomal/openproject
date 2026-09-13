@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,8 +30,8 @@
 
 module OpenProject::TextFormatting::Filters::Macros
   module EmbeddedTable
-    CUSTOM_ELEMENT = "opce-macro-embedded-table".freeze
-    HTML_CLASS = "embedded-table".freeze
+    CUSTOM_ELEMENT = "opce-macro-embedded-table"
+    HTML_CLASS = "embedded-table"
 
     module_function
 

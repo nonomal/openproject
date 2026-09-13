@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -51,6 +53,35 @@ module GroupsHelper
         name: "global_roles",
         partial: "principals/global_roles",
         path: edit_group_path(group, tab: :global_roles),
+        label: :label_global_roles
+      },
+      {
+        name: "synchronized_groups",
+        partial: "groups/synchronized_groups",
+        path: edit_group_path(group, tab: :synchronized_groups),
+        label: :"groups.edit.synchronized_groups"
+      }
+    ]
+  end
+
+  def department_settings_tabs(group)
+    [
+      {
+        name: "general",
+        partial: "admin/departments/general",
+        path: edit_admin_department_path(group),
+        label: :label_general
+      },
+      {
+        name: "memberships",
+        partial: "admin/departments/memberships",
+        path: edit_admin_department_path(group, tab: :memberships),
+        label: :label_project_plural
+      },
+      {
+        name: "global_roles",
+        partial: "principals/global_roles",
+        path: edit_admin_department_path(group, tab: :global_roles),
         label: :label_global_roles
       }
     ]

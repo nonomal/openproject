@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,12 +33,25 @@ class Queries::Projects::Filters::ProjectStatusFilter < Queries::Projects::Filte
 
   def allowed_values
     @allowed_values ||= Project.status_codes.map do |code, id|
-      [project_status_name_for_code(code), id.to_s]
+      [project_status_name(code), id.to_s]
     end
   end
 
   def type
     :list_optional
+  end
+
+  def autocomplete_options
+    all_items = allowed_values.map { |name, id| { name:, id: } }
+    {
+      component: "opce-autocompleter",
+      bindValue: "id",
+      bindLabel: "name",
+      hideSelected: true,
+      defaultData: false,
+      items: all_items,
+      model: all_items.select { |item| values.include?(item[:id]) }
+    }
   end
 
   def where

@@ -30,24 +30,25 @@
 
 require "spec_helper"
 
-RSpec.describe API::V3::CustomFields::Hierarchy::HierarchyItemRepresenter, "rendering" do
+RSpec.describe API::V3::CustomFields::Hierarchy::HierarchyItemRepresenter, "rendering", with_ee: [:custom_field_hierarchies] do
   include API::V3::Utilities::PathHelper
 
   let(:custom_field) { create(:custom_field, field_format: "hierarchy", hierarchy_root: nil) }
   let(:service) { CustomFields::Hierarchy::HierarchicalItemService.new }
   let!(:root) { service.generate_root(custom_field).value! }
-  let!(:luke) { service.insert_item(parent: root, label: "Luke", short: "LS").value! }
-  let!(:r2d2) { service.insert_item(parent: luke, label: "R2-D2", short: "R2").value! }
-  let!(:mouse) { service.insert_item(parent: r2d2, label: "Mouse Droid", short: "MD").value! }
-  let!(:c3po) { service.insert_item(parent: luke, label: "C-3PO", short: "3PO").value! }
-  let!(:mara) { service.insert_item(parent: root, label: "Mara", short: "MJ").value! }
+  let(:contract_class) { CustomFields::Hierarchy::InsertListItemContract }
+  let!(:luke) { service.insert_item(contract_class:, parent: root, label: "Luke", short: "LS").value! }
+  let!(:r2d2) { service.insert_item(contract_class:, parent: luke, label: "R2-D2", short: "R2").value! }
+  let!(:mouse) { service.insert_item(contract_class:, parent: r2d2, label: "Mouse Droid", short: "MD").value! }
+  let!(:c3po) { service.insert_item(contract_class:, parent: luke, label: "C-3PO", short: "3PO").value! }
+  let!(:mara) { service.insert_item(contract_class:, parent: root, label: "Mara", short: "MJ").value! }
   let(:user) { build_stubbed(:user) }
   let(:representer) { described_class.new(item, current_user: user) }
 
   subject(:generated) { representer.to_json }
 
   context "if item is root" do
-    let(:item) { root }
+    let(:item) { build_aggregate(item: root, depth: 0) }
 
     describe "_links" do
       it_behaves_like "has an untitled link" do
@@ -104,7 +105,7 @@ RSpec.describe API::V3::CustomFields::Hierarchy::HierarchyItemRepresenter, "rend
     end
 
     context "and depth is negative" do
-      let(:item) { API::V3::CustomFields::Hierarchy::HierarchicalItemAggregate.new(item: root, depth: -1) }
+      let(:item) { build_aggregate(item: root, depth: -1) }
 
       describe "properties" do
         it_behaves_like "property", :depth do
@@ -115,7 +116,7 @@ RSpec.describe API::V3::CustomFields::Hierarchy::HierarchyItemRepresenter, "rend
   end
 
   context "if item is leave" do
-    let(:item) { mouse }
+    let(:item) { build_aggregate(item: mouse, depth: mouse.depth) }
 
     describe "_links" do
       it_behaves_like "has a titled link" do
@@ -165,7 +166,7 @@ RSpec.describe API::V3::CustomFields::Hierarchy::HierarchyItemRepresenter, "rend
   end
 
   context "if item is intermediate" do
-    let(:item) { r2d2 }
+    let(:item) { build_aggregate(item: r2d2, depth: r2d2.depth) }
 
     describe "_links" do
       it_behaves_like "has a titled link" do
@@ -219,5 +220,11 @@ RSpec.describe API::V3::CustomFields::Hierarchy::HierarchyItemRepresenter, "rend
         let(:value) { item.depth }
       end
     end
+  end
+
+  private
+
+  def build_aggregate(item:, depth:)
+    API::V3::CustomFields::Hierarchy::HierarchicalItemAggregate.new(item:, depth:)
   end
 end

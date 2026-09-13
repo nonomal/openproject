@@ -21,13 +21,13 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
 import { WorkPackageResource } from 'core-app/features/hal/resources/work-package-resource';
-import { Directive, ViewChild } from '@angular/core';
+import { Directive, ViewChild, inject } from '@angular/core';
 import { WorkPackageEmbeddedTableComponent } from 'core-app/features/work-packages/components/wp-table/embedded/wp-embedded-table.component';
 import { QueryResource } from 'core-app/features/hal/resources/query-resource';
 import { UrlParamsHelperService } from 'core-app/features/work-packages/components/wp-query/url-params-helper';
@@ -35,23 +35,21 @@ import { UntilDestroyedMixin } from 'core-app/shared/helpers/angular/until-destr
 
 @Directive()
 export abstract class WorkPackageRelationQueryBase extends UntilDestroyedMixin {
+  protected queryUrlParamsHelper = inject(UrlParamsHelperService);
+
   public workPackage:WorkPackageResource;
 
   /** Input is either a query resource, or directly query props */
-  public query:QueryResource|Object;
+  public query:QueryResource|object;
 
   /** Query props are derived from the query resource, if any */
-  public queryProps:Object;
+  public queryProps:object;
 
   /** Whether this section should be hidden completely (due to missing permissions e.g.) */
   public hidden = false;
 
   /** Reference to the embedded table instance */
   @ViewChild('embeddedTable') protected embeddedTable?:WorkPackageEmbeddedTableComponent;
-
-  constructor(protected queryUrlParamsHelper:UrlParamsHelperService) {
-    super();
-  }
 
   /**
    * Request to refresh the results of the embedded table

@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -67,7 +67,7 @@ import { SchemaResource } from 'core-app/features/hal/resources/schema-resource'
 import { MeetingResource } from 'core-app/features/hal/resources/meeting-resource';
 import { ActivityCommentResource } from '../resources/activity-comment-resource';
 
-const halResourceDefaultConfig:{ [typeName:string]:HalResourceFactoryConfigInterface } = {
+const halResourceDefaultConfig:Record<string, HalResourceFactoryConfigInterface> = {
   WorkPackage: {
     cls: WorkPackageResource,
     attrTypes: {
@@ -191,6 +191,12 @@ const halResourceDefaultConfig:{ [typeName:string]:HalResourceFactoryConfigInter
   Project: {
     cls: ProjectResource,
   },
+  Portfolio: {
+    cls: ProjectResource,
+  },
+  Program: {
+    cls: ProjectResource,
+  },
   Role: {
     cls: RoleResource,
   },
@@ -216,6 +222,6 @@ const halResourceDefaultConfig:{ [typeName:string]:HalResourceFactoryConfigInter
 
 export function initializeHalResourceConfig(halResourceService:HalResourceService) {
   return () => {
-    _.each(halResourceDefaultConfig, (value, key) => halResourceService.registerResource(key, value));
+    Object.entries(halResourceDefaultConfig).forEach(([key, value]) => halResourceService.registerResource(key, value));
   };
 }

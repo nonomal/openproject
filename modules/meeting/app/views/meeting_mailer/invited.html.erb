@@ -45,7 +45,7 @@ See COPYRIGHT and LICENSE files for more details.
               <%= I18n.t(:label_meeting_date_time) %>
             </td>
             <td style="<%= placeholder_text_styles %>">
-              <%= format_time_as_date @meeting.start_time %> <%= format_time @meeting.start_time, include_date: false %>
+              <%= format_date @meeting.start_time %> <%= format_time @meeting.start_time, include_date: false %>
               -
               <%= format_time @meeting.end_time, include_date: false %> (<%= formatted_time_zone_offset %>)
             </td>
@@ -109,6 +109,6 @@ See COPYRIGHT and LICENSE files for more details.
     <%= link_to I18n.t(:"meeting.email.open_meeting_link"),
                 meeting_url(@meeting),
                 target: "_blank",
-                style: "color: #333333; text-decoration: none; font-size: 14px;white-space: nowrap;" %>
+                style: "color: #333333; text-decoration: none; font-size: 14px;white-space: nowrap;", rel: "noopener" %>
   <% end %>
 <% end %>

@@ -44,7 +44,7 @@ RSpec.describe "My page navigation" do
     find("#main-menu #{test_selector('op-menu--item-action')}", text: "My page").click
 
     expect(page).to have_current_path "/my/page"
-    expect(page).to have_css("h1", text: "My page")
+    expect(page).to have_heading text: "My page"
     expect(page).to have_css("#main-menu #{test_selector('op-menu--item-action')}.selected")
   end
 end

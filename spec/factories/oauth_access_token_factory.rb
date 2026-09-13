@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -33,7 +35,7 @@ FactoryBot.define do
     end
 
     after(:build) do |token, evaluator|
-      token.resource_owner_id = evaluator.resource_owner.id
+      token.resource_owner_id = evaluator.resource_owner.id if evaluator.resource_owner
     end
 
     application factory: :oauth_application

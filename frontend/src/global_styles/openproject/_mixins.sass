@@ -82,12 +82,29 @@
 
 @mixin widget-box--style
   background: var(--body-background)
-  margin: 10px
-  border: 1px solid var(--borderColor-default)
-  box-shadow: 0px 1px 5px 0px rgba(0,0,0,0.1)
+  border: var(--borderWidth-thin) solid var(--borderColor-default)
+  box-shadow: var(--shadow-resting-small)
+  border-radius: var(--borderRadius-medium)
 
 @mixin widget-box--hover-style
   box-shadow: 0px 1px 20px 0px rgba(0,0,0,0.1)
+
+@mixin banner-styles
+  position: absolute
+  max-width: 650px
+  margin: 0 auto
+  left: 0
+  right: 0
+  // Higher than loading indicator and modal wrapper!
+  z-index: 10000
+  top: 4rem
+
+  @media screen and (max-width: $breakpoint-lg)
+    max-width: 550px
+
+  @media screen and (max-width: $breakpoint-sm)
+    max-width: calc(100% - 2rem)
+    min-width: calc(100% - 2rem)
 
 // These mixins are necessary so that other classes can inherit     the styles.
 // In future Sass versions a doubled inheritance like @extend classA.classB will not work any more.
@@ -221,8 +238,9 @@ $scrollbar-size: 10px
     padding-bottom: 0
 
 @mixin extended-content--top
-  #content-body
-    padding-top: 0
+  @media screen and (min-width: $breakpoint-sm)
+    #content-body
+      padding-top: 0
 
 @mixin extended-content--left
   #content-body,
@@ -245,6 +263,10 @@ $scrollbar-size: 10px
     .work-packages--filters-optional-container
       margin-right: 15px
 
+@mixin split-pane-active
+  #content:has(#content-bodyRight > *)
+    @content
+
 @mixin modifying--placeholder
   border: 1px dashed var(--accent-color)
   pointer-events: none
@@ -257,14 +279,13 @@ $scrollbar-size: 10px
 @mixin macro--text-style
   @media screen
     display: inline
-    background: rgba(218,223,225,0.19)
-    border: 1px solid transparent
-    padding: 2px
+    background: var(--bgColor-muted)
+    border-radius: var(--borderRadius-default)
+    // 2px vertical ensures that line-height is not overflowed excessively
+    padding: 2px var(--control-xsmall-paddingInline-condensed)
 
-    &:hover
-      cursor: default
-      border-color: var(--fgColor-muted)
-      background: rgba(218,223,225,0.75)
+    &:has(.-multiline)
+      display: inline-flex
 
 @mixin unset-button-styles
   padding: 0
@@ -292,7 +313,9 @@ $scrollbar-size: 10px
   width: auto
 
   ul.op-breadcrumb
-    height: initial
+    // Match the height of the Primer breadcrumb which itself takes the height of the small action button it can have on mobile
+    height: var(--control-small-size)
+    line-height: var(--control-small-size)
     margin: 0
     padding: 0
     li
@@ -301,7 +324,6 @@ $scrollbar-size: 10px
       float: left
       margin: 0 5px 0 0
       padding: 0
-      line-height: 20px
       max-width: 100%
       @include text-shortener
 
@@ -323,6 +345,10 @@ $scrollbar-size: 10px
   background: var(--bgColor-accent-emphasis)
   color: white
   flex-shrink: 0
+
+@mixin focus
+  outline: var(--focus-outline, 2px solid #0969da)
+  outline-offset: -2px
 
 @mixin show-on-focus
   position: absolute
@@ -346,3 +372,43 @@ $scrollbar-size: 10px
 @mixin op-uc-table-header-styles
   border-color: var(--borderColor-default)
   background-color: var(--bgColor-muted)
+
+@mixin upsell-image
+  position: absolute
+  left: 0
+  right: 0
+  top: 0
+  bottom: 0
+  background-repeat: no-repeat
+  background-position: center right
+  background-size: contain
+
+  &:after
+    content: ""
+    position: absolute
+    bottom: 0
+    left: 0
+    right: 0
+    height: 100%
+    background: linear-gradient(to left, rgba(255,255,255,0) 0%,rgba(255,255,255,1) 100%)
+
+  body[data-color-mode="dark"] &
+    filter: invert(100%)
+    -webkit-filter: invert(100%)
+
+// Shared mixin for hover input styling across components
+@mixin hover-input-base
+  border: 1px solid transparent !important
+  border-radius: var(--borderRadius-medium, 6px) !important
+  display: inline-block
+  width: 100%
+  padding: var(--base-size-4, 4px) !important
+  @media (hover: hover)
+    &:hover
+      border-color: var(--borderColor-default) !important
+
+@mixin line-clamp($value)
+  display: -webkit-box
+  -webkit-line-clamp: $value
+  -webkit-box-orient: vertical
+  overflow: hidden

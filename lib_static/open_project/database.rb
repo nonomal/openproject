@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -34,8 +36,8 @@ module OpenProject
   # syntax differences.
 
   module Database
-    DB_VALUE_FALSE = "f".freeze
-    DB_VALUE_TRUE = "t".freeze
+    DB_VALUE_FALSE = "f"
+    DB_VALUE_TRUE = "t"
 
     class InsufficientVersionError < StandardError; end
 
@@ -81,7 +83,7 @@ module OpenProject
     ##
     # Determine whether the current version is deprecated
     def self.version_deprecated?
-      !version_matches?(130000)
+      !version_matches?(160000)
     end
 
     ##
@@ -97,7 +99,7 @@ module OpenProject
 
         if adapter_name.match?(/mysql/i)
           message << " As MySql used to be supported, there is a migration script to ease the transition " \
-                     "(https://www.openproject.org/deprecating-mysql-support/)."
+                     "(https://www.openproject.org/blog/deprecating-mysql-support/)."
         end
 
         raise UnsupportedDatabaseError.new message
@@ -109,9 +111,9 @@ module OpenProject
 
         raise InsufficientVersionError.new message
       elsif version_deprecated?
-        message = "The next major release of OpenProject (v12) will require PostgreSQL 13 or later.\n" \
+        message = "OpenProject versions higher than 16.0 will require at least PostgreSQL 17.\n" \
                   "You can anticipate this upgrade by updating your database installation by following the guide at " \
-                  "https://www.openproject.org/docs/installation-and-operations/misc/migration-to-postgresql13/"
+                  "https://www.openproject.org/docs/installation-and-operations/misc/migration-to-postgresql17/"
 
         raise DeprecatedVersionWarning.new message
       end

@@ -41,7 +41,7 @@ module TimeEntries
           focusDirectly: false,
           multiple: false,
           decorated: true,
-          disabled: !project_or_work_package_selected?,
+          disabled: !project_or_entity_selected?,
           append_to: "#time-entry-dialog"
         }
       ) do |select|
@@ -53,14 +53,14 @@ module TimeEntries
 
     private
 
-    delegate :project, :work_package, to: :model
+    delegate :project, :entity, to: :model
 
-    def project_or_work_package_selected?
-      work_package.present? || project.present?
+    def project_or_entity_selected?
+      entity.present? || project.present?
     end
 
     def placeholder_text
-      I18n.t("placeholder_activity_select_work_package_first") unless project_or_work_package_selected?
+      I18n.t("placeholder_activity_select_work_package_first") unless project_or_entity_selected?
     end
 
     def activities

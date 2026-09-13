@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -39,30 +41,115 @@ RSpec.describe Reminder do
   describe "Scopes" do
     describe ".visible" do
       it "returns reminders where the creator is the given user" do
-        user = create(:user)
-        other_user = create(:user)
-        reminder = create(:reminder, creator: user)
-        _other_reminder = create(:reminder, creator: other_user)
+        role = create(:project_role, permissions: %i[view_work_packages])
+        project = create(:project)
+        user = create(:user, member_with_roles: { project => role })
+        other_user = create(:user, member_with_roles: { project => role })
+        work_package = create(:work_package, project:)
+        reminder = create(:reminder, creator: user, remindable: work_package)
+        _other_reminder = create(:reminder, creator: other_user, remindable: work_package)
 
         expect(described_class.visible(user)).to contain_exactly(reminder)
+      end
+
+      it "excludes reminders whose remindable is no longer visible to the user" do
+        role = create(:project_role, permissions: %i[view_work_packages])
+        project = create(:project)
+        user = create(:user, member_with_roles: { project => role })
+        work_package = create(:work_package, project:)
+        reminder = create(:reminder, creator: user, remindable: work_package)
+
+        expect(described_class.visible(user)).to contain_exactly(reminder)
+
+        Member.where(principal: user, project:).destroy_all
+
+        expect(described_class.visible(user)).to be_empty
       end
     end
 
     describe ".upcoming_and_visible_to" do
       it "returns reminders where the creator is the given user" \
          "and there are no reminder_notifications for it yet" do
-        user = create(:user)
-        other_user = create(:user)
-        reminder = create(:reminder, creator: user)
-        _another_reminder_with_notification = create(:reminder, creator: user) do |r|
+        role = create(:project_role, permissions: %i[view_work_packages])
+        project = create(:project)
+        user = create(:user, member_with_roles: { project => role })
+        other_user = create(:user, member_with_roles: { project => role })
+        work_package = create(:work_package, project:)
+        reminder = create(:reminder, creator: user, remindable: work_package)
+        _another_reminder_with_notification = create(:reminder, creator: user, remindable: work_package) do |r|
           create(:reminder_notification, reminder: r)
         end
-        _other_users_reminder_with_notification = create(:reminder, creator: other_user) do |r|
+        _other_users_reminder_with_notification = create(:reminder, creator: other_user, remindable: work_package) do |r|
           create(:reminder_notification, reminder: r)
         end
-        _other_users_reminder = create(:reminder, creator: other_user)
+        _other_users_reminder = create(:reminder, creator: other_user, remindable: work_package)
 
         expect(described_class.upcoming_and_visible_to(user)).to contain_exactly(reminder)
+      end
+
+      it "excludes reminders whose remindable is no longer visible to the user" do
+        role = create(:project_role, permissions: %i[view_work_packages])
+        project = create(:project)
+        user = create(:user, member_with_roles: { project => role })
+        work_package = create(:work_package, project:)
+        reminder = create(:reminder, creator: user, remindable: work_package)
+
+        expect(described_class.upcoming_and_visible_to(user)).to contain_exactly(reminder)
+
+        Member.where(principal: user, project:).destroy_all
+
+        expect(described_class.upcoming_and_visible_to(user)).to be_empty
+      end
+    end
+  end
+
+  describe "#visible?" do
+    let(:user) { build_stubbed(:user) }
+    let(:other_user) { build_stubbed(:user) }
+    let(:remindable) { build_stubbed(:work_package) }
+    let(:reminder) { build_stubbed(:reminder, creator: user, remindable: remindable) }
+
+    context "when the creator is the current user" do
+      context "and the user has access to the remindable" do
+        current_user { user }
+
+        before do
+          mock_permissions_for(user) do |mock|
+            mock.allow_in_project(:view_work_packages, project: remindable.project)
+          end
+        end
+
+        it "returns true" do
+          expect(reminder).to be_visible
+        end
+      end
+
+      context "and the user does not have access to the remindable" do
+        current_user { user }
+
+        it "returns false" do
+          expect(reminder).not_to be_visible
+        end
+      end
+    end
+
+    context "when the current user is not the same as the creator" do
+      current_user { other_user }
+
+      context "and the user has access to the remindable" do
+        before do
+          mock_permissions_for(other_user) do |mock|
+            mock.allow_in_project(:view_work_packages, project: remindable.project)
+          end
+        end
+
+        it "returns false" do
+          expect(reminder).not_to be_visible
+
+          aggregate_failures "remindable is visible to the other user" do
+            expect(remindable.visible?(other_user)).to be(true)
+          end
+        end
       end
     end
   end

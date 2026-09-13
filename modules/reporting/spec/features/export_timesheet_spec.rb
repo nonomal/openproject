@@ -30,11 +30,13 @@ require_relative "../spec_helper"
 require_relative "support/pages/cost_report_page"
 
 RSpec.describe "Timesheet PDF export", :js do
+  include PDFExportSpecUtils
+
   shared_let(:project) { create(:project) }
   shared_let(:user) { create(:admin) }
   shared_let(:cost_type) { create(:cost_type, name: "Post-war", unit: "cap", unit_plural: "caps") }
   shared_let(:work_package) { create(:work_package, project:, subject: "Some task") }
-  shared_let(:cost_entry) { create(:cost_entry, user:, work_package:, project:, cost_type:) }
+  shared_let(:cost_entry) { create(:cost_entry, user:, entity: work_package, project:, cost_type:) }
   let(:report_page) { Pages::CostReportPage.new project }
 
   current_user { user }
@@ -55,7 +57,7 @@ RSpec.describe "Timesheet PDF export", :js do
 
     # Switching to that tab and checking that the content is a PDF
     within_window new_window do
-      expect(page.source).to have_css("[type='application/pdf']")
+      expect_current_url_to_be_pdf
     end
   end
 end

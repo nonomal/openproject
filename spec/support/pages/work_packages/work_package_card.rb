@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -38,7 +40,7 @@ module Pages
     end
 
     def card_element
-      page.find(card_selector)
+      page.find(card_selector, wait: 10)
     end
 
     def card_selector
@@ -65,7 +67,7 @@ module Pages
       card_element.hover
       card_element.find('[data-test-selector="op-wp-single-card--details-button"]').click
 
-      ::Pages::SplitWorkPackage.new work_package
+      Pages::PrimerizedSplitWorkPackage.new work_package
     end
   end
 end

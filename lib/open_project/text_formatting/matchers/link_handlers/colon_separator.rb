@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -87,7 +89,7 @@ module OpenProject::TextFormatting::Matchers
         end
       end
 
-      def render_commit
+      def render_commit # rubocop:disable Metrics/AbcSize
         if project&.repository &&
            (changeset = Changeset.where(["repository_id = ? AND scmid LIKE ?", project.repository.id, "#{oid}%"]).first)
           link_to h("#{matcher.project_prefix}#{matcher.identifier}"),
@@ -98,7 +100,7 @@ module OpenProject::TextFormatting::Matchers
         end
       end
 
-      def render_source
+      def render_source # rubocop:disable Metrics/AbcSize
         if project&.repository
           matcher.identifier =~ %r{\A[/\\]*(.*?)(@([0-9a-f]+))?(#(L\d+))?\z}
           path = $1
@@ -136,8 +138,8 @@ module OpenProject::TextFormatting::Matchers
       end
 
       def render_user
-        if (user = User.find_by(login: oid))
-          link_to_user(user, only_path: context[:only_path], class: "user-mention")
+        if (user = User.visible.find_by(login: oid))
+          link_to_user(user, only_path: context[:only_path], class: "user-mention", title: nil)
         end
       end
 
@@ -164,9 +166,12 @@ module OpenProject::TextFormatting::Matchers
           .where(["LOWER(title) = :s", { s: oid.downcase }])
           .first
 
-        if meeting && meeting.visible?(User.current)
-          link_to meeting.title,
-                  { only_path: context[:only_path], controller: "/meetings", action: "show", id: meeting.id },
+        if meeting&.visible?(User.current)
+          link_to meeting.title, { only_path: context[:only_path],
+                                   controller: "/meetings",
+                                   action: "show",
+                                   project_id: meeting.project_id,
+                                   id: meeting.id },
                   class: "meeting"
         end
       end

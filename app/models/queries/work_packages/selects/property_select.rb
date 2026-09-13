@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -33,9 +35,36 @@ class Queries::WorkPackages::Selects::PropertySelect < Queries::WorkPackages::Se
 
   class_attribute :property_selects
 
+  def self.versions_sortable(kind)
+    [
+      <<~SQL.squish,
+        (SELECT STRING_AGG(LOWER(v.name), ' ' ORDER BY LOWER(v.name), wpv.version_id)
+           FROM work_package_versions wpv
+           INNER JOIN versions v ON v.id = wpv.version_id
+          WHERE wpv.work_package_id = work_packages.id AND wpv.kind = '#{kind}')
+      SQL
+      versions_groupable(kind)
+    ]
+  end
+
+  def self.versions_groupable(kind)
+    <<~SQL.squish
+      (SELECT STRING_AGG(wpv.version_id::text, '.' ORDER BY LOWER(v.name), wpv.version_id)
+         FROM work_package_versions wpv
+         INNER JOIN versions v ON v.id = wpv.version_id
+        WHERE wpv.work_package_id = work_packages.id AND wpv.kind = '#{kind}')
+    SQL
+  end
+
   self.property_selects = {
     id: {
-      sortable: "#{WorkPackage.table_name}.id",
+      sortable: ->(_query = nil) {
+        if Setting::WorkPackageIdentifier.semantic?
+          ["#{Project.table_name}.identifier", "#{WorkPackage.table_name}.sequence_number"]
+        else
+          "#{WorkPackage.table_name}.id"
+        end
+      },
       groupable: false
     },
     project: {
@@ -93,9 +122,34 @@ class Queries::WorkPackages::Selects::PropertySelect < Queries::WorkPackages::Se
       groupable: "#{WorkPackage.table_name}.category_id"
     },
     version: {
-      association: "version",
-      sortable: "name",
-      groupable: "#{WorkPackage.table_name}.version_id"
+      if: -> { !Setting::WorkPackageMultipleVersions.active? },
+      stored_as: :target_versions,
+      group_by_class_name: "Version",
+      # The lowest-id target version represents the work package, matching the
+      # version_id mirror column and the cost report's single-version join;
+      # the sort key is that version's name.
+      sortable: <<~SQL.squish,
+        (SELECT LOWER(v.name)
+           FROM work_package_versions wpv
+           INNER JOIN versions v ON v.id = wpv.version_id
+          WHERE wpv.work_package_id = work_packages.id AND wpv.kind = 'target'
+          ORDER BY wpv.version_id
+          LIMIT 1)
+      SQL
+      groupable: <<~SQL.squish
+        (SELECT MIN(wpv.version_id)
+           FROM work_package_versions wpv
+          WHERE wpv.work_package_id = work_packages.id AND wpv.kind = 'target')
+      SQL
+    },
+    target_versions: {
+      if: -> { Setting::WorkPackageMultipleVersions.active? },
+      sortable: versions_sortable("target"),
+      groupable: versions_groupable("target")
+    },
+    observed_in_versions: {
+      sortable: versions_sortable("observed_in"),
+      groupable: versions_groupable("observed_in")
     },
     start_date: {
       sortable: "#{WorkPackage.table_name}.start_date"
@@ -116,11 +170,13 @@ class Queries::WorkPackages::Selects::PropertySelect < Queries::WorkPackages::Se
       sortable: false,
       summable: false
     },
-    done_ratio: {
+    done_ratio_for_weighted_average: {
+      if: -> { WorkPackage.work_weighted_average_mode? },
+      name: :done_ratio,
       sortable: "#{WorkPackage.table_name}.done_ratio",
       groupable: true,
       summable: true,
-      summable_select: <<~SQL.squish
+      summable_select: <<~SQL.squish,
         CASE
           WHEN estimated_hours IS NULL OR remaining_hours IS NULL OR estimated_hours <= 0 THEN NULL
           WHEN remaining_hours <= 0 THEN 100
@@ -130,6 +186,25 @@ class Queries::WorkPackages::Selects::PropertySelect < Queries::WorkPackages::Se
           ELSE ROUND( ((1 - (remaining_hours / estimated_hours)) * 100)::numeric )::integer
         END as done_ratio
       SQL
+      summable_work_packages_select: false
+    },
+    done_ratio_for_simple_average: {
+      if: -> { WorkPackage.simple_average_mode? },
+      name: :done_ratio,
+      sortable: "#{WorkPackage.table_name}.done_ratio",
+      groupable: true,
+      summable: true,
+      summable_select: <<~SQL.squish,
+        CASE
+          WHEN done_ratio_count = 0 THEN NULL
+          WHEN done_ratio >= done_ratio_count * 100 THEN 100
+          WHEN done_ratio >= done_ratio_count * 99 THEN 99
+          WHEN done_ratio <= 0 THEN 0
+          WHEN done_ratio <= done_ratio_count THEN 1
+          ELSE ROUND(done_ratio::numeric / done_ratio_count)::integer
+        END as done_ratio
+      SQL
+      summable_work_packages_count_select: true
     },
     created_at: {
       sortable: "#{WorkPackage.table_name}.created_at",
@@ -145,8 +220,46 @@ class Queries::WorkPackages::Selects::PropertySelect < Queries::WorkPackages::Se
   }
 
   def self.instances(_context = nil)
-    property_selects.map do |name, options|
-      new(name, options)
+    active_selects = property_selects.select { |_, options| active_entry?(options) }
+    active_selects.filter_map do |default_name, options|
+      name = options[:name] || default_name
+      new(name, options.without(:if, :name, :stored_as))
     end
   end
+
+  def self.stored_name(name)
+    return name if name.nil?
+
+    entry = property_selects.find { |key, options| offered_name_of(key, options).to_s == name.to_s }
+    return name unless entry
+
+    entry.last[:stored_as]&.to_s || name
+  end
+
+  def self.offered_name(name)
+    return name if name.nil?
+
+    stored = stored_name(name)
+    entry = property_selects.find do |key, options|
+      stored_name_of(key, options).to_s == stored.to_s && active_entry?(options)
+    end
+    return name unless entry
+
+    offered = offered_name_of(*entry)
+    offered.to_s == name.to_s ? name : offered.to_s
+  end
+
+  def self.active_entry?(options)
+    condition = options[:if]
+    condition.nil? || condition.call
+  end
+
+  def self.stored_name_of(key, options)
+    options[:stored_as] || options[:name] || key
+  end
+
+  def self.offered_name_of(key, options)
+    options[:name] || key
+  end
+  private_class_method :active_entry?, :stored_name_of, :offered_name_of
 end

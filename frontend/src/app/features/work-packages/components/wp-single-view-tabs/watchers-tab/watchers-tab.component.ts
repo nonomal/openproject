@@ -21,12 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Input, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Input, OnInit, inject } from '@angular/core';
 import { UIRouterGlobals } from '@uirouter/core';
 import { WorkPackageResource } from 'core-app/features/hal/resources/work-package-resource';
 import { HalResource } from 'core-app/features/hal/resources/hal-resource';
@@ -36,7 +36,6 @@ import {
   WorkPackageWatchersService,
 } from 'core-app/features/work-packages/components/wp-single-view-tabs/watchers-tab/wp-watchers.service';
 import { PathHelperService } from 'core-app/core/path-helper/path-helper.service';
-import { trackByHref } from 'core-app/shared/helpers/angular/tracking-functions';
 import {
   WorkPackageNotificationService,
 } from 'core-app/features/work-packages/services/notifications/work-package-notification.service';
@@ -48,13 +47,23 @@ import { TurboRequestsService } from 'core-app/core/turbo/turbo-requests.service
   templateUrl: './watchers-tab.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'wp-watchers-tab',
+  standalone: false,
 })
 export class WorkPackageWatchersTabComponent extends UntilDestroyedMixin implements OnInit {
+  readonly I18n = inject(I18nService);
+  readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly wpWatchersService = inject(WorkPackageWatchersService);
+  readonly uiRouterGlobals = inject(UIRouterGlobals);
+  readonly notificationService = inject(WorkPackageNotificationService);
+  readonly loadingIndicator = inject(LoadingIndicatorService);
+  readonly cdRef = inject(ChangeDetectorRef);
+  readonly pathHelper = inject(PathHelperService);
+  readonly apiV3Service = inject(ApiV3Service);
+  readonly turboRequests = inject(TurboRequestsService);
+
   @Input() public workPackage:WorkPackageResource;
 
   public workPackageId:string;
-
-  public trackByHref = trackByHref;
 
   public error = false;
 
@@ -68,7 +77,7 @@ export class WorkPackageWatchersTabComponent extends UntilDestroyedMixin impleme
 
   public availableWatchersPath:string;
 
-  private $element:JQuery;
+  private element:HTMLElement;
 
   public watching:any[] = [];
 
@@ -80,25 +89,10 @@ export class WorkPackageWatchersTabComponent extends UntilDestroyedMixin impleme
     },
   };
 
-  public constructor(
-    readonly I18n:I18nService,
-    readonly elementRef:ElementRef,
-    readonly wpWatchersService:WorkPackageWatchersService,
-    readonly uiRouterGlobals:UIRouterGlobals,
-    readonly notificationService:WorkPackageNotificationService,
-    readonly loadingIndicator:LoadingIndicatorService,
-    readonly cdRef:ChangeDetectorRef,
-    readonly pathHelper:PathHelperService,
-    readonly apiV3Service:ApiV3Service,
-    readonly turboRequests:TurboRequestsService,
-  ) {
-    super();
-  }
-
   public ngOnInit() {
-    this.$element = jQuery(this.elementRef.nativeElement);
+    this.element = this.elementRef.nativeElement;
     const { workPackageId } = this.uiRouterGlobals.params as unknown as { workPackageId:string };
-    this.workPackageId = (this.workPackage.id as string) || workPackageId;
+    this.workPackageId = (this.workPackage.id!) || workPackageId;
 
     this
       .apiV3Service
@@ -163,7 +157,7 @@ export class WorkPackageWatchersTabComponent extends UntilDestroyedMixin impleme
   public removeWatcher(watcher:any) {
     this.workPackage.removeWatcher.$link.$prepare({ user_id: watcher.id })()
       .then(() => {
-        _.remove(this.watching, (other:HalResource) => other.href === watcher.href);
+        this.watching = this.watching.filter((other:HalResource) => other.href !== watcher.href);
 
         // Forcefully reload the resource to update the watch/unwatch links
         // should the current user have been removed
@@ -182,7 +176,9 @@ export class WorkPackageWatchersTabComponent extends UntilDestroyedMixin impleme
   }
 
   public updateCounter() {
-    const url = this.pathHelper.workPackageUpdateCounterPath(this.workPackageId, 'watchers');
-    void this.turboRequests.request(url);
+    if (this.workPackageId !== undefined) {
+      const url = this.pathHelper.workPackageUpdateCounterPath(this.workPackageId, 'watchers');
+      void this.turboRequests.request(url);
+    }
   }
 }

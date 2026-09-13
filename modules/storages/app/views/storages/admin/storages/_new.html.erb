@@ -28,7 +28,6 @@ See COPYRIGHT and LICENSE files for more details.
 ++#%>
 
 <% content_controller "storages--storage-form",
-                      dynamic: true,
                       "storages--storage-form-one-drive-placeholder-value": t(:"storages.provider_types.one_drive.name_placeholder"),
                       "storages--storage-form-nextcloud-placeholder-value": t(:"storages.provider_types.nextcloud.name_placeholder") %>
 
@@ -40,9 +39,9 @@ See COPYRIGHT and LICENSE files for more details.
   <div class="form--field -required">
     <%= f.hidden_field :provider_type %>
     <%= f.select :provider_type,
-                 ::Storages::Storage::PROVIDER_TYPES.map { |provider_type| [I18n.t("storages.provider_types.#{::Storages::Storage.shorten_provider_type(provider_type)}.name"), provider_type] },
+                 ::Storages::Storage::provider_types.map { |(short, klass)| [I18n.t("storages.provider_types.#{short}.name"), klass.name] },
                  {
-                   selected: ::Storages::Storage::PROVIDER_TYPE_NEXTCLOUD,
+                   selected: :nextcloud,
                    container_class: "-slim"
                  },
                  data: {

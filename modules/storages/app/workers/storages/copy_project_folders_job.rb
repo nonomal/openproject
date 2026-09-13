@@ -38,6 +38,13 @@ module Storages
     }
     discard_on HTTPX::HTTPError
 
+    # Performs project folder copying.
+    #
+    # @param source [Storages::ProjectStorage]
+    # @param target [Storages::ProjectStorage]
+    # @param work_packages_map [Hash]
+    #
+    # @return [nil]
     def perform(source:, target:, work_packages_map:)
       @source = source
       user = batch.properties[:user]
@@ -50,15 +57,16 @@ module Storages
                                           project_folder_mode: source.project_folder_mode)
                                     .on_failure { |failed| log_failure(failed) and return failed }
 
-      FileLinks::CopyFileLinksService.call(source: @source, target: target.reload, user:, work_packages_map:)
+      # TODO why do we have to reload target here?
+      FileLinks::CopyFileLinksService.call(source:, target: target.reload, user:, work_packages_map:)
+      nil
     end
 
     private
 
     def initiate_copy(target)
-      ProjectStorages::CopyProjectFoldersService
-        .call(source: @source, target:)
-        .on_success { |success| prepare_polling(success.result) }
+      ProjectStorages::CopyProjectFoldersService.call(source: @source, target:)
+                                                .on_success { |success| prepare_polling(success.result) }
     end
 
     def prepare_polling(result)
@@ -80,7 +88,7 @@ module Storages
         polling_info[:polling_state] = :completed
         batch.save
 
-        result = Peripherals::StorageInteraction::ResultData::CopyTemplateFolder.new(response[:resourceId], nil, false)
+        result = Adapters::Results::CopyTemplateFolder.new(response[:resourceId], nil, false)
         ServiceResult.success(result:)
       else
         raise(Errors::PollingRequired, "#{job_id} Polling not completed yet")

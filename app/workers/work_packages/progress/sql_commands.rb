@@ -185,9 +185,9 @@ module WorkPackages::Progress::SqlCommands
   # packages having children.
   def update_totals
     update_work_and_remaining_work_totals
-    if Setting.total_percent_complete_mode == "work_weighted_average"
+    if WorkPackage.work_weighted_average_mode?
       update_total_percent_complete_in_work_weighted_average_mode
-    elsif Setting.total_percent_complete_mode == "simple_average"
+    elsif WorkPackage.simple_average_mode?
       update_total_percent_complete_in_simple_average_mode
     end
   end

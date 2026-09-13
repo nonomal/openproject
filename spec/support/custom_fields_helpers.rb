@@ -31,7 +31,7 @@
 module CustomFieldsHelpers
   def factory_bot_custom_field_traits_for(class_name)
     OpenProject::CustomFieldFormat
-      .all_for_class_name(class_name)
+      .available_for_class_name(class_name)
       .flat_map do |format|
         trait_name = trait_name(format.name)
         [

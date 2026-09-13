@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,7 +30,8 @@
 
 module ::UserConsentHelper
   def consent_param?
-    params[:consent_check].present?
+    raw = params[:consent_check] || params.dig(:user, :consent_check)
+    ActiveModel::Type::Boolean.new.cast(raw)
   end
 
   def user_consent_required?

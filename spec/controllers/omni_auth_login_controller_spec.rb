@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,6 +32,7 @@ require "spec_helper"
 
 # Concern is included into AccountController and depends on methods available there
 RSpec.describe OmniAuthLoginController, :skip_2fa_stage do
+  let!(:auth_provider) { create(:oidc_provider_google, slug: "google") }
   let(:omniauth_strategy) { double("Google Strategy", name: "google") } # rubocop:disable RSpec/VerifiedDoubles
   let(:omniauth_hash) do
     OmniAuth::AuthHash.new(
@@ -190,7 +193,7 @@ RSpec.describe OmniAuthLoginController, :skip_2fa_stage do
 
         it "shows a notice about the activated account", :aggregate_failures do
           expect(flash[:notice]).to eq(I18n.t("notice_account_registered_and_logged_in"))
-          user = User.last
+          user = User.find_by!(firstname: "foo")
 
           expect(user.firstname).to eq "foo"
           expect(user.lastname).to eq "bar"
@@ -211,16 +214,11 @@ RSpec.describe OmniAuthLoginController, :skip_2fa_stage do
         )
       end
 
-      let(:user) do
-        build(:user, force_password_change: false,
-                     identity_url: "google:123545")
+      let!(:user) do
+        create(:user, force_password_change: false, identity_url: "google:123545")
       end
 
       context "with an active account" do
-        before do
-          user.save!
-        end
-
         it "signs in the user after successful external authentication" do
           post :callback, params: { provider: :google }
 
@@ -372,31 +370,39 @@ RSpec.describe OmniAuthLoginController, :skip_2fa_stage do
               expect(OpenProject::OmniAuth::Authorization).not_to have_received(:after_login!).with(user, any_args)
             end
 
-            it "is approved against any other provider" do
-              omniauth_hash.provider = "some other"
+            context "with other provider availabe" do
+              let(:other_provider_slug) { "some other" }
 
-              post :callback, params: { provider: :google }
+              before do
+                create(:oidc_provider, slug: other_provider_slug)
+              end
 
-              expect(response).to redirect_to home_url(first_time_user: true)
+              it "is approved against other provider" do
+                omniauth_hash.provider = other_provider_slug
 
-              # The authorization is successful which results in the registration
-              # of a new user in this case because we changed the provider
-              # and there isn't a user with that identity URL yet.
-              new_user = User.find_by identity_url: "some other:123545"
-              expect(OpenProject::OmniAuth::Authorization)
-                .to have_received(:after_login!).with(new_user, any_args)
-            end
+                post :callback, params: { provider: :google }
 
-            # ... and to confirm that, here's what happens when the authorization fails
-            it "is rejected against any other provider with the wrong email" do
-              omniauth_hash.provider = "yet another"
-              config.global_email = "yarrrr@joro.es"
+                expect(response).to redirect_to home_url(first_time_user: true)
 
-              post :callback, params: { provider: :google }
+                # The authorization is successful which results in the registration
+                # of a new user in this case because we changed the provider
+                # and there isn't a user with that identity URL yet.
+                new_user = UserAuthProviderLink.with_identity_url("some other:123545").first.principal
+                expect(OpenProject::OmniAuth::Authorization)
+                  .to have_received(:after_login!).with(new_user, any_args)
+              end
 
-              expect(response).to redirect_to signin_path
-              expect(flash[:error]).to eq "I only want to see yarrrr@joro.es here."
-              expect(OpenProject::OmniAuth::Authorization).not_to have_received(:after_login!).with(user, any_args)
+              # ... and to confirm that, here's what happens when the authorization fails
+              it "is rejected against any other provider with the wrong email" do
+                omniauth_hash.provider = "yet another"
+                config.global_email = "yarrrr@joro.es"
+
+                post :callback, params: { provider: :google }
+
+                expect(response).to redirect_to signin_path
+                expect(flash[:error]).to eq "I only want to see yarrrr@joro.es here."
+                expect(OpenProject::OmniAuth::Authorization).not_to have_received(:after_login!).with(user, any_args)
+              end
             end
           end
         end
@@ -405,8 +411,7 @@ RSpec.describe OmniAuthLoginController, :skip_2fa_stage do
       context "with a registered and not activated accout",
               with_settings: { self_registration: Setting::SelfRegistration.by_email } do
         before do
-          user.register
-          user.save!
+          user.registered!
 
           post :callback, params: { provider: :google }
         end
@@ -420,8 +425,7 @@ RSpec.describe OmniAuthLoginController, :skip_2fa_stage do
       context "with an invited user and self registration disabled",
               with_settings: { self_registration: Setting::SelfRegistration.disabled } do
         before do
-          user.invite
-          user.save!
+          user.invited!
 
           post :callback, params: { provider: :google }
         end
@@ -435,8 +439,7 @@ RSpec.describe OmniAuthLoginController, :skip_2fa_stage do
       context "with a locked account",
               with_settings: { brute_force_block_after_failed_logins: 0 } do
         before do
-          user.lock
-          user.save!
+          user.locked!
 
           post :callback, params: { provider: :google }
         end

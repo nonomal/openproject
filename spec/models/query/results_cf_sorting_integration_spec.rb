@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -35,7 +37,7 @@ RSpec.describe Query::Results, "Sorting by custom field" do
     described_class.new query
   end
 
-  let(:type) { create(:type_standard, custom_fields: [custom_field]) }
+  let(:type) { create(:type_task, custom_fields: [custom_field]) }
   let(:project) do
     create(:project,
            types: [type],
@@ -180,7 +182,7 @@ RSpec.describe Query::Results, "Sorting by custom field" do
 
   context "for list format" do
     let(:possible_values) { %w[100 3 20] }
-    let(:id_by_value) { custom_field.possible_values.to_h { [_1.value, _1.id] } }
+    let(:id_by_value) { custom_field.possible_values.to_h { [it.value, it.id] } }
 
     context "if not allowing multi select" do
       include_examples "it sorts" do
@@ -192,7 +194,7 @@ RSpec.describe Query::Results, "Sorting by custom field" do
             # sorting is done by position, and not by value
             wp_with_cf_value(id_by_value.fetch("100")),
             wp_with_cf_value(id_by_value.fetch("3")),
-            wp_with_cf_value(id_by_value.fetch("20")),
+            wp_with_cf_value(id_by_value.fetch("20"))
           ]
         end
       end
@@ -216,7 +218,7 @@ RSpec.describe Query::Results, "Sorting by custom field" do
             wp_with_cf_value(id_by_value.fetch_values("20", "100")),      # 100, 20
             wp_with_cf_value(id_by_value.fetch_values("3")),              # 3
             wp_with_cf_value(id_by_value.fetch_values("3", "20")),        # 3, 20
-            wp_with_cf_value(id_by_value.fetch_values("20")),             # 20
+            wp_with_cf_value(id_by_value.fetch_values("20")) # 20
           ]
         end
 
@@ -239,7 +241,7 @@ RSpec.describe Query::Results, "Sorting by custom field" do
         create(:user, lastname: "A", firstname: "X", login: "ax", mail: "ax@o.p")
       ]
     end
-    shared_let(:id_by_login) { users.to_h { [_1.login, _1.id] } }
+    shared_let(:id_by_login) { users.to_h { [it.login, it.id] } }
 
     shared_let(:role) { create(:project_role) }
 
@@ -259,7 +261,7 @@ RSpec.describe Query::Results, "Sorting by custom field" do
             wp_with_cf_value(id_by_login.fetch("ax")),
             wp_with_cf_value(id_by_login.fetch("ba")),
             wp_with_cf_value(id_by_login.fetch("bb1")),
-            wp_with_cf_value(id_by_login.fetch("bb2")),
+            wp_with_cf_value(id_by_login.fetch("bb2"))
           ]
         end
       end
@@ -277,7 +279,7 @@ RSpec.describe Query::Results, "Sorting by custom field" do
             wp_with_cf_value(id_by_login.fetch_values("ax", "bb1")), # ax, bb1
             wp_with_cf_value(id_by_login.fetch_values("ba")),        # ba
             wp_with_cf_value(id_by_login.fetch_values("bb1", "ba")), # ba, bb1
-            wp_with_cf_value(id_by_login.fetch_values("ba", "bb2")), # ba, bb2
+            wp_with_cf_value(id_by_login.fetch_values("ba", "bb2")) # ba, bb2
           ]
         end
 
@@ -300,7 +302,7 @@ RSpec.describe Query::Results, "Sorting by custom field" do
         create(:version, project:, sharing: "system", name: "9")
       ]
     end
-    let(:id_by_name) { versions.to_h { [_1.name, _1.id] } }
+    let(:id_by_name) { versions.to_h { [it.name, it.id] } }
 
     context "if not allowing multi select" do
       include_examples "it sorts" do
@@ -330,7 +332,7 @@ RSpec.describe Query::Results, "Sorting by custom field" do
             wp_with_cf_value(id_by_name.fetch_values("9", "10.10.10")),   # 9, 10.10.10
             wp_with_cf_value(id_by_name.fetch_values("10.2", "10.10.2")), # 10.2, 10.10.2
             wp_with_cf_value(id_by_name.fetch_values("10.10.2")),         # 10.10.2
-            wp_with_cf_value(id_by_name.fetch_values("10.10.10")),        # 10.10.10
+            wp_with_cf_value(id_by_name.fetch_values("10.10.10")) # 10.10.10
           ]
         end
 
@@ -344,19 +346,20 @@ RSpec.describe Query::Results, "Sorting by custom field" do
     end
   end
 
-  context "for hierarchy format" do
+  context "for hierarchy format", with_ee: [:custom_field_hierarchies] do
     include_examples "it sorts" do
       let(:custom_field) { create(:hierarchy_wp_custom_field, hierarchy_root: nil) }
       let(:root) { service.generate_root(custom_field).value! }
       let(:service) { CustomFields::Hierarchy::HierarchicalItemService.new }
+      let(:contract_class) { CustomFields::Hierarchy::InsertListItemContract }
 
-      let!(:item_first) { service.insert_item(parent: root, label: "aa item").value! }
-      let!(:item_a) { service.insert_item(parent: root, label: "item_a").value! }
-      let!(:item_a1) { service.insert_item(parent: item_a, label: "item_a1").value! }
-      let!(:item_a2) { service.insert_item(parent: item_a, label: "item_a2").value! }
-      let!(:item_c) { service.insert_item(parent: root, label: "item_c").value! }
-      let!(:item_b) { service.insert_item(parent: root, label: "item_b").value! }
-      let!(:item_last) { service.insert_item(parent: root, label: "zz item").value! }
+      let!(:item_first) { service.insert_item(contract_class:, parent: root, label: "aa item").value! }
+      let!(:item_a) { service.insert_item(contract_class:, parent: root, label: "item_a").value! }
+      let!(:item_a1) { service.insert_item(contract_class:, parent: item_a, label: "item_a1").value! }
+      let!(:item_a2) { service.insert_item(contract_class:, parent: item_a, label: "item_a2").value! }
+      let!(:item_c) { service.insert_item(contract_class:, parent: root, label: "item_c").value! }
+      let!(:item_b) { service.insert_item(contract_class:, parent: root, label: "item_b").value! }
+      let!(:item_last) { service.insert_item(contract_class:, parent: root, label: "zz item").value! }
 
       let(:work_packages) do
         [

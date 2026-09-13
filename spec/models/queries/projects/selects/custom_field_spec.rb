@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # -- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -53,14 +55,13 @@ RSpec.describe Queries::Projects::Selects::CustomField do
     let(:id) { 42 }
 
     before do
-      visible = double
-
-      allow(ProjectCustomField).to receive(:visible).and_return(visible)
-      allow(visible).to receive(:find_by).with(id: id.to_s).and_return(custom_field)
+      allow(ProjectCustomField)
+        .to receive(:visible)
+              .and_return([custom_field].compact)
     end
 
     context "when custom field exists" do
-      let(:custom_field) { instance_double(ProjectCustomField) }
+      let(:custom_field) { instance_double(ProjectCustomField, id:) }
 
       it "returns the custom field" do
         expect(instance.custom_field).to eq(custom_field)

@@ -77,24 +77,38 @@ module OpPrimer
       self.class.main_column.include?(column)
     end
 
-    def header_args(_column)
+    def pagination_params = {}
+
+    # Data attributes for the box element wrapping the whole table, for
+    # subclasses that need to attach behaviour to it.
+    def container_data
       {}
     end
 
+    # The header and footer carry `role=rowgroup` too, so the element holding the
+    # rows needs a class of its own to be addressable.
+    def rows_container_class
+      "op-border-box-table--rows"
+    end
+
     def column_title(name)
-      header = headers.find { |h| h[0] == name }
-      header ? header[1][:caption] : nil
+      _, header_options = headers.assoc(name)
+      header_options&.dig(:caption)
     end
 
     def header_classes(column)
-      classes = [heading_class]
-      classes << "op-border-box-grid--main-column" if main_column?(column)
-
-      classes.join(" ")
+      class_names(
+        header_class,
+        "op-border-box-grid__header--main-column": main_column?(column)
+      )
     end
 
-    def heading_class
-      "op-border-box-grid--heading"
+    def header_action_class
+      "op-border-box-grid__header-action"
+    end
+
+    def header_class
+      "op-border-box-grid__header"
     end
 
     # Default grid class with equal weights
@@ -104,6 +118,10 @@ module OpPrimer
 
     def has_actions?
       false
+    end
+
+    def has_header?
+      true
     end
 
     def has_footer?
@@ -144,6 +162,12 @@ module OpPrimer
 
     def footer
       raise ArgumentError, "Need to provide footer content"
+    end
+
+    private
+
+    def column_count
+      @column_count ||= columns.size + (has_actions? ? 1 : 0)
     end
   end
 end

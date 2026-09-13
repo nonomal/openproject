@@ -21,18 +21,13 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import {
-  ChangeDetectionStrategy,
-  Component,
-  HostBinding,
-  OnInit,
-} from '@angular/core';
-import { BehaviorSubject, combineLatest } from 'rxjs';
+import { ChangeDetectionStrategy, Component, HostBinding, OnDestroy, OnInit, inject } from '@angular/core';
+import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
 import {
   debounceTime,
   distinctUntilChanged,
@@ -41,6 +36,7 @@ import {
   mergeMap,
   shareReplay,
   take,
+  tap,
 } from 'rxjs/operators';
 
 import { I18nService } from 'core-app/core/i18n/i18n.service';
@@ -54,7 +50,7 @@ import {
 import { QueryFilterInstanceResource } from 'core-app/features/hal/resources/query-filter-instance-resource';
 import { UntilDestroyedMixin } from 'core-app/shared/helpers/angular/until-destroyed.mixin';
 import { HalResourceService } from 'core-app/features/hal/services/hal-resource.service';
-import { CurrentProjectService } from 'core-app/core/current-project/current-project.service';
+import { IsolatedQuerySpace } from 'core-app/features/work-packages/directives/query-space/isolated-query-space';
 import { IProject } from 'core-app/core/state/projects/project.model';
 import {
   SearchableProjectListService,
@@ -73,8 +69,16 @@ import { calculatePositions } from 'core-app/shared/components/project-include/c
   providers: [
     SearchableProjectListService,
   ],
+  standalone: false,
 })
-export class OpProjectIncludeComponent extends UntilDestroyedMixin implements OnInit {
+export class OpProjectIncludeComponent extends UntilDestroyedMixin implements OnInit, OnDestroy {
+  readonly I18n = inject(I18nService);
+  readonly wpTableFilters = inject(WorkPackageViewFiltersService);
+  readonly wpIncludeSubprojects = inject(WorkPackageViewIncludeSubprojectsService);
+  readonly halResourceService = inject(HalResourceService);
+  readonly searchableProjectListService = inject(SearchableProjectListService);
+  readonly querySpace = inject(IsolatedQuerySpace);
+
   @HostBinding('class.op-project-include') className = true;
 
   public text = {
@@ -93,7 +97,7 @@ export class OpProjectIncludeComponent extends UntilDestroyedMixin implements On
 
   public textFieldFocused = false;
 
-  public query$ = this.wpTableFilters.querySpace.query.values$();
+  public query$ = this.querySpace.query.values$();
 
   public displayModeOptions = [
     { value: 'all', title: this.text.filter_all },
@@ -128,6 +132,8 @@ export class OpProjectIncludeComponent extends UntilDestroyedMixin implements On
 
   private _selectedProjects:string[] = [];
 
+  private queryWorkspaceHref:string | null;
+
   public get selectedProjects():string[] {
     return this._selectedProjects;
   }
@@ -135,6 +141,7 @@ export class OpProjectIncludeComponent extends UntilDestroyedMixin implements On
   public set selectedProjects(val:string[]) {
     this._selectedProjects = val;
     this.selectedProjects$.next(val);
+    this.searchableProjectListService.preloadProjectIds = val.map((s) => s.split('/').pop()!);
   }
 
   public selectedProjects$ = new BehaviorSubject<string[]>([]);
@@ -146,13 +153,12 @@ export class OpProjectIncludeComponent extends UntilDestroyedMixin implements On
       map((queryFilters) => {
         const projectFilter = queryFilters.find((queryFilter) => queryFilter._type === 'ProjectQueryFilter');
         const selectedProjectHrefs = ((projectFilter?.values || []) as HalResource[]).map((p) => p.href);
-        const currentProjectHref = this.currentProjectService.apiv3Path;
-        if (selectedProjectHrefs.includes(currentProjectHref)) {
+        if (selectedProjectHrefs.includes(this.queryWorkspaceHref)) {
           return selectedProjectHrefs;
         }
         const selectedProjects = [...selectedProjectHrefs];
-        if (currentProjectHref) {
-          selectedProjects.push(currentProjectHref);
+        if (this.queryWorkspaceHref) {
+          selectedProjects.push(this.queryWorkspaceHref);
         }
         return selectedProjects;
       }),
@@ -164,17 +170,17 @@ export class OpProjectIncludeComponent extends UntilDestroyedMixin implements On
     this.searchableProjectListService.allProjects$,
     this.displayMode$.pipe(distinctUntilChanged()),
     this.includeSubprojects$.pipe(debounceTime(20)),
-    this.searchableProjectListService.searchText$.pipe(debounceTime(200)),
   ]).pipe(
-    mergeMap(([projects, displayMode, includeSubprojects, searchText]) => this.selectedProjects$.pipe(
+    mergeMap(([projects, displayMode, includeSubprojects]) => this.selectedProjects$.pipe(
       take(1),
-      map((selected) => [projects, displayMode, includeSubprojects, searchText, selected]),
+      map((selected) => [projects, displayMode, includeSubprojects, selected]),
     )),
     map(
-      ([projects, displayMode, includeSubprojects, searchText, selected]:[IProject[], string, boolean, string, string[]]) => [
+      ([projects, displayMode, includeSubprojects, selected]:[IProject[], string, boolean, string[]]) => [
         projects
           .filter(
             (project) => {
+              const searchText = this.searchableProjectListService.searchText;
               if (searchText.length) {
                 const matches = project.name.toLowerCase().includes(searchText.toLowerCase());
 
@@ -220,6 +226,7 @@ export class OpProjectIncludeComponent extends UntilDestroyedMixin implements On
         includeSubprojects,
       ],
     ),
+    tap(() => this.loading$.next(false)),
     mergeMap(([projects, includeSubprojects]) => this.selectedProjects$.pipe(
       map((selected) => [projects, includeSubprojects, selected]),
     )),
@@ -229,7 +236,7 @@ export class OpProjectIncludeComponent extends UntilDestroyedMixin implements On
           return true;
         }
 
-        if (project.href === this.currentProjectService.apiv3Path) {
+        if (project.href === this.queryWorkspaceHref) {
           return true;
         }
 
@@ -251,32 +258,9 @@ export class OpProjectIncludeComponent extends UntilDestroyedMixin implements On
     shareReplay(),
   );
 
-  /* This seems like a way too convoluted loading check, but there's a good reason we need it.
-   * The searchableProjectListService says fetching is "done" when the request returns.
-   * However, this causes flickering on the initial load, since `projects$` still needs
-   * to do the tree calculation. In the template, we show the project-list when `loading$ | async` is false,
-   * but if we would only make this depend on `fetchingProjects$` Angular would still wait with
-   * rendering the project-list until `projects$ | async` has also fired.
-   *
-   * To fix this, we first wait for fetchingProjects$ to be true once,
-   * then switch over to projects$, and after that has pinged once, it switches back to
-   * fetchingProjects$ as the decider for when fetching is done.
-   */
-  public loading$ = this.searchableProjectListService.fetchingProjects$.pipe(
-    filter((fetching) => fetching),
-    take(1),
-    mergeMap(() => this.projects$),
-    mergeMap(() => this.searchableProjectListService.fetchingProjects$),
-  );
+  public loading$ = new BehaviorSubject<boolean>(false);
 
-  constructor(
-    readonly I18n:I18nService,
-    readonly wpTableFilters:WorkPackageViewFiltersService,
-    readonly wpIncludeSubprojects:WorkPackageViewIncludeSubprojectsService,
-    readonly halResourceService:HalResourceService,
-    readonly currentProjectService:CurrentProjectService,
-    readonly searchableProjectListService:SearchableProjectListService,
-  ) {
+  constructor() {
     super();
 
     this.projects$
@@ -290,6 +274,8 @@ export class OpProjectIncludeComponent extends UntilDestroyedMixin implements On
       });
   }
 
+  private onTextInput:Subscription;
+
   public ngOnInit():void {
     this.query$
       .pipe(
@@ -299,6 +285,22 @@ export class OpProjectIncludeComponent extends UntilDestroyedMixin implements On
       .subscribe((includeSubprojects) => {
         this.includeSubprojects = includeSubprojects;
       });
+
+    this
+      .query$
+      .pipe(
+        this.untilDestroyed(),
+        take(1))
+      .subscribe((query) => {
+        this.queryWorkspaceHref = query.project?.href;
+      });
+
+    this.onTextInput = this.searchableProjectListService.queriedSearchText$.subscribe(() => this.loading$.next(true));
+  }
+
+  ngOnDestroy():void {
+    super.ngOnDestroy();
+    this.onTextInput.unsubscribe();
   }
 
   public toggleIncludeSubprojects():void {
@@ -309,21 +311,21 @@ export class OpProjectIncludeComponent extends UntilDestroyedMixin implements On
     this.opened = !this.opened;
 
     if (this.opened) {
-      this.searchableProjectListService.loadAllProjects();
+      this.loading$.next(true);
+      this.searchableProjectListService.enableLoading();
       this.projectsInFilter$
         .pipe(
           take(1),
         )
         .subscribe((selectedProjects) => {
           this.displayMode = 'all';
-          this.searchableProjectListService.searchText = '';
           this.selectedProjects = selectedProjects as string[];
         });
     }
   }
 
   public clearSelection():void {
-    this.selectedProjects = [this.currentProjectService.apiv3Path || ''];
+    this.selectedProjects = [this.queryWorkspaceHref ?? ''];
   }
 
   public onSubmit(e:Event):void {
@@ -332,7 +334,6 @@ export class OpProjectIncludeComponent extends UntilDestroyedMixin implements On
     // Replace actually also instantiates if it does not exist, which is handy here
     this.wpTableFilters.replace('project', (projectFilter:QueryFilterInstanceResource) => {
       const projectHrefs = this.selectedProjects;
-      // eslint-disable-next-line no-param-reassign
       projectFilter.values = projectHrefs.map((href:string) => this.halResourceService.createHalResource({ href }, true));
     });
 

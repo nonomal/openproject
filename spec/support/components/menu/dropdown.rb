@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,20 +34,24 @@ module Components
     include Capybara::RSpecMatchers
     include RSpec::Matchers
 
+    def id
+      raise NotImplementedError, "Please provide an ID"
+    end
+
     def toggle
       trigger_element.click
     end
 
     def expect_closed
-      expect(page).to have_no_css(".op-app-menu--dropdown")
+      expect(page).to have_no_css("##{id}-list")
     end
 
     def expect_open
-      expect(page).to have_css(".op-app-menu--dropdown")
+      expect(page).to have_css("##{id}-list")
     end
 
     def within_dropdown(&)
-      page.within(".op-app-menu--dropdown", &)
+      page.within("##{id}-list", &)
     end
 
     def trigger_element

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,17 +32,14 @@ require_relative "base"
 
 class Tables::Workflows < Tables::Base
   def self.table(migration)
-    create_table migration do |t|
-      t.integer :type_id, default: 0, null: false
-      t.integer :old_status_id, default: 0, null: false
-      t.integer :new_status_id, default: 0, null: false
-      t.integer :role_id, default: 0, null: false
+    create_table migration do |t| # rubocop:disable Rails/CreateTableWithTimestamps
+      t.references :type, null: false, index: false, foreign_key: { on_delete: :cascade, on_update: :cascade }
+      t.references :old_status, null: false, foreign_key: { to_table: :statuses, on_delete: :cascade, on_update: :cascade }
+      t.references :new_status, null: false, foreign_key: { to_table: :statuses, on_delete: :cascade, on_update: :cascade }
+      t.references :role, null: false, foreign_key: { on_delete: :cascade, on_update: :cascade }
       t.boolean :assignee, default: false, null: false
       t.boolean :author, default: false, null: false
 
-      t.index :new_status_id, name: "index_workflows_on_new_status_id"
-      t.index :old_status_id, name: "index_workflows_on_old_status_id"
-      t.index :role_id, name: "index_workflows_on_role_id"
       t.index %i[role_id type_id old_status_id], name: "wkfs_role_type_old_status"
     end
   end

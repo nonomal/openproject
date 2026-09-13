@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,8 +31,8 @@
 module Admin::Settings
   class ProjectCustomFieldsController < ::Admin::SettingsController
     include CustomFields::SharedActions
+    include CustomFields::AttributeHelpTextActions
     include OpTurbo::ComponentStream
-    include OpTurbo::DialogStreamHelper
     include FlashMessagesOutputSafetyHelper
     include Admin::Settings::ProjectCustomFields::ComponentStreams
 
@@ -40,33 +42,64 @@ module Admin::Settings
     before_action :set_sections, only: %i[show index edit update move drop]
     before_action :find_custom_field,
                   only: %i(show edit project_mappings new_link link unlink update destroy delete_option reorder_alphabetical
-                           move drop)
+                           move drop role_assignment update_role_assignment role_assignment_preview_dialog
+                           attribute_help_text update_attribute_help_text list_items)
     before_action :prepare_custom_option_position, only: %i(update create)
     before_action :find_custom_option, only: :delete_option
     before_action :project_custom_field_mappings_query, only: %i[project_mappings unlink]
     before_action :find_custom_field_projects_to_link, only: :link
     before_action :find_unlink_project_custom_field_mapping, only: :unlink
+    before_action :prepare_role_assignment_form, only: %i[role_assignment update_role_assignment]
+    before_action :find_or_initialize_attribute_help_text, only: %i[attribute_help_text update_attribute_help_text]
     # rubocop:enable Rails/LexicallyScopedActionFilter
 
     def index
+      @allow_custom_field_creation = @project_custom_field_sections.any?
+
       respond_to :html
     end
 
     def show
       # quick fixing redirect issue from perform_update
-      # perform_update is always redirecting to the show action altough configured otherwise
+      # perform_update is always redirecting to the show action although configured otherwise
       render :edit
     end
 
     def new
-      @custom_field = ProjectCustomField.new(custom_field_section_id: params[:custom_field_section_id])
+      @custom_field = ProjectCustomField.new(custom_field_section_id: params[:custom_field_section_id],
+                                             field_format: params[:field_format])
 
       respond_to :html
     end
 
     def edit; end
 
+    def list_items; end
+
     def project_mappings; end
+
+    def role_assignment; end
+
+    def role_assignment_preview_dialog
+      role = params[:role_id].to_i == 0 ? nil : ProjectRole.find_by(id: params[:role_id])
+      respond_with_dialog(Admin::CustomFields::RoleAssignmentPreviewDialogComponent.new(custom_field: @custom_field, role: role))
+    end
+
+    def update_role_assignment
+      call = CustomFields::LinkWithRoleService
+        .new(user: current_user, model: @custom_field)
+        .call(role_assignment_params)
+
+      call.on_success do
+        flash[:notice] = t(:notice_successful_update)
+        redirect_to role_assignment_admin_settings_project_custom_field_path(@custom_field)
+      end
+
+      call.on_failure do
+        flash[:error] = call.message || I18n.t(:notice_internal_server_error)
+        render :role_assignment
+      end
+    end
 
     def new_link
       @project_mapping = ProjectCustomFieldProjectMapping.new(project_custom_field: @custom_field)
@@ -90,7 +123,7 @@ module Admin::Settings
         )
       end
 
-      respond_to_with_turbo_streams(status: create_service.success? ? :ok : :unprocessable_entity)
+      respond_to_with_turbo_streams(status: create_service)
     end
 
     def unlink
@@ -106,47 +139,69 @@ module Admin::Settings
         )
       end
 
-      respond_to_with_turbo_streams(status: delete_service.success? ? :ok : :unprocessable_entity)
+      respond_to_with_turbo_streams(status: delete_service)
     end
 
     def move
-      call = CustomFields::UpdateService.new(user: current_user, model: @custom_field).call(
-        move_to: params[:move_to]&.to_sym
+      result = CustomFields::MoveService.new(user: current_user, custom_field: @custom_field).call(
+        move_to: params.expect(:move_to)
       )
 
-      if call.success?
+      if result.success?
         update_sections_via_turbo_stream(project_custom_field_sections: @project_custom_field_sections)
       else
-        # TODO: handle error
+        render_error_flash_message_via_turbo_stream(
+          message: join_flash_messages(result.errors)
+        )
       end
 
       respond_with_turbo_streams
     end
 
     def drop
-      call = ::ProjectCustomFields::DropService.new(user: current_user, project_custom_field: @custom_field).call(
-        target_id: params[:target_id],
-        position: params[:position]
+      return render_invalid_drop_request unless valid_drop_request?
+
+      result = CustomFields::DropService.new(user: current_user, custom_field: @custom_field).call(
+        list_id: drop_params[:list_id],
+        prev_id: drop_params[:prev_id]
       )
 
-      if call.success?
-        drop_success_streams(call)
+      if result.success?
+        drop_success_streams(result)
+        respond_with_turbo_streams
       else
-        # TODO: handle error
+        render_error_flash_message_via_turbo_stream(message: join_flash_messages(result.errors))
+        respond_with_turbo_streams(status: :unprocessable_entity)
+      end
+    end
+
+    def destroy
+      result = CustomFields::DeleteService.new(user: current_user, model: @custom_field).call
+
+      if result.success?
+        update_section_via_turbo_stream(project_custom_field_section: @custom_field.project_custom_field_section.reload)
+      else
+        render_error_flash_message_via_turbo_stream(
+          message: join_flash_messages(result.errors)
+        )
       end
 
       respond_with_turbo_streams
     end
 
-    def destroy
-      @custom_field.destroy
+    def attribute_help_text
+      render_attribute_help_text_form
+    end
 
-      update_section_via_turbo_stream(project_custom_field_section: @custom_field.project_custom_field_section.reload)
-
-      respond_with_turbo_streams
+    def update_attribute_help_text
+      update_help_text
     end
 
     private
+
+    def prepare_role_assignment_form
+      @custom_field_usages = @custom_field.custom_values.where.not(value: nil)
+    end
 
     def render_project_list(url_for_action: action_name)
       update_via_turbo_stream(
@@ -207,7 +262,27 @@ module Admin::Settings
     end
 
     def find_custom_field
-      @custom_field = ProjectCustomField.find(params[:id])
+      @custom_field = ProjectCustomField.find(params.expect(:id))
+    end
+
+    # Ids must be scalar strings: a collection-valued list_id would pick an
+    # arbitrary target section out of an IN lookup, and a collection-valued
+    # prev_id would 500 instead of answering the promised 422. permit's
+    # scalar filter drops collection values, so the presence checks below
+    # reject them alongside genuinely missing parameters.
+    def valid_drop_request?
+      drop_params[:list_type] == "custom_field" &&
+        drop_params[:list_id].present? &&
+        drop_params.key?(:prev_id)
+    end
+
+    def drop_params
+      @drop_params ||= params.permit(:list_type, :list_id, :prev_id)
+    end
+
+    def render_invalid_drop_request
+      render_error_flash_message_via_turbo_stream(message: I18n.t(:error_invalid_list_move_anchor))
+      respond_with_turbo_streams(status: :unprocessable_entity)
     end
 
     def drop_success_streams(call)
@@ -219,6 +294,18 @@ module Admin::Settings
 
     def include_sub_projects?
       ActiveRecord::Type::Boolean.new.cast(params.to_unsafe_h[:project_custom_field_project_mapping][:include_sub_projects])
+    end
+
+    def role_assignment_params
+      params.expect(custom_field: [:role_id])
+    end
+
+    def show_path
+      attribute_help_text_admin_settings_project_custom_field_path(@custom_field)
+    end
+
+    def render_attribute_help_text_form(status: :ok)
+      render "custom_fields/attribute_help_texts/show_project", status:
     end
   end
 end

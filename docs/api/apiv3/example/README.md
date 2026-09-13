@@ -134,9 +134,9 @@ To aid in creating work packages, a work package form resource is available
 
 A form:
 
-* provides a *payload* object that can serve as the blueprint for creating work packages. It can also be used to display the work package to be created in the client application as it also contain default values set automatically, e.g. for `priority`.
-* contains a *schema* describing the properties of the work package as well as listing the available values for those referencing other resources. E.g. the projects in which work packages can be created (read in which the user has the permission to create work packages) are listed.
-* notes the current *errors* in the payload. E.g. a work package cannot be created outside of a project so a project reference needs to be provided.
+- provides a _payload_ object that can serve as the blueprint for creating work packages. It can also be used to display the work package to be created in the client application as it also contain default values set automatically, e.g. for `priority`.
+- contains a _schema_ describing the properties of the work package as well as listing the available values for those referencing other resources. E.g. the projects in which work packages can be created (read in which the user has the permission to create work packages) are listed.
+- notes the current _errors_ in the payload. E.g. a work package cannot be created outside of a project so a project reference needs to be provided.
 
 The API documentation offers detailed information [on forms in general](../forms) and on the [work package create form](../endpoints/work-packages/#form-for-creating-work-packages-in-a-project) in particular.
 
@@ -188,7 +188,7 @@ The value taken for the `href` in a resource value will always be the `self` lin
 
 ![work package create schema self link](./wp-create-form-schema-self-link.png)
 
-*The correct combination of `project` and `type` needs to be chosen. Sometimes a type is not available in every project. In that case, the type either can be added to the project in the UI or a different type needs to be chosen for the project. This is why it sometimes makes sense to first send the project within the form body as this will update the `availableValues` listed for `type`*
+_The correct combination of `project` and `type` needs to be chosen. Sometimes a type is not available in every project. In that case, the type either can be added to the project in the UI or a different type needs to be chosen for the project. This is why it sometimes makes sense to first send the project within the form body as this will update the `availableValues` listed for `type`_
 
 ### Sending the create request
 
@@ -226,6 +226,24 @@ The schema can instruct the client where to set them properly. All properties wi
       "href": "some/url"
     }
   }
+}
+```
+
+#### Custom field errors
+
+Custom fields with a field format of `calculated_value` may produce errors during calculation. In such a case, their scalar value is set to `null` and an additional property is returned.
+Note that multiple errors may be present in the array. Each error consists of a machine-readable error code and a localized error string intended for humans.
+
+If there are no errors, this field is missing.
+
+```json5
+{
+  "customFieldXErrors": [
+    {
+      "code": "ERROR_MATHEMATICAL",
+      "message": "A mathematical error occurred during calculation. Please review the formula and try again."
+    }
+  ]
 }
 ```
 

@@ -1,8 +1,32 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 
 RSpec.describe DesignColor do
   let(:default_primary) { OpenProject::CustomStyles::Design.variables["primary-button-color"] }
   let(:primary_color) { create(:"design_color_primary-button-color") }
+
+  describe "normalization" do
+    it "does not normalize non-hexcodes, except to strip whitespace", :aggregate_failures do
+      expect(subject).to normalize(:hexcode).from("").to("")
+      expect(subject).to normalize(:hexcode).from(" ").to("")
+      expect(subject).to normalize(:hexcode).from("11").to("11")
+      expect(subject).to normalize(:hexcode).from("purple").to("purple")
+      expect(subject).to normalize(:hexcode).from("green ").to("green")
+    end
+
+    it "normalizes short hexcodes", :aggregate_failures do
+      expect(subject).to normalize(:hexcode).from(" ccc").to("#CCCCCC")
+      expect(subject).to normalize(:hexcode).from("333 ").to("#333333")
+      expect(subject).to normalize(:hexcode).from("#ddd").to("#DDDDDD")
+    end
+
+    it "normalizes full hexcodes", :aggregate_failures do
+      expect(subject).to normalize(:hexcode).from(" 800080").to("#800080")
+      expect(subject).to normalize(:hexcode).from("228b22 ").to("#228B22")
+      expect(subject).to normalize(:hexcode).from("#00CED1").to("#00CED1")
+    end
+  end
 
   describe "#setables" do
     it "returns an Array of instances" do
@@ -21,7 +45,39 @@ RSpec.describe DesignColor do
     end
   end
 
-  describe "#get_hexcode" do
+  describe "validations" do
+    it "validates variable is present and unique" do
+      expect(subject).to validate_presence_of(:variable)
+      expect(subject).to validate_uniqueness_of(:variable)
+    end
+
+    it "validates hexcode is present" do
+      expect(subject).to validate_presence_of(:hexcode)
+    end
+
+    it "does not allow malformed hexcodes" do
+      expect(subject).not_to allow_values(
+        "1",
+        "#1",
+        "#1111111",
+        "#HHHHHH"
+      )
+      .for(:hexcode)
+      .with_message("is not a valid 6-digit hexadecimal color code.")
+    end
+
+    it "allows valid hexcodes" do
+      expect(subject).to allow_values(
+        "111111",
+        "#111111",
+        "#ABC123",
+        "#111",
+        "111"
+      ).for(:hexcode)
+    end
+  end
+
+  describe "#hexcode" do
     it "returns hexcode if present" do
       primary_color
       expect(primary_color.hexcode).to eq("#3493B3")
@@ -33,43 +89,9 @@ RSpec.describe DesignColor do
     end
   end
 
-  describe "validations" do
-    context "a color_variable already exists" do
-      let(:design_color) do
-        DesignColor.new variable: "foo", hexcode: "#AB1234"
-      end
-
-      before do
-        design_color.save
-      end
-
-      it "fails validation for another design_color with same name" do
-        second_color_variable = DesignColor.new variable: "foo", hexcode: "#888888"
-        expect(second_color_variable.valid?).to be_falsey
-      end
-    end
-
-    context "the hexcode's validation" do
-      it "fails validations" do
-        expect(DesignColor.new(variable: "foo", hexcode: "1").valid?).to be_falsey
-        expect(DesignColor.new(variable: "foo", hexcode: "#1").valid?).to be_falsey
-        expect(DesignColor.new(variable: "foo", hexcode: "#1111111").valid?).to be_falsey
-        expect(DesignColor.new(variable: "foo", hexcode: "#HHHHHH").valid?).to be_falsey
-      end
-
-      it "passes validations" do
-        expect(DesignColor.new(variable: "foo", hexcode: "111111").valid?).to be_truthy
-        expect(DesignColor.new(variable: "foo", hexcode: "#111111").valid?).to be_truthy
-        expect(DesignColor.new(variable: "foo", hexcode: "#ABC123").valid?).to be_truthy
-        expect(DesignColor.new(variable: "foo", hexcode: "#111").valid?).to be_truthy
-        expect(DesignColor.new(variable: "foo", hexcode: "111").valid?).to be_truthy
-      end
-    end
-  end
-
   describe "#create" do
     context "no CustomStyle.current exists yet" do
-      subject { DesignColor.new variable: "foo", hexcode: "#111111" }
+      subject { described_class.new variable: "foo", hexcode: "#111111" }
 
       it "creates a CustomStyle.current" do
         expect(CustomStyle.current).to be_nil

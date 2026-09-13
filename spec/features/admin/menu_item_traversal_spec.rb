@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -81,7 +83,7 @@ RSpec.describe "Menu item traversal" do
       visit admin_index_path
 
       # Get all admin links from there
-      links = all("#menu-sidebar a[href]", visible: :all)
+      links = all("#menu-sidebar .menu_root a[href]:not([data-test-selector='main-menu--arrow-left-to-project'])", visible: :all)
         .map { |node| node["href"] }
         .reject { |link| link.end_with? "/#" }
         .compact

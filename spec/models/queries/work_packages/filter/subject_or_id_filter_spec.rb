@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,16 +31,14 @@
 require "spec_helper"
 
 RSpec.describe Queries::WorkPackages::Filter::SubjectOrIdFilter do
-  let(:value) { "bogus" }
   let(:operator) { "**" }
-  let(:subject) { "Some subject" }
-  let(:work_package) { create(:work_package, subject:) }
+  let(:work_package) { create(:work_package, subject: "Some subject") }
   let(:current_user) do
     create(:user, member_with_permissions: { work_package.project => %i[view_work_packages edit_work_packages] })
   end
   let(:query) { build_stubbed(:global_query, user: current_user) }
   let(:instance) do
-    described_class.create!(name: :search, context: query, operator:, values: [value])
+    described_class.create!(name: :search, context: query, operator:)
   end
 
   before do
@@ -53,6 +53,12 @@ RSpec.describe Queries::WorkPackages::Filter::SubjectOrIdFilter do
 
   it "finds in ID" do
     instance.values = [work_package.id.to_s]
+    expect(WorkPackage.eager_load(instance.includes).where(instance.where))
+      .to contain_exactly(work_package)
+  end
+
+  it "finds in ID, even with spaces before and/or after it" do
+    instance.values = [" #{work_package.id} "]
     expect(WorkPackage.eager_load(instance.includes).where(instance.where))
       .to contain_exactly(work_package)
   end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -163,7 +165,7 @@ RSpec.shared_examples_for "list_optional query filter" do
       let(:operator) { "=" }
 
       it "is the same as handwriting the query" do
-        quoted_values = db_values.map { |val| "'#{ActiveRecord::Base.connection.quote_string(val)}'" }.join(",")
+        quoted_values = db_values.map { |val| ActiveRecord::Base.connection.quote(val) }.join(",")
 
         expected = expected_base_scope
                    .where("#{expected_table_name}.#{attribute} IN (#{quoted_values})")
@@ -176,7 +178,7 @@ RSpec.shared_examples_for "list_optional query filter" do
       let(:operator) { "!" }
 
       it "is the same as handwriting the query" do
-        quoted_values = db_values.map { |val| "'#{ActiveRecord::Base.connection.quote_string(val)}'" }.join(",")
+        quoted_values = db_values.map { |val| ActiveRecord::Base.connection.quote(val) }.join(",")
 
         sql = "(#{expected_table_name}.#{attribute} IS NULL
                OR #{expected_table_name}.#{attribute} NOT IN (#{quoted_values}))".squish

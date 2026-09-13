@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -70,7 +72,7 @@ module WorkPackages
     end
 
     def service_class
-      raise NotImplementedError
+      raise SubclassResponsibilityError
     end
 
     def successful_status_update(call)

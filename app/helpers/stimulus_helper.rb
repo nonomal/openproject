@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,16 +30,21 @@
 
 module StimulusHelper
   # rubocop:disable Rails/HelperInstanceVariable
-  def content_controller(name, dynamic: false, **data)
+  def content_controller(name, **data)
     @stimulus_content_data = data
-      .merge({
-               controller: name,
-               "application-target": dynamic ? "dynamic" : nil
-             })
+      .merge({ controller: name })
   end
 
   def stimulus_content_data
     @stimulus_content_data || {}
+  end
+
+  def body_controller(name)
+    @stimulus_body_controller = name
+  end
+
+  def stimulus_body_controller
+    @stimulus_body_controller
   end
 
   # rubocop:enable Rails/HelperInstanceVariable

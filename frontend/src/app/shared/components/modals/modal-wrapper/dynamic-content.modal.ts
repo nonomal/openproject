@@ -21,49 +21,33 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import {
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-  ElementRef,
-  Inject,
-  OnDestroy,
-  OnInit,
-} from '@angular/core';
-import { OpModalLocalsToken } from 'core-app/shared/components/modal/modal.service';
-import { OpModalLocalsMap } from 'core-app/shared/components/modal/modal.types';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { OpModalComponent } from 'core-app/shared/components/modal/modal.component';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 
 @Component({
   templateUrl: './dynamic-content.modal.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
 export class DynamicContentModalComponent extends OpModalComponent implements OnInit, OnDestroy {
-  constructor(
-    readonly elementRef:ElementRef,
-    @Inject(OpModalLocalsToken) public locals:OpModalLocalsMap,
-    readonly cdRef:ChangeDetectorRef,
-    readonly I18n:I18nService,
-  ) {
-    super(locals, cdRef, elementRef);
-  }
+  readonly I18n = inject(I18nService);
 
   ngOnInit():void {
     super.ngOnInit();
 
     // Append the dynamic body
-    const wrapper = this.$element.children[0];
+    const wrapper = this.element.children[0];
     const classes = (this.locals.modalClassName as string) || '';
     wrapper.classList.add(...classes.split(' '));
     wrapper.innerHTML = this.locals.modalBody as string;
 
-    const modal = document.querySelector('.spot-modal') as HTMLElement;
+    const modal = document.querySelector('.spot-modal')!;
     const closeButton = modal.querySelector<HTMLButtonElement>('[dynamic-content-modal-close-button]');
     closeButton?.addEventListener('click', () => this.closeMe());
   }

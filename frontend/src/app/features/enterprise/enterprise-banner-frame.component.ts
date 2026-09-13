@@ -21,12 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { ChangeDetectionStrategy, Component, Input, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnInit, inject } from '@angular/core';
 import { PathHelperService } from 'core-app/core/path-helper/path-helper.service';
 import { BannersService } from 'core-app/core/enterprise/banners.service';
 
@@ -37,21 +37,22 @@ import { BannersService } from 'core-app/core/enterprise/banners.service';
   standalone: false,
 })
 export class EnterpriseBannerFrameComponent implements OnInit {
+  protected pathHelper = inject(PathHelperService);
+  protected banners = inject(BannersService);
+
   @Input() public feature:string;
 
   @Input() public dismissable = false;
 
   visible:boolean;
   frameURL:string;
-
-  constructor(
-    protected pathHelper:PathHelperService,
-    protected banners:BannersService,
-  ) {
-  }
+  frameID:string;
 
   ngOnInit() {
     this.visible = this.banners.showBannerFor(this.feature);
     this.frameURL = this.pathHelper.bannerFramePath(this.feature, this.dismissable);
+
+    const trialSuffix = this.banners.trialling(this.feature) ? '_trial' : '';
+    this.frameID = `enterprise_banner_${this.feature}${trialSuffix}`;
   }
 }

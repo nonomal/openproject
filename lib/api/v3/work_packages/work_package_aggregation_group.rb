@@ -46,7 +46,7 @@ module API
                  render_nil: false
 
         link :groupBy do
-          converted_name = convert_attribute(query.group_by_column.name)
+          converted_name = convert_attribute(query.group_by_column.group_by_column_name || query.group_by_column.name)
 
           {
             href: api_v3_paths.query_group_by(converted_name),

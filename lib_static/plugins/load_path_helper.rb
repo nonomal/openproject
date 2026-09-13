@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -35,7 +37,7 @@ module Plugins
 
     # fetch load paths for available plugins
     def self.plugin_load_paths
-      Rails.application.config.plugins_to_test_paths.map { _1.relative_path_from(Rails.root).to_s }
+      Rails.application.config.plugins_to_test_paths.map { it.relative_path_from(Rails.root).to_s }
     end
   end
 end

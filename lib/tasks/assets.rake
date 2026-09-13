@@ -29,7 +29,7 @@
 require "open_project/assets"
 
 # The ng build task must run before assets:environment task.
-# Otherwise Sprockets cannot find the files that webpack produces.
+# Otherwise Sprockets cannot find the files that the frontend build produces.
 Rake::Task["assets:precompile"]
   .clear_prerequisites
   .enhance(%w[assets:compile_environment assets:prepare_op])
@@ -47,7 +47,7 @@ namespace :assets do
   desc "Prepare locales and angular assets"
   task prepare_op: %i[export_locales angular]
 
-  desc "Compile assets with webpack"
+  desc "Compile angular frontend assets"
   task :angular do
     # We skip angular compilation if backend was requested
     # but frontend was not explicitly set
@@ -62,14 +62,7 @@ namespace :assets do
 
     puts "Building angular frontend"
     Dir.chdir Rails.root.join("frontend") do
-      cmd =
-        if ENV["OPENPROJECT_ANGULAR_BUILD"] == "fast"
-          "npm run build:fast"
-        else
-          "npm run build"
-        end
-
-      sh(cmd) do |ok, res|
+      sh("npm run build") do |ok, res|
         raise "Failed to compile angular frontend: #{res.exitstatus}" if !ok
       end
     end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -26,40 +28,17 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-class WorkPackages::ApplyWorkingDaysChangeJob < ApplicationJob
-  include JobConcurrency
-  queue_with_priority :above_normal
-
-  good_job_control_concurrency_with(
-    total_limit: 1
-  )
-
-  attr_accessor :previous_working_days, :previous_non_working_days
-
-  def perform(user_id:, previous_working_days:, previous_non_working_days:)
-    self.previous_working_days = previous_working_days
-    self.previous_non_working_days = previous_non_working_days
-
-    user = User.find(user_id)
-
-    User.execute_as user do
-      for_each_work_package(applicable_work_packages) do |work_package|
-        apply_change_to_work_package(work_package)
-      end
-
-      applicable_predecessors.find_each do |predecessor|
-        apply_change_to_predecessor(predecessor)
-      end
-    end
-  end
-
+class WorkPackages::ApplyWorkingDaysChangeJob < ApplyWorkingDaysChangeJobBase
   private
 
-  def journal_cause
-    @journal_cause ||= Journal::CausedByWorkingDayChanges.new(
-      working_days: changed_days,
-      non_working_days: changed_non_working_dates
-    )
+  def apply_working_days_change
+    for_each_work_package(applicable_work_packages) do |work_package|
+      apply_change_to_work_package(work_package)
+    end
+
+    applicable_predecessors.find_each do |predecessor|
+      apply_change_to_predecessor(predecessor)
+    end
   end
 
   def apply_change_to_work_package(work_package)
@@ -82,27 +61,9 @@ class WorkPackages::ApplyWorkingDaysChangeJob < ApplicationJob
     days_of_week = changed_days.keys
     dates = changed_non_working_dates.keys
     WorkPackage
-      .covering_dates_and_days_of_week(days_of_week:, dates:)
+      .covering_dates_or_days_of_week(days_of_week:, dates:)
       .order(WorkPackage.arel_table[:start_date].asc.nulls_first,
              WorkPackage.arel_table[:due_date].asc)
-  end
-
-  def changed_days
-    previous = Set.new(previous_working_days)
-    current = Set.new(Setting.working_days)
-
-    # `^` is a Set method returning a new set containing elements exclusive to
-    # each other
-    (previous ^ current).index_with { |day| current.include?(day) }
-  end
-
-  def changed_non_working_dates
-    previous = Set.new(previous_non_working_days)
-    current = Set.new(NonWorkingDay.pluck(:date))
-
-    # `^` is a Set method returning a new set containing elements exclusive to
-    # each other
-    (previous ^ current).index_with { |day| current.exclude?(day) }
   end
 
   def applicable_predecessors

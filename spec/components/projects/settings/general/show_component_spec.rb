@@ -32,9 +32,12 @@ require "rails_helper"
 
 RSpec.describe Projects::Settings::General::ShowComponent, type: :component do
   let(:project) { build_stubbed(:project) }
+  let(:user) { build_stubbed(:user) }
+
+  current_user { user }
 
   def render_component(**params)
-    render_inline(described_class.new(project:, **params))
+    render_inline(described_class.new(project:, current_user:, **params))
     page
   end
 
@@ -50,7 +53,7 @@ RSpec.describe Projects::Settings::General::ShowComponent, type: :component do
     it "renders a form" do
       render_component
 
-      expect(page.find(:heading, heading)).to have_ancestor "form"
+      expect(page.find(:section, heading)).to have_element :form
     end
   end
 
@@ -60,18 +63,25 @@ RSpec.describe Projects::Settings::General::ShowComponent, type: :component do
     it "renders fields" do
       expect(render_component).to have_field "Name", required: true
       expect(render_component).to have_element "opce-ckeditor-augmented-textarea",
-                                               "data-textarea-selector": "\"#project_description\""
+                                               "data-test-selector": "augmented-text-area-description"
     end
   end
 
-  describe "Project status" do
-    it_behaves_like "section with heading", "Project status"
+  describe "Status" do
+    it_behaves_like "section with heading", "Status"
 
-    it "renders fields" do
-      expect(render_component).to have_element "opce-autocompleter",
-                                               "data-input-name": "\"project[status_code]\""
+    it "renders field" do
       expect(render_component).to have_element "opce-ckeditor-augmented-textarea",
-                                               "data-textarea-selector": "\"#project_status_explanation\""
+                                               "data-test-selector": "augmented-text-area-status_explanation"
+    end
+  end
+
+  describe "Identifier" do
+    it_behaves_like "section with heading", "Identifier"
+
+    it "renders a Change identifier button" do
+      render_component
+      expect(page.find(:section, "Identifier")).to have_link "Change identifier"
     end
   end
 

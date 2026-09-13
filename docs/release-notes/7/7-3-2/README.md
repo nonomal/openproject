@@ -10,12 +10,12 @@ release_date: 2017-11-23
 
 ## Bug fixes (2)
 
-  - Multi-select values could not properly be selected. This affected
-    for instance work package filters and multi-select custom fields.
-    \[[#26611](https://community.openproject.org/wp/26611)\]
-  - The breadcrumb in the roles and permissions in the administration
-    was not shown properly.
-    \[[#26563](https://community.openproject.org/wp/26563)\]
+- Multi-select values could not properly be selected. This affected
+  for instance work package filters and multi-select custom fields.
+  \[[#26611](https://community.openproject.org/wp/26611)\]
+- The breadcrumb in the roles and permissions in the administration
+  was not shown properly.
+  \[[#26563](https://community.openproject.org/wp/26563)\]
 
 Thanks a lot to the community, in particular to Chris Jornlin and Steve
 Manning for reporting bugs!

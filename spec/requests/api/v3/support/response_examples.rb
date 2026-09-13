@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,7 +30,7 @@
 
 require "spec_helper"
 
-RSpec.shared_examples_for "successful response" do |code = 200|
+RSpec.shared_examples_for "successful response" do |code = 200, type = nil|
   it "has the status code #{code}" do
     expect(last_response).to have_http_status(code)
   end
@@ -37,6 +39,12 @@ RSpec.shared_examples_for "successful response" do |code = 200|
     expected_content_type = "application/hal+json; charset=utf-8"
     expect(last_response.headers).to include "Content-Type"
     expect(last_response.headers["Content-Type"].downcase).to eql expected_content_type
+  end
+
+  if type
+    it "returns a resource of _type #{type}" do
+      expect(last_response.body).to be_json_eql(type.to_json).at_path("_type")
+    end
   end
 end
 
@@ -88,13 +96,6 @@ RSpec.shared_examples_for "error response" do |code, id, provided_message = nil|
       end
     end
   end
-end
-
-RSpec.shared_examples_for "invalid render context" do |message|
-  it_behaves_like "error response",
-                  400,
-                  "InvalidRenderContext",
-                  message
 end
 
 RSpec.shared_examples_for "invalid request body" do |message|

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -40,13 +42,26 @@ module Projects::Exports
     end
 
     def projects
-      @projects ||= query
+      @projects ||= all_projects
+        .page(page)
+        .per_page(Setting.work_packages_projects_export_limit.to_i)
+    end
+
+    def all_projects
+      scope = query
         .results
         .with_required_storage
         .with_latest_activity
-        .includes(:custom_values)
-        .page(page)
-        .per_page(Setting.work_packages_projects_export_limit.to_i)
+        .includes(:custom_values, :custom_comments)
+
+      # Mirror ProjectQuery#default_scope: admins see (and may export) archived
+      # projects, which Project.allowed_to would otherwise filter out since
+      # :export_projects is only permissible on active projects.
+      if User.current.admin?
+        scope
+      else
+        scope.where(id: Project.allowed_to(User.current, :export_projects))
+      end
     end
 
     private

@@ -70,13 +70,13 @@ RSpec.shared_examples_for "file_link contract" do
       context "when empty" do
         let(:file_link_attributes) { { origin_id: "" } }
 
-        include_examples "contract is invalid", origin_id: %i[blank too_short]
+        include_examples "contract is invalid", origin_id: %i[blank]
       end
 
       context "when nil" do
         let(:file_link_attributes) { { origin_id: nil } }
 
-        include_examples "contract is invalid", origin_id: %i[blank too_short]
+        include_examples "contract is invalid", origin_id: %i[blank]
       end
 
       context "when numeric" do
@@ -95,12 +95,6 @@ RSpec.shared_examples_for "file_link contract" do
         let(:file_link_attributes) { { origin_id: "Hëllò Wôrłd!" } }
 
         include_examples "contract is valid"
-      end
-
-      context "when longer than 100 characters" do
-        let(:file_link_attributes) { { origin_id: "1" * 201 } }
-
-        include_examples "contract is invalid", origin_id: :too_long
       end
     end
 

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -42,7 +44,7 @@ RSpec.describe "work package export", :js, :selenium do
   let(:work_packages_page) { WorkPackagesPage.new(project) }
   let(:wp_table) { Pages::WorkPackagesTable.new(project) }
   let(:settings_menu) { Components::WorkPackages::SettingsMenu.new }
-  let(:export_sub_type) { nil }
+  let(:export_variant) { nil }
   let(:default_expected_params) do
     { title: "My custom query title" }
   end
@@ -72,6 +74,8 @@ RSpec.describe "work package export", :js, :selenium do
   end
 
   before do
+    login_as(current_user)
+
     service_instance = instance_double(WorkPackages::Exports::ScheduleService)
     allow(WorkPackages::Exports::ScheduleService)
       .to receive(:new)
@@ -90,8 +94,6 @@ RSpec.describe "work package export", :js, :selenium do
 
     query.column_names = query_columns
     query.save!
-
-    login_as(current_user)
   end
 
   RSpec::Matchers.define :has_mandatory_params do |expected|
@@ -102,7 +104,7 @@ RSpec.describe "work package export", :js, :selenium do
     end
   end
 
-  def open_export_dialog!(query_target = :query)
+  def open_page!(query_target = :query)
     case query_target
     when :query
       wp_table.visit_query query
@@ -111,12 +113,19 @@ RSpec.describe "work package export", :js, :selenium do
     else
       raise ArgumentError, "query_target must be :query or :default"
     end
-
     work_packages_page.ensure_loaded
+  end
+
+  def show_export_dialog!
     settings_menu.open_and_choose I18n.t("js.toolbar.settings.export")
     expect(page).to have_css("#op-work-packages-export-dialog", wait: 5)
     click_on export_type
     sleep 0.1
+  end
+
+  def open_export_dialog!(query_target = :query)
+    open_page! query_target
+    show_export_dialog!
   end
 
   def export!
@@ -199,8 +208,7 @@ RSpec.describe "work package export", :js, :selenium do
     end
 
     it "opens the dialog and exports" do
-      settings_menu.open_and_choose I18n.t("js.toolbar.settings.export")
-      click_on export_type
+      open_export_dialog!
       export!
     end
   end
@@ -319,6 +327,26 @@ RSpec.describe "work package export", :js, :selenium do
     end
   end
 
+  context "with default display_subprojects_work_packages and an unsaved query" do
+    let(:expected_params) { { includeSubprojects: "false" } }
+    let(:project_include) { Components::ProjectIncludeComponent.new }
+
+    before do
+      Setting.display_subprojects_work_packages = true
+      open_page!(:default)
+    end
+
+    it "does apply a disabled include_subprojects option" do
+      project_include.toggle!
+      project_include.expect_open
+      project_include.toggle_include_all_subprojects
+      project_include.expect_include_all_subprojects_unchecked
+      project_include.click_button("Apply")
+      show_export_dialog!
+      export!
+    end
+  end
+
   context "with XLS export" do
     let(:export_type) { I18n.t("export.dialog.format.options.xls.label") }
     let(:expected_mime_type) { :xls }
@@ -375,11 +403,11 @@ RSpec.describe "work package export", :js, :selenium do
 
     context "as table" do
       let(:export_type) { I18n.t("export.dialog.format.options.pdf.label") }
-      let(:export_sub_type) { I18n.t("export.dialog.pdf.export_type.options.table.label") }
+      let(:export_variant) { I18n.t("export.dialog.pdf.export_type.options.table.label") }
       let(:expected_params) { default_expected_params.merge({ pdf_export_type: "table" }) }
 
       before do
-        choose export_sub_type
+        choose export_variant
       end
 
       it "exports a pdf table" do
@@ -394,15 +422,46 @@ RSpec.describe "work package export", :js, :selenium do
         click_on I18n.t("export.dialog.submit")
         expect(page).to have_button(I18n.t("export.dialog.submit")) # form not submitted, button is still there
       end
+
+      context "when exporting grouped by project phase column (regression #65740)" do
+        let!(:project_phase_with_gates) do
+          create(:project_phase,
+                 :with_gated_definition,
+                 project: project,
+                 start_date: Date.new(2024, 12, 1),
+                 finish_date: Date.new(2024, 12, 13))
+        end
+        let!(:project_phase) do
+          create(:project_phase,
+                 project:,
+                 start_date: Date.new(2024, 12, 1),
+                 finish_date: Date.new(2024, 12, 13))
+        end
+
+        let(:query) { create(:query, user: current_user, project:, group_by: "project_phase", name: "My custom query title") }
+        let(:export_type) { I18n.t("export.dialog.format.options.pdf.label") }
+        let(:export_variant) { I18n.t("export.dialog.pdf.export_type.options.table.label") }
+        let(:expected_params) { default_expected_params.merge({ pdf_export_type: "table", groupBy: "project_phase" }) }
+        let(:expected_columns) { %w[ID Subject Type Status Assignee Priority ProjectPhase] }
+
+        before do
+          wp1.update!(project_phase_definition_id: project_phase_with_gates.definition_id)
+          wp2.update!(project_phase_definition_id: project_phase.definition_id)
+        end
+
+        it "exports a pdf table" do
+          export!
+        end
+      end
     end
 
     context "as report" do
       let(:export_type) { I18n.t("export.dialog.format.options.pdf.label") }
-      let(:export_sub_type) { I18n.t("export.dialog.pdf.export_type.options.report.label") }
+      let(:export_variant) { I18n.t("export.dialog.pdf.export_type.options.report.label") }
       let(:default_params_report) { default_expected_params.merge({ pdf_export_type: "report" }) }
 
       before do
-        choose export_sub_type
+        choose export_variant
       end
 
       context "with long text fields" do
@@ -426,7 +485,7 @@ RSpec.describe "work package export", :js, :selenium do
           # Save export settings, export and reopen dialog
           check I18n.t("export.dialog.save_export_settings.label")
           export_and_reopen_dialog!
-          choose export_sub_type
+          choose export_variant
 
           selected_long_fields = page.within(".op-angular-component[data-id='\"ltf-select-export-pdf-report\"']") do
             all(".op-draggable-autocomplete--item-text").map(&:text)
@@ -475,7 +534,7 @@ RSpec.describe "work package export", :js, :selenium do
 
     context "as gantt" do
       let(:export_type) { I18n.t("export.dialog.format.options.pdf.label") }
-      let(:export_sub_type) { I18n.t("export.dialog.pdf.export_type.options.gantt.label") }
+      let(:export_variant) { I18n.t("export.dialog.pdf.export_type.options.gantt.label") }
 
       context "with EE not active" do
         it "gantt is disabled" do
@@ -487,7 +546,7 @@ RSpec.describe "work package export", :js, :selenium do
         let(:expected_params) { default_expected_params.merge({ pdf_export_type: "gantt" }) }
 
         before do
-          choose export_sub_type
+          choose export_variant
         end
 
         it "exports a gantt chart pdf" do

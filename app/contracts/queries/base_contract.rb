@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -69,7 +71,7 @@ module Queries
     end
 
     def project_visible?
-      Project.visible(user).exists?(id: project_id)
+      ::Project.visible(user).exists?(id: project_id)
     end
 
     def may_not_manage_queries?
@@ -87,6 +89,14 @@ module Queries
 
       if model.public && may_not_manage_queries?
         errors.add :public, :error_unauthorized
+      end
+    end
+
+    def user_allowed_to_save_queries?
+      if model.project
+        user.allowed_in_project?(:save_queries, model.project)
+      else
+        user.allowed_in_any_project?(:save_queries)
       end
     end
 

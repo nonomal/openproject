@@ -40,10 +40,12 @@ module API::V3::Storages
 
   URN_STORAGE_TYPE_NEXTCLOUD = "#{::API::V3::URN_PREFIX}storages:Nextcloud".freeze
   URN_STORAGE_TYPE_ONE_DRIVE = "#{::API::V3::URN_PREFIX}storages:OneDrive".freeze
+  URN_STORAGE_TYPE_SHARE_POINT = "#{::API::V3::URN_PREFIX}storages:Sharepoint".freeze
 
   STORAGE_TYPE_MAP = {
-    URN_STORAGE_TYPE_NEXTCLOUD => Storages::Storage::PROVIDER_TYPE_NEXTCLOUD,
-    URN_STORAGE_TYPE_ONE_DRIVE => Storages::Storage::PROVIDER_TYPE_ONE_DRIVE
+    URN_STORAGE_TYPE_NEXTCLOUD => Storages::NextcloudStorage.name,
+    URN_STORAGE_TYPE_ONE_DRIVE => Storages::OneDriveStorage.name,
+    URN_STORAGE_TYPE_SHARE_POINT => Storages::SharepointStorage.name
   }.freeze
 
   STORAGE_TYPE_URN_MAP = STORAGE_TYPE_MAP.invert.freeze
@@ -97,6 +99,11 @@ module API::V3::Storages
              getter: ->(represented:, **) { represented.provider_type_nextcloud? && represented.storage_audience },
              setter: ->(fragment:, represented:, **) { represented.storage_audience = fragment }
 
+    property :tokenExchangeScope,
+             skip_render: ->(represented:, **) { !represented.provider_type_nextcloud? },
+             getter: ->(represented:, **) { represented.provider_type_nextcloud? && represented.token_exchange_scope },
+             setter: ->(fragment:, represented:, **) { represented.token_exchange_scope = fragment }
+
     property :applicationPassword,
              skip_render: ->(*) { true },
              getter: ->(*) {},
@@ -132,6 +139,13 @@ module API::V3::Storages
                represented.automatic_management_enabled? if represented.provider_type_nextcloud?
              end,
              setter: ->(*) {}
+
+    property :forbiddenFileNameCharacters,
+             skip_render: ->(represented:, **) { !represented.provider_type_nextcloud? },
+             getter: ->(represented:, **) do
+               represented.forbidden_file_name_characters if represented.provider_type_nextcloud?
+             end,
+             setter: ->(fragment:, represented:, **) { represented.forbidden_file_name_characters = fragment }
 
     date_time_property :created_at
 
@@ -263,11 +277,7 @@ module API::V3::Storages
     end
 
     def show_authorize_link?
-      selector = Storages::Peripherals::StorageInteraction::AuthenticationMethodSelector.new(
-        user: current_user, storage: represented
-      )
-
-      selector.storage_oauth? &&
+      represented.authenticate_via_storage? &&
         represented.oauth_client.present? &&
         authorization_state.in?(%i[not_connected failed_authorization])
     end
@@ -281,8 +291,7 @@ module API::V3::Storages
     end
 
     def authorization_state
-      ::Storages::Peripherals::StorageInteraction::Authentication.authorization_state(storage: represented,
-                                                                                      user: current_user)
+      ::Storages::Adapters::Authentication.authorization_state(storage: represented, user: current_user)
     end
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,9 +32,9 @@ require "spec_helper"
 
 RSpec.describe Projects::Storage do
   let(:project1) do
-    create(:project)
-      .reload # Reload required for wiki association to be available
+    create(:project, :with_internal_wiki).reload # Reload required for wiki association to be available
   end
+
   let(:project2) { create(:project) }
 
   before do

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -37,15 +39,23 @@ class Tables::Base
     name.demodulize.underscore.to_s
   end
 
-  def self.id_options
-    { id: :integer }
+  def self.create_table(migration, id: :bigint, **, &)
+    migration.create_table(table_name, id:, **, &)
   end
 
-  def self.create_table(migration, &)
-    migration.create_table table_name, **id_options.merge(bulk: true), &
+  def self.create_unlogged_table(migration, id: :bigint, **, &)
+    create_unlogged_tables = ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.create_unlogged_tables
+
+    begin
+      ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.create_unlogged_tables = true
+
+      create_table(migration, id:, **, &) # rubocop:disable Rails/CreateTableWithTimestamps
+    ensure
+      ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.create_unlogged_tables = create_unlogged_tables
+    end
   end
 
   def self.table(_migration)
-    raise NotImplementedError
+    raise SubclassResponsibilityError
   end
 end

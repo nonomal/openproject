@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -33,5 +35,6 @@ module ProjectCustomFieldSections
     attribute :name
     attribute :position
     attribute :type
+    attribute :display_representation
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -89,6 +91,17 @@ RSpec.describe Journal::Timestamps do
       it "raises no error" do
         expect(timestamp).to be_a ActiveSupport::TimeWithZone
         expect { subject }.not_to raise_error
+      end
+    end
+
+    describe "when ensuring UTC is passed to the timestamp where condition" do
+      it "converts the timestamp to UTC in the generated SQL" do
+        sql = Time.use_zone("America/New_York") do
+          est_time = Time.zone.parse("2022-08-01 11:30:00")
+          Journal.at_timestamp(est_time).to_sql
+        end
+        expect(sql)
+          .to include(/validity_period @> timestamp with time zone '2022-08-01 15:30:00 UTC'/)
       end
     end
 

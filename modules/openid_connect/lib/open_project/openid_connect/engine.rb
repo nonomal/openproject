@@ -45,6 +45,7 @@ module OpenProject::OpenIDConnect
            :plugin_openid_connect,
            :openid_connect_providers_path,
            parent: :authentication,
+           after: :oauth_applications,
            caption: ->(*) { I18n.t("openid_connect.menu_title") },
            enterprise_feature: "sso_auth_providers"
     end
@@ -55,11 +56,11 @@ module OpenProject::OpenIDConnect
       openid_connect/auth_provider-custom.png
     )
 
-    patches %i[Sessions::UserSession User]
+    patches %i[Sessions::UserSession Group User GroupUser]
 
     class_inflection_override("openid_connect" => "OpenIDConnect")
 
-    register_auth_providers do
+    register_auth_providers(persist: false) do
       OmniAuth::OpenIDConnect::Providers.configure custom_options: %i[
         display_name?
         icon?
@@ -86,6 +87,7 @@ module OpenProject::OpenIDConnect
             omniauth.oidc_access_token
             omniauth.oidc_refresh_token
             omniauth.oidc_expires_in
+            omniauth.oidc_groups
           ]
 
           h[:backchannel_logout_callback] = ->(logout_token) do
@@ -107,7 +109,16 @@ module OpenProject::OpenIDConnect
     end
 
     config.to_prepare do
+      Group.add_synchronized_group_partial(
+        title: "openid_connect.group_links_heading",
+        partial: "openid_connect/group_links/table",
+        count_callback: ->(group) { group.oidc_group_links.count }
+      )
+
       ::OpenProject::OpenIDConnect::Hooks::Hook
+
+      # Load AuthProvider descendants due to STI
+      OpenIDConnect::Provider
     end
   end
 end

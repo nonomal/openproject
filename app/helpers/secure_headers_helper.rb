@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,10 +31,8 @@
 module SecureHeadersHelper
   ##
   # Output a rails +csp_meta_tag+ compatible tag
-  # while we're still using the +secure_headers+ gem.
+  # using Rails built-in CSP functionality.
   def secure_header_csp_meta_tag
-    tag :meta,
-        name: "csp-nonce",
-        content: content_security_policy_script_nonce
+    csp_meta_tag
   end
 end

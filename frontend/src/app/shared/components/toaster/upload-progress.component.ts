@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -55,13 +55,20 @@ import { UntilDestroyedMixin } from 'core-app/shared/helpers/angular/until-destr
       <span class="filename" [textContent]="fileName"></span>
       <progress max="100" value="0" #progressBar></progress>
       <p #progressPercentage>0%</p>
-      <span class="upload-completed" *ngIf="completed || error">
-      <op-icon icon-classes="icon-close" *ngIf="error"></op-icon>
-      <op-icon icon-classes="icon-checkmark" *ngIf="completed"></op-icon>
-    </span>
+      @if (completed || error) {
+        <span class="upload-completed">
+          @if (error) {
+            <op-icon icon-classes="icon-close" />
+          }
+          @if (completed) {
+            <op-icon icon-classes="icon-checkmark" />
+          }
+        </span>
+      }
     </li>
-  `,
+    `,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
 export class UploadProgressComponent extends UntilDestroyedMixin implements OnInit, AfterViewInit {
   @Input() public file:File;
@@ -72,9 +79,9 @@ export class UploadProgressComponent extends UntilDestroyedMixin implements OnIn
 
   @Output() public uploadSuccess = new EventEmitter<void>();
 
-  @ViewChild('progressBar') progressBar:ElementRef;
+  @ViewChild('progressBar') progressBar:ElementRef<HTMLProgressElement>;
 
-  @ViewChild('progressPercentage') progressPercentage:ElementRef;
+  @ViewChild('progressPercentage') progressPercentage:ElementRef<HTMLParagraphElement>;
 
   public error = false;
 
@@ -83,11 +90,11 @@ export class UploadProgressComponent extends UntilDestroyedMixin implements OnIn
   private viewInitialized = new BehaviorSubject<boolean>(false);
 
   set value(value:number) {
-    (this.progressBar.nativeElement as HTMLProgressElement).value = value;
-    (this.progressPercentage.nativeElement as HTMLParagraphElement).innerText = `${value}%`;
+    this.progressBar.nativeElement.value = value;
+    this.progressPercentage.nativeElement.innerText = `${value}%`;
 
     if (value === 100) {
-      (this.progressBar.nativeElement as HTMLElement).style.display = 'none';
+      this.progressBar.nativeElement.style.display = 'none';
     }
   }
 

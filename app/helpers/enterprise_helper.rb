@@ -29,26 +29,51 @@
 #++
 
 module EnterpriseHelper
-  def write_augur_to_gon
-    gon.augur_url = OpenProject::Configuration.enterprise_trial_creation_host
-    gon.token_version = OpenProject::Token::VERSION
-  end
-
-  def write_trial_key_to_gon
-    trial_key = Token::EnterpriseTrialKey.find_by(user_id: User.system.id)
-    if trial_key
-      gon.ee_trial_key = {
-        value: trial_key.value,
-        created: trial_key.created_at
-      }
+  ##
+  # Renders the enterprise banner component with a guard for the given feature key.
+  # If the feature is not enabled, it will not render the given block.
+  #
+  # Parameters:
+  # - feature_key: The key that identifies the specific enterprise feature.
+  # - inactive_guard: A boolean flag determining whether the guard should be active
+  #   or bypassed. If set to `true`, the guard is bypassed and only the block is executed.
+  #   Defaults to `false`.
+  # - **args: Additional keyword arguments to be passed to the banner component.
+  #
+  # Yields:
+  # - Executes the provided block within the guard's context.
+  def with_enterprise_banner_guard(feature_key, inactive_guard: false, **args)
+    if inactive_guard
+      yield
+    else
+      concat(render(EnterpriseEdition::BannerComponent.new(feature_key, **args)))
+      yield if EnterpriseToken.allows_to?(feature_key)
     end
   end
 
+  def enterprise_angular_trial_inputs
+    trial_key = Token::EnterpriseTrialKey.find_by(user_id: User.system.id)
+
+    if EnterpriseToken.active? || trial_key.blank?
+      enterprise_angular_static_inputs
+    else
+      enterprise_angular_static_inputs.merge(
+        trialKey: trial_key.value,
+        trialCreatedAt: trial_key.created_at.to_date.iso8601
+      )
+    end
+  end
+
+  def enterprise_angular_static_inputs
+    {
+      augurUrl: OpenProject::Configuration.enterprise_trial_creation_host,
+      tokenVersion: OpenProject::Token::VERSION
+    }
+  end
+
   def enterprise_token_plan_name(enterprise_token)
-    <<~LABEL.squish
-      #{I18n.t(enterprise_token.plan, scope: [:enterprise_plans], default: enterprise_token.plan.to_s.capitalize)}
-      (#{I18n.t(:label_token_version)} #{enterprise_token.version})
-    LABEL
+    plan = enterprise_token.plan.to_s
+    I18n.t(plan, scope: [:enterprise_plans], default: plan.humanize)
   end
 
   def enterprise_plan_additional_features(enterprise_token)

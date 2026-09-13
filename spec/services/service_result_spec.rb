@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -221,7 +223,7 @@ RSpec.describe ServiceResult, type: :model do
     let(:message) { "some message" }
 
     subject(:flash) do
-      {}.tap { service_result.apply_flash_message!(_1) }
+      {}.tap { service_result.apply_flash_message!(it) }
     end
 
     context "when successful" do
@@ -240,6 +242,65 @@ RSpec.describe ServiceResult, type: :model do
       let(:service_result) { described_class.success(message:, message_type: :info) }
 
       it { is_expected.to include(info: message) }
+    end
+  end
+
+  describe "#bind" do
+    context "when successful" do
+      let(:first) { described_class.success(result: 42) }
+
+      it "calls the block with the result and returns the block's ServiceResult" do
+        returned = first.bind { |r| described_class.success(result: r * 2) }
+
+        expect(returned).to be_success
+        expect(returned.result).to eq(84)
+      end
+
+      it "returns the failure from the block when the block fails" do
+        failure = described_class.failure(message: "step 2 failed")
+
+        returned = first.bind { failure }
+
+        expect(returned).to be(failure)
+        expect(returned.message).to eq("step 2 failed")
+      end
+    end
+
+    context "when failed" do
+      let(:first) { described_class.failure(message: "step 1 failed") }
+
+      it "returns self without calling the block" do
+        expect { |b| first.bind(&b) }.not_to yield_control
+
+        expect(first.bind { described_class.success }).to be(first)
+      end
+    end
+
+    context "when chaining multiple calls" do
+      it "returns the last success when all succeed" do
+        result = described_class.success(result: 1)
+          .bind { |r| described_class.success(result: r + 1) }
+          .bind { |r| described_class.success(result: r + 1) }
+
+        expect(result).to be_success
+        expect(result.result).to eq(3)
+      end
+
+      it "short-circuits at the first failure" do
+        second_called = false
+        failure = described_class.failure(message: "failed")
+
+        result = described_class.success(result: 1)
+          .bind { failure }
+          .bind do
+            second_called = true
+            described_class.success
+          end
+
+        expect(result).to be(failure)
+        expect(result.message).to eq("failed")
+        expect(second_called).to be(false)
+      end
     end
   end
 end

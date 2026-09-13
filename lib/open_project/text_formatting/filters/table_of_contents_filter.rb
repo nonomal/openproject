@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -41,8 +43,21 @@ module OpenProject::TextFormatting
       end
 
       def add_header_link_class_and_id(node, id)
-        node.css("a").first["class"] = "op-uc-link_permalink icon-link"
-        node["id"] = id
+        anchor = permalink_anchor(node)
+        if anchor
+          anchor["class"] = "op-uc-link_permalink icon-link"
+          anchor["href"] = "##{fragment_id_prefix}#{id}"
+          anchor["aria-hidden"] = "true"
+          anchor.remove_attribute("aria-label") # Commonmarker only labels it in English
+          anchor.remove_attribute("id") # avoid duplicate id with heading; only heading keeps the id
+        end
+        node["id"] = "#{fragment_id_prefix}#{id}"
+      end
+
+      # Commonmarker renders the permalink as an empty anchor, placed before or
+      # after the heading text depending on its version. Author links carry text.
+      def permalink_anchor(node)
+        node.css("a").find { |anchor| anchor.text.blank? }
       end
 
       ##
@@ -66,7 +81,7 @@ module OpenProject::TextFormatting
       # that prefix is used if it matches the calculated number.
       def process_item(node, number)
         text = node.text
-        return "".html_safe unless text.present?
+        return "".html_safe if text.blank?
 
         id = get_unique_id(text)
         add_header_link_class_and_id(node, id)
@@ -80,13 +95,13 @@ module OpenProject::TextFormatting
         parent_number == "" ? num_in_level.to_s : "#{parent_number}.#{num_in_level}"
       end
 
-      def render_nested(level = 0, parent_number = "")
+      def render_nested(level = 0, parent_number = "") # rubocop:disable Metrics/AbcSize
         result = "".html_safe
         num_in_level = 0
 
-        while headings.length > 0
+        while !headings.empty?
           node = headings.first
-          node_level = node.name[1,].to_i
+          node_level = node.name[1].to_i
 
           if level == node_level
             # We will render this node
@@ -132,7 +147,11 @@ module OpenProject::TextFormatting
         number = parsed_text[1] || number
         number_span = content_tag(:span, number, class: "op-uc-toc--list-item-number")
         content_span = content_tag(:span, parsed_text[2].strip, class: "op-uc-toc--list-item-title")
-        content_tag(:a, number_span + content_span, href: "##{id}", class: "op-uc-toc--item-link")
+        content_tag(:a, number_span + content_span, href: "##{fragment_id_prefix}#{id}", class: "op-uc-toc--item-link")
+      end
+
+      def fragment_id_prefix
+        SanitizationFilter::FRAGMENT_ID_PREFIX
       end
     end
   end

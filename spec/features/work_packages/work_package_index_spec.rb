@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -60,7 +62,7 @@ RSpec.describe "Work Packages", "index view", :js do
       visit project_path(project)
 
       within("#content") do
-        expect(page).to have_content("Overview")
+        expect(page).to have_heading project.name
       end
 
       within("#main-menu") do

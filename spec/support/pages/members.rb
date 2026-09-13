@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -109,7 +111,7 @@ module Pages
     end
 
     def click_row_action!(row, action)
-      action_menu_button = row.find(:link_or_button) { _1.has_selector?("svg.octicon-kebab-horizontal") }
+      action_menu_button = row.find(:link_or_button) { it.has_selector?("svg.octicon-kebab-horizontal") }
 
       action_menu_button.click
 

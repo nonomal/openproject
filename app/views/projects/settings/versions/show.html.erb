@@ -34,6 +34,29 @@ See COPYRIGHT and LICENSE files for more details.
        { href: project_settings_general_path(@project.id), text: I18n.t("label_project_settings") },
        t(:label_version_plural)]
     )
+
+    header.with_action_menu(
+      menu_arguments: {
+        test_selector: "versions-header-more-menu",
+        anchor_align: :end
+      },
+      button_arguments: {
+        icon: "kebab-horizontal",
+        "aria-label": t(:label_more)
+      }
+    ) do |menu|
+      if @project.versions.any?
+        menu.with_item(
+          tag: :button,
+          label: t(:label_close_versions),
+          form_arguments: {
+            method: :put,
+            data: { turbo_confirm: I18n.t(:text_are_you_sure) }
+          },
+          href: close_completed_project_versions_path(@project),
+        )
+      end
+    end
   end
 %>
 
@@ -41,28 +64,20 @@ See COPYRIGHT and LICENSE files for more details.
   <%= render(Primer::OpenProject::SubHeader.new) do |subheader|
         subheader.with_action_button(
           scheme: :primary,
-          aria: { label: t(:label_version_new) },
-          title: t(:label_version_new),
+          leading_icon: :plus,
+          label: t(:label_version_new),
           tag: :a,
           href: url_for({ controller: "/versions", action: "new", project_id: @project })
-        ) do |button|
-          button.with_leading_visual_icon(icon: :plus)
-          t("activerecord.models.version")
+        ) do
+          Version.model_name.human
         end
+
+
       end %>
 <% end %>
 
 <% if @versions.any? %>
   <%= render Versions::TableComponent.new(rows: @versions, project: @project) %>
-
-  <% if @project.versions.any? %>
-    <div class="generic-table--action-buttons">
-      <%= link_to t(:label_close_versions),
-                  close_completed_project_versions_path(@project),
-                  method: :put,
-                  class: "button" %>
-    </div>
-  <% end %>
 <% else %>
   <%= no_results_box action_url: new_project_version_path(@project),
                      display_action: authorize_for("versions", "new"),

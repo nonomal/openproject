@@ -1,3 +1,31 @@
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
 // Dynamically loads and triggers the onboarding tour
 // when on the correct spots
 import {
@@ -6,6 +34,7 @@ import {
   waitForElement,
 } from 'core-app/core/setup/globals/onboarding/helpers';
 import { debugLog } from 'core-app/shared/helpers/debug_output';
+import { getMetaContent } from '../global-helpers';
 
 async function triggerTour(name:OnboardingTourNames):Promise<void> {
   debugLog(`Loading and triggering onboarding tour ${name}`);
@@ -16,7 +45,7 @@ async function triggerTour(name:OnboardingTourNames):Promise<void> {
   // Wait for configuration to be loaded
   await configuration.initialize();
 
-  await import(/* webpackChunkName: "onboarding-tour" */ './onboarding_tour').then((tour) => {
+  await import('./onboarding_tour').then((tour) => {
     tour.start(name, configuration);
   });
 }
@@ -25,7 +54,7 @@ export function detectOnboardingTour():void {
   // ------------------------------- Global -------------------------------
   const url = new URL(window.location.href);
   const isMobile = document.body.classList.contains('-browser-mobile');
-  const demoProjectsAvailable = jQuery('meta[name=demo_projects_available]').attr('content') === 'true';
+  const demoProjectsAvailable = getMetaContent('demo_projects_available') === 'true';
   let currentTourPart = sessionStorage.getItem(onboardingTourStorageKey);
   let tourCancelled = false;
 
@@ -49,7 +78,7 @@ export function detectOnboardingTour():void {
             }
           });
 
-          jQuery('[data-tour-selector="modal-close-button"]')[0].addEventListener('click', () => {
+          document.querySelector('[data-tour-selector="modal-close-button"]')?.addEventListener('click', () => {
             tourCancelled = true;
             void triggerTour('homescreen');
           });
@@ -76,8 +105,13 @@ export function detectOnboardingTour():void {
       void triggerTour('workPackages');
     }
 
-    // ------------------------------- Tutorial Gantt module -------------------------------
+    // ------------------------------- Tutorial WP Full page -------------------------------
     if (currentTourPart === 'wpTourFinished') {
+      void triggerTour('workPackagesFullView');
+    }
+
+    // ------------------------------- Tutorial Gantt module -------------------------------
+    if (currentTourPart === 'wpFullViewTourFinished') {
       void triggerTour('gantt');
       return;
     }

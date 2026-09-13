@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -37,8 +39,13 @@ module Settings
         super
 
         @project_custom_field_section = project_custom_field_section
-        @project_custom_fields = project_custom_field_section.custom_fields
+        @ordered_cfs = project_custom_field_section.custom_fields_in_order
+
         @first_and_last = first_and_last
+      end
+
+      def custom_field_row_component_class
+        Settings::ProjectCustomFieldSections::CustomFieldRowComponent
       end
 
       private
@@ -47,20 +54,26 @@ module Settings
         @project_custom_field_section.id
       end
 
-      def drag_and_drop_target_config
+      def field_list_data
         {
-          "is-drag-and-drop-target": true,
-          "target-container-accessor": ".Box > ul", # the accessor of the container that contains the drag and drop items
-          "target-id": @project_custom_field_section.id, # the id of the target
-          "target-allowed-drag-type": "custom-field" # the type of dragged items which are allowed to be dropped in this target
+          controller: "sortable-lists--list",
+          sortable_lists__list_type_value: "custom_field",
+          sortable_lists__list_accepted_type_value: "custom_field",
+          sortable_lists__list_id_value: @project_custom_field_section.id,
+          sortable_lists__list_name_value: @project_custom_field_section.name,
+          # The section's drag preview snapshots the box itself rather than
+          # the browser's native capture of the row wrapper, which paints the
+          # box's top margin and squares off the rounded corners.
+          sortable_lists__item_target: "preview"
         }
       end
 
-      def draggable_item_config(project_custom_field)
+      def field_item_data(project_custom_field)
         {
-          "draggable-id": project_custom_field.id,
-          "draggable-type": "custom-field",
-          "drop-url": drop_admin_settings_project_custom_field_path(project_custom_field)
+          controller: "sortable-lists--item",
+          sortable_lists__item_id_value: project_custom_field.id,
+          sortable_lists__item_type_value: "custom_field",
+          sortable_lists__item_label_value: project_custom_field.name
         }
       end
 
@@ -113,29 +126,73 @@ module Settings
                        scheme: :danger,
                        href: admin_settings_project_custom_field_section_path(@project_custom_field_section),
                        form_arguments: {
-                         method: :delete, data: { confirm: t("text_are_you_sure"), "turbo-stream": true,
-                                                  test_selector: "project-custom-field-section-delete" }
+                         method: :delete,
+                         data: {
+                           turbo_confirm: t(:text_are_you_sure),
+                           turbo_stream: true,
+                           test_selector: "project-custom-field-section-delete"
+                         }
                        }) do |item|
           item.with_leading_visual_icon(icon: :trash)
         end
       end
 
       def first?
-        @first ||=
-          if @first_and_last.first
-            @first_and_last.first == @project_custom_field_section
-          else
-            @project_custom_field_section.first?
-          end
+        return @first unless @first.nil?
+
+        @first = if @first_and_last.first
+                   @first_and_last.first == @project_custom_field_section
+                 else
+                   @project_custom_field_section.first?
+                 end
       end
 
       def last?
-        @last ||=
-          if @first_and_last.last
-            @first_and_last.last == @project_custom_field_section
-          else
-            @project_custom_field_section.last?
-          end
+        return @last unless @last.nil?
+
+        @last = if @first_and_last.last
+                  @first_and_last.last == @project_custom_field_section
+                else
+                  @project_custom_field_section.last?
+                end
+      end
+
+      def action_menu_item_for_custom_field_format(menu, format)
+        menu.with_item(
+          label: helpers.label_for_custom_field_format(format.name),
+          tag: :a,
+          href: new_admin_settings_project_custom_field_path(
+            field_format: format.name,
+            custom_field_section_id: @project_custom_field_section.id
+          ),
+          content_arguments: { data: { turbo: "false",
+                                       test_selector: "new-project-custom-field-in-section-button-#{format.name}" } }
+        )
+      end
+
+      def display_representation_icon_for_section(section)
+        section.shown_in_overview_sidebar? ? :"op-view-split" : :"op-view-cards"
+      end
+
+      def display_representation_label_for_section(section)
+        if section.shown_in_overview_sidebar?
+          t("settings.project_attributes.sections.display_representation.overview.side_panel.label")
+        else
+          t("settings.project_attributes.sections.display_representation.overview.main_area.label")
+        end
+      end
+
+      def menu_item_options_for(section, key)
+        {
+          href: admin_settings_project_custom_field_section_path(section),
+          form_arguments: {
+            method: :put,
+            inputs: [{
+              name: "project_custom_field_section[overview]",
+              value: key
+            }]
+          }
+        }
       end
     end
   end

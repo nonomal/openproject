@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -33,21 +35,34 @@ module Settings
       include OpPrimer::ComponentHelpers
       include OpTurbo::Streamable
 
-      def initialize(project_custom_field:, first_and_last:)
-        super
+      def initialize(project_custom_field:, first:, last:)
+        super()
 
         @project_custom_field = project_custom_field
-        @first_and_last = first_and_last
+        @first = first
+        @last  = last
       end
 
       private
+
+      def wrapper_uniq_by
+        @project_custom_field.id
+      end
 
       def edit_action_item(menu)
         menu.with_item(label: t("label_edit"),
                        href: edit_admin_settings_project_custom_field_path(@project_custom_field),
                        data: { turbo: "false", test_selector: "project-custom-field-edit" }) do |item|
           item.with_leading_visual_icon(icon: :pencil)
+
+          if show_enterprise_icon_for_edit_action?
+            item.with_trailing_visual_icon(icon: :"op-enterprise-addons", classes: "upsell-colored")
+          end
         end
+      end
+
+      def show_enterprise_icon_for_edit_action?
+        @project_custom_field.field_format_calculated_value? && !EnterpriseToken.allows_to?(:calculated_values)
       end
 
       def move_actions(menu)
@@ -79,29 +94,23 @@ module Settings
                        scheme: :danger,
                        href: admin_settings_project_custom_field_path(@project_custom_field),
                        form_arguments: {
-                         method: :delete, data: { confirm: t("text_are_you_sure_with_project_custom_fields"),
-                                                  "turbo-stream": true, test_selector: "project-custom-field-delete" }
+                         method: :delete,
+                         data: {
+                           turbo_confirm: t("text_are_you_sure_with_project_custom_fields"),
+                           turbo_stream: true,
+                           test_selector: "project-custom-field-delete"
+                         }
                        }) do |item|
           item.with_leading_visual_icon(icon: :trash)
         end
       end
 
       def first?
-        @first ||=
-          if @first_and_last.first
-            @first_and_last.first == @project_custom_field
-          else
-            @project_custom_field.first?
-          end
+        @first
       end
 
       def last?
-        @last ||=
-          if @first_and_last.last
-            @first_and_last.last == @project_custom_field
-          else
-            @project_custom_field.last?
-          end
+        @last
       end
     end
   end

@@ -40,8 +40,7 @@ module API
 
         helpers do
           def allowed_scope
-            WorkPackage.where(id: WorkPackage.allowed_to(User.current, :log_own_time))
-                       .or(WorkPackage.where(project_id: Project.allowed_to(User.current, :log_time)))
+            WorkPackage.allowed_to_log_time(User.current)
           end
         end
 

@@ -41,11 +41,18 @@ module Overviews
         @project = project
       end
 
+      def render?
+        User.current.allowed_in_project?(:view_project_attributes, @project) &&
+          @project.project_custom_fields.visible.any?
+      end
+
       private
 
       def available_project_custom_fields_grouped_by_section
         @available_project_custom_fields_grouped_by_section ||=
-          @project.available_custom_fields.group_by(&:project_custom_field_section)
+          ProjectCustomFieldSection
+            .with_available_fields_for(@project)
+            .select { |section, _| section.shown_in_overview_sidebar? }
       end
     end
   end

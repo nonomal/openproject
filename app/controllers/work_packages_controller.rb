@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,21 +33,23 @@ class WorkPackagesController < ApplicationController
   include PaginationHelper
   include Layout
   include WorkPackagesControllerHelper
-  include OpTurbo::DialogStreamHelper
   include OpTurbo::ComponentStream
+  include WorkPackages::WithSplitView
 
   accept_key_auth :index, :show
 
   before_action :authorize_on_work_package,
                 :project, only: %i[show generate_pdf_dialog generate_pdf]
-  before_action :load_and_authorize_in_optional_project,
-                :check_allowed_export,
+  before_action :check_allowed_export,
                 :protect_from_unauthorized_export, only: %i[index export_dialog]
 
+  before_action :load_and_authorize_in_optional_project, only: %i[index new show copy export_dialog split_view split_create]
   before_action :authorize, only: %i[show_conflict_flash_message share_upsell]
-  authorization_checked! :index, :show, :export_dialog, :generate_pdf_dialog, :generate_pdf
+  authorization_checked! :index, :show, :new, :copy, :export_dialog, :generate_pdf_dialog, :generate_pdf,
+                         :split_view, :split_create
 
-  before_action :load_and_validate_query, only: :index, unless: -> { request.format.html? }
+  before_action :load_and_validate_query, only: %i[index copy], unless: -> { request.format.html? }
+
   before_action :load_work_packages, only: :index, if: -> { request.format.atom? }
   before_action :load_and_validate_query_for_export, only: :export_dialog
 
@@ -53,8 +57,7 @@ class WorkPackagesController < ApplicationController
     respond_to do |format|
       format.html do
         render :index,
-               locals: { query: @query, project: @project, menu_name: project_or_global_menu },
-               layout: "angular/angular"
+               locals: { query: @query, project: @project, menu_name: project_or_global_menu }
       end
 
       format.any(*supported_list_formats) do
@@ -67,30 +70,71 @@ class WorkPackagesController < ApplicationController
     end
   end
 
+  def split_view
+    respond_to do |format|
+      format.html do
+        if turbo_frame_request?
+          render "work_packages/split_view", layout: false
+        else
+          render :index,
+                 locals: { query: @query, project: @project, menu_name: project_or_global_menu }
+        end
+      end
+    end
+  end
+
+  def split_create
+    respond_to do |format|
+      format.html do
+        if turbo_frame_request?
+          render "work_packages/split_create", layout: false
+        else
+          render :index,
+                 locals: { query: @query, project: @project, menu_name: project_or_global_menu }
+        end
+      end
+    end
+  end
+
   def show
     respond_to do |format|
       format.html do
+        if show_route_incomplete?
+          redirect_to_complete_route
+
+          return
+        end
+
         render :show,
-               locals: { work_package:, menu_name: project_or_global_menu },
-               layout: "angular/angular"
+               locals: { work_package:, menu_name: project_or_global_menu }
       end
 
-      format.any(*supported_single_formats) do
-        export_single(request.format.symbol)
-      end
+      handle_standard_show_formats(format)
+    end
+  end
 
-      format.atom do
-        atom_journals
+  def copy
+    respond_to do |format|
+      format.html do
+        render :copy,
+               locals: { query: @query, project: @project, menu_name: project_or_global_menu }
       end
+    end
+  end
 
-      format.all do
-        head :not_acceptable
+  def new
+    respond_to do |format|
+      format.html do
+        render :new,
+               locals: { query: @query, project: @project, menu_name: project_or_global_menu }
       end
     end
   end
 
   def export_dialog
-    respond_with_dialog WorkPackages::Exports::ModalDialogComponent.new(query: @query, project: @project, title: params[:title])
+    respond_with_dialog WorkPackages::Exports::ModalDialogComponent.new(query: @query,
+                                                                        project: @query.project,
+                                                                        title: params[:title])
   end
 
   def generate_pdf_dialog
@@ -109,6 +153,8 @@ class WorkPackagesController < ApplicationController
     case params[:template]
     when "contract"
       WorkPackage::PDFExport::DocumentGenerator.new(work_package, params)
+    when "artefact"
+      WorkPackage::PDFExport::Artefact.new(work_package, params)
     else
       # when "attributes"
       WorkPackage::PDFExport::WorkPackageToPdf.new(work_package, params)
@@ -136,6 +182,12 @@ class WorkPackagesController < ApplicationController
   protected
 
   def load_and_validate_query_for_export
+    if params[:query_id].present?
+      # A saved query may be opened from a project other than the one it belongs to
+      saved_query = Query.visible(current_user).find(params.expect(:query_id))
+      @query = retrieve_query(saved_query.project)
+    end
+
     load_and_validate_query
   end
 
@@ -176,6 +228,28 @@ class WorkPackagesController < ApplicationController
 
   private
 
+  def split_view_base_route
+    if @project
+      project_work_packages_path(@project, request.query_parameters)
+    else
+      work_packages_path(request.query_parameters)
+    end
+  end
+
+  def handle_standard_show_formats(format)
+    format.any(*supported_single_formats) do
+      export_single(request.format.symbol)
+    end
+
+    format.atom do
+      atom_journals
+    end
+
+    format.all do
+      head :not_acceptable
+    end
+  end
+
   def save_export_settings
     # Saving export settings is only allowed for saved queries
     return false if @query.new_record?
@@ -212,7 +286,9 @@ class WorkPackagesController < ApplicationController
   end
 
   def work_package
-    @work_package ||= WorkPackage.visible(current_user).find_by(id: params[:id])
+    return @work_package if defined?(@work_package)
+
+    @work_package = WorkPackage.visible(current_user).find_by_display_id(params[:id])
   end
 
   def journals
@@ -227,6 +303,7 @@ class WorkPackagesController < ApplicationController
       work_package
         .journals
         .internal_visible
+        .without_meeting_causes
         .changing
         .includes(:user)
         .order(order).to_a
@@ -255,6 +332,23 @@ class WorkPackagesController < ApplicationController
   end
 
   def login_back_url_params
-    params.permit(:query_id, :state, :query_props)
+    params.permit(:query_id, :state, :query_props, :type, :parent_id)
+  end
+
+  def redirect_to_complete_route
+    # Redirect to the canonical show route: the work package's *current* display
+    # identifier and its project's current slug. Upgrades historical semantic
+    # aliases (and numeric ids in semantic mode) to the present identifier, and
+    # fills in a missing project or tab.
+    redirect_to action: "show",
+                id: work_package.display_id,
+                project_id: work_package.project.identifier,
+                tab: params[:tab] || "activity"
+  end
+
+  def show_route_incomplete?
+    params[:project_id].blank? ||
+      params[:tab].blank? ||
+      params[:id].to_s != work_package.display_id.to_s
   end
 end

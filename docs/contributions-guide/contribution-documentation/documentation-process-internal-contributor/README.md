@@ -23,7 +23,7 @@ Before you can make changes you need to create a local clone of the OpenProject 
 
 ![clone repository](clone-repository.png)
 
-In the modal window select the repository ""*opf/openproject*"". Also select a folder on your computer for the cloned repository. Click **Clone**.
+In the modal window select the repository ""_opf/openproject_"". Also select a folder on your computer for the cloned repository. Click **Clone**.
 
 ![select cloned repository](select-cloned-repository.png)
 
@@ -31,19 +31,19 @@ In the modal window select the repository ""*opf/openproject*"". Also select a f
 
 > **Important**: Before you make changes always update your local repository.
 
-1. Select the branch you want to work on, e.g. `release/13.0` in the main toolbar.
+1. Select the branch you want to work on, e.g. `release/16.0` in the main toolbar.
 2. Click on the button **Fetch origin** in the main toolbar.
 
 ![fetch origin in github desktop](fetch-origin-in-github-desktop.png)
 
 ## Step 3: Create a new Git branch for your change
 
-1. Select the latest release branch e.g. `release/13.0` as the current branch.
+1. Select the latest release branch e.g. `release/16.0` as the current branch.
     ![create new branch - step 1](create-new-branch-step-1.png)
 
 2. In the same drop down click on **New branch**.
 
-3. In the next modal window insert a branch name that describes your changes. Also select the branch you want to work on, e.g. `release/13.0`. The click the button **Create branch**.
+3. In the next modal window insert a branch name that describes your changes. Also select the branch you want to work on, e.g. `release/16.0`. The click the button **Create branch**.
 
 ![create a new branch step 2](create-new-branch-step-2.png)
 
@@ -71,23 +71,23 @@ At the moment your change is only available in your local repository. To make it
 
 ## Step 8: Create a pull request
 
-A pull request is a workflow to ask for a review from the OpenProject team. With a pull request you basically ask a team member to check your changes and to merge it to the branch you want your change to merged to, e.g. `release/13.0` . After you pushed your local changes to your own repository click the button **Create Pull Request**.
+A pull request is a workflow to ask for a review from the OpenProject team. With a pull request you basically ask a team member to check your changes and to merge it to the branch you want your change to merged to, e.g. `release/16.0` . After you pushed your local changes to your own repository click the button **Create Pull Request**.
 
 ![Create a pull request](create-pull-request-github-desktop.png)
 
-In the first dropdown select the base branch you want your work to be merged in e.g. `release/13.0`. In the second dropdown select the branch you created in step 3 which contains your changes.
+In the first dropdown select the base branch you want your work to be merged in e.g. `release/16.0`. In the second dropdown select the branch you created in step 3 which contains your changes.
 
 ![comparing-changes.png](comparing-changes.png)
 
-In the description field of the pull request enter a summary for the changes you made. If there is already a work package on https://community.openproject.org you can also add this to the description. This adds a relation between your pull request and the work package.
+In the description field of the pull request enter a summary for the changes you made. If there is already a work package on [community.openproject.org](https://community.openproject.org) you can also add this to the description. This adds a relation between your pull request and the work package.
 
 ## Step 9: Request review
 
-Select the label "*documentation*".
+Select the label "_documentation_".
 
 ![add documentation label for pull request](add-documentation-label-pull-requests.png)
 
-In the field "*Reviewers*" select "*opf/doc-writers".*
+In the field "_Reviewers_" select "_opf/doc-writers"._
 
 ![select reviewer for documentation](select-reviewer-for-documentation.png)
 
@@ -97,6 +97,6 @@ In the field "*Reviewers*" select "*opf/doc-writers".*
 
 ## Additional notes for working on the legal docs
 
-* We always deploy the [main branch](https://github.com/opf/legal/tree/main) on our [website](https://www.openproject.org/legal/). This deployment needs to be manually triggered by the marketing team.
-* If you want to make minor changes you don't need a review do this directly in the main branch without creating a new branch and new pull request.
-* If you need a review you need to create a new branch from the main branch. The branch `release/13.0` only exists in the repository opf/openproject (OpenProject software).
+- We always deploy the [main branch](https://github.com/opf/legal/tree/main) on our [website](https://www.openproject.org/legal/). This deployment needs to be manually triggered by the marketing team.
+- If you want to make minor changes you don't need a review do this directly in the main branch without creating a new branch and new pull request.
+- If you need a review you need to create a new branch from the main branch. The branch `release/16.0` only exists in the repository opf/openproject (OpenProject software).

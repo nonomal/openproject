@@ -1,4 +1,8 @@
-
+---
+sidebar_navigation:
+  title:  PDF Export Styling
+keywords: pdf export styling
+---
 # PDF Export Styling
 
 These documents describe the style settings format for **PDF Export styling files**.
@@ -29,5 +33,5 @@ border:
   color: d3dee3
   height: 1px
 ```
-Where the color is a hexadecimal color code and the height is the height of the border in pixels.
 
+Where the color is a hexadecimal color code and the height is the height of the border in pixels.

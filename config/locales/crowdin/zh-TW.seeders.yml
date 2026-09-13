@@ -43,13 +43,6 @@ zh-TW:
           name: PM2 紅紫色
         item_3:
           name: PM2 黃綠色
-      document_categories:
-        item_0:
-          name: 說明文件
-        item_1:
-          name: 規範
-        item_2:
-          name: 其他
       project_query_roles:
         item_0:
           name: 專案查詢檢視器
@@ -57,11 +50,11 @@ zh-TW:
           name: 專案查詢編輯器
       work_package_roles:
         item_0:
-          name: 工作項目編輯者
+          name: 工作套件編輯者
         item_1:
-          name: 工作項目評論者
+          name: 工作套件留言者
         item_2:
-          name: 工作項目檢視者
+          name: 工作套件檢視者
       project_roles:
         item_0:
           name: 非成員
@@ -78,6 +71,15 @@ zh-TW:
           name: 成員和專案管理員
         item_1:
           name: 標準全域角色
+      ai_text_transform_actions:
+        item_0:
+          label: Fix grammar
+        item_1:
+          label: Make concise
+        item_2:
+          label: Translate to English
+        item_3:
+          label: Sort into template
     standard:
       project_phases:
         item_0:
@@ -100,6 +102,21 @@ zh-TW:
           name: 高
         item_3:
           name: 立即
+      departments:
+        item_0:
+          name: Marketing & Communications
+        item_1:
+          name: Public Relations
+        item_2:
+          name: Design & Content
+        item_3:
+          name: Events & Operations
+        item_4:
+          name: Web & IT
+        item_5:
+          name: Finance & Administration
+        item_6:
+          name: Quality Assurance
       projects:
         demo-project:
           name: 示範專案
@@ -165,7 +182,7 @@ zh-TW:
                     如果您有任何問題或需要支援，請告知我們。聯絡我們：[support[at]openproject.com](mailto:support@openproject.com).
               item_5:
                 options:
-                  name: 工作項目
+                  name: 工作套件
               item_6:
                 options:
                   name: 里程碑
@@ -189,34 +206,45 @@ zh-TW:
                 item_2:
                   subject: 建立會議網站
             item_2:
-              subject: 會議
+              subject: Test and quality-check the conference website
             item_3:
-              subject: 後續任務
+              subject: Conference
+            item_4:
+              subject: Follow-up tasks
               children:
                 item_0:
-                  subject: 將簡報上傳至網站
+                  subject: Upload presentations to website
                 item_1:
-                  subject: 會議支持者派對 :-)
+                  subject: Party for conference supporters :-)
                   description: |-
-                    * [ ] 啤酒
-                    * [ ] 小吃
-                    * [ ] 音樂
-                    * [ ] 更多啤酒
-            item_4:
-              subject: 專案結束
+                    *   [ ] Beer
+                    *   [ ] Snacks
+                    *   [ ] Music
+                    *   [ ] Even more beer
+            item_5:
+              subject: End of project
           wiki: |
-            **您可以：**
+            在此 Wiki 中，您可以協作建立與編輯頁面及子頁面，打造專案 Wiki。
 
-            * 插入文字和圖片，也可以從其他文件複製和貼上
-            * 創建具有父頁面的頁面階層結構
-            * 將 wiki 頁面納入專案選單
-            * 使用巨集納入，例如目錄、工作包清單或甘特圖 * 在其他文字欄位納入 wiki 頁面，例如專案總覽頁 * 檢視變更連結其他文件例如：目錄、工作包清單或甘特圖
-            * 在其他文字欄位中包含 wiki 頁面，例如：專案總覽頁面
-            * 包含其他文件的連結
-            * 檢視變更歷史
-            * 以 Markdown 方式檢視
+            您可以：
 
-            更多資訊：[https://www.openproject.org/docs/user-guide/wiki/](https://www.openproject.org/docs/user-guide/wiki/)
+            插入文字與圖片，也可從其他文件中複製貼上
+
+            建立具有父子關係的頁面階層
+
+            將 Wiki 頁面加入專案選單中
+
+            使用巨集插入內容，例如目錄、工作套件清單或甘特圖
+
+            將 Wiki 頁面嵌入其他文字欄位中，例如專案總覽頁
+
+            插入指向其他文件的連結
+
+            檢視變更紀錄
+
+            以 Markdown 格式檢視
+
+            更多資訊請參閱：https://www.openproject.org/docs/user-guide/wiki/
         scrum-project:
           name: Scrum 專案
           status_explanation: 所有任務皆依計劃進行，相關人員知道他們的任務，系統完成設定。
@@ -229,70 +257,26 @@ zh-TW:
                 在這個模組，您可以與您的團隊成員溝通專案新訊。
           versions:
             item_0:
-              name: Bug的待辦事項
-            item_1:
-              name: 產品待辦事項
-            item_2:
-              name: 衝刺1
               wiki:
-                title: 衝刺1
+                title: Release 1.0
                 content: |
-                  ### Sprint 規劃會議
+                  ### Release 1.0
 
-                  _請在此記錄 Sprint 規劃會議的主題_
+                  _Please document here what this release contains._
 
-                  * 時間框定 (8 小時)
-                  * 輸入：產品 Backlog
-                  * 輸出：Sprint Backlog
-
-                  * 分成兩個額外的時間方塊（4 小時）：
-
-                      * Product Owner 向團隊提出 [Product Backlog]({{opSetting:base_url}}/projects/your-scrum-project/backlogs) 和優先順序，並解釋 Sprint 目標，團隊必須同意。他們一起從 Product Backlog 中排列出團隊在下一個衝刺中要處理的主題的優先順序。團隊承諾完成所討論的交付。
-                      * 團隊自主地(在沒有 Product Owner 的情況下)進行詳細計劃，並從討論的需求中分解任務，以整合出 [Sprint Backlog]({{opSetting:base_url}}/projects/your-scrum-project/backlogs).
-
-
-                  #### 每日 Scrum 會議
-
-                  _請在此記錄每日 Scrum 會議的主題_
-
-                  * 簡短的團隊每日狀態會議。
-                  * 時間框定(最多 15 分鐘)。
-                  * 站立會議，討論 [任務板](##sprint:scrum_project__version__sprint_1) 中的下列主題。
-                      * 在下一次每日 Scrum 之前，我打算做什麼？
-                      * 什麼阻礙了我的工作(障礙)？
-                  * Scrum Master 主持並記下 [Sprint Impediments](##sprint:scrum_project__version__sprint_1)。
-                  * Product Owner 可能會參與，以便隨時掌握資訊。
-
-                  ### Sprint Review 會議
-
-                  _請在此記錄 Sprint Review 會議的主題_
-
-                  * 時間框定 (4 小時)。
-                  * 每人最多 1 小時的準備時間。
-                  * 團隊向產品擁有者和其他有興趣的人展示這次衝刺的成果。
-                  * 重要事項：無假人、無 PowerPoint！只需展示已完成的產品功能(增量)。
-                  * 希望得到產品所有人、利害關係人及其他人士的反饋，並將其納入進一步的工作中。
-                  * 基於所展示的功能，產品負責人決定使用此增量或進一步開發。這種可能性允許早期投資報酬率。
-
-
-                  ### Sprint Retrospective
-
-                  _請在此記錄 Sprint Retrospective 會議的主題_
-
-                  * 時間框定 (3 小時)。
-                  * Sprint Review 之後，將由 Scrum Master 主持。
-                  * 團隊討論 Sprint：哪些地方做得好，哪些地方需要改進，以提高下一個 Sprint 的生產力，甚至是更多的樂趣。
-            item_3:
-              name: 衝刺2
+                  * The work packages of this release are the ones with the target version 1.0.
+                  * The release date is the date of the *Release v1.0* milestone.
+                  * Open the [Roadmap]({{opSetting:base_url}}/projects/your-scrum-project/roadmap) to follow the progress of all versions.
+                  * Open [Project settings &rightarrow; Versions]({{opSetting:base_url}}/projects/your-scrum-project/settings/versions) to link another wiki page to a version.
           categories:
             item_0: 類別 1 ( 將於專案設定變更 )
           queries:
             item_0:
               name: 專案計畫
             item_1:
-              name: 產品待辦事項
+              name: Version 1.1
             item_2:
-              name: 衝刺1
+              name: Version 1.0
             item_3:
               name: 任務
           boards:
@@ -318,23 +302,24 @@ zh-TW:
                 options:
                   name: 開始
                   text: |
-                    我們很高興您加入！我們建議您嘗試幾個步驟來開始使用 OpenProject。
+                    We are glad you joined! We suggest to try a few things to get started in OpenProject.
 
-                    _嘗試以下步驟：_
+                    _Try the following steps:_
 
-                    1.*邀請新會員加入您的專案*： &rightarrow; 前往專案導覽中的【會員】({{opSetting:base_url}}/projects/your-scrum-project/members)。
-                    2.*查看您的 Product backlogs 和 Sprint backlogs*： &rightarrow; 前往專案導覽中的 [Backlogs]({{opSetting:base_url}}/projects/your-scrum-project/backlogs) 。
-                    3.*檢視您的任務板*： &rightarrow; 進入 [Backlogs]({{opSetting:base_url}}/projects/your-scrum-project/backlogs) &rightarrow; 點擊 Sprint 上的向右箭頭 &rightarrow; 選擇 [Task Board](##sprint:scrum_project__version___sprint_1)。
-                    4.*Create a new work package*： &rightarrow; 進入 [Work packages &rightarrow; Create]({{opSetting:base_url}}/projects/your-scrum-project/work_packages/new).
-                    5.*Create and update a project plan*： &rightarrow; 前往專案導覽中的 [Project plan](##query:scrum_project__query__project_plan)。
-                    6.*建立 Sprint wiki*： &rightarrow; 轉到 [Backlogs]({{opSetting:base_url}}/projects/your-scrum-project/backlogs)，然後在 sprint 中從右邊的下拉式功能表開啟 sprint wiki。您可以根據需要編輯 [wiki 模板]({{opSetting:base_url}}/projects/your-scrum-project/wiki/) 。
-                    7.*啟動更多模組*： &rightarrow; 進入 [專案設定 &rightarrow; 模組]({{opSetting:base_url}}/projects/your-scrum-project/settings/modules).
+                    1. *Invite new members to your project*: &rightarrow; Go to [Members]({{opSetting:base_url}}/projects/your-scrum-project/members) in the project navigation.
+                    2. *View your Product backlog and Sprint backlogs*: &rightarrow; Go to [Backlogs]({{opSetting:base_url}}/projects/your-scrum-project/backlogs) in the project navigation.
+                    3. *Create a sprint*: &rightarrow; Go to [Backlogs]({{opSetting:base_url}}/projects/your-scrum-project/backlogs) and click "+ Sprint" to create a new sprint. Move work packages from the backlog to the sprint to plan the work to be done. When ready, click "Start sprint".
+                    4. *View your Sprint board*: &rightarrow; Go to [Backlogs]({{opSetting:base_url}}/projects/your-scrum-project/backlogs) &rightarrow; Click on right arrow on Sprint &rightarrow; Select Sprint Board.
+                    5. *Create a new work package*: &rightarrow; Go to [Work packages &rightarrow; Create]({{opSetting:base_url}}/projects/your-scrum-project/work_packages/new).
+                    6. *Create and update a project plan*: &rightarrow; Go to [Project plan](##query:scrum_project__query__project_plan) in the project navigation.
+                    7. *Activate further modules*: &rightarrow; Go to [Project settings &rightarrow; Modules]({{opSetting:base_url}}/projects/your-scrum-project/settings/modules).
 
-                    在這裡您可以找到我們的 [使用者指南](https://www.openproject.org/docs/user-guide/)。
-                    如果您有任何問題或需要支援，請告訴我們。聯絡我們：[support[at]openproject.com](mailto:support@openproject.com).
+
+                    Here you will find our [User Guides](https://www.openproject.org/docs/user-guide/).
+                    Please let us know if you have any questions or need support. Contact us: [support[at]openproject.com](mailto:support@openproject.com).
               item_5:
                 options:
-                  name: 工作項目
+                  name: 工作套件
               item_6:
                 options:
                   name: 專案計畫
@@ -492,6 +477,20 @@ zh-TW:
           name: 使用者需求
         item_6:
           name: 錯誤
+      global_queries:
+        item_0:
+          name: 'Epic children: User stories and bugs'
+        item_1:
+          name: 'User story children: Tasks'
+      type_configuration:
+        item_0:
+          form_configuration:
+            item_0:
+              group_name: User stories and bugs
+        item_1:
+          form_configuration:
+            item_0:
+              group_name: Tasks
       welcome:
         title: 歡迎使用OpenProject
         text: |

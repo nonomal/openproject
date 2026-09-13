@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -29,19 +29,17 @@
 import { DatePicker } from 'core-app/shared/components/datepicker/datepicker';
 import { DateOption } from 'flatpickr/dist/types/options';
 import { DayElement } from 'flatpickr/dist/types/instance';
-import * as moment from 'moment-timezone';
+import moment from 'moment-timezone';
 
 /**
  * Map the date to the internal format,
  * setting to null if it's empty.
  * @param date
  */
-// eslint-disable-next-line class-methods-use-this
 export function mappedDate(date:string|null):string|null {
   return (date === '') ? null : date;
 }
 
-// eslint-disable-next-line class-methods-use-this
 export function parseDate(date:Date|string):Date|'' {
   if (date instanceof Date) {
     return new Date(date.setHours(0, 0, 0, 0));
@@ -89,7 +87,7 @@ export function comparableDate(date?:DateOption):number|null {
 export function setDates(dates:DateOption|DateOption[], datePicker:DatePicker, enforceDate?:Date):void {
   const { currentMonth, currentYear, selectedDates } = datePicker.datepickerInstance;
 
-  const [newStart, newEnd] = _.castArray(dates);
+  const [newStart, newEnd] = Array.isArray(dates) ? dates : [dates];
   const [selectedStart, selectedEnd] = selectedDates;
 
   // In case the new times match the current times, do not try to update

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -57,8 +59,14 @@ module WorkPackages
           @journal_details ||= journal.details
         end
 
+        # A formatter may render a change as nothing, so what is worth heading is
+        # what comes out of them rather than what went in.
+        def rendered_details
+          @rendered_details ||= journal_details.filter_map { |detail| journal.render_detail(detail).presence }
+        end
+
         def has_details?
-          @has_details ||= journal_details.any?
+          rendered_details.any?
         end
 
         def render_details_header(details_container)
@@ -67,7 +75,6 @@ module WorkPackages
             justify_content: :space_between,
             classes: "work-packages-activities-tab-journals-item-component-details--journal-details-header-container",
             data: {
-              "anchor-activity-id": journal.sequence_version,
               "anchor-comment-id": journal.id
             }
           ) do |header_container|
@@ -163,28 +170,19 @@ module WorkPackages
 
         def render_mobile_updated_time(container)
           container.with_column do
-            if OpenProject::FeatureDecisions.work_package_comment_id_url_active?
-              activity_anchor_link(journal) { journal_updated_at_formatted_time(journal) }
-            else
-              journal_updated_at_formatted_time(journal)
-            end
+            activity_anchor_link(journal)
           end
         end
 
         def render_updated_time(container)
           container.with_column(mr: 1, classes: "hidden-for-mobile") do
-            if OpenProject::FeatureDecisions.work_package_comment_id_url_active?
-              activity_anchor_link(journal) { journal_updated_at_formatted_time(journal) }
-            else
-              journal_updated_at_formatted_time(journal)
-            end
+            activity_anchor_link(journal)
           end
         end
 
         def render_header_end(header_container)
           header_container.with_column(flex_layout: true) do |header_end_container|
             render_notification_bubble(header_end_container) if has_unread_notifications
-            render_activity_link(header_end_container)
           end
         end
 
@@ -193,20 +191,9 @@ module WorkPackages
             render(Primer::Beta::Octicon.new(
                      :"dot-fill", # color is set via CSS as requested by UI/UX Team
                      classes: "work-packages-activities-tab-journals-item-component-details--notification-dot-icon",
-                     size: (OpenProject::FeatureDecisions.internal_comments_active? ? :small : :medium),
+                     size: :small,
                      data: { test_selector: "op-journal-unread-notification", "op-ian-center-update-immediate": true }
                    ))
-          end
-        end
-
-        def render_activity_link(container)
-          return if OpenProject::FeatureDecisions.work_package_comment_id_url_active?
-
-          container.with_column(
-            pr: 3,
-            classes: "work-packages-activities-tab-journals-item-component-details--activity-link-container"
-          ) do
-            activity_anchor_link(journal)
           end
         end
 
@@ -231,14 +218,11 @@ module WorkPackages
         end
 
         def skip_rendering_details?
-          journal.initial? && journal_sorting == "desc"
+          journal.initial? && journal_sorting.desc?
         end
 
         def render_journal_details(details_container_inner)
-          journal_details.each do |detail|
-            rendered_detail = journal.render_detail(detail)
-            render_single_detail(details_container_inner, rendered_detail) if rendered_detail.present?
-          end
+          rendered_details.each { |rendered_detail| render_single_detail(details_container_inner, rendered_detail) }
         end
 
         def render_single_detail(container, rendered_detail)

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -135,6 +137,15 @@ RSpec.shared_examples_for "associated custom action" do
         instance.values = 42
 
         instance.apply(work_package)
+      end
+    end
+
+    describe "#value_objects" do
+      it "does not include nil for values not present in allowed_values" do
+        instance.values = [""]
+
+        expect(instance.value_objects)
+          .not_to include(nil)
       end
     end
 

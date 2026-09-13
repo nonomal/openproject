@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -83,6 +85,12 @@ RSpec.describe "Projects custom fields mapping via project settings", :js do
                                          project_custom_field_section: section_for_input_fields)
   end
 
+  let!(:int_for_all_project_custom_field) do
+    create(:integer_project_custom_field, name: "Int field",
+                                          project_custom_field_section: section_for_input_fields,
+                                          is_for_all: true)
+  end
+
   let!(:list_project_custom_field) do
     create(:list_project_custom_field, name: "List field",
                                        project_custom_field_section: section_for_select_fields,
@@ -140,7 +148,7 @@ RSpec.describe "Projects custom fields mapping via project settings", :js do
         end
         within_custom_field_container(string_project_custom_field) do
           expect(page).to have_content("String field")
-          expect_type("String")
+          expect_type("Text")
           expect_unchecked_state
         end
       end
@@ -162,97 +170,177 @@ RSpec.describe "Projects custom fields mapping via project settings", :js do
       end
     end
 
-    it "toggles the mapping state of a project custom field for a specific project when clicked" do
-      visit project_settings_project_custom_fields_path(project)
+    describe "enabling and disabling fields" do
+      it "toggles the mapping state of a project custom field for a specific project when clicked" do
+        visit project_settings_project_custom_fields_path(project)
 
-      within_custom_field_section_container(section_for_input_fields) do
-        within_custom_field_container(boolean_project_custom_field) do
-          expect_unchecked_state
+        within_custom_field_section_container(section_for_input_fields) do
+          within_custom_field_container(boolean_project_custom_field) do
+            expect_unchecked_state
 
-          page
-            .find("[data-test-selector='toggle-project-custom-field-mapping-#{boolean_project_custom_field.id}'] > button")
-            .click
+            page
+              .find("[data-test-selector='toggle-project-custom-field-mapping-#{boolean_project_custom_field.id}'] > button")
+              .click
 
-          expect_checked_state # without reloading the page
+            expect_checked_state # without reloading the page
+          end
         end
-      end
 
-      # propely persisted and visible after full page reload
-      visit project_settings_project_custom_fields_path(project)
-
-      within_custom_field_container(boolean_project_custom_field) do
-        expect_checked_state
-      end
-
-      # only for this project
-      visit project_settings_project_custom_fields_path(other_project)
-
-      within_custom_field_container(boolean_project_custom_field) do
-        expect_unchecked_state
-      end
-    end
-
-    it "enables all mapping states of a section for a specific project when bulk action button clicked" do
-      visit project_settings_project_custom_fields_path(project)
-
-      within_custom_field_section_container(section_for_input_fields) do
-        page.find("[data-test-selector='enable-all-project-custom-field-mappings-#{section_for_input_fields.id}']").click
+        # propely persisted and visible after full page reload
+        visit project_settings_project_custom_fields_path(project)
 
         within_custom_field_container(boolean_project_custom_field) do
           expect_checked_state
         end
-        within_custom_field_container(string_project_custom_field) do
-          expect_checked_state
-        end
-      end
 
-      within_custom_field_section_container(section_for_select_fields) do
-        within_custom_field_container(list_project_custom_field) do
-          expect_unchecked_state
-        end
-      end
-
-      within_custom_field_section_container(section_for_multi_select_fields) do
-        within_custom_field_container(multi_list_project_custom_field) do
-          expect_unchecked_state
-        end
-      end
-    end
-
-    it "disables all mapping states of a section for a specific project when bulk action button clicked" do
-      visit project_settings_project_custom_fields_path(project)
-
-      within_custom_field_section_container(section_for_input_fields) do
-        page.find("[data-test-selector='enable-all-project-custom-field-mappings-#{section_for_input_fields.id}']").click
-
-        within_custom_field_container(boolean_project_custom_field) do
-          expect_checked_state
-        end
-        within_custom_field_container(string_project_custom_field) do
-          expect_checked_state
-        end
-      end
-
-      within_custom_field_section_container(section_for_select_fields) do
-        within_custom_field_container(list_project_custom_field) do
-          expect_unchecked_state
-        end
-      end
-
-      within_custom_field_section_container(section_for_multi_select_fields) do
-        within_custom_field_container(multi_list_project_custom_field) do
-          expect_unchecked_state
-        end
-      end
-
-      within_custom_field_section_container(section_for_input_fields) do
-        page.find("[data-test-selector='disable-all-project-custom-field-mappings-#{section_for_input_fields.id}']").click
+        # only for this project
+        visit project_settings_project_custom_fields_path(other_project)
 
         within_custom_field_container(boolean_project_custom_field) do
           expect_unchecked_state
         end
-        within_custom_field_container(string_project_custom_field) do
-          expect_unchecked_state
+      end
+
+      it "does not allow to toggle a 'for all projects' field" do
+        visit project_settings_project_custom_fields_path(project)
+
+        within_custom_field_section_container(section_for_input_fields) do
+          within_custom_field_container(int_for_all_project_custom_field) do
+            # "for all projects" fields are always checked
+            expect_checked_state
+            # ... and cannot be unchecked
+            expect_disabled_state
+          end
+        end
+      end
+
+      it "enables and disables all mapping states of a section for a specific project when bulk action button clicked" do
+        visit project_settings_project_custom_fields_path(project)
+
+        within_custom_field_section_container(section_for_input_fields) do
+          page.find_test_selector("enable-all-project-custom-field-mappings-#{section_for_input_fields.id}").click
+
+          within_custom_field_container(boolean_project_custom_field) do
+            expect_checked_state
+          end
+          within_custom_field_container(string_project_custom_field) do
+            expect_checked_state
+          end
+          within_custom_field_container(int_for_all_project_custom_field) do
+            expect_checked_state
+          end
+        end
+
+        within_custom_field_section_container(section_for_select_fields) do
+          within_custom_field_container(list_project_custom_field) do
+            expect_unchecked_state
+          end
+        end
+
+        within_custom_field_section_container(section_for_multi_select_fields) do
+          within_custom_field_container(multi_list_project_custom_field) do
+            expect_unchecked_state
+          end
+        end
+
+        within_custom_field_section_container(section_for_input_fields) do
+          page.find_test_selector("disable-all-project-custom-field-mappings-#{section_for_input_fields.id}").click
+
+          within_custom_field_container(boolean_project_custom_field) do
+            expect_unchecked_state
+          end
+          within_custom_field_container(string_project_custom_field) do
+            expect_unchecked_state
+          end
+          # "For all projects" field will never be unchecked and stays active
+          within_custom_field_container(int_for_all_project_custom_field) do
+            expect_checked_state
+          end
+        end
+      end
+
+      describe "project creation wizard rules" do
+        let!(:user_custom_field) do
+          create(:user_project_custom_field,
+                 name: "User field",
+                 project_custom_field_section: section_for_select_fields,
+                 projects: [project])
+        end
+
+        let!(:other_user_custom_field) do
+          create(:user_project_custom_field,
+                 name: "Other user field",
+                 project_custom_field_section: section_for_select_fields)
+        end
+
+        context "with one user field being used as an assignee in the project creation wizard" do
+          it "does not allow to disable the user field used as assignee in the project creation wizard" do
+            project.project_creation_wizard_enabled = true
+            project.project_creation_wizard_assignee_custom_field_id = user_custom_field.id
+            project.save!
+
+            visit project_settings_project_custom_fields_path(project)
+
+            within_custom_field_section_container(section_for_select_fields) do
+              # A regular user custom field can be toggled
+              within_custom_field_container(other_user_custom_field) do
+                expect_unchecked_state
+                expect_enabled_state
+              end
+
+              # An assignee in the project creation wizard cannot be toggled
+              within_custom_field_container(user_custom_field) do
+                expect_checked_state
+                expect_disabled_state
+              end
+            end
+
+            project.project_creation_wizard_enabled = false
+            project.save!
+            visit project_settings_project_custom_fields_path(project)
+
+            # With the creation wizard turned off, the field can be toggled again
+            within_custom_field_section_container(section_for_select_fields) do
+              within_custom_field_container(user_custom_field) do
+                expect_checked_state
+                expect_enabled_state
+              end
+            end
+
+            project.project_creation_wizard_enabled = true
+            project.project_creation_wizard_assignee_custom_field_id = other_user_custom_field.id
+            project.save!
+            visit project_settings_project_custom_fields_path(project)
+
+            # With the another field set for assignee, the field can be toggled
+            within_custom_field_section_container(section_for_select_fields) do
+              within_custom_field_container(user_custom_field) do
+                expect_checked_state
+                expect_enabled_state
+              end
+            end
+          end
+        end
+
+        it "ignores fields being used as an assignee when performing bulk actions" do
+          project.project_creation_wizard_enabled = true
+          project.project_creation_wizard_assignee_custom_field_id = user_custom_field.id
+          project.save!
+
+          visit project_settings_project_custom_fields_path(project)
+
+          within_custom_field_section_container(section_for_select_fields) do
+            page.find_test_selector("enable-all-project-custom-field-mappings-#{section_for_select_fields.id}").click
+            within_custom_field_container(other_user_custom_field) { expect_checked_state }
+            within_custom_field_container(user_custom_field) { expect_checked_state }
+          end
+
+          within_custom_field_section_container(section_for_select_fields) do
+            page.find_test_selector("disable-all-project-custom-field-mappings-#{section_for_select_fields.id}").click
+            within_custom_field_container(other_user_custom_field) { expect_unchecked_state }
+            # still checked, cannot be unchecked
+            within_custom_field_container(user_custom_field) { expect_checked_state }
+          end
         end
       end
     end
@@ -273,6 +361,47 @@ RSpec.describe "Projects custom fields mapping via project settings", :js do
 
       within_custom_field_section_container(section_for_multi_select_fields) do
         expect(page).to have_no_content("Multi list field")
+      end
+    end
+
+    it "shows each section's own blankslate when the filter matches nothing, and restores rows on clear" do
+      visit project_settings_project_custom_fields_path(project)
+
+      fill_in "border-box-filter", with: "no such attribute exists"
+
+      [section_for_input_fields, section_for_select_fields, section_for_multi_select_fields].each do |section|
+        within_custom_field_section_container(section) do
+          expect(page).to have_css(
+            "[data-empty-list-item='true']",
+            text: I18n.t("settings.project_attributes.label_no_project_custom_fields")
+          )
+        end
+      end
+
+      # Cuprite's Node#set clears a field's existing value without firing an
+      # `input` event before it types the replacement characters, so setting
+      # `with: ""` never reaches the border-box-filter Stimulus controller.
+      # Backspacing through the native key-event path (like a real user
+      # clearing the field) does fire `input` on every keystroke — but the
+      # field must be (re-)focused first, since Node#set blurs it afterwards.
+      filter_field = find_field("border-box-filter")
+      filter_field.click
+      clear_input_field_contents(filter_field)
+
+      within_custom_field_section_container(section_for_input_fields) do
+        expect(page).to have_no_css("[data-empty-list-item]")
+        expect(page).to have_text("Boolean field")
+        expect(page).to have_text("String field")
+      end
+
+      within_custom_field_section_container(section_for_select_fields) do
+        expect(page).to have_no_css("[data-empty-list-item]")
+        expect(page).to have_text("List field")
+      end
+
+      within_custom_field_section_container(section_for_multi_select_fields) do
+        expect(page).to have_no_css("[data-empty-list-item]")
+        expect(page).to have_text("Multi list field")
       end
     end
 
@@ -306,23 +435,25 @@ RSpec.describe "Projects custom fields mapping via project settings", :js do
       within_custom_field_section_container(section_for_input_fields) do
         custom_fields = page.all(".op-project-custom-field")
 
-        expect(custom_fields.size).to eq(2)
+        expect(custom_fields.size).to eq(3)
 
         expect(custom_fields[0].text).to include("Boolean field")
         expect(custom_fields[1].text).to include("String field")
+        expect(custom_fields[2].text).to include("Int field")
       end
 
-      boolean_project_custom_field.move_to_bottom
+      section_for_input_fields.reload.move_in_order(boolean_project_custom_field.column_name, :lowest)
 
       visit project_settings_project_custom_fields_path(project)
 
       within_custom_field_section_container(section_for_input_fields) do
         custom_fields = page.all(".op-project-custom-field")
 
-        expect(custom_fields.size).to eq(2)
+        expect(custom_fields.size).to eq(3)
 
         expect(custom_fields[0].text).to include("String field")
-        expect(custom_fields[1].text).to include("Boolean field")
+        expect(custom_fields[1].text).to include("Int field")
+        expect(custom_fields[2].text).to include("Boolean field")
       end
     end
 
@@ -430,6 +561,95 @@ RSpec.describe "Projects custom fields mapping via project settings", :js do
         end
       end
     end
+
+    describe "calculated value fields", with_ee: %i[calculated_values] do
+      let!(:admin) do
+        create(:admin)
+      end
+
+      let!(:section_with_calculated_fields) { create(:project_custom_field_section, name: "Section with calculated fields") }
+
+      let!(:calculated_field1) do
+        create(:calculated_value_project_custom_field,
+               name: "Calculated field 1",
+               formula: "123 + 456",
+               project_custom_field_section: section_with_calculated_fields)
+      end
+
+      let!(:calculated_field2) do
+        create(:calculated_value_project_custom_field,
+               name: "Calculated field 2",
+               formula: "6 * 7",
+               project_custom_field_section: section_with_calculated_fields)
+      end
+
+      let(:overview_page) { Pages::Projects::Show.new(project) }
+
+      before do
+        login_as admin
+      end
+
+      it "calculates field when switched individually" do
+        visit project_settings_project_custom_fields_path(project)
+
+        page
+          .find("[data-test-selector='toggle-project-custom-field-mapping-#{calculated_field1.id}'] > button")
+          .click
+
+        overview_page.visit_page
+
+        overview_page.within_custom_field_container(calculated_field1) do
+          expect(page).to have_text "Calculated field 1"
+          expect(page).to have_text "579"
+        end
+        overview_page.expect_no_custom_field(calculated_field2)
+
+        visit project_settings_project_custom_fields_path(project)
+
+        page
+          .find("[data-test-selector='toggle-project-custom-field-mapping-#{calculated_field1.id}'] > button")
+          .click
+
+        overview_page.visit_page
+
+        overview_page.expect_no_custom_field(calculated_field1)
+        overview_page.expect_no_custom_field(calculated_field2)
+      end
+
+      it "calculates fields when switched in bulk" do
+        visit project_settings_project_custom_fields_path(project)
+
+        within_custom_field_section_container(section_with_calculated_fields) do
+          page
+            .find("[data-test-selector='enable-all-project-custom-field-mappings-#{section_with_calculated_fields.id}']")
+            .click
+        end
+
+        overview_page.visit_page
+
+        overview_page.within_custom_field_container(calculated_field1) do
+          expect(page).to have_text "Calculated field 1"
+          expect(page).to have_text "579"
+        end
+        overview_page.within_custom_field_container(calculated_field2) do
+          expect(page).to have_text "Calculated field 2"
+          expect(page).to have_text "42"
+        end
+
+        visit project_settings_project_custom_fields_path(project)
+
+        within_custom_field_section_container(section_with_calculated_fields) do
+          page
+            .find("[data-test-selector='disable-all-project-custom-field-mappings-#{section_with_calculated_fields.id}']")
+            .click
+        end
+
+        overview_page.visit_page
+
+        overview_page.expect_no_custom_field(calculated_field1)
+        overview_page.expect_no_custom_field(calculated_field2)
+      end
+    end
   end
 
   def expect_type(type)
@@ -444,6 +664,14 @@ RSpec.describe "Projects custom fields mapping via project settings", :js do
 
   def expect_unchecked_state
     expect(page).to have_css(".ToggleSwitch-statusOff")
+  end
+
+  def expect_disabled_state
+    expect(page).to have_css(".ToggleSwitch-track[disabled='disabled']")
+  end
+
+  def expect_enabled_state
+    expect(page).to have_no_css(".ToggleSwitch-track[disabled='disabled']")
   end
 
   def within_custom_field_section_container(section, &)

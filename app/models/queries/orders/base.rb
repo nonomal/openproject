@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -48,7 +50,7 @@ module Queries
       end
 
       def self.key
-        raise NotImplementedError
+        raise SubclassResponsibilityError
       end
 
       def apply_to(query_scope)

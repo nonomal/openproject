@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,11 +33,12 @@ require "spec_helper"
 RSpec.describe CustomValue::ListStrategy do
   let(:instance) { described_class.new(custom_value) }
   let(:custom_field) { create(:list_wp_custom_field) }
-  let(:custom_value) do
-    double("CustomField", value:, custom_field:, customized:)
-  end
+  let(:custom_value) { instance_double(CustomValue, value:, custom_field:, customized:) }
+  let(:customized) { instance_double(Project) }
 
-  let(:customized) { double("customized") }
+  before do
+    allow(CustomOption).to receive(:where).and_call_original
+  end
 
   describe "#parse_value/#typed_value" do
     subject { instance }
@@ -44,12 +47,11 @@ RSpec.describe CustomValue::ListStrategy do
       let(:value) { custom_field.custom_options.first }
 
       it "returns the CustomOption and sets it for later retrieval" do
-        expect(CustomOption)
-          .not_to receive(:where)
-
         expect(subject.parse_value(value)).to eql value.id.to_s
 
         expect(subject.typed_value).to eql value.value
+
+        expect(CustomOption).not_to have_received(:where)
       end
     end
 
@@ -63,29 +65,27 @@ RSpec.describe CustomValue::ListStrategy do
       end
     end
 
-    context "value is blank" do
+    context "when value is blank" do
       let(:value) { "" }
 
       it "is nil and does not look for the CustomOption" do
-        expect(CustomOption)
-          .not_to receive(:where)
-
         expect(subject.parse_value(value)).to be_nil
 
         expect(subject.typed_value).to be_nil
+
+        expect(CustomOption).not_to have_received(:where)
       end
     end
 
-    context "value is nil" do
+    context "when value is nil" do
       let(:value) { nil }
 
       it "is nil and does not look for the CustomOption" do
-        expect(CustomOption)
-          .not_to receive(:where)
-
         expect(subject.parse_value(value)).to be_nil
 
         expect(subject.typed_value).to be_nil
+
+        expect(CustomOption).not_to have_received(:where)
       end
     end
   end
@@ -99,10 +99,9 @@ RSpec.describe CustomValue::ListStrategy do
       it "is the custom option to_s (without db access)" do
         instance.parse_value(value)
 
-        expect(CustomOption)
-          .not_to receive(:where)
-
         expect(subject).to eql value.to_s
+
+        expect(CustomOption).not_to have_received(:where)
       end
     end
 
@@ -114,7 +113,7 @@ RSpec.describe CustomValue::ListStrategy do
       end
     end
 
-    context "value is blank" do
+    context "when value is blank" do
       let(:value) { "" }
 
       it "is blank" do
@@ -122,7 +121,7 @@ RSpec.describe CustomValue::ListStrategy do
       end
     end
 
-    context "value is nil" do
+    context "when value is nil" do
       let(:value) { nil }
 
       it "is blank" do
@@ -134,7 +133,7 @@ RSpec.describe CustomValue::ListStrategy do
   describe "#validate_type_of_value" do
     subject { instance.validate_type_of_value }
 
-    context "value is included" do
+    context "when value is included" do
       let(:value) { custom_field.custom_options.first.id.to_s }
 
       it "accepts" do
@@ -142,7 +141,7 @@ RSpec.describe CustomValue::ListStrategy do
       end
     end
 
-    context "value is not included" do
+    context "when value is not included" do
       let(:value) { "cat" }
 
       it "rejects" do

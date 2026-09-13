@@ -1,32 +1,30 @@
-/*
- * -- copyright
- * OpenProject is an open source project management software.
- * Copyright (C) the OpenProject GmbH
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License version 3.
- *
- * OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
- * Copyright (C) 2006-2013 Jean-Philippe Lang
- * Copyright (C) 2010-2013 the ChiliProject Team
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *
- * See COPYRIGHT and LICENSE files for more details.
- * ++
- */
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
 
 import { ApplicationController } from 'stimulus-use';
 import { renderStreamMessage } from '@hotwired/turbo';
@@ -36,6 +34,7 @@ export default class PollForChangesController extends ApplicationController {
     url: String,
     interval: Number,
     reference: String,
+    continuous: Boolean,
   };
 
   static targets = ['reference'];
@@ -46,6 +45,7 @@ export default class PollForChangesController extends ApplicationController {
   declare referenceValue:string;
   declare urlValue:string;
   declare intervalValue:number;
+  declare continuousValue:boolean;
 
   private interval:number;
 
@@ -66,20 +66,23 @@ export default class PollForChangesController extends ApplicationController {
 
   buildReference():string {
     if (this.hasReferenceTarget) {
-      return this.referenceTarget.dataset.referenceValue as string;
+      return this.referenceTarget.dataset.referenceValue!;
     }
 
     return this.referenceValue;
   }
 
   triggerTurboStream() {
-    void fetch(`${this.urlValue}?reference=${this.buildReference()}`, {
-      headers: {
-        Accept: 'text/vnd.turbo-stream.html',
-      },
-    }).then(async (r) => {
+    const url = new URL(this.urlValue, window.location.origin);
+    const ref = this.buildReference();
+    if (ref) url.searchParams.set('reference', ref);
+
+    void fetch(url.toString())
+      .then(async (r) => {
       if (r.status === 200) {
-        clearInterval(this.interval);
+        if (!this.continuousValue) {
+          clearInterval(this.interval);
+        }
 
         const html = await r.text();
         renderStreamMessage(html);

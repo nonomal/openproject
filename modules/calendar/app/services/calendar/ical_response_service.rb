@@ -35,7 +35,9 @@ module Calendar
       self.contract_class = Queries::ICalSharingContract
     end
 
-    def perform(ical_token_string:, query_id:)
+    def perform
+      ical_token_string = params.fetch(:ical_token_string)
+      query_id = params.fetch(:query_id)
       ical_token_instance = resolve_ical_token(ical_token_string)
 
       user = ical_token_instance.user

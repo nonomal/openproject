@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -41,13 +43,13 @@ module ReorderLinksHelper
   def reorder_link(name, url, direction, icon_class, label, method)
     text = content_tag(:span,
                        label,
-                       class: "hidden-for-sighted")
+                       class: "sr-only")
     icon = content_tag(:span,
                        "",
                        class: "icon-context #{icon_class} icon-small")
     link_to(text + icon,
             url.merge("#{name}[move_to]" => direction),
-            method:,
+            data: { turbo_method: method },
             title: label)
   end
 end

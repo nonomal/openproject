@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 
 # OpenProject is an open source project management software.
@@ -33,7 +35,8 @@ module DemoData
 
     self.needs = WorkPackageSeeder.needs + [
       BasicData::ProjectRoleSeeder,
-      BasicData::GlobalRoleSeeder
+      BasicData::GlobalRoleSeeder,
+      BasicData::ProjectPhaseDefinitionSeeder
     ]
 
     def seed_data!
@@ -52,12 +55,20 @@ module DemoData
     # override to add additional seeders
     def project_content_seeder_classes
       [
+        DemoData::ProjectPhaseSeeder,
         DemoData::WikiSeeder,
         DemoData::WorkPackageSeeder,
         DemoData::WorkPackageBoardSeeder,
         ::Meetings::DemoData::MeetingSeriesSeeder,
-        ::Meetings::DemoData::MeetingAgendaItemsSeeder
+        ::Meetings::DemoData::MeetingAgendaItemsSeeder,
+        ::Meetings::DemoData::MeetingParticipantsSeeder,
+        ::Meetings::DemoData::MeetingSeriesFinalizerSeeder,
+        ::Meetings::DemoData::MeetingOccurrencesSeeder
       ]
+    end
+
+    def all_required_references
+      [:default_role_project_admin] + types_seed_data
     end
 
     private
@@ -89,12 +100,41 @@ module DemoData
         principal: admin_user,
         roles: [role]
       )
+
+      seed_additional_members
+    end
+
+    # Adds the members configured via the project's `members` seed data. A principal can be a
+    # user (added directly) or a department (added as a group, with its users inheriting the role).
+    # References may be missing when the departments were not (re-)seeded, in which case we skip them.
+    def seed_additional_members
+      project_data.each("members") do |member_data|
+        principal = seed_data.find_reference(member_data["principal"], default: nil)
+        next if principal.nil?
+
+        role = seed_data.find_reference(member_data["role"])
+        Member.create!(project:, principal:, roles: [role])
+
+        inherit_group_roles(principal) if principal.is_a?(Group)
+      end
+    end
+
+    def inherit_group_roles(group)
+      Groups::CreateInheritedRolesService
+        .new(group, current_user: admin_user)
+        .call(user_ids: group.user_ids, project_ids: [project.id])
     end
 
     def set_types
       print_status "   -Assigning types."
 
-      project.types = seed_data.find_references(project_data.lookup("types"))
+      # TODO: should go through Projects::Types::AddService, which owns the family conflict
+      # rules and enables the types' work package custom fields.
+      project.project_types = base_variant_rows_for(seed_data.find_references(types_seed_data))
+    end
+
+    def base_variant_rows_for(types)
+      types.map { |type| ProjectType.new(type:) }
     end
 
     def seed_categories
@@ -142,8 +182,11 @@ module DemoData
       end
     end
 
-    def project_attributes
-      parent = Project.find_by(identifier: project_data.lookup("parent"))
+    def types_seed_data
+      seed_data.lookup("types") || []
+    end
+
+    def project_attributes # rubocop:disable Metrics/AbcSize
       {
         name: project_data.lookup("name"),
         identifier: project_data.lookup("identifier"),
@@ -151,8 +194,9 @@ module DemoData
         status_explanation: project_data.lookup("status_explanation"),
         description: project_data.lookup("description"),
         enabled_module_names: project_data.lookup("modules"),
-        types: Type.all,
-        parent:
+        project_types: base_variant_rows_for(Type.all),
+        parent: Project.find_by(identifier: project_data.lookup("parent")),
+        workspace_type: "project"
       }
     end
   end

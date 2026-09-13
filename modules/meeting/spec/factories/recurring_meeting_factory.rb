@@ -33,9 +33,13 @@ FactoryBot.define do
     author factory: :user
     project
     start_time { Date.tomorrow + 10.hours }
+    current_schedule_start { start_time }
     end_date { 1.year.from_now }
     duration { 1.0 }
     frequency { "weekly" }
+    monthly_day { nil }
+    monthly_ordinal { nil }
+    monthly_weekday { nil }
     interval { 1 }
     iterations { 10 }
     end_after { "specific_date" }
@@ -51,7 +55,11 @@ FactoryBot.define do
       # create template
       template = create(:meeting_template,
                         :author_participates,
+                        start_time: recurring_meeting.start_time,
+                        title: recurring_meeting.title,
+                        location: recurring_meeting.location,
                         author: recurring_meeting.author,
+                        duration: recurring_meeting.duration,
                         recurring_meeting:,
                         project:)
 

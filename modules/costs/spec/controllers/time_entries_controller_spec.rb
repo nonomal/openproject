@@ -50,8 +50,8 @@ RSpec.describe TimeEntriesController do
   describe "#dialog" do
     describe "authorization checks" do
       context "when opening dialog on an existing time entry" do
-        let!(:time_entry1) { create(:time_entry, user: user, work_package: work_package1) }
-        let!(:time_entry2) { create(:time_entry, user: other_user, work_package: work_package1) }
+        let!(:time_entry1) { create(:time_entry, user: user, entity: work_package1) }
+        let!(:time_entry2) { create(:time_entry, user: other_user, entity: work_package1) }
 
         context "and the user has the edit_own_time_entries permission on the work package" do
           before do
@@ -198,7 +198,7 @@ RSpec.describe TimeEntriesController do
             time_entry = assigns(:time_entry)
             expect(time_entry).to be_new_record
             expect(time_entry.project).to eq(project1)
-            expect(time_entry.work_package).to eq(work_package1)
+            expect(time_entry.entity).to eq(work_package1)
           end
 
           it "does not allow to open the dialog for another work package" do
@@ -287,6 +287,46 @@ RSpec.describe TimeEntriesController do
       it "returns no notice" do
         get :user_tz_caption, params: { user_id: other_user.id }, format: :turbo_stream
         expect(response.body).to include("caption=\"\"")
+      end
+    end
+  end
+
+  describe "#update" do
+    let(:user) { create(:admin) } # so we don't have to mock permissions'
+    let!(:time_entry) { create(:time_entry, user: other_user, project: project1, entity: work_package1) }
+
+    render_views
+
+    def update_with_user_id(user_id)
+      put :update,
+          params: {
+            id: time_entry.id,
+            time_entry: {
+              user_id:,
+              show_user: "true",
+              show_work_package: "true",
+              hours: "1",
+              spent_on: Time.zone.today.iso8601
+            }
+          },
+          format: :turbo_stream
+    end
+
+    context "when the submitted user does not resolve to a record" do
+      it "re-renders the form for a blank user_id" do
+        update_with_user_id("")
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body).to include("time_entry_user_id")
+        expect(time_entry.reload.user).to eq(other_user)
+      end
+
+      it "re-renders the form for a non-existent user_id" do
+        update_with_user_id(User.maximum(:id) + 1)
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body).to include("time_entry_user_id")
+        expect(time_entry.reload.user).to eq(other_user)
       end
     end
   end

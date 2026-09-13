@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -46,6 +48,8 @@ class Status < ApplicationRecord
   validate :default_status_must_not_be_readonly
 
   after_save :unmark_old_default_value, if: :is_default?
+
+  scope :visible, ->(user = User.current) { user.allowed_in_any_project?(:view_work_packages) ? all : none }
 
   def unmark_old_default_value
     Status.where.not(id:).update_all(is_default: false)

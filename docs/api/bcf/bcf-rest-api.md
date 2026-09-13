@@ -17,7 +17,7 @@ The document follows the structure of the standard specification to ease compari
 
 ## 1. Introduction
 
-All end points are nested within the `/api` path. So for a server listening on `https://foo.com/` the API root will be
+All endpoints are nested within the `/api` path. So for a server listening on `https://foo.com/` the API root will be
 `https://foo.com/api/bcf/2.1`. For a server listening on `https://foo.com/bar` the API root will be
 `https://foo.com/bar/api/bcf/2.1`.
 
@@ -94,8 +94,8 @@ _Implemented_
 
 The following OAuth2 flows are supported:
 
-* `authorization_code_grant` - [4.1 - Authorization Code Grant](https://tools.ietf.org/html/rfc6749#section-4.1)
-* `client_credentials` - [4.4 - Client Credentials Grant](https://tools.ietf.org/html/rfc6749#section-4.4)
+- `authorization_code_grant` - [4.1 - Authorization Code Grant](https://tools.ietf.org/html/rfc6749#section-4.1)
+- `client_credentials` - [4.4 - Client Credentials Grant](https://tools.ietf.org/html/rfc6749#section-4.4)
 
 The `clients_credentials` grant explicitly ruled out by the standard specification as not being user specific can be supported by OpenProject as the grant is mapped to a user account
 when configuring the OAuth access.
@@ -105,8 +105,8 @@ to be checked for the scope. That value also needs to be provided for the scope 
 
 The OAuth2 flows alternatively proposed by the specification
 
-* `implicit_grant` - [4.2 - Implicit Grant](https://tools.ietf.org/html/rfc6749#section-4.2)
-* `resource_owner_password_credentials_grant` - [4.3 - Resource Owner Password Credentials Grant](https://tools.ietf.org/html/rfc6749#section-4.3)
+- `implicit_grant` - [4.2 - Implicit Grant](https://tools.ietf.org/html/rfc6749#section-4.2)
+- `resource_owner_password_credentials_grant` - [4.3 - Resource Owner Password Credentials Grant](https://tools.ietf.org/html/rfc6749#section-4.3)
 are not implemented.
 
 #### 3.2.2 OAuth2 Example
@@ -134,13 +134,13 @@ is used instead of the integer within a url. So the following urls might point t
 
 _Partly implemented_
 
-The end point is implemented but lacks the `authorization` property. However, the [Project Extension Service](#414-get-project-extension-service) is completely implemented and provides the same information.
+The endpoint is implemented but lacks the `authorization` property. However, the [Project Extension Service](#414-get-project-extension-service) is completely implemented and provides the same information.
 
 #### 4.1.2 GET Project Service
 
 _Partly implemented_
 
-The end point is implemented but lacks the `authorization` property. However, the [Project Extension Service](#414-get-project-extension-service) is completely implemented and provides the same information.
+The endpoint is implemented but lacks the `authorization` property. However, the [Project Extension Service](#414-get-project-extension-service) is completely implemented and provides the same information.
 
 #### 4.1.3 PUT Project Service
 
@@ -150,7 +150,7 @@ _Implemented_
 
 _Implemented and extended_
 
-However, as some end points are not implemented, the actions indicating the ability to call those end points will also not be returned, e.g. `updateDocumentReferences`
+However, as some endpoints are not implemented, the actions indicating the ability to call those endpoints will also not be returned, e.g. `updateDocumentReferences`
 
 #### 4.1.5 Expressing User Authorization Through Project Extensions
 
@@ -160,7 +160,7 @@ _Out of scope_
 
 _Implemented and extended_
 
-* *viewTopic* - The ability to see topics (see [4.2.3 GET Topic Service](#423-get-topic-service))
+- _viewTopic_ - The ability to see topics (see [4.2.3 GET Topic Service](#423-get-topic-service))
 
 ##### 4.1.5.2 Topic
 
@@ -189,12 +189,12 @@ _Partly implemented_
 
 The following properties are not supported:
 
-* `labels` (the property exists but cannot be written and is always empty)
-* `stage` (the property exists but cannot be written and is always null)
-* `bim_snippet.snippet_type`
-* `bim_snippet.is_external`
-* `bim_snippet.reference`
-* `bim_snippet.reference_schema`
+- `labels` (the property exists but cannot be written and is always empty)
+- `stage` (the property exists but cannot be written and is always null)
+- `bim_snippet.snippet_type`
+- `bim_snippet.is_external`
+- `bim_snippet.reference`
+- `bim_snippet.reference_schema`
 
 OData sort, filtering and pagination is not supported.
 

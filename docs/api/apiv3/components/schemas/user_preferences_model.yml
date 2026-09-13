@@ -13,6 +13,7 @@ example:
       method: "patch"
   _type: UserPreferences
   commentSortDescending: true
+  disableKeyboardShortcuts: false
   timeZone: "Europe/Berlin"
   warnOnLeavingUnsaved: true
   notifications:

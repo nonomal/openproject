@@ -32,8 +32,9 @@ module TimeEntries
   class BaseContract < ::ModelContract
     include AssignableValuesContract
     include AssignableCustomFieldValues
+    include PastMonthRestriction
 
-    delegate :work_package,
+    delegate :entity,
              :project,
              :available_custom_fields,
              :new_record?,
@@ -44,8 +45,9 @@ module TimeEntries
     end
 
     validate :validate_hours_are_in_range
+    validate :validate_spent_on_is_working_day
     validate :validate_project_is_set
-    validate :validate_work_package
+    validate :validate_entity
     validate :validate_user
 
     validates :spent_on,
@@ -54,12 +56,14 @@ module TimeEntries
               unless: Proc.new { spent_on.blank? }
 
     attribute :project_id
-    attribute :work_package_id
+    attribute :entity_id
+    attribute :entity_type
     attribute :activity_id do
       validate_activity_active
     end
     attribute :ongoing do
       validate_self_timer
+      validate_no_other_ongoing
     end
     attribute :hours
     attribute :comments
@@ -84,18 +88,15 @@ module TimeEntries
 
     # Necessary for custom fields of type version.
     def assignable_versions(only_open: true)
-      work_package.try(:assignable_versions, only_open:) || project.try(:assignable_versions, only_open:) || []
+      entity.try(:assignable_versions, only_open:) || project.try(:assignable_versions, only_open:) || []
     end
 
     private
 
-    def validate_work_package
-      return unless model.work_package || model.work_package_id_changed?
+    def validate_entity
+      return if model.entity.nil?
 
-      if work_package_invisible? ||
-         work_package_not_in_project?
-        errors.add :work_package_id, :invalid
-      end
+      errors.add :entity, :invalid if entity_invisible? || entity_not_in_project?
     end
 
     def validate_user
@@ -108,7 +109,76 @@ module TimeEntries
     end
 
     def validate_hours_are_in_range
-      errors.add :hours, :invalid if model.hours&.negative?
+      return errors.add(:hours, :invalid) if model.hours&.negative?
+
+      validate_hours_within_max_per_entry
+      validate_hours_within_max_per_day
+      validate_hours_within_user_working_hours
+    end
+
+    def validate_hours_within_max_per_entry
+      limit = TimeEntry.max_hours_per_entry
+      return if limit.nil? || model.hours.nil? || model.hours <= limit
+
+      errors.add :hours, :max_hours_per_entry_exceeded, limit:
+    end
+
+    def validate_hours_within_max_per_day
+      limit = TimeEntry.max_hours_per_day
+      return if limit.nil? || !day_total_determinable?
+      return if hours_already_logged_on_day + model.hours <= limit
+
+      errors.add :hours, :max_hours_per_day_exceeded, limit:
+    end
+
+    def day_total_determinable?
+      model.hours.present? && model.spent_on.present? && model.user.present?
+    end
+
+    def hours_already_logged_on_day
+      TimeEntry.of_user_and_day(model.user, model.spent_on, excluding: model).sum(:hours)
+    end
+
+    # Compared in whole minutes, since that is the granularity time is logged in and how the
+    # schedule stores its hours. Users without a working hours schedule are not restricted at
+    # all, so that enabling the setting does not block logging on instances that defined none.
+    def validate_hours_within_user_working_hours
+      return unless TimeEntry.limit_to_user_working_hours?
+      return unless day_total_determinable?
+
+      capacity = user_capacity_in_minutes_on(model.spent_on)
+      return if capacity.nil?
+      return if in_minutes(hours_already_logged_on_day + model.hours) <= capacity
+
+      errors.add :hours, :exceeds_user_working_hours, limit: format_hours(capacity / 60.0)
+    end
+
+    def user_capacity_in_minutes_on(date)
+      model.user.working_hours.valid_for_date(date)&.effective_minutes_on(date)
+    end
+
+    def in_minutes(hours)
+      (hours * 60).round
+    end
+
+    def format_hours(hours)
+      ActiveSupport::NumberHelper.number_to_rounded(hours, precision: 2, strip_insignificant_zeros: true)
+    end
+
+    def validate_spent_on_is_working_day
+      return unless TimeEntry.prohibit_logging_on_non_working_days?
+      return if model.spent_on.nil? || model.user.nil?
+      return unless globally_non_working?(model.spent_on) || personally_non_working?(model.spent_on)
+
+      errors.add :spent_on, :not_a_working_day
+    end
+
+    def globally_non_working?(date)
+      WorkPackages::Shared::WorkingDays.new.non_working?(date)
+    end
+
+    def personally_non_working?(date)
+      model.user.non_working_times.overlapping(date..date).exists?
     end
 
     def validate_project_is_set
@@ -119,12 +189,12 @@ module TimeEntries
       errors.add :activity_id, :inclusion if model.activity_id && !assignable_activities.exists?(model.activity_id)
     end
 
-    def work_package_invisible?
-      model.work_package.nil? || !model.work_package.visible?(user)
+    def entity_invisible?
+      model.entity.nil? || !model.entity.visible?(user)
     end
 
-    def work_package_not_in_project?
-      model.work_package && model.project != model.work_package.project
+    def entity_not_in_project?
+      model.entity && model.project != model.entity.project
     end
 
     def user_invisible?
@@ -133,6 +203,13 @@ module TimeEntries
 
     def validate_self_timer
       errors.add :ongoing, :not_current_user if model.ongoing? && model.user != user
+    end
+
+    def validate_no_other_ongoing
+      if model.ongoing? && model.ongoing_changed? && TimeEntry.ongoing_for_user_other_than(model.user, model).any?
+        errors.add :base,
+                   :duplicate_ongoing
+      end
     end
   end
 end

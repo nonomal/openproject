@@ -1,10 +1,11 @@
 <%= render(
       Primer::Alpha::Dialog.new(
         title: I18n.t("export.dialog.title"),
-        size: :xlarge,
+        size: :large,
+        position: :right,
+        position_narrow: :fullscreen,
         id: MODAL_ID,
         data: {
-          "application-target": "dynamic",
           controller: "work-packages--export--dialog"
         }
       )
@@ -36,7 +37,6 @@
                 url: export_format_url(format[:id]),
                 id: "#{EXPORT_FORM_ID}-#{format[:id]}",
                 data: {
-                  "application-target": "dynamic",
                   action: "submit->work-packages--export--form#submitForm",
                   controller: "work-packages--export--form",
                   "work-packages--export--form-job-status-dialog-id-value": MODAL_ID,

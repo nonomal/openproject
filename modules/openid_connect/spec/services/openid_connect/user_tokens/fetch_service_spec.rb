@@ -164,4 +164,48 @@ RSpec.describe OpenIDConnect::UserTokens::FetchService, :webmock do
       end
     end
   end
+
+  describe "instantiation" do
+    let(:service) { described_class.new(user:) }
+    let(:user) { create(:user) }
+
+    let(:jwt_parser) { instance_double(OpenIDConnect::JwtParser) }
+    let(:exchange_service) { instance_double(OpenIDConnect::UserTokens::ExchangeService) }
+    let(:refresh_service) { instance_double(OpenIDConnect::UserTokens::RefreshService) }
+
+    before do
+      allow(OpenIDConnect::JwtParser).to receive(:new).and_return(jwt_parser)
+      allow(OpenIDConnect::UserTokens::ExchangeService).to receive(:new).and_return(exchange_service)
+      allow(OpenIDConnect::UserTokens::RefreshService).to receive(:new).and_return(refresh_service)
+    end
+
+    it "uses a non-verifying JWT parser" do
+      service
+      expect(OpenIDConnect::JwtParser).to have_received(:new).with(verify_audience: false, verify_expiration: false)
+    end
+
+    it "configures an exchange service" do
+      service
+      expect(OpenIDConnect::UserTokens::ExchangeService).to have_received(:new).with(user:, scope: nil)
+    end
+
+    it "configures a refresh service" do
+      service
+      expect(OpenIDConnect::UserTokens::RefreshService).to have_received(:new).with(user:, token_exchange: exchange_service)
+    end
+
+    context "when specifying exchange_scope" do
+      let(:service) { described_class.new(user:, exchange_scope: "scope-a scope-b") }
+
+      it "configures the exchange service with the correct scope" do
+        service
+        expect(OpenIDConnect::UserTokens::ExchangeService).to have_received(:new).with(user:, scope: "scope-a scope-b")
+      end
+
+      it "configures a refresh service" do
+        service
+        expect(OpenIDConnect::UserTokens::RefreshService).to have_received(:new).with(user:, token_exchange: exchange_service)
+      end
+    end
+  end
 end

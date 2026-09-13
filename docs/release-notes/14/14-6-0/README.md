@@ -38,7 +38,7 @@ Please note that if you reload the page, any unsaved changes you have made will 
 
 In OpenProject 14.6, administrators can now save time by enabling or disabling custom fields for multiple projects simultaneously. This feature streamlines the process of managing custom fields across projects, making it easier and more efficient for administrators.
 
-A new tab navigation has been introduced under *Administration* > *Custom Fields*, similar to the project attributes interface. This section displays a list of all projects where a specific custom field is activated. Administrators can easily add or remove projects from the list using a menu within each row, without the need for confirmation. 
+A new tab navigation has been introduced under _Administration_ > _Custom Fields_, similar to the project attributes interface. This section displays a list of all projects where a specific custom field is activated. Administrators can easily add or remove projects from the list using a menu within each row, without the need for confirmation. 
 
 Additionally, users can include sub-projects when adding, which automatically selects all sub-projects within the hierarchy. Already added projects are visible but deactivated in the dropdown.
 
@@ -52,7 +52,7 @@ In OpenProject 14.6, users can now use descriptions with embedded macros. This f
 
 This is particularly helpful if you want to work with templates, as the copied work package automatically references its own attributes. Also, this feature will be very helpful for the [upcoming feature to generate PDFs from work package descriptions](https://community.openproject.org/wp/45896).
 
-Macros such as *workPackageValue:assignee* have been implemented, allowing the dynamic display of work package specific values like the assignee directly in the template. These macros support both work package and project values and labels, making it easier to generate consistent and accurate documentation. Of course, you can still reference a specific work package by including the ID (e.g. *workPackageValue:1234:assignee*).
+Macros such as _workPackageValue:assignee_ have been implemented, allowing the dynamic display of work package specific values like the assignee directly in the template. These macros support both work package and project values and labels, making it easier to generate consistent and accurate documentation. Of course, you can still reference a specific work package by including the ID (e.g. _workPackageValue:1234:assignee_).
 
 ![Screenshot showing a work package with macros in the description](openproject-14-6-macros.png)
 
@@ -65,8 +65,11 @@ Before 14.6, OpenProject's editors, such as in the work package description, did
 ### See past meetings included in the number next to the Meetings tab
 
 On the Meetings tab in the split screen view, the number next to the “Meetings (2)” tab should include both current and past meetings. Previously, only future meetings were counted. So if you use the Meetings module and reference work packages there, you may notice a higher number on the work package tab for meetings.
+
 ### Changes to design settings in administration
+
 [Design settings in OpenProject administration](../../../system-admin-guide/design) were split into several sections, to make navigation easier and eliminate scrolling down the page to find the correct setting.
+
 <!--more-->
 
 ## Bug fixes and changes
@@ -134,10 +137,12 @@ On the Meetings tab in the split screen view, the number next to the “Meetings
 <!-- Warning: Anything above this line will be automatically removed by the release script -->
 
 ## Contributions
+
 A very special thank you goes to City of Cologne again for sponsoring features in project lists. Also, a big thanks to our Community members for reporting bugs and helping us identify and provide fixes.
 Special thanks for reporting and finding bugs go to Jan H, Joris Ceelen, André van Kaam, and Christian Jeschke.
 
 Last but not least, we are very grateful for our very engaged translation contributors on Crowdin, who translated quite a few OpenProject strings!  This release we would like to highlight
+
 - [DKrukoff](https://crowdin.com/profile/dkrukoff), for translations into Russian.
 - [Sara Ruela](https://crowdin.com/profile/Sara.PT), for translations into Portuguese.
 - [BigSeung](https://crowdin.com/profile/BigSeung), for translations into Korean.

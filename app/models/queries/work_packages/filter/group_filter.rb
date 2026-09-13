@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -91,6 +93,6 @@ class Queries::WorkPackages::Filter::GroupFilter < Queries::WorkPackages::Filter
   end
 
   def all_groups
-    @all_groups ||= ::Group.all
+    @all_groups ||= ::Group.visible
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -66,15 +68,14 @@ RSpec.describe WorkPackages::ExportJob do
     let(:exporter_instance) { instance_double(exporter) }
 
     it "exports" do
-      expect(Attachments::CreateService)
-        .to receive(:bypass_whitelist)
-              .with(user:)
+      allow(Attachments::CreateService)
+        .to receive(:bypass_allowlist)
               .and_return(service)
 
-      expect(Exports::CleanupOutdatedJob)
+      allow(Exports::CleanupOutdatedJob)
         .to receive(:perform_after_grace)
 
-      expect(service)
+      allow(service)
         .to receive(:call) do |file:, **_args|
         expect(File.basename(file))
           .to start_with "some_title"
@@ -94,6 +95,13 @@ RSpec.describe WorkPackages::ExportJob do
       expect(subject.job_status.reference).to eq export
       expect(subject.job_status[:status]).to eq "success"
       expect(subject.job_status[:payload]["download"]).to eq "/api/v3/attachments/1234/content"
+
+      expect(Attachments::CreateService)
+        .to have_received(:bypass_allowlist)
+              .with(user:)
+
+      expect(Exports::CleanupOutdatedJob)
+        .to have_received(:perform_after_grace)
     end
   end
 

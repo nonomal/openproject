@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -37,7 +39,7 @@ module OpenProject::TextFormatting::Formats
     end
 
     def to_html(text)
-      raise NotImplementedError
+      raise SubclassResponsibilityError
     end
 
     protected

@@ -37,14 +37,6 @@ See COPYRIGHT and LICENSE files for more details.
     )
     header.with_description { t(:label_custom_style_description) }
 
-    if @tabs.present?
-      header.with_tab_nav(label: nil) do |tab_nav|
-        @tabs.each do |tab|
-          tab_nav.with_tab(selected: selected_tab(@tabs) == tab, href: tab[:path]) do |t|
-            t.with_text { tab[:label] }
-          end
-        end
-      end
-    end
+    helpers.render_tab_header_nav(header, @tabs)
   end
 %>

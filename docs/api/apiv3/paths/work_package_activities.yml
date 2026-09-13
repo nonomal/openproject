@@ -3,7 +3,7 @@
 get:
   parameters:
   - description: Work package id
-    example: '1'
+    example: 1
     in: path
     name: id
     required: true
@@ -86,7 +86,7 @@ get:
 post:
   parameters:
   - description: Work package id
-    example: '1'
+    example: 1
     in: path
     name: id
     required: true
@@ -153,14 +153,5 @@ post:
     content:
       application/json:
         schema:
-          example:
-            comment:
-              raw: I think this is awesome!
-          properties:
-            comment:
-              properties:
-                raw:
-                  type: string
-              type: object
-          type: object
+          $ref: "../components/schemas/activity_comment_write_model.yml"
   summary: Comment work package

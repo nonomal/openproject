@@ -10,6 +10,30 @@ keywords: development setup docker macos
 
 This guide covers observed nuances with the docker runtime on MacOS. Please ensure you've gone through the general [OpenProject development setup via docker](../docker) guide before proceeding.
 
+## Apple Silicon (M1, M2, M3, M4)
+
+Apple transitioned from Intel to Apple Silicon (ARM64) architecture starting in 2020. As a result, some Docker images — particularly those involving browsers like chrome and opera — still do not support ARM64 natively and require emulation via the linux/amd64 platform. However, other components like firefox, and chromium now have official ARM64-compatible images.
+
+To ensure compatibility and improve performance on Apple Silicon, you can create a local `docker-compose.override.yml` file that selectively configures platform support:
+
+```yaml
+services:
+  selenium-hub:
+    platform: linux/amd64
+  cuprite-chrome:
+    platform: linux/arm64
+  firefox:
+    platform: linux/arm64
+  opera:
+    platform: linux/amd64
+  chrome:
+    image: selenium/node-chrome
+    platform: linux/amd64
+```
+
+This setup leverages native performance where supported, and falls back to x86_64 emulation only when necessary.
+> Note: If you’re using Docker Desktop or OrbStack, QEMU-based linux/amd64 emulation is handled automatically, but performance may vary depending on the image.
+
 ## Docker on MacOS File System Performance
 
 Docker on Mac is [known to have file system performance issues](https://github.com/docker/roadmap/issues/7) due to the fact that Docker runs in a virtual machine on MacOS.
@@ -31,6 +55,12 @@ time docker compose exec backend-test bundle exec rspec spec/models/work_package
 | Docker Desktop + VirtioFS  |  170.66 real - Finished in 12.04 seconds (files took 2 minutes 33.7 seconds to load)  | 97.97 real - Finished in 15.22 seconds (files took 1 minute 16.85 seconds to load) |
 | Colima Qemu  | 469.08 real - Finished in 19.25 seconds (files took 7 minutes 22 seconds to load)     |  270.75 real - Finished in 17.05 seconds (files took 4 minutes 5.9 seconds to load) |
 | OrbStack + VirtioFS  | 79.56 real - Finished in 7.74 seconds (files took 1 minute 9.49 seconds to load)    | 41.04 real - Finished in 7.72 seconds (files took 31.7 seconds to load) |
+
+The following is a benchmark performed on a _MacBook Pro, 2024 24 GB M4 Pro_
+
+| Runtime    | Run1 | Run2|
+| -------- | ------- |-------|
+| OrbStack + VirtioFS  | Finished in 2.12 seconds (files took 7.16 seconds to load)    | Finished in 1.95 seconds (files took 6.83 seconds to load) |
 
 ### Orbstack Installation
 

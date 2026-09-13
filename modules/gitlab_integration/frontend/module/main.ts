@@ -27,10 +27,12 @@
 // See docs/COPYRIGHT.rdoc for more details.
 //++
 
-import { Injector, NgModule } from '@angular/core';
+import { Injector, NgModule, inject } from '@angular/core';
 import { OpSharedModule } from 'core-app/shared/shared.module';
 import { OpenprojectTabsModule } from 'core-app/shared/components/tabs/openproject-tabs.module';
-import { WorkPackageTabsService } from 'core-app/features/work-packages/components/wp-tabs/services/wp-tabs/wp-tabs.service';
+import {
+  WorkPackageTabsService,
+} from 'core-app/features/work-packages/components/wp-tabs/services/wp-tabs/wp-tabs.service';
 
 
 import { GitlabTabComponent } from './gitlab-tab/gitlab-tab.component';
@@ -39,7 +41,7 @@ import { TabHeaderIssueComponent } from './tab-header-issue/tab-header-issue.com
 import { TabMrsComponent } from './tab-mrs/tab-mrs.component';
 import { TabIssueComponent } from './tab-issue/tab-issue.component';
 import { GitActionsMenuDirective } from './git-actions-menu/git-actions-menu.directive';
-import { GitActionsMenuComponent } from './git-actions-menu/git-actions-menu.component';
+import { GitLabActionsMenuComponent } from './git-actions-menu/git-actions-menu.component';
 import { WorkPackagesGitlabMrsService } from './tab-mrs/wp-gitlab-mrs.service';
 import { WorkPackagesGitlabIssueService } from './tab-issue/wp-gitlab-issue.service';
 import { MergeRequestComponent } from './merge-request/merge-request.component';
@@ -70,13 +72,16 @@ export function workPackageGitlabCount(
 
 export function initializeGitlabIntegrationPlugin(injector:Injector) {
   const wpTabService = injector.get(WorkPackageTabsService);
-  wpTabService.register({
-    component: GitlabTabComponent,
-    name: I18n.t('js.gitlab_integration.work_packages.tab_name'),
-    id: 'gitlab',
-    displayable: (workPackage) => !!workPackage.gitlab,
-    count: workPackageGitlabCount,
-  });
+  wpTabService.registerBefore(
+    'watchers',
+    {
+      component: GitlabTabComponent,
+      name: I18n.t('js.gitlab_integration.work_packages.tab_name'),
+      id: 'gitlab',
+      displayable: (workPackage) => !!workPackage.gitlab,
+      count: workPackageGitlabCount,
+    },
+  );
 }
 
 
@@ -96,7 +101,7 @@ export function initializeGitlabIntegrationPlugin(injector:Injector) {
     TabMrsComponent,
     TabIssueComponent,
     GitActionsMenuDirective,
-    GitActionsMenuComponent,
+    GitLabActionsMenuComponent,
     MergeRequestComponent,
     IssueComponent,
   ],
@@ -107,11 +112,13 @@ export function initializeGitlabIntegrationPlugin(injector:Injector) {
     TabMrsComponent,
     TabIssueComponent,
     GitActionsMenuDirective,
-    GitActionsMenuComponent,
+    GitLabActionsMenuComponent,
   ],
 })
 export class PluginModule {
-  constructor(injector:Injector) {
+  constructor() {
+    const injector = inject(Injector);
+
     initializeGitlabIntegrationPlugin(injector);
   }
 }

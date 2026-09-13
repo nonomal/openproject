@@ -39,22 +39,24 @@ module Storages
 
       def initialize
         super
-        @data = Peripherals::StorageInteraction::ResultData::CopyTemplateFolder
-                .new(id: nil, polling_url: nil, requires_polling: false)
+        @data = Adapters::Results::CopyTemplateFolder.new(id: nil, polling_url: nil, requires_polling: false)
       end
 
-      # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/PerceivedComplexity, Metrics/AbcSize
       def call(source, target)
         with_tagged_logger([self.class, source&.id, target&.id]) do
           return @result.map { @data } if non_managed_project_folder?(source)
           return @result.map { @data.with(id: source.project_folder_id) } if manually_managed_source?(source)
 
           info "Initiating copy of project folder #{source.managed_project_folder_path} to #{target.managed_project_folder_path}"
-          copy_result = initiate_copy(source.storage, source.project_folder_location, target.managed_project_folder_path)
-          @result.map { copy_result.result }
+          copy_result = copy_project_folder(source.storage, source.project_folder_location, target.managed_project_folder_path)
+          copy_result.either(
+            ->(success) { @result.map { success } },
+            ->(failed) { @result.map { failed } }
+          )
         end
       end
-      # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/PerceivedComplexity, Metrics/AbcSize
 
       private
 
@@ -72,20 +74,19 @@ module Storages
         end
       end
 
-      def initiate_copy(storage, source_path, destination_path)
-        Peripherals::Registry
-          .resolve("#{storage}.commands.copy_template_folder")
-          .call(auth_strategy: auth_strategy(storage.short_provider_type),
-                storage:,
-                source_path:,
-                destination_path:).on_failure do |failed|
-          log_storage_error(failed.errors)
-          add_error(:base, failed.errors, options: { destination_path:, source_path: }).fail!
+      def copy_project_folder(storage, source_path, destination_path)
+        Adapters::Input::CopyTemplateFolder.build(source: source_path, destination: destination_path).bind do |input_data|
+          Adapters::Registry
+            .resolve("#{storage}.commands.copy_template_folder")
+            .call(auth_strategy: auth_strategy(storage), storage:, input_data:).alt_map do |failed|
+            log_adapter_error(failed)
+            add_error(:base, failed, options: { destination_path:, source_path: })
+          end
         end
       end
 
-      def auth_strategy(short_provider_type)
-        Peripherals::Registry.resolve("#{short_provider_type}.authentication.userless").call
+      def auth_strategy(storage)
+        Adapters::Registry.resolve("#{storage}.authentication.userless").call
       end
     end
   end

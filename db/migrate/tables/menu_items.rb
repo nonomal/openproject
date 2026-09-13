@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,12 +32,12 @@ require_relative "base"
 
 class Tables::MenuItems < Tables::Base
   def self.table(migration)
-    create_table migration do |t|
-      t.column :name, :string
-      t.column :title, :string
-      t.column :parent_id, :integer
-      t.column :options, :text
-      t.belongs_to :navigatable, type: :int, index: false
+    create_table migration do |t| # rubocop:disable Rails/CreateTableWithTimestamps
+      t.string :name
+      t.string :title
+      t.bigint :parent_id
+      t.text :options
+      t.belongs_to :navigatable, index: false
       t.string :type
 
       t.index %i(navigatable_id title)

@@ -1,10 +1,11 @@
-<div class="op-submenu" data-controller="filter--filter-list" data-application-target="dynamic" data-test-selector="op-submenu">
+<div class="op-submenu" data-controller="filter--filter-list" data-test-selector="op-submenu">
   <% if @searchable %>
     <div class="op-submenu--search">
       <%= render Primer::Alpha::TextField.new(
             name: "search",
             label: I18n.t("label_search"),
             placeholder: I18n.t("label_search_by_name"),
+            "aria-label": I18n.t("label_search"),
             leading_visual: { icon: :search },
             visually_hide_label: true,
             classes: "op-submenu--search-input",
@@ -47,7 +48,13 @@
               </span>
 
               <% if menu_item.count %>
-                <span class="op-bubble op-bubble_alt_highlighting" data-test-selector="op-submenu--item-count"><%= menu_item.count %></span>
+                <%= render Primer::Beta::Counter.new(
+                      count: menu_item.count,
+                      scheme: :primary,
+                      hide_if_zero: true,
+                      round: true,
+                      test_selector: "op-submenu--item-count"
+                    ) %>
               <% end %>
             </a>
           </li>
@@ -56,9 +63,7 @@
     <% end %>
 
     <% nested_sidebar_menu_items.each do |menu_item| %>
-      <div data-controller="menus--submenu"
-           data-application-target="dynamic">
-
+      <div data-controller="menus--submenu">
         <button class="op-submenu--title"
                 type="button"
                 data-action="click->menus--submenu#toggleContainer">
@@ -85,13 +90,19 @@
                     <%= render Primer::Beta::Octicon.new(icon: "op-enterprise-addons", "aria-label": I18n.t(:label_enterprise_edition), classes: "upsell-colored", ml: 2) %>
                   <% end %>
 
-                  <% if child_item.favored %>
+                  <% if child_item.favorited %>
                     <%= render Primer::Beta::Octicon.new(icon: "star-fill", "aria-label": I18n.t(:label_favorite), classes: %w[op-submenu--item-mark op-primer--star-icon], ml: 2) %>
                   <% end %>
                 </span>
 
                 <% if child_item.count %>
-                  <span class="op-bubble op-bubble_alt_highlighting" data-test-selector="op-submenu--item-count"><%= child_item.count %></span>
+                  <%= render Primer::Beta::Counter.new(
+                        count: child_item.count,
+                        scheme: :secondary,
+                        hide_if_zero: true,
+                        round: true,
+                        test_selector: "op-submenu--item-count"
+                      ) %>
                 <% end %>
               </a>
             </li>

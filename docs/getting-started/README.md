@@ -37,10 +37,10 @@ Watch a short 3-minute introduction video to get started with OpenProject in 6 e
 5. Filter, group and generate reports
 6. Create an agile board
 
-<video src="https://openproject-docs.s3.eu-central-1.amazonaws.com/videos/OpenProject-Getting-started.mp4" type="video/mp4" controls="" style="width:100%"></video>
+<video src="https://openproject-docs.s3.eu-central-1.amazonaws.com/videos/Getting_started_with_OpenProject.mp4"></video>
 
 ## OpenProject product demo video
 
 Watch a **comprehensive OpenProject product introduction** video to learn how to work with OpenProject using traditional and agile project management.
 
-<video src="https://openproject-docs.s3.eu-central-1.amazonaws.com/videos/OpenProject-product-demo-webinar-2.mp4" type="video/mp4" controls="" style="width:100%"></video>
+<video src="https://openproject-docs.s3.eu-central-1.amazonaws.com/videos/OpenProject-product-demo-webinar-2.mp4"></video>

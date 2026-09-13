@@ -10,7 +10,8 @@ keywords: Virus scanning, clamav
 
 # Virus scanning (Enterprise add-on)
 >
-> **Note**: This functionality is an Enterprise add-on. It is currently not available on the Hosted Enterprise Cloud.
+> [!NOTE]
+> This functionality is an Enterprise add-on. It is currently not available on the Hosted Enterprise Cloud.
 
 You can configure OpenProject to automatically scan uploaded attachments for viruses using the [ClamAV antivirus](https://www.clamav.net/) engine.
 
@@ -47,11 +48,11 @@ dnf install -y epel-release
 dnf install -y clamav clamd clamav-update
 ```
 
-For these distributions, you need to manually create the configuration files for `freshclam` and `clamd`.  For more information, see https://docs.clamav.net/manual/Installing.html#rpm-packages-for-centos-redhat-fedora-suse-etc
+For these distributions, you need to manually create the configuration files for `freshclam` and `clamd`.  [More information](https://docs.clamav.net/manual/Installing.html#rpm-packages-for-centos-redhat-fedora-suse-etc)
 
 ### Docker
 
-To run ClamAV in Docker, follow this guide: https://docs.clamav.net/manual/Installing/Docker.html.
+To run ClamAV in Docker, follow this [guide](https://docs.clamav.net/manual/Installing/Docker.html).
 
 As a quick-start, you can use this command to start clamav with local volume mounts for the virus database:
 
@@ -87,7 +88,7 @@ In both these cases, use the `ClamAV (Host)` option with `clamav:3310` as the ho
 
 ## Configuration in OpenProject
 
-To enable the virus scanning functionality, visit *Administration > Files > Attachments > Virus scanning*.
+To enable the virus scanning functionality, visit _Administration > Files > Attachments > Virus scanning_.
 
 You will see the following options:
 
@@ -102,7 +103,7 @@ You will see the following options:
 
    Here you can select the action to take place when a virus was found:
 
-   - **Quarantine the file**: quarantined files will be displayed under *Administration > Attachments > Quarantined attachments* for review or deletion.
+   - **Quarantine the file**: quarantined files will be displayed under _Administration > Attachments > Quarantined attachments_ for review or deletion.
    - **Delete the file directly**.
 
 ![Virus scanning settings socket](openproject_system_settings_virus_scanning.png)
@@ -123,7 +124,7 @@ If the virus scanning mode has been enabled, all uploaded attachments will be sc
 
 > **Note**: While attachments are in the process of being scanned, they are only accessible to the original author. As soon as they are scanned without any findings, they are made accessible to all other users.
 
-If viruses are found, they are treated according to the *Infected file action* setting.
+If viruses are found, they are treated according to the _Infected file action_ setting.
 
 - Quarantine: The files are still visible in the container (e.g., in the work package they were uploaded in), but are no longer accessible. A comment is made to inform users about it.
 - Delete: The file is deleted straight away. A comment is made to inform the users about it.

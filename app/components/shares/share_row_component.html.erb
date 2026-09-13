@@ -30,9 +30,9 @@
       if share_editable?
         user_row_grid.with_area(:remove, tag: :div) do
           form_with url: url_for([entity, share]), method: :delete do
-            render(Primer::Beta::IconButton.new(icon: "trash",
+            render(Primer::Beta::IconButton.new(icon: :x,
                                                 type: :submit,
-                                                scheme: :danger,
+                                                scheme: :invisible,
                                                 "aria-label": I18n.t('sharing.remove'),
                                                 test_selector: 'op-share-dialog--remove'))
           end

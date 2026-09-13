@@ -21,12 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { CUSTOM_ELEMENTS_SCHEMA, Injector, NgModule } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, Injector, NgModule, inject } from '@angular/core';
 import { OpSharedModule } from 'core-app/shared/shared.module';
 import { OpenprojectFieldsModule } from 'core-app/shared/components/fields/openproject-fields.module';
 import { OpenprojectModalModule } from 'core-app/shared/components/modal/modal.module';
@@ -231,7 +231,6 @@ import {
   WorkPackageViewDropdownMenuDirective,
 } from 'core-app/shared/components/op-context-menu/handlers/wp-view-dropdown-menu.directive';
 import { HalEventsService } from 'core-app/features/hal/services/hal-events.service';
-import { OpenprojectProjectsModule } from 'core-app/features/projects/openproject-projects.module';
 import {
   WorkPackageNotificationService,
 } from 'core-app/features/work-packages/services/notifications/work-package-notification.service';
@@ -253,6 +252,9 @@ import {
   WorkPackageViewPageComponent,
 } from 'core-app/features/work-packages/routing/wp-view-page/wp-view-page.component';
 import {
+  WorkPackageViewPageEntryComponent,
+} from 'core-app/features/work-packages/routing/wp-view-page/wp-view-page-entry.component';
+import {
   WorkPackageSettingsButtonComponent,
 } from 'core-app/features/work-packages/components/wp-buttons/wp-settings-button/wp-settings-button.component';
 import { BackButtonComponent } from 'core-app/features/work-packages/components/back-routing/back-button.component';
@@ -273,7 +275,6 @@ import {
 import { QuerySharingModalComponent } from 'core-app/shared/components/modals/share-modal/query-sharing.modal';
 import { SaveQueryModalComponent } from 'core-app/shared/components/modals/save-modal/save-query.modal';
 import { QuerySharingFormComponent } from 'core-app/shared/components/modals/share-modal/query-sharing-form.component';
-import { WpDestroyModalComponent } from 'core-app/shared/components/modals/wp-destroy-modal/wp-destroy.modal';
 import {
   WorkPackageTypeStatusComponent,
 } from 'core-app/features/work-packages/components/wp-type-status/wp-type-status.component';
@@ -293,18 +294,18 @@ import { UserLinkComponent } from 'core-app/shared/components/user-link/user-lin
 import {
   WorkPackageWatcherButtonComponent,
 } from 'core-app/features/work-packages/components/wp-watcher-button/wp-watcher-button.component';
-import { WpResizerDirective } from 'core-app/shared/components/resizer/resizer/wp-resizer.component';
+import { WpResizerComponent } from 'core-app/shared/components/resizer/resizer/wp-resizer.component';
 import {
   GroupDescriptor,
   WorkPackageSingleViewComponent,
 } from 'core-app/features/work-packages/components/wp-single-view/wp-single-view.component';
 import {
-  WorkPackageCopySplitViewComponent,
-} from 'core-app/features/work-packages/components/wp-copy/wp-copy-split-view.component';
-import {
   WorkPackageFormAttributeGroupComponent,
 } from 'core-app/features/work-packages/components/wp-form-group/wp-attribute-group.component';
 import { WorkPackagesGridComponent } from 'core-app/features/work-packages/components/wp-grid/wp-grid.component';
+import { OpSortableListsDirective } from 'core-app/shared/directives/sortable-lists/sortable-lists.directive';
+import { OpSortableListsListDirective } from 'core-app/shared/directives/sortable-lists/sortable-lists-list.directive';
+import { OpSortableListsItemDirective } from 'core-app/shared/directives/sortable-lists/sortable-lists-item.directive';
 import {
   WorkPackageSplitViewToolbarComponent,
 } from 'core-app/features/work-packages/components/wp-details/wp-details-toolbar.component';
@@ -405,6 +406,16 @@ import {
 } from 'core-app/features/work-packages/routing/wp-split-view/wp-split-view-entry.component';
 import { OpWpDatePickerModalComponent } from 'core-app/shared/components/datepicker/wp-date-picker-modal/wp-date-picker.modal';
 import { OpenprojectEnterpriseModule } from 'core-app/features/enterprise/openproject-enterprise.module';
+import {
+  WorkPackageReminderContextMenuDirective,
+} from 'core-app/features/work-packages/components/wp-buttons/wp-reminder-button/wp-reminder-context-menu.directive';
+import { WorkPackageFullCopyEntryComponent } from 'core-app/features/work-packages/routing/wp-full-copy/wp-full-copy-entry.component';
+import { WorkPackageFullCreateEntryComponent } from 'core-app/features/work-packages/routing/wp-full-create/wp-full-create-entry.component';
+import { WorkPackageFullViewEntryComponent } from 'core-app/features/work-packages/routing/wp-full-view/wp-full-view-entry.component';
+import {
+  WorkPackageSplitCreateEntryComponent,
+} from 'core-app/features/work-packages/routing/wp-split-create/wp-split-create-entry.component';
+import { WorkPackageProjectAttributesTabComponent } from 'core-app/features/work-packages/components/wp-single-view-tabs/project-attributes-tab/op-project-attributes-tab.component';
 
 @NgModule({
   imports: [
@@ -420,8 +431,6 @@ import { OpenprojectEnterpriseModule } from 'core-app/features/enterprise/openpr
 
     OpenprojectBcfModule,
 
-    OpenprojectProjectsModule,
-
     OpenprojectModalModule,
 
     OpenprojectAutocompleterModule,
@@ -436,6 +445,10 @@ import { OpenprojectEnterpriseModule } from 'core-app/features/enterprise/openpr
 
     WorkPackageIsolatedQuerySpaceDirective,
     OpenprojectEnterpriseModule,
+
+    OpSortableListsDirective,
+    OpSortableListsListDirective,
+    OpSortableListsItemDirective,
   ],
   providers: [
     // Notification service
@@ -478,6 +491,7 @@ import { OpenprojectEnterpriseModule } from 'core-app/features/enterprise/openpr
     WorkPackagesBaseComponent,
     PartitionedQuerySpacePageComponent,
     WorkPackageViewPageComponent,
+    WorkPackageViewPageEntryComponent,
 
     // WP list side
     WorkPackageListViewComponent,
@@ -491,7 +505,6 @@ import { OpenprojectEnterpriseModule } from 'core-app/features/enterprise/openpr
 
     // WP Copy
     WorkPackageCopyFullViewComponent,
-    WorkPackageCopySplitViewComponent,
 
     // Embedded table
     WorkPackageEmbeddedTableComponent,
@@ -511,7 +524,7 @@ import { OpenprojectEnterpriseModule } from 'core-app/features/enterprise/openpr
     WorkPackagesTableConfigMenuComponent,
     WorkPackageTablePaginationComponent,
 
-    WpResizerDirective,
+    WpResizerComponent,
 
     WorkPackageTableSumsRowController,
 
@@ -588,19 +601,27 @@ import { OpenprojectEnterpriseModule } from 'core-app/features/enterprise/openpr
     // Files tab
     WorkPackageFilesTabComponent,
 
+    // Project attributes tab
+    WorkPackageProjectAttributesTabComponent,
+
     // Split view
     WorkPackageDetailsViewButtonComponent,
     WorkPackageSplitViewComponent,
     WorkPackageSplitViewEntryComponent,
+    WorkPackageSplitCreateEntryComponent,
     WorkPackageBreadcrumbComponent,
     WorkPackageSplitViewToolbarComponent,
     WorkPackageWatcherButtonComponent,
     WorkPackageReminderButtonComponent,
+    WorkPackageReminderContextMenuDirective,
     WorkPackageShareButtonComponent,
     WorkPackageSubjectComponent,
 
     // Full view
     WorkPackagesFullViewComponent,
+    WorkPackageFullViewEntryComponent,
+    WorkPackageFullCopyEntryComponent,
+    WorkPackageFullCreateEntryComponent,
 
     // Modals
     WpTableConfigurationModalComponent,
@@ -614,7 +635,6 @@ import { OpenprojectEnterpriseModule } from 'core-app/features/enterprise/openpr
     QuerySharingFormComponent,
     QuerySharingModalComponent,
     SaveQueryModalComponent,
-    WpDestroyModalComponent,
     WorkPackageShareModalComponent,
     WorkPackageReminderModalComponent,
 
@@ -654,7 +674,7 @@ import { OpenprojectEnterpriseModule } from 'core-app/features/enterprise/openpr
     WorkPackageFilterContainerComponent,
     QueryFiltersComponent,
 
-    WpResizerDirective,
+    WpResizerComponent,
     WorkPackageBreadcrumbComponent,
     WorkPackageBreadcrumbParentComponent,
     WorkPackageSplitViewToolbarComponent,
@@ -674,13 +694,20 @@ import { OpenprojectEnterpriseModule } from 'core-app/features/enterprise/openpr
     WorkPackageSplitViewComponent,
     BackButtonComponent,
     OpWpDatePickerModalComponent,
+
+    // Needed so boards can put its lists under a shared sortable root.
+    OpSortableListsDirective,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
 export class OpenprojectWorkPackagesModule {
+  private injector = inject(Injector);
+
   static bootstrapAttributeGroupsCalled = false;
 
-  constructor(private injector:Injector) {
+  constructor() {
+    const injector = this.injector;
+
     OpenprojectWorkPackagesModule.bootstrapAttributeGroups(injector);
   }
 

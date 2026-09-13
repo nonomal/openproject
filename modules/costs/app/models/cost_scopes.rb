@@ -18,15 +18,15 @@ module CostScopes
   end
 
   def view_allowed_entries_permission
-    raise NotImplementedError
+    raise SubclassResponsibilityError
   end
 
   def view_allowed_own_entries_permission
-    raise NotImplementedError
+    raise SubclassResponsibilityError
   end
 
   def view_rates_permissions
-    raise NotImplementedError
+    raise SubclassResponsibilityError
   end
 
   def with_visible_costs_on(scope, user: User.current, project: nil)
@@ -55,11 +55,14 @@ module CostScopes
     # so we need to figure out the correct scope to use
     wp_scoped_permission = Authorization.permissions_for(allowed_own_permission).any?(&:work_package?)
 
+    # TODO: Add other entity types
     if wp_scoped_permission
       project_allowed_scope.or(
-        table[:work_package_id]
-        .in(WorkPackage.allowed_to(user, allowed_own_permission).select(:id).arel)
-        .and(table[:user_id].eq(user.id))
+        table[:entity_type].eq("WorkPackage").and(
+          table[:entity_id]
+          .in(WorkPackage.allowed_to(user, allowed_own_permission).select(:id).arel)
+          .and(table[:user_id].eq(user.id))
+        )
       )
     else
       project_allowed_scope.or(

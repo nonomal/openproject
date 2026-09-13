@@ -42,54 +42,57 @@ See COPYRIGHT and LICENSE files for more details.
 <%= call_hook(:view_admin_info_top) %>
 
 <%= render(AttributeGroups::AttributeGroupComponent.new) do |component|
-      if Setting.show_product_version?
-        core_link = linked_sha_reference(OpenProject::VERSION.core_sha, OpenProject::VERSION.core_url)
-        component.with_attribute(key: t(:label_core_build), value: core_link) if core_link.present?
+  if Setting.show_product_version?
+    core_link = linked_sha_reference(OpenProject::VERSION.core_sha, OpenProject::VERSION.core_url)
+    component.with_attribute(key: t(:label_core_build), value: core_link) if core_link.present?
 
-        product_link = linked_sha_reference(OpenProject::VERSION.product_sha, OpenProject::VERSION.product_url)
-        component.with_attribute(key: t(:label_product_version), value: product_link) if product_link.present?
-      end
+    product_link = linked_sha_reference(OpenProject::VERSION.product_sha, OpenProject::VERSION.product_url)
+    component.with_attribute(key: t(:label_product_version), value: product_link) if product_link.present?
+  end
 
-      component.with_attribute(key: t(:label_core_version), value: OpenProject::Info.versioned_name)
-      component.with_attribute(key: t(:label_database_version), value: @db_version)
+  component.with_attribute(key: t(:label_core_version), value: OpenProject::Info.versioned_name)
+  component.with_attribute(key: t(:label_database_version), value: @db_version)
 
-      if display_security_badge_graphic?
-        content = content_tag :object, nil, data: security_badge_url, type: "image/svg+xml"
-        content += link_to "",
-                           ::OpenProject::Static::Links[:security_badge_documentation][:href],
-                           title: t(:label_what_is_this),
-                           class: "security-badge--help-icon icon-context icon-help1",
-                           target: "_blank"
-        component.with_attribute(key: "", value: content)
-      end
+  if OpenProject::Database.version_deprecated?
+    value = render(Primer::Alpha::Banner.new(
+      scheme: :warning,
+      icon: :alert
+    )) do
+      link_translate(
+            :"admin.info.database_deprecation_html",
+            links: {
+              upgrade_guide: %i[postgres_17_upgrade]
+            }
+          )
+    end
+    component.with_attribute(key: "Deprecation warning", value:)
+  end
 
-      if OpenProject::Database.version_deprecated?
-        value = <<~STR.html_safe
-      <p>
-        Starting with OpenProject 12.0, PostgreSQL 13 is required to use OpenProject.
-        <br/>
-        We have prepared #{static_link_to(:postgres_13_upgrade, label: 'upgrade guides for all installation methods')}.
-       You can perform the upgrade ahead of the release at any time by following the guides.
-       </p>
-    STR
-        component.with_attribute(key: "Deprecation warning", value:)
-      end
+  if display_security_badge_graphic?
+    content = content_tag :object, nil, data: security_badge_url, type: "image/svg+xml"
+    content += link_to "",
+                       ::OpenProject::Static::Links.url_for(:security_badge_documentation),
+                       title: t(:label_what_is_this),
+                       class: "security-badge--help-icon icon-context icon-help1",
+                       target: "_blank"
+    component.with_attribute(key: "", value: content)
+  end
 
-      if (updated_on = OpenProject::VERSION.updated_on).present?
-        component.with_attribute(key: t(:label_last_change_on), value: format_time(updated_on))
-      end
-    end %>
+  if (updated_on = OpenProject::VERSION.updated_on).present?
+    component.with_attribute(key: t(:label_last_change_on), value: format_time(updated_on))
+  end
+end %>
 
 <%= render(AttributeGroups::AttributeGroupComponent.new) do |component|
-      component.with_header(title: I18n.t(:label_system))
+  component.with_header(title: I18n.t(:label_system))
 
-      @checklist.each do |label, result|
-        aria_label = result ? t(:general_text_Yes) : t(:general_text_No)
-        icon = result ? "check-circle-fill" : "circle"
-        value = render Primer::Beta::Octicon.new(icon:, "aria-label": aria_label)
-        component.with_attribute(key: I18n.t(label), value:)
-      end
-    end %>
+  @checklist.each do |label, result|
+    aria_label = result ? t(:general_text_Yes) : t(:general_text_No)
+    icon = result ? "check-circle-fill" : "circle"
+    value = render Primer::Beta::Octicon.new(icon:, "aria-label": aria_label)
+    component.with_attribute(key: I18n.t(label), value:)
+  end
+end %>
 
 <% @storage_information.each_with_index do |(_, entries), i| %>
   <%=
@@ -98,7 +101,7 @@ See COPYRIGHT and LICENSE files for more details.
 
       component.with_attribute(
         key: t(:label_storage_for),
-        value: safe_join(entries[:labels], "<br/>".html_safe)
+        value: safe_join(entries[:labels], tag(:br))
       )
 
       component.with_attribute(

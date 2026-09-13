@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -82,7 +84,7 @@ module OpenProject::TextFormatting
         if element["class"].present?
           # Avoid using element['class'].include?(css_class) as css_class can be a substring
           # of an existing class
-          element["class"] += " #{css_class}" unless element["class"].split.any? { |existing_class| existing_class == css_class }
+          element["class"] += " #{css_class}" unless element["class"].split.any?(css_class)
         else
           element["class"] = css_class
         end

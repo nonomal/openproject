@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -36,7 +38,7 @@ RSpec.describe Principals::Scopes::PossibleMember do
   let!(:non_member_role) { create(:non_member) }
   let!(:active_user) { create(:user) }
   let!(:admin_user) { create(:admin) }
-  let!(:global_manager) { create(:user, global_permissions: [:manage_user]) }
+  let!(:global_manager) { create(:user, global_permissions: %i[view_all_principals manage_user]) }
   let!(:locked_user) { create(:user, status: :locked) }
   let!(:registered_user) { create(:user, status: :registered) }
   let!(:invited_user) { create(:user, status: :invited) }

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -85,11 +87,11 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
 
     context "with Attachment" do
       it_behaves_like "rewritten record",
-                      :attachment,
+                      Attachment,
                       :author_id
 
       it_behaves_like "rewritten record",
-                      :journal_attachment_journal,
+                      Journal::AttachmentJournal,
                       :author_id do
         let(:attributes) do
           {
@@ -107,7 +109,7 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
       shared_let(:news) { create(:news) }
 
       it_behaves_like "rewritten record",
-                      :comment,
+                      Comment,
                       :author_id do
         let(:attributes) do
           {
@@ -122,7 +124,7 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
       shared_let(:version) { create(:version) }
 
       it_behaves_like "rewritten record",
-                      :custom_value,
+                      CustomValue,
                       :value,
                       String do
         let(:user_cf) { create(:user_wp_custom_field) }
@@ -136,7 +138,7 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
       end
 
       it_behaves_like "rewritten record",
-                      :journal_customizable_journal,
+                      Journal::CustomizableJournal,
                       :value,
                       String do
         let(:user_cf) { create(:user_wp_custom_field) }
@@ -151,7 +153,7 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
 
     context "with Changeset" do
       it_behaves_like "rewritten record",
-                      :changeset,
+                      Changeset,
                       :user_id do
         let(:attributes) do
           { repository_id: 1,
@@ -161,7 +163,7 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
       end
 
       it_behaves_like "rewritten record",
-                      :journal_changeset_journal,
+                      Journal::ChangesetJournal,
                       :user_id do
         let(:attributes) do
           { repository_id: 1,
@@ -173,7 +175,7 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
 
     context "with Message" do
       it_behaves_like "rewritten record",
-                      :message,
+                      Message,
                       :author_id do
         let(:attributes) do
           {
@@ -184,7 +186,7 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
       end
 
       it_behaves_like "rewritten record",
-                      :journal_message_journal,
+                      Journal::MessageJournal,
                       :author_id do
         let(:attributes) do
           {
@@ -193,21 +195,15 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
           }
         end
       end
-    end
-
-    context "with MeetingParticipant" do
-      it_behaves_like "rewritten record",
-                      :meeting_participant,
-                      :user_id
     end
 
     context "with News" do
       it_behaves_like "rewritten record",
-                      :news,
+                      News,
                       :author_id
 
       it_behaves_like "rewritten record",
-                      :journal_news_journal,
+                      Journal::NewsJournal,
                       :author_id do
         let(:attributes) do
           {
@@ -220,7 +216,7 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
 
     context "with WikiPage" do
       it_behaves_like "rewritten record",
-                      :wiki_page,
+                      WikiPage,
                       :author_id do
         let(:attributes) do
           {
@@ -234,7 +230,7 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
       end
 
       it_behaves_like "rewritten record",
-                      :journal_wiki_page_journal,
+                      Journal::WikiPageJournal,
                       :author_id
     end
 
@@ -258,19 +254,19 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
       end
 
       it_behaves_like "rewritten record",
-                      :work_package,
+                      WorkPackage,
                       :author_id
 
       it_behaves_like "rewritten record",
-                      :work_package,
+                      WorkPackage,
                       :assigned_to_id
 
       it_behaves_like "rewritten record",
-                      :work_package,
+                      WorkPackage,
                       :responsible_id
 
       it_behaves_like "rewritten record",
-                      :journal_work_package_journal,
+                      Journal::WorkPackageJournal,
                       :assigned_to_id do
         let(:attributes) do
           {
@@ -289,7 +285,7 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
       end
 
       it_behaves_like "rewritten record",
-                      :journal_work_package_journal,
+                      Journal::WorkPackageJournal,
                       :responsible_id do
         let(:attributes) do
           {
@@ -310,7 +306,7 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
 
     context "with TimeEntry" do
       it_behaves_like "rewritten record",
-                      :time_entry,
+                      TimeEntry,
                       :user_id do
         let(:attributes) do
           { project_id: 1,
@@ -325,7 +321,7 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
       end
 
       it_behaves_like "rewritten record",
-                      :time_entry,
+                      TimeEntry,
                       :logged_by_id do
         let(:attributes) do
           { project_id: 1,
@@ -340,7 +336,7 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
       end
 
       it_behaves_like "rewritten record",
-                      :journal_time_entry_journal,
+                      Journal::TimeEntryJournal,
                       :user_id do
         let(:attributes) do
           { project_id: 1,
@@ -355,7 +351,7 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
       end
 
       it_behaves_like "rewritten record",
-                      :journal_time_entry_journal,
+                      Journal::TimeEntryJournal,
                       :logged_by_id do
         let(:attributes) do
           { project_id: 1,
@@ -372,7 +368,7 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
 
     context "with Budget" do
       it_behaves_like "rewritten record",
-                      :budget,
+                      Budget,
                       :author_id do
         let(:attributes) do
           { project_id: 1,
@@ -383,7 +379,7 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
       end
 
       it_behaves_like "rewritten record",
-                      :journal_budget_journal,
+                      Journal::BudgetJournal,
                       :author_id do
         let(:attributes) do
           { project_id: 1,
@@ -395,7 +391,7 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
 
     context "with Query" do
       it_behaves_like "rewritten record",
-                      :query,
+                      Query,
                       :user_id do
         let(:attributes) do
           {
@@ -406,24 +402,23 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
       end
     end
 
-    context "with CostQuery" do
-      let(:query) { create(:cost_query, user: principal) }
-
+    context "with PersistedQuery" do
       it_behaves_like "rewritten record",
-                      :cost_query,
-                      :user_id do
-        let(:attributes) do
-          { name: "'abc'",
-            serialized: "'cde'" }
-        end
-      end
+                      :cost_report_query,
+                      :principal_id
+    end
+
+    context "with PersistedView" do
+      it_behaves_like "rewritten record",
+                      :cost_report,
+                      :principal_id
     end
 
     context "with Notification actor" do
       let(:recipient) { create(:user) }
 
       it_behaves_like "rewritten record",
-                      :notification,
+                      Notification,
                       :actor_id do
         let(:attributes) do
           {
@@ -437,7 +432,7 @@ RSpec.describe Principals::ReplaceReferencesService, "#call", type: :model do
 
     context "with OAuth application" do
       it_behaves_like "rewritten record",
-                      :oauth_application,
+                      Doorkeeper::Application,
                       :owner_id do
         let(:attributes) do
           {

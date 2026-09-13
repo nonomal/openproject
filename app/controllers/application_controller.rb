@@ -34,7 +34,6 @@ require "cgi"
 require "doorkeeper/dashboard_helper"
 
 class ApplicationController < ActionController::Base
-  class_attribute :_model_object
   class_attribute :_model_scope
   class_attribute :accept_key_auth_actions
 
@@ -50,11 +49,14 @@ class ApplicationController < ActionController::Base
   include Accounts::CurrentUser
   include Accounts::UserLogin
   include Accounts::Authorization
-  include ::OpenProject::Authentication::SessionExpiry
+  include Accounts::EnterpriseGuard
+  include Accounts::SessionLifetime
   include AdditionalUrlHelpers
   include OpenProjectErrorHelper
   include Security::DefaultUrlOptions
   include OpModalFlashable
+  include DynamicContentSecurityPolicy
+  include PermittedParamsHelper
 
   layout "base"
 
@@ -123,6 +125,11 @@ class ApplicationController < ActionController::Base
     rescue_from StandardError do |exception|
       render_500 exception:
     end
+
+    rescue_from ActionController::UnknownFormat do
+      render body: "406 Not Acceptable: invalid request format",
+             status: :not_acceptable
+    end
   end
 
   rescue_from ActionController::ParameterMissing do |exception|
@@ -145,7 +152,6 @@ class ApplicationController < ActionController::Base
                 :tag_request,
                 :check_if_login_required,
                 :log_requesting_user,
-                :reset_i18n_fallbacks,
                 :check_session_lifetime,
                 :stop_if_feeds_disabled,
                 :set_cache_buster,
@@ -154,6 +160,7 @@ class ApplicationController < ActionController::Base
 
   include Redmine::Search::Controller
   include Redmine::MenuManager::MenuController
+
   helper Redmine::MenuManager::MenuHelper
 
   # set http headers so that the browser does not store any
@@ -171,8 +178,17 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  # Firefox serves these pages stale from the HTTP cache and bfcache on reload and
+  # history-back (the turbo-cache-control meta only governs Turbo's snapshot).
+  # no-store opts out of both so a fresh copy is always fetched.
+  def prevent_response_caching
+    response.cache_control.merge!(no_store: true)
+  end
+
   def tag_request
-    ::OpenProject::Appsignal.tag_request(controller: self, request:)
+    context = { controller: self, request: }
+    ::OpenProject::Appsignal.tag_request(context)
+    ::OpenProject::OpenTelemetry.tag_request(context)
   end
 
   def reload_mailer_settings!
@@ -214,14 +230,6 @@ class ApplicationController < ActionController::Base
     string.gsub(/[^0-9a-zA-Z@._\-"'!?=\/ ]{1}/, "#")
   end
 
-  def reset_i18n_fallbacks
-    fallbacks = [I18n.default_locale] + Redmine::I18n.valid_languages.map(&:to_sym)
-    return if I18n.fallbacks.defaults == fallbacks
-
-    I18n.fallbacks = nil
-    I18n.fallbacks.defaults = fallbacks
-  end
-
   def set_localization
     # 1. Use completely authenticated user
     # 2. Use user with some authenticated stages not completed.
@@ -245,13 +253,20 @@ class ApplicationController < ActionController::Base
   # Find project of id params[:id]
   # Note: find() is Project.friendly.find()
   def find_project
-    @project = Project.find(params[:id])
+    @project = Project.visible.find(params[:id])
   end
 
   # Find project of id params[:project_id]
   # Note: find() is Project.friendly.find()
   def find_project_by_project_id
-    @project = Project.find(params[:project_id])
+    @project = Project.visible.find(params[:project_id])
+  end
+
+  # Find project by project_id if given
+  def find_optional_project
+    @project = Project.visible.find(params[:project_id]) if params[:project_id].present?
+  rescue ActiveRecord::RecordNotFound
+    render_404
   end
 
   # Finds and sets @project based on @object.project
@@ -261,71 +276,12 @@ class ApplicationController < ActionController::Base
     @project = @object.project
   end
 
-  def find_model_object(object_id = :id)
-    model = self.class._model_object
-    if model
-      @object = model.find(params[object_id])
-      instance_variable_set(:"@#{controller_name.singularize}", @object) if @object
-    end
-  end
-
-  def find_model_object_and_project(object_id = :id)
-    if params[object_id]
-      model_object = self.class._model_object
-      instance = model_object.find(params[object_id])
-      @project = instance.project
-      instance_variable_set(:"@#{model_object.to_s.underscore}", instance)
-    else
-      @project = Project.find(params[:project_id])
-    end
-  end
-
-  # TODO: this method is right now only suited for controllers of objects that somehow have an association to Project
-  def find_object_and_scope
-    model_object = self.class._model_object.find(params[:id]) if params[:id].present?
-
-    associations = self.class._model_scope + [Project]
-
-    associated = find_belongs_to_chained_objects(associations, model_object)
-
-    associated.each do |a|
-      instance_variable_set("@" + a.class.to_s.downcase, a)
-    end
-  end
-
-  # this method finds all records that are specified in the associations param
-  # after the first object is found it traverses the belongs_to chain of that first object
-  # if a start_object is provided it is taken as the starting point of the traversal
-  # e.g associations [Message, Board, Project] finds Message by find(:message_id)
-  # then message.forum and board.project
-  def find_belongs_to_chained_objects(associations, start_object = nil)
-    associations.inject([start_object].compact) do |instances, association|
-      scope_name, scope_association = if association.is_a?(Hash)
-                                        [association.keys.first.to_s.downcase, association.values.first]
-                                      else
-                                        [association.to_s.downcase, association.to_s.downcase]
-                                      end
-
-      # TODO: Remove this hidden dependency on params
-      instances << (
-        if instances.last.nil?
-          scope_name.camelize.constantize.find(params[:"#{scope_name}_id"])
-        else
-          instances.last.send(scope_association.to_sym)
-        end)
-      instances
-    end
-  end
-
-  def self.model_object(model, options = {})
-    self._model_object = model
-    self._model_scope = Array(options[:scope]) if options[:scope]
-  end
-
-  # Filter for bulk work package operations
+  # Filter for bulk work package operations. Either :work_package_id (single-WP
+  # routes) or :ids (bulk routes) may carry numeric or semantic identifiers
+  # ("PROJ-42") since both originate from human-facing URLs or forms.
   def find_work_packages
-    @work_packages = WorkPackage.includes(:project)
-                                .where(id: params[:work_package_id] || params[:ids])
+    @work_packages = WorkPackage.where_display_id_in(params[:work_package_id] || params[:ids])
+                                .includes(:project)
                                 .order("id ASC")
     fail ActiveRecord::RecordNotFound if @work_packages.empty?
 
@@ -443,16 +399,6 @@ class ApplicationController < ActionController::Base
 
   helper_method :admin_first_level_menu_entry
 
-  def check_session_lifetime
-    if session_expired?
-      self.logged_user = nil
-
-      flash[:warning] = I18n.t("notice_forced_logout", ttl_time: Setting.session_ttl)
-      redirect_to(controller: "/account", action: "login", back_url: login_back_url)
-    end
-    session[:updated_at] = Time.now
-  end
-
   def feed_request?
     if params[:format].nil?
       %w(application/rss+xml application/atom+xml).include? request.format.to_s
@@ -469,12 +415,12 @@ class ApplicationController < ActionController::Base
 
   private
 
-  def session_expired?
-    !api_request? && current_user.logged? && session_ttl_expired?
-  end
-
   def permitted_params
     @permitted_params ||= PermittedParams.new(params, current_user)
+  end
+
+  def session_expired?
+    !api_request? && current_user.logged? && session_ttl_expired?
   end
 
   def login_back_url_params

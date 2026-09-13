@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -48,6 +49,15 @@ module Meetings
       @state = fetch_or_fallback(STATE_OPTIONS, state)
     end
 
+    def page_header_data_attributes
+      {
+        poll_for_changes_target: "reference",
+        reference_value: @meeting.changed_hash,
+        controller: "editable-page-header-title",
+        "editable-page-header-title-input-id-value": "meeting_title"
+      }
+    end
+
     # Define the interval so it can be overriden through tests
     def check_for_updates_interval
       10_000
@@ -61,30 +71,96 @@ module Meetings
       end
     end
 
+    def can_start_presentation?
+      !@meeting.template? &&
+        !@meeting.draft? &&
+        @meeting.agenda_items.any?
+    end
+
     private
 
     def delete_enabled?
-      !@meeting.template? && User.current.allowed_in_project?(:delete_meetings, @meeting.project)
+      !@meeting.series_template? && User.current.allowed_in_project?(:delete_meetings, @meeting.project)
+    end
+
+    def copy_enabled?
+      User.current.allowed_in_project?(:create_meetings, @meeting.project)
     end
 
     def finish_setup_enabled?
-      @meeting.template? &&
+      @meeting.draft? &&
+        !@meeting.onetime_template? &&
+        User.current.allowed_in_project?(:edit_meetings, @meeting.project)
+    end
+
+    def delete_series_enabled?
+      @meeting.series_template? && @meeting.draft? && User.current.allowed_in_project?(:delete_meetings, @project)
+    end
+
+    def create_from_template_enabled?
+      @meeting.onetime_template? &&
         User.current.allowed_in_project?(:create_meetings, @meeting.project) &&
-        @series.scheduled_meetings.none?
+        EnterpriseToken.allows_to?(:meeting_templates)
+    end
+
+    def create_from_template_button_params
+      {
+        tag: :a,
+        scheme: :secondary,
+        mobile_label: I18n.t("label_meeting_create_from_template"),
+        mobile_icon: :plus,
+        size: :medium,
+        href: new_dialog_project_meetings_path(@project, template_id: @meeting.id),
+        id: "create-meeting-from-template",
+        data: { turbo_stream: true },
+        aria: { label: I18n.t("label_meeting_create_from_template") }
+      }
+    end
+
+    def action_button_params
+      {
+        tag: :button,
+        scheme: :primary,
+        mobile_label: action_button_label,
+        mobile_icon: :check,
+        size: :medium,
+        id: "open-meeting-button",
+        data: {
+          action: "click->meetings--submit#intercept",
+          href: action_button_href,
+          method: "GET"
+        }
+      }
+    end
+
+    def action_button_label
+      @meeting.recurring? ? I18n.t("recurring_meeting.template.button_finalize") : I18n.t("label_meeting_open_action")
+    end
+
+    def action_button_href
+      exit_draft_mode_dialog_project_meeting_path(@project, @meeting)
+    end
+
+    def send_emails?
+      !@meeting.closed? &&
+        @meeting.notify? &&
+        User.current.allowed_in_project?(:send_meeting_invites_and_outcomes, @meeting.project)
     end
 
     def breadcrumb_items
       [
-        parent_element,
+        ({ href: project_overview_path(@project.id), text: @project.name } if @project.present?),
         { href: @project.present? ? project_meetings_path(@project.id) : meetings_path,
           text: I18n.t(:label_meeting_plural) },
-        meeting_series_element,
+        meeting_type_element,
         meeting_element
       ].compact
     end
 
     def meeting_element
-      if @meeting.templated?
+      if @meeting.onetime_template?
+        @meeting.title
+      elsif @meeting.series_template?
         I18n.t(:label_template)
       elsif @series.present?
         format_date(@meeting.start_time)
@@ -93,23 +169,20 @@ module Meetings
       end
     end
 
-    def meeting_series_element
+    def meeting_type_element
       if @series.present?
         { href: project_recurring_meeting_path(@series.project, @series), text: @series.title }
-      end
-    end
-
-    def parent_element
-      if @project.present?
-        { href: project_overview_path(@project.id), text: @project.name }
-      else
-        { href: home_path, text: helpers.organization_name }
+      elsif @meeting.onetime_template?
+        { href: url_for({ controller: "meeting_templates", action: :index, project_id: @project }),
+          text: I18n.t(:label_meeting_templates) }
       end
     end
 
     def delete_label
       if @series.present?
         I18n.t("label_recurring_meeting_cancel")
+      elsif @meeting.onetime_template?
+        I18n.t("label_meeting_template_delete")
       else
         I18n.t("label_meeting_delete")
       end
@@ -117,9 +190,17 @@ module Meetings
 
     def copy_label
       if @series.present?
-        I18n.t("label_recurring_meeting_copy")
+        I18n.t("label_recurring_meeting_duplicate")
       else
-        I18n.t("button_copy")
+        I18n.t("button_duplicate")
+      end
+    end
+
+    def edit_label
+      if @meeting.onetime_template?
+        I18n.t("label_meeting_template_edit")
+      else
+        I18n.t("label_meeting_edit_title")
       end
     end
   end

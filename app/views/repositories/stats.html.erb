@@ -27,7 +27,16 @@ See COPYRIGHT and LICENSE files for more details.
 
 ++#%>
 
-<%= toolbar title: t(:label_statistics) %>
+<%=
+  render Primer::OpenProject::PageHeader.new do |header|
+    header.with_title { t(:label_statistics) }
+    header.with_breadcrumbs([{ href: project_overview_path(@project.id), text: @project.name },
+                             { href: url_for({ action: "show", project_id: @project }),
+                               text: @repository ? t("repositories.named_repository", vendor_name: @repository.class.vendor_name) : t(:label_repository) },
+                             t(:label_statistics)
+                            ])
+  end
+%>
 
 <p class="autoscroll">
   <%= tag(

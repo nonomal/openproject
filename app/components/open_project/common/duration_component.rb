@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -33,7 +35,7 @@ module OpenProject
       attr_reader :duration, :abbreviated, :separator
 
       def initialize(duration, type = :seconds, separator: ", ", abbreviated: false, **args)
-        super
+        super()
 
         @duration = parse_duration(duration, type)
         @abbreviated = abbreviated

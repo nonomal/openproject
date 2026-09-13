@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -49,6 +51,7 @@ RSpec.describe UserPreferences::UpdateContract do
       },
       time_zone: "America/Sao_Paulo",
       warn_on_leaving_unsaved: true,
+      disable_keyboard_shortcuts: true,
       workdays: [1, 2, 4, 6]
     }
   end

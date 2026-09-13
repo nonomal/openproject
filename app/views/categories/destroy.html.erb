@@ -55,7 +55,7 @@ See COPYRIGHT and LICENSE files for more details.
       <div class="form--field-container">
         <%= styled_radio_button_tag "todo", "reassign", false %>
       </div>
-      <%= label_tag "reassign_to_id", t(:description_work_package_category_reassign), class: "hidden-for-sighted" %>
+      <%= label_tag "reassign_to_id", t(:description_work_package_category_reassign), class: "sr-only" %>
       <%= styled_select_tag "reassign_to_id", options_from_collection_for_select(@categories, "id", "name"), container_class: "-middle" %>
     </div>
   <% end %>

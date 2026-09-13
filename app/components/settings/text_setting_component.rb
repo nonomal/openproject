@@ -33,6 +33,7 @@ module Settings
   # A language switch and text area for updating a localized text setting.
   class TextSettingComponent < ::ApplicationComponent
     include OpenProject::FormTagHelper
+    include Settings::FormHelper
 
     options :name # name of setting and tag to differentiate between different language selects
 

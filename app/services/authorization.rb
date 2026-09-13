@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -83,6 +85,8 @@ module Authorization
 
     if perms.blank?
       if !OpenProject::AccessControl.disabled_permission?(action)
+        # See https://www.openproject.org/docs/development/concepts/permissions/#definition-of-permissions
+        # if you are wondering where to define permissions
         Rails.logger.debug { "Used permission \"#{action}\" that is not defined. It will never return true." }
         raise UnknownPermissionError.new(action) if raise_on_unknown
       end

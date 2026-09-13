@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,6 +31,11 @@
 require "spec_helper"
 
 RSpec.describe AttributeHelpTextsController do
+  it "routes to show_dialog" do
+    expect(get("/attribute_help_texts/1/show_dialog"))
+      .to route_to(controller: "attribute_help_texts", action: "show_dialog", id: "1")
+  end
+
   it "routes CRUD to the controller" do
     expect(get("/admin/attribute_help_texts"))
       .to route_to(controller: "attribute_help_texts", action: "index")

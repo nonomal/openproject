@@ -74,7 +74,7 @@ RSpec.describe "DELETE /meetings/:id",
       expect(ActionMailer::Base.deliveries.size).to eq(1)
       mail = ActionMailer::Base.deliveries.first
       expect(mail.body.parts.first.parts.first.body.to_s)
-        .to include "'My one-time meeting' has been cancelled by #{user.name}"
+        .to include "'My one-time meeting' has been cancelled by #{user.name}, or you have been removed as a participant"
     end
   end
 

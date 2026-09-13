@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.shared_examples_for "repository can be relocated" do |vendor|
   let(:job_call) do
     SCM::RelocateRepositoryJob.perform_now repository

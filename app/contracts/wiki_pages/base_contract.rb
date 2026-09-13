@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,6 +32,8 @@
 # considered to be one outside of this contract.
 module WikiPages
   class BaseContract < ::ModelContract
+    include ::Attachments::ValidateReplacements
+
     attribute :wiki
     attribute :title
     attribute :slug
@@ -46,7 +50,7 @@ module WikiPages
 
     def validate_user_edit_allowed
       if (model.project && !user.allowed_in_project?(:edit_wiki_pages, model.project)) ||
-         (model.protected_was && !user.allowed_in_project?(:protect_wiki_pages, model.project))
+         (model.protected_was && !user.allowed_in_project?(:manage_wiki, model.project))
         errors.add :base, :error_unauthorized
       end
     end
@@ -60,7 +64,7 @@ module WikiPages
     end
 
     def validate_user_protect_permission
-      if model.protected_changed? && !user.allowed_in_project?(:protect_wiki_pages, model.project)
+      if model.protected_changed? && !user.allowed_in_project?(:manage_wiki, model.project)
         errors.add :protected, :error_unauthorized
       end
     end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :two_factor_authentication_device_sms, class: "::TwoFactorAuthentication::Device::Sms" do
     user

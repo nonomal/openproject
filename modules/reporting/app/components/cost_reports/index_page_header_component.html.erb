@@ -14,7 +14,6 @@
         href: url_for({ controller: "cost_reports", action: :index, format: "xls", project_id: @project }),
         data: {
           controller: "costs--export",
-          "application-target": "dynamic",
           "costs--export-job-status-dialog-url-value": job_status_dialog_path("_job_uuid_"),
           action: "click->costs--export#download"
         }
@@ -32,7 +31,6 @@
         href: url_for({ controller: "cost_reports", action: :index, format: "pdf", project_id: @project }),
         data: {
           controller: "costs--export",
-          "application-target": "dynamic",
           "costs--export-job-status-dialog-url-value": job_status_dialog_path("_job_uuid_"),
           action: "click->costs--export#download"
         }

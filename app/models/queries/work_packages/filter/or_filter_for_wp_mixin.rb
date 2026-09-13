@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -48,7 +50,7 @@ module Queries::WorkPackages::Filter::OrFilterForWpMixin
   end
 
   def filter_configurations
-    raise NotImplementedError
+    raise SubclassResponsibilityError
   end
 
   def create_instances

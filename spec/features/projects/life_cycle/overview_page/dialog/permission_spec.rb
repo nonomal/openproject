@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,22 +31,15 @@
 require "spec_helper"
 require_relative "../shared_context"
 
-RSpec.describe "Edit project phases on project overview page", :js, with_flag: { stages_and_gates: true } do
+RSpec.describe "Edit project phases on project overview page", :js do
   include_context "with seeded projects and phases"
-  shared_let(:user) { create(:user) }
+  let(:user) { create(:user, member_with_permissions: { project => permissions }) }
   let(:overview_page) { Pages::Projects::Show.new(project) }
   let(:permissions) { [] }
 
   current_user { user }
 
   before do
-    # Mocking the Project::Phase.visible scope
-    allow(Project).to receive(:allowed_to).and_call_original
-    allow(Project).to receive(:allowed_to).with(user, :view_project_phases).and_return(project)
-
-    mock_permissions_for(user) do |mock|
-      mock.allow_in_project(*permissions, project:) # any project
-    end
     overview_page.visit_page
   end
 
@@ -60,7 +55,7 @@ RSpec.describe "Edit project phases on project overview page", :js, with_flag: {
     let(:permissions) { %i[view_project view_project_phases] }
 
     it "shows the attributes sidebar" do
-      overview_page.within_life_cycles_sidebar do
+      overview_page.within_life_cycle_sidebar do
         expect(page).to have_text("Project life cycle")
       end
     end
@@ -70,7 +65,7 @@ RSpec.describe "Edit project phases on project overview page", :js, with_flag: {
     let(:permissions) { %i[view_project view_project_phases edit_project] }
 
     it "does not show the edit buttons" do
-      overview_page.within_life_cycles_sidebar do
+      overview_page.within_life_cycle_sidebar do
         project_life_cycles.each do |lc|
           expect(page).to have_no_link(href: edit_project_phase_path(lc))
         end
@@ -82,7 +77,7 @@ RSpec.describe "Edit project phases on project overview page", :js, with_flag: {
     let(:permissions) { %i[view_project view_project_phases edit_project edit_project_phases] }
 
     it "shows the edit buttons" do
-      overview_page.within_life_cycles_sidebar do
+      overview_page.within_life_cycle_sidebar do
         project_life_cycles.each do |lc|
           expect(page).to have_link(href: edit_project_phase_path(lc))
         end

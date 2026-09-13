@@ -1,4 +1,32 @@
-import { ChangeDetectionStrategy, Component, ElementRef, Input, OnInit, HostListener } from '@angular/core';
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
+import { ChangeDetectionStrategy, Component, ElementRef, Input, OnInit, HostListener, inject } from '@angular/core';
 import { combineLatest, merge, Observable, timer } from 'rxjs';
 import { filter, map, shareReplay, switchMap, throttleTime } from 'rxjs/operators';
 import { ActiveWindowService } from 'core-app/core/active-window/active-window.service';
@@ -7,14 +35,20 @@ import { ApiV3Service } from 'core-app/core/apiv3/api-v3.service';
 import { IanBellService } from 'core-app/features/in-app-notifications/bell/state/ian-bell.service';
 import { populateInputsFromDataset } from 'core-app/shared/components/dataset-inputs';
 
-
 @Component({
   selector: 'opce-in-app-notification-bell',
   templateUrl: './in-app-notification-bell.component.html',
   styleUrls: ['./in-app-notification-bell.component.sass'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
 export class InAppNotificationBellComponent implements OnInit {
+  readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly storeService = inject(IanBellService);
+  readonly apiV3Service = inject(ApiV3Service);
+  readonly activeWindow = inject(ActiveWindowService);
+  readonly pathHelper = inject(PathHelperService);
+
   @Input() interval = 50000;
 
   polling$:Observable<number>;
@@ -23,13 +57,9 @@ export class InAppNotificationBellComponent implements OnInit {
 
   unreadCountText$:Observable<number|string>;
 
-  constructor(
-    readonly elementRef:ElementRef,
-    readonly storeService:IanBellService,
-    readonly apiV3Service:ApiV3Service,
-    readonly activeWindow:ActiveWindowService,
-    readonly pathHelper:PathHelperService,
-  ) {
+  public bellDisplayLimit = 99;
+
+  constructor() {
     populateInputsFromDataset(this);
   }
 
@@ -64,20 +94,12 @@ export class InAppNotificationBellComponent implements OnInit {
       .unreadCount$
       .pipe(
         map((count) => {
-          if (count > 99) {
-            return '99+';
-          }
-
-          if (count <= 0) {
+          if (count > this.bellDisplayLimit || count <= 0) {
             return '';
           }
 
           return count;
         }),
       );
-  }
-
-  notificationsPath():string {
-    return this.pathHelper.notificationsPath();
   }
 }

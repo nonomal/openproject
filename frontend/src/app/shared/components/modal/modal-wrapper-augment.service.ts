@@ -21,17 +21,14 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { Inject, Injectable, Injector } from '@angular/core';
-import { DOCUMENT } from '@angular/common';
+import { Injectable, Injector, DOCUMENT, inject } from '@angular/core';
 import { OpModalService } from 'core-app/shared/components/modal/modal.service';
 import { DynamicContentModalComponent } from 'core-app/shared/components/modals/modal-wrapper/dynamic-content.modal';
-
-const iframeSelector = '.iframe-target-wrapper';
 
 /**
  * This service takes modals that are rendered by the rails backend,
@@ -39,11 +36,14 @@ const iframeSelector = '.iframe-target-wrapper';
  */
 @Injectable({ providedIn: 'root' })
 export class OpModalWrapperAugmentService {
-  constructor(
-    @Inject(DOCUMENT) protected documentElement:Document,
-    protected injector:Injector,
-    protected opModalService:OpModalService,
-  ) {
+  protected documentElement = inject<Document>(DOCUMENT);
+  protected injector = inject(Injector);
+  protected opModalService = inject(OpModalService);
+
+  constructor() {
+    const documentElement = this.documentElement;
+    const opModalService = this.opModalService;
+
     documentElement.addEventListener('turbo:before-render', () => opModalService.close());
   }
 
@@ -53,43 +53,36 @@ export class OpModalWrapperAugmentService {
   public setupListener() {
     const matches = this.documentElement.querySelectorAll('[data-augmented-model-wrapper]');
     for (let i = 0; i < matches.length; ++i) {
-      this.wrapElement(jQuery(matches[i]) as JQuery);
+      this.wrapElement(matches[i] as HTMLElement);
     }
   }
 
   /**
    * Wrap a section[data-augmented-modal-wrapper] element
    */
-  public wrapElement(element:JQuery) {
+  public wrapElement(element:HTMLElement) {
     // Find activation link
-    const activationSelector = element.data('activationSelector') || '.modal-delivery-element--activation-link';
-    const activationLink = jQuery(activationSelector);
-
-    const initializeNow = element.data('modalInitializeNow');
+    const activationSelector = element.dataset.activationSelector || '.modal-delivery-element--activation-link';
+    const activationLink = document.querySelector(activationSelector);
+    const initializeNow = element.dataset.modalInitializeNow;
 
     if (initializeNow) {
       this.show(element);
     } else {
-      activationLink.click((evt:JQuery.TriggeredEvent) => {
+      activationLink?.addEventListener('click', (evt) => {
         this.show(element);
         evt.preventDefault();
       });
     }
   }
 
-  private show(element:JQuery) {
+  private show(element:HTMLElement) {
     // Set modal class name
-    const modalClassName = element.data('modalClassName');
-    // Append CSP-whitelisted IFrame for onboarding
-    const iframeUrl = element.data('modalIframeUrl');
+    const modalClassName = element.dataset.modalClassName;
 
     // Set template from wrapped element
-    const wrappedElement = element.find('.modal-delivery-element');
-    let modalBody = wrappedElement.html();
-
-    if (iframeUrl) {
-      modalBody = this.appendIframe(wrappedElement, iframeUrl);
-    }
+    const wrappedElement = element.querySelector<HTMLElement>('.modal-delivery-element')!;
+    const modalBody = wrappedElement.innerHTML;
 
     this.opModalService.show(
       DynamicContentModalComponent,
@@ -99,20 +92,5 @@ export class OpModalWrapperAugmentService {
         modalClassName,
       },
     );
-  }
-
-  private appendIframe(body:JQuery<HTMLElement>, url:string) {
-    const iframe = jQuery('<iframe frameborder="0" height="350" allowfullscreen>></iframe>');
-    iframe.attr('src', url);
-
-    const iframeParent = body.find(iframeSelector);
-    if (iframeParent.find('iframe').length > 0) {
-      // Make sure we don't initialize the iframe multiple times
-      return body.html();
-    }
-
-    iframeParent.append(iframe);
-
-    return body.html();
   }
 }

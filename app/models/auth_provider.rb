@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,21 +31,26 @@
 class AuthProvider < ApplicationRecord
   belongs_to :creator, class_name: "User"
 
+  has_many :scim_clients, dependent: :restrict_with_error
+
+  has_many :user_auth_provider_links, dependent: :destroy
+  has_many :users,
+           -> { where(type: "User") },
+           through: :user_auth_provider_links,
+           source: :principal
+
   validates :display_name, presence: true
   validates :display_name, uniqueness: true
 
+  after_update :unset_direct_provider, if: -> { saved_change_to_available? && !available? }
   after_destroy :unset_direct_provider
 
-  def self.slug_fragment
-    raise NotImplementedError
-  end
-
   def user_count
-    @user_count ||= User.where("identity_url LIKE ?", "#{slug}%").count
+    @user_count ||= user_auth_provider_links.count
   end
 
   def human_type
-    raise NotImplementedError
+    raise SubclassResponsibilityError
   end
 
   def auth_url

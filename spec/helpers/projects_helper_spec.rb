@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -95,6 +97,13 @@ RSpec.describe ProjectsHelper do
         .to eql([
                   { name: "Name", id: :name }
                 ])
+    end
+  end
+
+  describe "#supported_export_formats" do
+    it "returns the supported export formats" do
+      expect(helper.supported_export_formats)
+        .to match_array(%w[xls csv pdf])
     end
   end
 end

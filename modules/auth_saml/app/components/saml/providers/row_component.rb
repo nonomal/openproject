@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Saml
   module Providers
     class RowComponent < ::OpPrimer::BorderBoxRowComponent
@@ -49,9 +51,8 @@ module Saml
 
         link_to(
           helpers.op_icon("icon icon-delete button--link"),
-          url_for(action: :destroy, id: provider.id),
-          method: :delete,
-          data: { confirm: I18n.t(:text_are_you_sure) },
+          url_for(action: :confirm_destroy, id: provider.id),
+          data: { turbo_stream: true },
           title: t(:button_delete)
         )
       end

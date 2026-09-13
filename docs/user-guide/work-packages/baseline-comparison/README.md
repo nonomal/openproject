@@ -10,8 +10,7 @@ keywords: baseline comparison, work package changes
 
 Baseline is a powerful feature that allows you to view changes to work package tables within a given period. This can be a saved view or a new filter query. Project managers can use baseline to get a quick overview of what has changed over time, making it easier to report on project progress and status.
 
-> [!NOTE]
-> Baseline comparison with yesterday is included in the Community version. Other comparison dates are Enterprise add-ons that are available with Enterprise cloud or Enterprise on-premises. An upgrade from the free Community edition is easily possible.
+[feature: baseline_comparison ]
 
 ![Work package table list with Baseline enabled](13-0_Baseline_overview.png)
 
@@ -21,7 +20,7 @@ Baseline comparison can be enabled on any work package table view:
 
 1. Click on the **Baseline** button in the main toolbar.
 
-2. Pick a comparison point by choosing one of the a preset options or inputting specific dates and times.
+2. Pick a comparison point by choosing one of the preset options or inputting specific dates and times.
 
 3. Click on **Apply** to enable Baseline.
 

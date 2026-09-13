@@ -48,23 +48,22 @@ module OpenIDConnect
       parse_unverified_iss_alg_kid(token).bind do |issuer, alg, kid|
         return Failure("Token signature algorithm #{alg} is not supported") if SUPPORTED_JWT_ALGORITHMS.exclude?(alg)
 
-        provider = fetch_provider(issuer)
-        return Failure("The access token issuer is unknown") if provider.blank?
+        fetch_provider(issuer).fmap do |provider|
+          verified_payload, = JWT.decode(
+            token,
+            fetch_key(provider:, kid:),
+            true,
+            {
+              algorithm: alg,
+              verify_expiration: @verify_expiration,
+              verify_aud: @verify_audience,
+              aud: provider.client_id,
+              required_claims: all_required_claims
+            }
+          )
 
-        verified_payload, = JWT.decode(
-          token,
-          fetch_key(provider:, kid:),
-          true,
-          {
-            algorithm: alg,
-            verify_expiration: @verify_expiration,
-            verify_aud: @verify_audience,
-            aud: provider.client_id,
-            required_claims: all_required_claims
-          }
-        )
-
-        Success([verified_payload, provider])
+          [verified_payload, provider]
+        end
       rescue JWT::DecodeError => e
         Failure(e.message)
       rescue JSON::JWK::Set::KidNotFound
@@ -84,9 +83,13 @@ module OpenIDConnect
     end
 
     def fetch_provider(issuer)
-      return nil if issuer.blank?
+      return Failure("The token has no issuer") if issuer.blank?
 
-      OpenIDConnect::Provider.where(available: true).where("options->>'issuer' = ?", issuer).first
+      provider = OpenIDConnect::Provider.where(available: true).where("options->>'issuer' = ?", issuer).first
+      return Failure("The access token issuer is unknown") if provider.blank?
+      return Failure("Unable to validate issuer signature, OpenID Connect provider has no JWKS URI.") if provider.jwks_uri.blank?
+
+      Success(provider)
     end
 
     def fetch_key(provider:, kid:)

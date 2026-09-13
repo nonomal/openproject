@@ -41,7 +41,7 @@ See COPYRIGHT and LICENSE files for more details.
         <% end %>
       <% end %>
     </fieldset>
-    <div class="hidden-for-sighted" aria-live="polite">
+    <div class="sr-only" aria-live="polite">
       <% if principals.empty? %>
         <label aria-role="alert"><%= t("notice_no_principals_found") %></label>
       <% else %>

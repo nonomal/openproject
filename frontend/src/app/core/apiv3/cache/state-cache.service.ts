@@ -21,12 +21,13 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
 import {
+  InputState,
   MultiInputState,
   State,
 } from '@openproject/reactivestates';
@@ -141,7 +142,7 @@ export class StateCacheService<T> {
         auditTime(250),
         map(() => {
           const mapped:T[] = [];
-          _.each(this.multiState.getValueOr({}), (state:State<T>) => {
+          Object.values(this.multiState.getValueOr({})).forEach((state:State<T>) => {
             if (state.value) {
               mapped.push(state.value);
             }
@@ -150,6 +151,10 @@ export class StateCacheService<T> {
           return mapped;
         }),
       );
+  }
+
+  observeChanges():Observable<[string, T|undefined, InputState<T>]> {
+    return this.multiState.observeChange();
   }
 
   observeSome(ids:string[]):Observable<T[]> {

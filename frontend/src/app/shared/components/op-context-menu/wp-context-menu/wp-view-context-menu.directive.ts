@@ -1,11 +1,43 @@
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
 import { Injector } from '@angular/core';
 import {
   WorkPackageAction,
   WorkPackageContextMenuHelperService,
 } from 'core-app/features/work-packages/components/wp-table/context-menu-helper/wp-context-menu-helper.service';
 import { States } from 'core-app/core/states/states.service';
-import { WorkPackageRelationsHierarchyService } from 'core-app/features/work-packages/components/wp-relations/wp-relations-hierarchy/wp-relations-hierarchy.service';
-import { WorkPackageViewSelectionService } from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-view-selection.service';
+import {
+  WorkPackageRelationsHierarchyService,
+} from 'core-app/features/work-packages/components/wp-relations/wp-relations-hierarchy/wp-relations-hierarchy.service';
+import {
+  WorkPackageViewSelectionService,
+} from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-view-selection.service';
 import { isClickedWithModifier } from 'core-app/shared/helpers/link-handling/link-handling';
 import { OpContextMenuHandler } from 'core-app/shared/components/op-context-menu/op-context-menu-handler';
 import { OPContextMenuService } from 'core-app/shared/components/op-context-menu/op-context-menu.service';
@@ -13,36 +45,42 @@ import {
   OpContextMenuItem,
   OpContextMenuLocalsMap,
 } from 'core-app/shared/components/op-context-menu/op-context-menu.types';
-import { PERMITTED_CONTEXT_MENU_ACTIONS } from 'core-app/shared/components/op-context-menu/wp-context-menu/wp-static-context-menu-actions';
-import { OpModalService } from 'core-app/shared/components/modal/modal.service';
+import {
+  PERMITTED_CONTEXT_MENU_ACTIONS,
+} from 'core-app/shared/components/op-context-menu/wp-context-menu/wp-static-context-menu-actions';
 import { StateService } from '@uirouter/core';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
+import { LazyInject } from 'core-app/shared/helpers/angular/lazy-inject.decorator';
 import { CopyToClipboardService } from 'core-app/shared/components/copy-to-clipboard/copy-to-clipboard.service';
-import { TimeEntryCreateService } from 'core-app/shared/components/time_entries/create/create.service';
 import { splitViewRoute } from 'core-app/features/work-packages/routing/split-view-routes.helper';
-import { WpDestroyModalComponent } from 'core-app/shared/components/modals/wp-destroy-modal/wp-destroy.modal';
 import isNewResource from 'core-app/features/hal/helpers/is-new-resource';
 import { PathHelperService } from 'core-app/core/path-helper/path-helper.service';
+import { UrlParamsService } from 'core-app/core/navigation/url-params.service';
 import { TurboRequestsService } from 'core-app/core/turbo/turbo-requests.service';
+import { CurrentProjectService } from 'core-app/core/current-project/current-project.service';
+import { isSemanticWorkPackageId } from 'core-app/shared/helpers/work-package-id-pattern';
+
+import { Placement } from '@floating-ui/dom';
+
+export interface PositionArgs { placement?:Placement, reference?:HTMLElement }
 
 export class WorkPackageViewContextMenu extends OpContextMenuHandler {
-  @InjectField() protected states!:States;
+  @LazyInject() protected states!:States;
 
-  @InjectField() protected wpRelationsHierarchyService:WorkPackageRelationsHierarchyService;
+  @LazyInject() protected wpRelationsHierarchyService:WorkPackageRelationsHierarchyService;
 
-  @InjectField() protected opModalService:OpModalService;
+  @LazyInject() protected $state!:StateService;
 
-  @InjectField() protected $state!:StateService;
+  @LazyInject() protected wpTableSelection:WorkPackageViewSelectionService;
 
-  @InjectField() protected wpTableSelection:WorkPackageViewSelectionService;
+  @LazyInject() protected WorkPackageContextMenuHelper!:WorkPackageContextMenuHelperService;
 
-  @InjectField() protected WorkPackageContextMenuHelper!:WorkPackageContextMenuHelperService;
+  @LazyInject() protected currentProject:CurrentProjectService;
 
-  @InjectField() protected timeEntryCreateService:TimeEntryCreateService;
+  @LazyInject() protected pathHelper:PathHelperService;
 
-  @InjectField() protected pathHelper:PathHelperService;
+  @LazyInject() protected urlParams:UrlParamsService;
 
-  @InjectField() protected turboRequests:TurboRequestsService;
+  @LazyInject() protected turboRequests:TurboRequestsService;
 
   protected workPackage = this.states.workPackages.get(this.workPackageId).value!;
 
@@ -55,21 +93,36 @@ export class WorkPackageViewContextMenu extends OpContextMenuHandler {
   );
 
   // Get the base route for the current route to ensure we always link correctly
-  protected baseRoute = this.$state.current.data.baseRoute || this.$state.current.name;
+  protected baseRoute = this.$state.current.data?.baseRoute ?? this.$state.current.name;
+
+  // Whether we are running inside a uiRouter context (e.g. work packages list/board).
+  // Calendar and Team Planner render without uiRouter and rely on Turbo navigation instead.
+  protected get hasUiRouterContext():boolean {
+    return this.$state.current.name !== '';
+  }
 
   protected items = this.buildItems();
 
   private copyToClipboardService:CopyToClipboardService;
 
+  protected reference:HTMLElement;
+
   constructor(
     public injector:Injector,
     protected workPackageId:string,
-    protected $element:JQuery,
-    protected additionalPositionArgs:any = {},
-    protected allowSplitScreenActions:boolean = true,
+    protected element:HTMLElement,
+    additionalPositionArgs:PositionArgs = {},
+    protected allowSplitScreenActions = true,
   ) {
     super(injector.get(OPContextMenuService));
     this.copyToClipboardService = injector.get(CopyToClipboardService);
+
+    if (typeof additionalPositionArgs.placement !== 'undefined') {
+      this.placement = additionalPositionArgs.placement;
+    }
+    if (typeof additionalPositionArgs.reference !== 'undefined') {
+      this.reference = additionalPositionArgs.reference;
+    }
   }
 
   public get locals():OpContextMenuLocalsMap {
@@ -80,16 +133,9 @@ export class WorkPackageViewContextMenu extends OpContextMenuHandler {
     };
   }
 
-  public positionArgs(evt:JQuery.TriggeredEvent) {
-    const position = super.positionArgs(evt);
-    _.assign(position, this.additionalPositionArgs);
-
-    return position;
-  }
-
   public triggerContextMenuAction(action:WorkPackageAction) {
     const { link } = action;
-    const id = this.workPackage.id as string;
+    const id = this.workPackage.id!;
 
     switch (action.key) {
       case 'delete':
@@ -100,7 +146,7 @@ export class WorkPackageViewContextMenu extends OpContextMenuHandler {
         this.editSelectedWorkPackages(link!);
         break;
 
-      case 'copy':
+      case 'duplicate':
         this.copySelectedWorkPackages(link!);
         break;
 
@@ -109,12 +155,22 @@ export class WorkPackageViewContextMenu extends OpContextMenuHandler {
         this.copyToClipboardService.copy(url.toString());
         break;
       }
+      case 'copy_numeric_id_to_clipboard':
+        this.copyToClipboardService.copy(`${id}`);
+        break;
+
       case 'copy_to_other_project':
         window.location.href = `${this.pathHelper.staticBase}/work_packages/move/new?copy=true&ids[]=${id}`;
         break;
 
       case 'relation-new-child':
-        this.wpRelationsHierarchyService.addNewChildWp(this.baseRoute, this.workPackage);
+        if (this.hasUiRouterContext) {
+          this.wpRelationsHierarchyService.addNewChildWp(this.baseRoute, this.workPackage);
+        } else {
+          const childParams = new URLSearchParams(window.location.search);
+          childParams.set('parent_id', id);
+          Turbo.visit(`${this.urlParams.splitCreatePath()}?${childParams.toString()}`, { frame: 'content-bodyRight', action: 'advance' });
+        }
         break;
 
       case 'log_time':
@@ -126,10 +182,15 @@ export class WorkPackageViewContextMenu extends OpContextMenuHandler {
         break;
 
       case 'relations':
-        void this.$state.go(
-          `${splitViewRoute(this.$state)}.tabs`,
-          { workPackageId: this.workPackageId, tabIdentifier: 'relations' },
-        );
+        if (this.hasUiRouterContext) {
+          void this.$state.go(
+            `${splitViewRoute(this.$state)}.tabs`,
+            { workPackageId: this.workPackage.displayId, tabIdentifier: 'relations' },
+          );
+        } else {
+          const relationsPath = `${this.urlParams.basePathWithoutDetails()}/details/${this.workPackage.displayId}/relations${window.location.search}`;
+          Turbo.visit(relationsPath, { frame: 'content-bodyRight', action: 'advance' });
+        }
         break;
 
       default:
@@ -140,7 +201,9 @@ export class WorkPackageViewContextMenu extends OpContextMenuHandler {
 
   private deleteSelectedWorkPackages() {
     const selected = this.getSelectedWorkPackages();
-    this.opModalService.show(WpDestroyModalComponent, this.injector, { workPackages: selected });
+    const ids = selected.map((wp) => wp.id).filter((id) => id !== null);
+    const backUrl = this.$state.href(this.baseRoute as string) || this.pathHelper.workPackagesPath(this.currentProject.identifier ?? null);
+    void this.turboRequests.request(this.pathHelper.workPackagesBulkDeleteDialogPath(ids, backUrl), { method: 'GET' });
   }
 
   private editSelectedWorkPackages(link:any) {
@@ -159,15 +222,13 @@ export class WorkPackageViewContextMenu extends OpContextMenuHandler {
       return;
     }
 
-    const params = {
-      copiedFromWorkPackageId: selected[0].id,
-    };
-
-    this.$state.go(`${this.baseRoute}.copy`, params);
+    if (selected[0].id) {
+      window.location.href = this.pathHelper.workPackageCopyPath(selected[0].project.id, selected[0].id);
+    }
   }
 
   private logTimeForSelectedWorkPackage() {
-    void this.turboRequests.request(this.pathHelper.timeEntryWorkPackageDialog(this.workPackage.id as string), { method: 'GET' });
+    void this.turboRequests.request(this.pathHelper.timeEntryWorkPackageDialog(this.workPackage.id!), { method: 'GET' });
   }
 
   private getSelectedWorkPackages() {
@@ -177,7 +238,7 @@ export class WorkPackageViewContextMenu extends OpContextMenuHandler {
       return [this.workPackage];
     }
 
-    if (selectedWorkPackages.indexOf(this.workPackage) === -1) {
+    if (!selectedWorkPackages.includes(this.workPackage)) {
       selectedWorkPackages.push(this.workPackage);
     }
 
@@ -186,14 +247,22 @@ export class WorkPackageViewContextMenu extends OpContextMenuHandler {
 
   protected buildItems():OpContextMenuItem[] {
     const selected = this.getSelectedWorkPackages();
-    const items = this.permittedActions.map((action:WorkPackageAction) => ({
+
+    // Copying the numeric ID is only useful in semantic mode, where the
+    // displayed identifier (e.g. "PROJ-42") is not the numeric ID itself.
+    const visibleActions = this.permittedActions.filter((action) => (
+      action.key !== 'copy_numeric_id_to_clipboard'
+      || isSemanticWorkPackageId(this.workPackage.displayId)
+    ));
+
+    const items = visibleActions.map((action:WorkPackageAction) => ({
       class: undefined as string | undefined,
       disabled: false,
       linkText: action.text,
       href: action.href,
       icon: action.icon != null ? action.icon : `icon-${action.key}`,
-      onClick: ($event:JQuery.TriggeredEvent) => {
-        if (action.href && isClickedWithModifier($event)) {
+      onClick: (event:MouseEvent) => {
+        if (action.href && isClickedWithModifier(event)) {
           return false;
         }
 
@@ -203,44 +272,53 @@ export class WorkPackageViewContextMenu extends OpContextMenuHandler {
     }));
 
     if (selected.length === 1 && !isNewResource(this.workPackage)) {
+      const projectIdentifier = this.currentProject.identifier;
+      const link = this.pathHelper.genericWorkPackagePath(projectIdentifier, this.workPackage.displayId) + window.location.search;
+
       items.unshift({
         disabled: false,
         icon: 'icon-view-fullscreen',
         class: 'openFullScreenView',
-        href: this.$state.href('work-packages.show', { workPackageId: this.workPackageId }),
+        href: link,
         linkText: I18n.t('js.button_open_fullscreen'),
-        onClick: ($event:JQuery.TriggeredEvent) => {
-          if (isClickedWithModifier($event)) {
+        onClick: (event) => {
+          if (isClickedWithModifier(event)) {
             return false;
           }
 
-          this.$state.go(
-            'work-packages.show',
-            { workPackageId: this.workPackageId },
-          );
+          Turbo.visit(link, { action: 'advance' });
+
           return true;
         },
       });
 
       if (selected.length === 1 && this.allowSplitScreenActions) {
+        const splitViewHref = this.hasUiRouterContext
+          ? this.$state.href(
+            `${splitViewRoute(this.$state)}.tabs`,
+            { workPackageId: this.workPackage.displayId, tabIdentifier: 'overview' },
+          )
+          : `${this.urlParams.basePathWithoutDetails()}/details/${this.workPackage.displayId}${window.location.search}`;
+
         items.unshift({
           disabled: false,
           icon: 'icon-view-split',
           class: 'detailsViewMenuItem',
-          href: this.$state.href(
-            `${splitViewRoute(this.$state)}.tabs`,
-            { workPackageId: this.workPackageId, tabIdentifier: 'overview' },
-          ),
+          href: splitViewHref,
           linkText: I18n.t('js.button_open_details'),
-          onClick: ($event:JQuery.TriggeredEvent) => {
-            if (isClickedWithModifier($event)) {
+          onClick: (event) => {
+            if (isClickedWithModifier(event)) {
               return false;
             }
 
-            this.$state.go(
-              `${splitViewRoute(this.$state)}.tabs`,
-              { workPackageId: this.workPackageId, tabIdentifier: 'overview' },
-            );
+            if (this.hasUiRouterContext) {
+              this.$state.go(
+                `${splitViewRoute(this.$state)}.tabs`,
+                { workPackageId: this.workPackage.displayId, tabIdentifier: 'overview' },
+              );
+            } else {
+              Turbo.visit(splitViewHref, { frame: 'content-bodyRight', action: 'advance' });
+            }
             return true;
           },
         });

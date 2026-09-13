@@ -31,11 +31,13 @@
 class Journals::CreateService
   class Customizable < Association
     def associated?
-      journable.respond_to?(:customizable?)
+      journable.customizable?
     end
 
-    def cleanup_predecessor(predecessor)
+    def cleanup_predecessor(predecessor, notes, cause)
       cleanup_predecessor_for(predecessor,
+                              notes,
+                              cause,
                               "customizable_journals",
                               :journal_id,
                               :id)
@@ -56,6 +58,7 @@ class Journals::CreateService
         FROM custom_values
         WHERE
           #{only_if_created_sql}
+          AND #{availability_condition}
           AND custom_values.customized_id = :journable_id
           AND custom_values.customized_type = :journable_class_name
           AND custom_values.value IS NOT NULL
@@ -66,24 +69,55 @@ class Journals::CreateService
     def changes_sql
       sanitize(<<~SQL.squish, journable_id:, customized_type: journable_class_name)
         SELECT
-          max_journals.journable_id
+          :journable_id AS JOURNABLE_ID
         FROM
-          max_journals
-        LEFT OUTER JOIN
-          customizable_journals
-        ON
-          customizable_journals.journal_id = max_journals.id
+          (
+            SELECT
+              custom_values.custom_field_id,
+              ARRAY_AGG(#{normalize_newlines_sql('custom_values.value')} ORDER BY value) AS value
+            FROM
+              custom_values
+            WHERE
+              #{availability_condition}
+              AND custom_values.customized_id = :journable_id
+              AND custom_values.customized_type = :customized_type
+              AND custom_values.value != ''
+            GROUP BY
+              custom_values.custom_field_id
+          ) current_values
         FULL JOIN
-          (SELECT *
-           FROM custom_values
-           WHERE custom_values.customized_id = :journable_id AND custom_values.customized_type = :customized_type) custom_values
-        ON
-          custom_values.custom_field_id = customizable_journals.custom_field_id
+          (
+            SELECT
+              custom_field_id,
+              ARRAY_AGG(#{normalize_newlines_sql('customizable_journals.value')} ORDER BY value) AS value
+            FROM
+              customizable_journals
+            WHERE
+              journal_id IN (SELECT id FROM max_journals)
+            GROUP BY
+              custom_field_id
+          ) journal_values
+        ON current_values.custom_field_id = journal_values.custom_field_id
         WHERE
-          (custom_values.value IS NULL AND customizable_journals.value IS NOT NULL)
-          OR (customizable_journals.value IS NULL AND custom_values.value IS NOT NULL AND custom_values.value != '')
-          OR (#{normalize_newlines_sql('customizable_journals.value')} !=
-              #{normalize_newlines_sql('custom_values.value')})
+          current_values.value IS DISTINCT FROM journal_values.value
+      SQL
+    end
+
+    private
+
+    def availability_condition
+      return "1 = 1" unless journable.is_a?(Project)
+
+      <<~SQL # rubocop:disable Rails/SquishedSQLHeredocs
+        EXISTS (
+          SELECT 1
+          FROM custom_fields
+          LEFT JOIN project_custom_field_project_mappings
+            ON project_custom_field_project_mappings.custom_field_id = custom_fields.id
+            AND project_custom_field_project_mappings.project_id = :journable_id
+          WHERE custom_fields.id = custom_values.custom_field_id
+          AND (custom_fields.is_for_all = TRUE OR project_custom_field_project_mappings.project_id IS NOT NULL)
+        )
       SQL
     end
   end

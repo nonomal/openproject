@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -57,20 +59,14 @@ RSpec.describe Queries::WorkPackages::Filter::TypeFilter do
       context "without a project" do
         let(:project) { nil }
 
-        before do
-          allow(Type)
-            .to receive_message_chain(:order, :exists?)
-            .and_return true
-        end
-
         it "is true" do
+          allow(Type).to receive(:order).and_return(Type.where(id: create(:type).id))
+
           expect(instance).to be_available
         end
 
         it "is false without a type" do
-          allow(Type)
-            .to receive_message_chain(:order, :exists?)
-            .and_return false
+          allow(Type).to receive(:order).and_return(Type.none)
 
           expect(instance).not_to be_available
         end
@@ -95,12 +91,7 @@ RSpec.describe Queries::WorkPackages::Filter::TypeFilter do
 
       context "without a project" do
         let(:project) { nil }
-
-        before do
-          allow(Type)
-            .to receive(:order)
-            .and_return [type]
-        end
+        let!(:type) { create(:type) }
 
         it "returns an array of type options" do
           expect(instance.allowed_values)

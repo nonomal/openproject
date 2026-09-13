@@ -1,9 +1,33 @@
-import {
-  ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Inject, OnInit,
-} from '@angular/core';
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { OpModalComponent } from 'core-app/shared/components/modal/modal.component';
-import { OpModalLocalsToken } from 'core-app/shared/components/modal/modal.service';
-import { OpModalLocalsMap } from 'core-app/shared/components/modal/modal.types';
 import { WidgetRegistration } from 'core-app/shared/components/grids/grid/grid.component';
 import { SchemaResource } from 'core-app/features/hal/resources/schema-resource';
 import { GridWidgetResource } from 'core-app/features/hal/resources/grid-widget-resource';
@@ -11,38 +35,31 @@ import { GridWidgetsService } from 'core-app/shared/components/grids/widgets/wid
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { BannersService } from 'core-app/core/enterprise/banners.service';
 import { LoadingIndicatorService } from 'core-app/core/loading-indicator/loading-indicator.service';
-import { enterpriseDocsUrl } from 'core-app/core/setup/globals/constants.const';
 import { BehaviorSubject } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
 
 @Component({
   templateUrl: './add.modal.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
 export class AddGridWidgetModalComponent extends OpModalComponent implements OnInit {
+  readonly widgetsService = inject(GridWidgetsService);
+  readonly i18n = inject(I18nService);
+  readonly bannerService = inject(BannersService);
+  readonly loadingIndicator = inject(LoadingIndicatorService);
+
   text = {
     title: this.i18n.t('js.grid.add_widget'),
     close_popup: this.i18n.t('js.button_close'),
     cancel_button: this.i18n.t('js.button_cancel'),
   };
 
-  public chosenWidget:WidgetRegistration;
+  public chosenWidget?:WidgetRegistration;
 
   public eeShowBanners = false;
 
   private schema:SchemaResource;
-
-  constructor(
-    readonly elementRef:ElementRef,
-    @Inject(OpModalLocalsToken) readonly locals:OpModalLocalsMap,
-    readonly cdRef:ChangeDetectorRef,
-    readonly widgetsService:GridWidgetsService,
-    readonly i18n:I18nService,
-    readonly bannerService:BannersService,
-    readonly loadingIndicator:LoadingIndicatorService,
-  ) {
-    super(locals, cdRef, elementRef);
-  }
 
   ngOnInit() {
     super.ngOnInit();
@@ -53,12 +70,12 @@ export class AddGridWidgetModalComponent extends OpModalComponent implements OnI
     return this.eligibleWidgets.sort((a, b) => a.title.localeCompare(b.title));
   }
 
-  public select($event:MouseEvent, widget:WidgetRegistration) {
+  public select(event:MouseEvent, widget:WidgetRegistration) {
     this.chosenWidget = widget;
-    this.closeMe($event);
+    this.closeMe(event);
   }
 
-  public trackWidgetBy(widget:WidgetRegistration) {
+  public trackWidgetBy(_index:number, widget:WidgetRegistration) {
     return widget.identifier;
   }
 

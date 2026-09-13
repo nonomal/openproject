@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,12 +33,17 @@ require_relative "base"
 class Tables::CustomOptions < Tables::Base
   def self.table(migration)
     create_table migration do |t|
-      t.integer :custom_field_id
+      t.bigint :custom_field_id
       t.integer :position
       t.boolean :default_value
       t.text :value
-      t.datetime :created_at
-      t.datetime :updated_at
+      t.timestamps precision: nil, null: true
+
+      t.index :custom_field_id
+
+      t.index :value,
+              using: "gin",
+              opclass: :gin_trgm_ops
     end
   end
 end

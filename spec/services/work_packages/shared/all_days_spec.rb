@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -42,7 +44,7 @@ RSpec.describe WorkPackages::Shared::AllDays do
       end
     end
 
-    context "with weekend days (Saturday and Sunday)", :weekend_saturday_sunday do
+    context "with Saturday and Sunday being non-working days", :weekend_saturday_sunday do
       it "considers all days as working days and returns the number of days between two dates, inclusive" do
         expect(subject.duration(sunday_2022_07_31, sunday_2022_07_31 + 6)).to eq(7)
         expect(subject.duration(sunday_2022_07_31, sunday_2022_07_31 + 50)).to eq(51)
@@ -92,7 +94,7 @@ RSpec.describe WorkPackages::Shared::AllDays do
       expect(subject.start_date(sunday_2022_07_31, nil)).to be_nil
     end
 
-    context "with weekend days (Saturday and Sunday)", :weekend_saturday_sunday do
+    context "with Saturday and Sunday being non-working days", :weekend_saturday_sunday do
       include_examples "start_date", due_date: sunday_2022_07_31, duration: 1, expected: sunday_2022_07_31
       include_examples "start_date", due_date: sunday_2022_07_31, duration: 5, expected: sunday_2022_07_31 - 4.days
       include_examples "start_date", due_date: sunday_2022_07_31, duration: 10, expected: sunday_2022_07_31 - 9.days
@@ -125,7 +127,7 @@ RSpec.describe WorkPackages::Shared::AllDays do
       expect(subject.due_date(sunday_2022_07_31, nil)).to be_nil
     end
 
-    context "with weekend days (Saturday and Sunday)", :weekend_saturday_sunday do
+    context "with Saturday and Sunday being non-working days", :weekend_saturday_sunday do
       include_examples "due_date", start_date: sunday_2022_07_31, duration: 1, expected: sunday_2022_07_31
       include_examples "due_date", start_date: sunday_2022_07_31, duration: 5, expected: sunday_2022_07_31 + 4.days
       include_examples "due_date", start_date: sunday_2022_07_31, duration: 10, expected: sunday_2022_07_31 + 9.days
@@ -146,7 +148,7 @@ RSpec.describe WorkPackages::Shared::AllDays do
       expect(subject.soonest_working_day(nil)).to be_nil
     end
 
-    context "with weekend days (Saturday and Sunday)", :weekend_saturday_sunday do
+    context "with Saturday and Sunday being non-working days", :weekend_saturday_sunday do
       it "returns the given day" do
         expect(subject.soonest_working_day(sunday_2022_07_31)).to eq(sunday_2022_07_31)
       end

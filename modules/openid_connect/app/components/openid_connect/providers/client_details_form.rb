@@ -46,7 +46,7 @@ module OpenIDConnect
         end
         f.text_field(
           name: :post_logout_redirect_uri,
-          label: I18n.t("activerecord.attributes.openid_connect/provider.post_logout_redirect_uri"),
+          label: OpenIDConnect::Provider.human_attribute_name(:post_logout_redirect_uri),
           caption: I18n.t("openid_connect.instructions.post_logout_redirect_uri"),
           disabled: provider.seeded_from_env?,
           required: false,
@@ -54,12 +54,13 @@ module OpenIDConnect
         )
         f.text_field(
           name: :scope,
-          label: I18n.t("activerecord.attributes.openid_connect/provider.scope"),
+          label: OpenIDConnect::Provider.human_attribute_name(:scope),
           caption: link_translate(
             "openid_connect.instructions.scope",
             links: {
               docs_url: "https://openid.net/specs/openid-connect-basic-1_0.html#Scopes"
-            }
+            },
+            external: true
           ),
           disabled: provider.seeded_from_env?,
           required: false,
@@ -67,7 +68,7 @@ module OpenIDConnect
         )
         f.check_box(
           name: :limit_self_registration,
-          label: I18n.t("activerecord.attributes.openid_connect/provider.limit_self_registration"),
+          label: OpenIDConnect::Provider.human_attribute_name(:limit_self_registration),
           caption: I18n.t("openid_connect.instructions.limit_self_registration"),
           disabled: provider.seeded_from_env?,
           required: true

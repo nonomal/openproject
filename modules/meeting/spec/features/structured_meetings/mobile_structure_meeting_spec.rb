@@ -61,6 +61,7 @@ RSpec.describe "Meetings CRUD",
     create(:meeting,
            :author_participates,
            project:,
+           state: :in_progress,
            author: user)
   end
 
@@ -80,41 +81,40 @@ RSpec.describe "Meetings CRUD",
 
     show_page.open_participant_form
     show_page.in_participant_form do
-      show_page.expect_participant(user, invited: true, attended: false)
-      show_page.expect_participant(other_user, invited: false, attended: false)
-      show_page.expect_available_participants(count: 2)
-      expect(page).to have_button("Save")
+      show_page.expect_participant(user)
 
-      check(id: "checkbox_invited_#{other_user.id}")
-      click_on("Save")
+      show_page.toggle_attendance(user)
+      show_page.expect_participant(user, attended: true)
+      show_page.expect_available_participants(count: 1)
+
+      show_page.select_participant(other_user)
+      show_page.expect_participant(other_user)
+      show_page.expect_available_participants(count: 2)
     end
 
-    show_page.expect_participants(count: 2)
-
-    # when meeting is closed, can view but not edit
-    show_page.close_meeting
-
-    show_page.open_participant_form
-    show_page.in_participant_form do
-      show_page.expect_participant(user, invited: true, attended: false, editable: false)
-      show_page.expect_participant(other_user, invited: true, attended: false, editable: false)
-      show_page.expect_available_participants(count: 2)
-      expect(page).to have_no_button("Save")
-    end
-    show_page.close_dialog
-
-    show_page.reopen_meeting
-
-    # other_use can view, but not edit
+    # other_user cannot manage participants
     login_as other_user
     show_page.visit!
 
+    show_page.expect_no_participants_form
+
+    # when meeting is closed, cannot manage participants
+    login_as user
+    show_page.visit!
+    show_page.close_meeting_from_in_progress
+
+    show_page.expect_no_participants_form
+
+    # when meeting is open, can add/remove participants but not mark as attended
+    show_page.reopen_meeting
+
     show_page.open_participant_form
     show_page.in_participant_form do
-      show_page.expect_participant(user, invited: true, attended: false, editable: false)
-      show_page.expect_participant(other_user, invited: true, attended: false, editable: false)
-      show_page.expect_available_participants(count: 2)
-      expect(page).to have_no_button("Save")
+      show_page.expect_participant(user, editable: false)
+      show_page.expect_participant(other_user, editable: false)
+
+      show_page.remove_participant(other_user)
+      show_page.expect_available_participants(count: 1)
     end
   end
 end

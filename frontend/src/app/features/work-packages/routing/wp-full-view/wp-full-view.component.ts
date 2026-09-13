@@ -21,21 +21,15 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import {
-  ChangeDetectionStrategy,
-  Component,
-  HostListener,
-  Injector,
-  OnInit,
-} from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnInit, inject } from '@angular/core';
 import { StateService } from '@uirouter/core';
-import { ConfigurationService } from 'core-app/core/config/configuration.service';
 import { CurrentUserService } from 'core-app/core/current-user/current-user.service';
+import { TabDefinition } from 'core-app/shared/components/tabs/tab.interface';
 import { RecentItemsService } from 'core-app/core/recent-items.service';
 import { ProjectResource } from 'core-app/features/hal/resources/project-resource';
 import { WorkPackageResource } from 'core-app/features/hal/resources/work-package-resource';
@@ -48,7 +42,7 @@ import { Observable, of } from 'rxjs';
 
 @Component({
   templateUrl: './wp-full-view.html',
-  selector: 'wp-full-view-entry',
+  selector: 'op-wp-full-view',
   // Required class to support inner scrolling on page
   host: { class: 'work-packages-page--ui-view' },
   providers: [
@@ -56,8 +50,15 @@ import { Observable, of } from 'rxjs';
     { provide: HalResourceNotificationService, useExisting: WorkPackageNotificationService },
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
 export class WorkPackagesFullViewComponent extends WorkPackageSingleViewBase implements OnInit {
+  wpTableSelection = inject(WorkPackageViewSelectionService);
+  recentItemsService = inject(RecentItemsService);
+  readonly $state = inject(StateService);
+  readonly currentUserService = inject(CurrentUserService);
+  readonly cdRef = inject(ChangeDetectorRef);
+
   // Watcher properties
   public isWatched:boolean;
 
@@ -77,17 +78,11 @@ export class WorkPackagesFullViewComponent extends WorkPackageSingleViewBase imp
     },
   };
 
-  stateName$ = of('work-packages.new');
-
-  constructor(
-    public injector:Injector,
-    public wpTableSelection:WorkPackageViewSelectionService,
-    public recentItemsService:RecentItemsService,
-    readonly $state:StateService,
-    readonly currentUserService:CurrentUserService,
-    private readonly configurationService:ConfigurationService,
-  ) {
-    super(injector, $state.params.workPackageId);
+  public onTabSelected(tab:TabDefinition):void {
+    if (!this.routedFromAngular) {
+      this.activeTab = tab.id;
+      this.cdRef.markForCheck();
+    }
   }
 
   // enable other parts of the application to trigger an immediate update

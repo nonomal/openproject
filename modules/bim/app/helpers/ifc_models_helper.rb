@@ -1,12 +1,14 @@
+# frozen_string_literal: true
+
 module IfcModelsHelper
-  def provision_gon_for_ifc_model(all_models, shown_models)
+  def ifc_model_data_object(all_models, shown_models)
     all_converted_models = converted_ifc_models(all_models)
 
-    gon.ifc_models = {
-      models: gon_ifc_model_models(all_converted_models),
-      shown_models: gon_ifc_shown_models(all_converted_models, shown_models),
+    {
+      models: ifc_model_models(all_converted_models),
+      shown_models: ifc_shown_models(all_converted_models, shown_models),
       projects: [{ id: @project.identifier, name: @project.name }],
-      xkt_attachment_ids: gon_ifc_model_xkt_attachment_ids(all_converted_models),
+      xkt_attachment_ids: ifc_model_xkt_attachment_ids(all_converted_models),
       permissions: {
         manage_ifc_models: User.current.allowed_in_project?(:manage_ifc_models, @project),
         manage_bcf: User.current.allowed_in_project?(:manage_bcf, @project)
@@ -18,7 +20,7 @@ module IfcModelsHelper
     ifc_models.select(&:converted?)
   end
 
-  def gon_ifc_model_models(all_models)
+  def ifc_model_models(all_models)
     all_converted_models = converted_ifc_models(all_models)
 
     all_converted_models.map do |ifc_model|
@@ -30,7 +32,7 @@ module IfcModelsHelper
     end
   end
 
-  def gon_ifc_shown_models(all_models, shown_models)
+  def ifc_shown_models(all_models, shown_models)
     if shown_models.empty?
       return all_models.select(&:is_default).map(&:id)
     end
@@ -40,7 +42,7 @@ module IfcModelsHelper
       .map(&:id)
   end
 
-  def gon_ifc_model_xkt_attachment_ids(models)
-    models.map { |model| [model.id, model.xkt_attachment.id] }.to_h
+  def ifc_model_xkt_attachment_ids(models)
+    models.to_h { |model| [model.id, model.xkt_attachment.id] }
   end
 end

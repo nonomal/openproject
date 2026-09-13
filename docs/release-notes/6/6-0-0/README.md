@@ -48,7 +48,7 @@ The help menu in OpenProject has been extended. As a result, it now
 includes references to user guides, shortcuts and other relevant
 information.
 
-Additionally, a *First steps* video makes it easier for new users to
+Additionally, a _First steps_ video makes it easier for new users to
 start working with OpenProject.
 
 ## Usability improvements
@@ -56,13 +56,13 @@ start working with OpenProject.
 Aside from the main features, OpenProject 6.0 includes several smaller
 usability improvements:
 
-  - You can add attachment (e.g. images) to the work package description
-    using drag and drop.
-  - It is possible to create work packages from the global work package
-    table.
-  - It is possible to set the project when creating a work package.
-  - Users can more easily create work packages on the split and full
-    screen through the removed dropdown menu.
+- You can add attachment (e.g. images) to the work package description
+  using drag and drop.
+- It is possible to create work packages from the global work package
+  table.
+- It is possible to set the project when creating a work package.
+- Users can more easily create work packages on the split and full
+  screen through the removed dropdown menu.
 
 ## Improved design
 

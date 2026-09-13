@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 
 RSpec.describe "Workday notification settings", :js do
@@ -25,9 +27,9 @@ RSpec.describe "Workday notification settings", :js do
                                    Saturday: true,
                                    Sunday: true
 
-        settings_page.save
+        settings_page.save_workdays
 
-        settings_page.expect_and_dismiss_toaster(message: I18n.t("js.notice_successful_update"))
+        settings_page.expect_and_dismiss_flash
 
         settings_page.reload!
 
@@ -52,9 +54,9 @@ RSpec.describe "Workday notification settings", :js do
                                    Saturday: false,
                                    Sunday: false
 
-        settings_page.save
+        settings_page.save_workdays
 
-        settings_page.expect_and_dismiss_toaster(message: I18n.t("js.notice_successful_update"))
+        settings_page.expect_and_dismiss_flash
 
         settings_page.reload!
 
@@ -85,9 +87,9 @@ RSpec.describe "Workday notification settings", :js do
                                    Samstag: true,
                                    Sonntag: false
 
-        settings_page.save
+        settings_page.save_workdays
 
-        settings_page.expect_and_dismiss_toaster message: I18n.t("js.notice_successful_update")
+        settings_page.expect_and_dismiss_flash
 
         settings_page.reload!
 

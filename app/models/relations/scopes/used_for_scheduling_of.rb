@@ -43,6 +43,8 @@ module Relations::Scopes
       # soon as a parent is manually scheduled, its predecessors and ancestors
       # are not involved in scheduling anymore.
       def used_for_scheduling_of(work_package)
+        return [] if work_package.nil?
+
         automatically_scheduled_ancestors =
           WorkPackageHierarchy.where(descendant_id: work_package.id)
                               .where.not(ancestor_id: manually_scheduled_ancestors(work_package).select(:ancestor_id))

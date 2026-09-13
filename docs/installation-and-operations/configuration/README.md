@@ -9,7 +9,7 @@ sidebar_navigation:
 OpenProject can be configured via environment variables. These are often helpful for automatically deploying production systems.
 
 > [!NOTE]
-> This documentation is for OpenProject on-premises Installations only, if you would like to setup similar in your OpenProject cloud instance, please contact us at support@openproject.com
+> This documentation is for OpenProject on-premises Installations only, if you would like to setup similar in your OpenProject cloud instance, please contact us at [support@openproject.com](mailto:support@openproject.com)
 
 > [!IMPORTANT]
 > Using the configuration file `config/configuration.yml` is deprecated and is **NOT** recommended anymore
@@ -38,7 +38,7 @@ Configuring OpenProject through environment variables is described in detail [in
 
 ### One container per process installation
 
-Create a file `docker-compose.override.yml` next to `docker-compose.yml` file. Docker Compose will automatically merge those files, for more information, see https://docs.docker.com/compose/multiple-compose-files/merge/.
+Create a file `docker-compose.override.yml` next to `docker-compose.yml` file. Docker Compose will automatically merge those files, for more information, [see](https://docs.docker.com/compose/multiple-compose-files/merge/).
 Add your custom configuration to `docker-compose.override.yml`.
 
 In the compose folder you will also find the file `docker-compose.yml` which shall **NOT** be edited.
@@ -79,7 +79,7 @@ x-op-app: &app
     - "${OPDATA:-opdata}:/var/openproject/assets"
 
 # configuration cut off at this point.
-# Please use the file at https://github.com/opf/openproject-deploy/blob/stable/15/compose/docker-compose.yml
+# Please use the file at https://github.com/opf/openproject-docker-compose/blob/stable/17/docker-compose.yml
 ```
 
 Alternatively, you can also use an env file for docker-compose like so:
@@ -114,7 +114,7 @@ x-op-app: &app
     # ... more environment variables
 
 # configuration cut off at this point.
-# Please use the file at https://github.com/opf/openproject-deploy/blob/stable/15/compose/docker-compose.yml
+# Please use the file at https://github.com/opf/openproject-docker-compose/blob/stable/17/docker-compose.yml
 ```
 
 Let's say you have a `.env.prod`  file with some production-specific configuration. Then, start the services with that special env file specified.
@@ -150,6 +150,38 @@ docker run -d --env-file path/to/file ...
 ```
 
 Configuring OpenProject through environment variables is described in detail [in the environment variables guide](environment/).
+
+#### Real-time collaboration
+
+The AIO (all-in-one) container comes bundled with the [hocuspocus](https://github.com/opf/openproject/tree/dev/extensions/op-blocknote-hocuspocus) server needed
+for the real-time collaboration feature for documents.
+
+This is controlled via the following two environment variables, shown with their default values.
+
+```shell
+OPENPROJECT_COLLABORATIVE__EDITING__HOCUSPOCUS__URL=auto
+OPENPROJECT_COLLABORATIVE__EDITING__HOCUSPOCUS__SECRET=
+```
+
+This will automatically generate a secret, start hocuspocus and configure it with OpenProject to enable real-time collaboration
+in documents.
+
+If you want to use an external hocuspocus server instead, you have two options.
+
+**Option 1**
+
+Set the URL and secret using the environment variables above.
+
+**Option 2**
+
+Set the URL and secret using the UI. For that to work, you need to unset the URL in the environment,
+so that the option becomes available in the UI.
+
+You can unset it, for example, by adding the following option to the run command.
+
+```shell
+-e OPENPROJECT_COLLABORATIVE__EDITING__HOCUSPOCUS__URL=
+```
 
 ## Seeding through environment
 
@@ -197,43 +229,65 @@ The connection can be set with the following options. Please note that "EXAMPLE"
 
 The name of the LDAP connection is derived from the ENV key behind `SEED_LDAP_`, so you need to take care to use only valid characters. If you need to place an underscore, use a double underscore to encode it e.g., `my__ldap`.
 
-The following options are possible
+#### Naming rule for option keys
+
+The same encoding applies to **option keys** (the part of the env var after the connection name):
+
+- A single underscore (`_`) separates path segments.
+- A double underscore (`__`) encodes a literal underscore inside a single key.
+
+For example, the attribute mapping for the login attribute must be passed as `LOGIN__MAPPING`. Writing `LOGIN_MAPPING` would create a nested `login.mapping` hash and would have been silently wrong in OpenProject versions earlier than 17.5.
+
+Starting with OpenProject 17.5 the seeder validates the keys it sees and raises an error listing any unknown key, so typos no longer go unnoticed. Use exactly the keys shown below.
+
+#### Full example
+
+The example below shows every supported option for a connection named `EXAMPLE`.
 
 ```shell
 # Host name of the connection
-OPENPROJECT_SEED_LDAP_EXAMPLE_HOST="localhost"
+OPENPROJECT_SEED_LDAP_EXAMPLE_HOST="ldap.example.com"
+
 # Port of the connection
 OPENPROJECT_SEED_LDAP_EXAMPLE_PORT="389"
-# LDAP security options. One of the following
-# plain_ldap: Unencrypted connection, no TLS/SSL
-# simple_tls: Using deprecated LDAPS/SSL (often in combination with port 636)
-# start_tls: LDAPv3 start_tls call using standard unencrypted port (e.g., 389) before upgrading connection
+
+# LDAP security mode. One of:
+#   plain_ldap: Unencrypted connection, no TLS/SSL
+#   simple_tls: Deprecated LDAPS/SSL (often combined with port 636)
+#   start_tls:  LDAPv3 STARTTLS on the standard unencrypted port (e.g., 389)
 OPENPROJECT_SEED_LDAP_EXAMPLE_SECURITY="start_tls"
-# Whether to verify the certificate/chain of the LDAP connection. true/false (True by default)
+
+# Whether to verify the LDAP server's certificate chain. true/false (true by default).
 OPENPROJECT_SEED_LDAP_EXAMPLE_TLS__VERIFY="true"
-# Optionally, provide a certificate of the connection
+
+# Optionally pin a server certificate (PEM-encoded).
 OPENPROJECT_SEED_LDAP_EXAMPLE_TLS__CERTIFICATE="-----BEGIN CERTIFICATE-----\nMII....\n-----END CERTIFICATE-----"
-# The admin LDAP bind account with read access
+
+# Bind DN (the LDAP account used for read access during search/bind).
 OPENPROJECT_SEED_LDAP_EXAMPLE_BINDUSER="uid=admin,ou=system"
-# Password for the bind account
+
+# Password for the bind account.
 OPENPROJECT_SEED_LDAP_EXAMPLE_BINDPASSWORD="secret"
-# BASE DN of the connection
+
+# Base DN of the directory subtree used for user search.
 OPENPROJECT_SEED_LDAP_EXAMPLE_BASEDN="dc=example,dc=com"
-# Optional filter string to restrict which users may log in to OpenProject
-# (relevant when for automatic creation of users is active)
+
+# Optional LDAP filter restricting which users may log in to OpenProject
+# (used when automatic user creation is active).
 OPENPROJECT_SEED_LDAP_EXAMPLE_FILTER="(uid=*)"
-# Whether to create found and matching users automatically when they log in
+
+# Whether to create matching users on the fly when they log in for the first time.
 OPENPROJECT_SEED_LDAP_EXAMPLE_SYNC__USERS="true"
-# Attribute mapping for the OpenProject login attribute
+
+# Attribute mappings: which LDAP attribute should populate each OpenProject field.
+# Remember the double underscore in these keys.
 OPENPROJECT_SEED_LDAP_EXAMPLE_LOGIN__MAPPING="uid"
-# Attribute mapping for the OpenProject first name attribute
 OPENPROJECT_SEED_LDAP_EXAMPLE_FIRSTNAME__MAPPING="givenName"
-# Attribute mapping for the OpenProject last name attribute
 OPENPROJECT_SEED_LDAP_EXAMPLE_LASTNAME__MAPPING="sn"
-# Attribute mapping for the OpenProject mail attribute
 OPENPROJECT_SEED_LDAP_EXAMPLE_MAIL__MAPPING="mail"
-# Attribute mapping for the OpenProject admin attribute
-# Leave empty or remove to not derive admin status from an attribute
+
+# Optional: derive admin status from an LDAP attribute. Leave empty or remove
+# to keep admin status managed manually in OpenProject.
 OPENPROJECT_SEED_LDAP_EXAMPLE_ADMIN__MAPPING=""
 ```
 
@@ -266,10 +320,8 @@ In an automated deployment setup, such as installing OpenProject using our Helm 
 OPENPROJECT_SEED_DESIGN_PRIMARY__BUTTON__COLOR="#1F883D"
 OPENPROJECT_SEED_DESIGN_ACCENT__COLOR="#1F883D"
 OPENPROJECT_SEED_DESIGN_HEADER__BG__COLOR="#1A67A3"
-OPENPROJECT_SEED_DESIGN_HEADER__ITEM__BG__HOVER__COLOR="#E5E5E5"
 OPENPROJECT_SEED_DESIGN_MAIN__MENU__BG__COLOR="#FFFFFF"
 OPENPROJECT_SEED_DESIGN_MAIN__MENU__BG__SELECTED__BACKGROUND="#1F883D"
-OPENPROJECT_SEED_DESIGN_MAIN__MENU__BG__HOVER__BACKGROUND="#E5E5E5"
 OPENPROJECT_SEED_DESIGN_EXPORT__COVER__TEXT__COLOR="#333333"
 ```
 
@@ -280,6 +332,8 @@ You can also provide the logo used in the main app header, as well as favicons o
 ```shell
 # Main logo of the application
 OPENPROJECT_SEED_DESIGN_LOGO="https://my.example.com/logo.png"
+# Mobile logo for the application
+OPENPROJECT_SEED_DESIGN_LOGO__MOBILE="https://my.example.com/logo.png"
 # Favicon and touch icons for ios
 OPENPROJECT_SEED_DESIGN_FAVICON="data:image/png;base64,iVBO....."
 OPENPROJECT_SEED_DESIGN_TOUCH__ICON="data:image/png;base64,foo..."
@@ -287,42 +341,43 @@ OPENPROJECT_SEED_DESIGN_EXPORT__LOGO="..."
 OPENPROJECT_SEED_DESIGN_EXPORT__COVER="..."
 ```
 
-
 ## Examples for common use cases
 
-* `attachments_storage_path`
-* `autologin_cookie_name` (default: 'autologin'),
-* `autologin_cookie_path` (default: '/')
-* `database_cipher_key`     (default: nil)
-* `scm_git_command` (default: 'git')
-* `scm_subversion_command` (default: 'svn')
-* [`scm_local_checkout_path`](#local-checkout-path) (default: 'repositories')
-* `force_help_link` (default: nil)
-* `drop_old_sessions_on_logout` (default: true)
-* `drop_old_sessions_on_login` (default: false)
-* [`auth_source_sso`](#auth-source-sso) (default: nil)
-* [`omniauth_direct_login_provider`](#omniauth-direct-login-provider) (default: nil)
-* [`oauth_allow_remapping_of_existing_users`](#prevent-omniauth-remapping-of-existing-users) (default: true)
-* [`disable_password_login`](#disable-password-login) (default: false)
-* [`attachments_storage`](#attachments-storage) (default: file)
-* [`direct_uploads`](#direct-uploads) (default: true)
-* [`fog_download_url_expires_in`](#fog-download-url-expires-in) (default: 21600)
-* [`hidden_menu_items`](#hidden-menu-items-admin-menu) (default: {})
-* [`disabled_modules`](#disabled-modules) (default: [])
-* [`blacklisted_routes`](#blacklisted-routes) (default: [])
-* [`global_basic_auth`](#global-basic-auth)
-* [`apiv3_enable_basic_auth`](#apiv3-enable-basic-auth)
-* [`enterprise_fail_fast`](#enterprise-fail-fast)
-* [`backup_enabled`](#enable-backups)
-* [`show_community_links`](#show-or-hide-community-links)
-* [`web`](#web-worker-configuration) (nested configuration)
-* [`statsd`](#statsd) (nested configuration)
+- `attachments_storage_path`
+- `autologin_cookie_name` (default: 'autologin'),
+- `autologin_cookie_path` (default: '/')
+- `database_cipher_key`     (default: nil)
+- `scm_git_command` (default: 'git')
+- `scm_subversion_command` (default: 'svn')
+- [`scm_local_checkout_path`](#local-checkout-path) (default: 'repositories')
+- `force_help_link` (default: nil)
+- `drop_old_sessions_on_logout` (default: true)
+- `drop_old_sessions_on_login` (default: false)
+- [`auth_source_sso`](#auth-source-sso) (default: nil)
+- [`omniauth_direct_login_provider`](#omniauth-direct-login-provider) (default: nil)
+- [`oauth_allow_remapping_of_existing_users`](#prevent-omniauth-remapping-of-existing-users) (default: true)
+- [`password_login`](#password-login) (default: all)
+- [`password_login_bypass_logins`](#password-login) (default: [])
+- [`password_login_bypass_principal_ids`](#password-login) (default: [])
+- [`attachments_storage`](#attachments-storage) (default: file)
+- [`direct_uploads`](#direct-uploads) (default: true)
+- [`fog_download_url_expires_in`](#fog-download-url-expires-in) (default: 21600)
+- [`hidden_menu_items`](#hidden-menu-items-admin-menu) (default: {})
+- [`disabled_modules`](#disabled-modules) (default: [])
+- [`blacklisted_routes`](#blacklisted-routes) (default: [])
+- [`global_basic_auth`](#global-basic-auth)
+- [`apiv3_enable_basic_auth`](#apiv3-enable-basic-auth)
+- [`enterprise_fail_fast`](#enterprise-fail-fast)
+- [`backup_enabled`](#enable-backups)
+- [`show_community_links`](#show-or-hide-community-links)
+- [`web`](#web-worker-configuration) (nested configuration)
+- [`statsd`](#statsd) (nested configuration)
 
 ### Allowing public access
 
-By default, any request to the OpenProject application needs to be authenticated. If you want to enable public unauthenticated access like we do for https://community.openproject.org, you can set the `login_required` to `false`. If not provided through environment variables, this setting is also accessible in the administrative UI. Please see the [authentication settings guide](../../system-admin-guide/authentication/authentication-settings/#general-authentication-settings) for more details.
+By default, any request to the OpenProject application needs to be authenticated. If you want to enable public unauthenticated access like we do for community.openproject.org, you can set the `login_required` to `false`. If not provided through environment variables, this setting is also accessible in the administrative UI. Please see the [authentication settings guide](../../system-admin-guide/authentication/login-registration-settings/) for more details.
 
-*default: true*
+_default: true_
 
 To disable, set the configuration option:
 
@@ -334,7 +389,7 @@ OPENPROJECT_LOGIN__REQUIRED="false"
 
 **Delete old sessions for the same user when logging in**
 
-*default: false*
+_default: false_
 
 To enable, set the configuration option:
 
@@ -344,7 +399,7 @@ OPENPROJECT_DROP__OLD__SESSIONS__ON__LOGIN="true"
 
 **Delete old sessions for the same user when logging out**
 
-*default: true*
+_default: true_
 
 To disable, set the configuration option:
 
@@ -362,7 +417,7 @@ To update the path, use `openproject config:set OPENPROJECT_ATTACHMENTS__STORAGE
 
 Attachments can be stored using e.g. Amazon S3, In order to set these values through ENV variables, add to the file :
 
-*default: file*
+_default: file_
 
 ```yaml
 OPENPROJECT_ATTACHMENTS__STORAGE="fog"
@@ -378,7 +433,7 @@ OPENPROJECT_FOG_DIRECTORY="uploads"
 Can be used to automatically login a user defined through a custom header sent by a load balancer or reverse proxy in front of OpenProject, for instance in a Kerberos Single Sign-On (SSO) setup via apache.
 The header with the given name has to be passed to OpenProject containing the logged in user and the defined global secret as in `$login:$secret`.
 
-*default: nil*
+_default: nil_
 
 ```yaml
 OPENPROJECT_AUTH__SOURCE__SSO="{ header: X-Remote-User, secret: s3cr3t }"
@@ -404,7 +459,7 @@ auth_source_sso:
 If enabled, admins (or users with the necessary permission) can download backups of the OpenProject installation
 via OpenProject's web interface or via the API.
 
-*default: true*
+_default: true_
 
 ```yaml
 OPENPROJECT_BACKUP__ENABLED="false"
@@ -412,9 +467,10 @@ OPENPROJECT_BACKUP__ENABLED="false"
 
 #### Backup attachment size max sum mb
 
-Per default the maximum overall size of all attachments must not exceed 1GB for them to be included in the backup. If they are larger only the database dump will be included.
+Per default the maximum overall size of all attachments must not exceed 4GB for them to be included in the backup. If they are larger only the database dump will be included. The main limiting factor here is the disk space available on /tmp. Make sure there is enough to support creating a backup archive
+of the desired size with some space to spare.
 
-*default=1024*
+_default=4096_
 
 ```yaml
 OPENPROJECT_BACKUP__ATTACHMENT__SIZE__MAX__SUM__MB="8192"
@@ -434,7 +490,7 @@ OpenProject uses BCrypt to derive and store user passwords securely. BCrypt uses
 
 For more information, see the [Cost Factor guide of the bcrypt-ruby gem](https://github.com/bcrypt-ruby/bcrypt-ruby#cost-factors). The higher the value, the more effort required for deriving BCrypt hashes.
 
-*default: 12*
+_default: 12_
 
 ```shell
 OPENPROJECT_OVERRIDE__BCRYPT__COST__FACTOR="16"
@@ -444,33 +500,73 @@ OPENPROJECT_OVERRIDE__BCRYPT__COST__FACTOR="16"
 
 Please see [this separate guide](./database/) on how to set a custom database connection string and optionally, require SSL/TTLS verification.
 
-### Disable password login
+### Password login
 
-If you enable this option you have to configure at least one omniauth authentication
-provider to take care of authentication instead of the password login.
+Controls who may authenticate with a password:
 
-All username/password forms will be removed and only a list of omniauth providers
-presented to the users.
+* `all` — anyone with a password, including users linked to an OmniAuth provider
+* `except_sso` — users linked to an OmniAuth provider cannot use a leftover password
+* `none` — nobody, except the break-glass allowlist
 
-*default: false*
+Modes `except_sso` and `none` are meant for instances that have at least one OmniAuth
+provider. `none` hides the password form on `/login`. Break-glass users sign in at
+`/login/internal`, which is enabled when an allowlist (or the login overlay below) is
+non-empty.
+
+This setting is also available in the administration under *Authentication → Settings →
+Single Sign-On*.
+
+> [!NOTE]
+> The legacy environment variable `OPENPROJECT_DISABLE__PASSWORD__LOGIN=true` still forces
+> the value to `none` and makes the select read-only for compatibility with existing
+> deployments.
+
+_default: all_
+
+```yaml
+OPENPROJECT_PASSWORD__LOGIN="except_sso"
+```
+
+Legacy deployments may still use:
 
 ```yaml
 OPENPROJECT_DISABLE__PASSWORD__LOGIN="true"
 ```
 
+User and group ids that keep password login when the policy is `except_sso` or `none`.
+Groups include their descendant groups. Deleted principals are removed from this list
+automatically.
+
+_default: []_
+
+```yaml
+OPENPROJECT_PASSWORD__LOGIN__BYPASS__PRINCIPAL__IDS="[1, 42]"
+```
+
+Individual logins can additionally be exempted through the environment, so that you can
+still grant yourself access when nobody is able to reach the administration anymore.
+Logins are matched case-insensitively.
+
+_default: []_
+
+```yaml
+OPENPROJECT_PASSWORD__LOGIN__BYPASS__LOGINS="[admin, breakglass]"
+```
+
 ### Omniauth direct login provider
 
-Per default the user may choose the usual password login as well as <u>several</u> omniauth providers on the login page and in the login drop down menu. With this configuration option you can set a specific omniauth provider to be used for direct login. Meaning that the login provider selection is skipped and the configured provider is used directly (non-interactive) instead.
+Per default the user may choose the usual password login as well as **several** omniauth providers on the login page and in the login drop down menu. With this configuration option you can set a specific omniauth provider to be used for direct login. Meaning that the login provider selection is skipped and the configured provider is used directly (non-interactive) instead.
 
 If this option is active, a login will lead directly to the configured omniauth provider and so will a click on 'Sign in' (the drop down menu will not open).
 
 To still reach the internal login route for e.g., an internal administrative user, you can manually navigate to `/login/internal`.
-This route is only available when the direct login provider is set.
+This route is available when the direct login provider is set, and also when [`password_login`](#password-login)
+is `none` and a break-glass allowlist (or login overlay) is configured.
 
 > [!NOTE]
 > This does not stop a user from manually navigating to any other omniauth provider if additional ones are configured.
 
-*default: nil*
+_default: nil_
 
 ```yaml
 OPENPROJECT_OMNIAUTH__DIRECT__LOGIN__PROVIDER="google"
@@ -485,7 +581,7 @@ accounts to be accessible through a SSO provider as well
 If you want to prevent this from happening, you can set this variable to false. In this case, accounts with matching logins will need
 to create a new account.
 
-*default: true*
+_default: true_
 
 ```yaml
 OPENPROJECT_OAUTH__ALLOW__REMAPPING__OF__EXISTING__USERS="false"
@@ -498,7 +594,7 @@ You can override this behavior by setting `gravatar_fallback_image` to a differe
 
 For supported values, please see [en.gravatar.com/site/implement/images/](https://en.gravatar.com/site/implement/images/)
 
-*default: 404*
+_default: 404_
 
 ```yaml
 OPENPROJECT_GRAVATAR__FALLBACK__IMAGE="identicon"
@@ -530,7 +626,7 @@ When using fog attachments uploaded in the frontend will be posted directly to t
 
 If, for what ever reason, this is undesirable, you can disable this option. In that case attachments will be posted as usual to the OpenProject server which then uploads the file to the remote storage in an extra step.
 
-*default: true*
+_default: true_
 
 ```yaml
 OPENPROJECT_DIRECT__UPLOADS="false"
@@ -549,9 +645,9 @@ OPENPROJECT_REMOTE__STORAGE__DOWNLOAD__HOST=mybucket.s3.eu-west.amazonaws.com"
 
 When using remote storage for attachments via fog - usually S3 (see [`attachments_storage`](#attachments-storage) option) - each attachment download will generate a temporary URL. This option determines how long these links will be valid.
 
-The default is 21600 seconds, that is 6 hours, which is the maximum expiry time allowed by S3 when using IAM roles for authentication.
+The default is 21600 seconds, that is 6 hours, which is the maximum expiration time allowed by S3 when using IAM roles for authentication.
 
-*default: 21600*
+_default: 21600_
 
 ```yaml
 OPENPROJECT_FOG__DOWNLOAD__URL__EXPIRES__IN="60"
@@ -562,7 +658,7 @@ OPENPROJECT_FOG__DOWNLOAD__URL__EXPIRES__IN="60"
 You can override the default help menu of OpenProject by specifying a `force_help_link` option to
 the configuration. This value is used for the href of the help link, and the default dropdown is removed.
 
-*default: nil*
+_default: nil_
 
 ```yaml
 OPENPROJECT_FORCE__HELP__LINK="https://it-support.example.com"
@@ -572,7 +668,7 @@ OPENPROJECT_FORCE__HELP__LINK="https://it-support.example.com"
 
 You can set a impressum link (legal notice) for your OpenProject instance by setting `impressum_link` to an absolute URL.
 
-*default: nil*
+_default: nil_
 
 ```yaml
 OPENPROJECT_IMPRESSUM__LINK="https://impressum.example.com"
@@ -582,7 +678,7 @@ OPENPROJECT_IMPRESSUM__LINK="https://impressum.example.com"
 
 You can disable specific menu items in the menu sidebar for each main menu (such as Administration and Projects). The configuration can be done through environment variables. You have to define one variable for each menu that shall be hidden.
 
-*default: {}*
+_default: {}_
 
 For instance 'Roles' and 'Types' under 'Administration' can be disabled by defining the following variable:
 
@@ -600,19 +696,96 @@ OPENPROJECT_HIDDEN__MENU__ITEMS_ADMIN__MENU="roles types statuses workflows enum
 
 #### Rate limiting
 
-OpenProject provides some rate limiting protections. The default configuration protects against repeated access to authentication credential resets (e.g., lost password functionality).
+OpenProject includes HTTP-layer rate limiting via Rack::Attack. The rules below are configured through the `rate_limiting` setting and take effect without a restart when set via environment variable.
 
-You can optionally enable additional rules on API rate limiting as follows:
+In addition to these application-level rules, consider applying rate limiting at your load balancer or reverse proxy (e.g. `ngx_http_limit_req_module`, `mod_security`) for IP-level protection.
 
-`OPENPROJECT_RATE_LIMITING_API__V3=true`
+##### Login brute-force protection (enabled by default)
 
-Additional application-level rate limiting rules will be added in the future. Additionally to these application level rules, use your load balancer / proxying web server to apply individual rate limiting rules using modules such as `ngx_http_limit_req_module` or `mod_security`.
+OpenProject blocks repeated login attempts per account at the HTTP layer. After **20 POST `/login` requests for the same username within one minute**, that account is blocked for **30 minutes**. This works alongside the application-level lockout (`brute_force_block_after_failed_logins` / `brute_force_block_minutes` settings).
+
+This rule is **enabled by default**. To disable it:
+
+```shell
+OPENPROJECT_RATE_LIMITING_LOGIN="false"
+```
+
+The thresholds can be tuned independently:
+
+| Variable | Default | Description |
+|---|---|---|
+| `OPENPROJECT_RATE_LIMITING_LOGIN_BURST__LIMIT` | `20` | Number of attempts allowed before the ban is triggered |
+| `OPENPROJECT_RATE_LIMITING_LOGIN_BURST__PERIOD` | `60` | Detection window in seconds |
+| `OPENPROJECT_RATE_LIMITING_LOGIN_BAN__PERIOD` | `1800` | Ban duration in seconds |
+
+Example: Stricter limits (10 attempts per minute, 1-hour ban):
+
+```shell
+OPENPROJECT_RATE_LIMITING_LOGIN_BURST__LIMIT="10"
+OPENPROJECT_RATE_LIMITING_LOGIN_BURST__PERIOD="60"
+OPENPROJECT_RATE_LIMITING_LOGIN_BAN__PERIOD="3600"
+```
+
+> [!NOTE]
+> This rule and the application-level brute-force protection (`brute_force_block_after_failed_logins` /
+> `brute_force_block_minutes`) are independent controls that operate at different layers. The HTTP-layer
+> rule counts **all** login attempts (including successful ones) within its burst window, while the
+> application-level setting counts only **failed** attempts and operates over a longer rolling window.
+> If you lower `brute_force_block_after_failed_logins` below `BURST_LIMIT` (default 20), the
+> application-level lockout will fire before this rule does. Keep the two thresholds consistent to
+> avoid surprising behaviour. For example, set `BURST_LIMIT` to match or be lower than
+> `brute_force_block_after_failed_logins`.
+
+##### Lost password rate limiting (disabled by default)
+
+Limits password-reset requests per email address to 3 per hour.
+
+```shell
+OPENPROJECT_RATE_LIMITING_LOST__PASSWORD="true"
+```
+
+##### Registration rate limiting (disabled by default)
+
+Limits unauthenticated `POST /account/register` requests per hour.
+`0` (the default) disables the limit. A positive value is the number of attempts allowed.
+
+The two counting modes target different attackers:
+
+- **Per client IP** (default): an unauthenticated outsider hitting the public registration form.
+  This does not stop someone who rotates addresses, and it will not freeze signups for everyone
+  behind a shared NAT.
+- **Per instance** (`host_name`): Set
+  `registration_rate_limit_per_ip` to `false` for this mode, which will restrict registrations altogether.
+
+```shell
+OPENPROJECT_REGISTRATION__RATE__LIMIT="10"
+OPENPROJECT_REGISTRATION__RATE__LIMIT__PER__IP="false"
+```
+
+##### Mail recipient limits (disabled by default)
+
+Limits how many distinct email addresses OpenProject will send mail to per day.
+`0` (the default) disables this form of rate limiting. 
+
+Addresses exceeding this are dropped before delivery, so this covers every mailer (registration, invitations, shares, meetings, notifications).
+
+```shell
+OPENPROJECT_MAIL__RECIPIENT__LIMITS="30"
+```
+
+##### API v3 rate limiting (disabled by default)
+
+Limits API form endpoint requests per session to 6 per 3 seconds.
+
+```shell
+OPENPROJECT_RATE_LIMITING_API__V3="true"
+```
 
 #### Blacklisted routes
 
 You can blacklist specific routes
 
-*default: []*
+_default: []_
 
 The following example forbid all routes for the second example at the 'hidden menu items admin menu':
 
@@ -625,7 +798,7 @@ OPENPROJECT_BLACKLISTED__ROUTES="admin/info admin/plugins project_types colors s
 Modules may be disabled through the configuration.
 Just give a list of the module names either as an array or as a string with values separated by spaces.
 
-*default: []*
+_default: []_
 
 ```yaml
 OPENPROJECT_DISABLED__MODULES="backlogs meetings"
@@ -633,7 +806,7 @@ OPENPROJECT_DISABLED__MODULES="backlogs meetings"
 
 ### Local checkout path
 
-*default: "repositories"*
+_default: "repositories"_
 
 Remote git repositories will be checked out here.
 
@@ -645,7 +818,7 @@ note: to be verified, maybe option was removed, not in environement variables li
 
 You can control basic auth access to the APIv3 with the following configuration option:
 
-*default: true*
+_default: true_
 
 ```yaml
 OPENPROJECT_APIV3__ENABLE__BASIC__AUTH="false"
@@ -653,7 +826,7 @@ OPENPROJECT_APIV3__ENABLE__BASIC__AUTH="false"
 
 ### Global basic auth
 
-*default: none*
+_default: none_
 
 You can define a global set of credentials used to authenticate towards API v3:
 
@@ -679,29 +852,48 @@ The badge will match your current OpenProject version against the official OpenP
 
 To disable rendering the badge, uncheck the setting at Administration &gt; System settings &gt; General or pass the configuration flag `security_badge_displayed: false` .
 
-*default=true*
+_default=true_
 
 ```yaml
 OPENPROJECT_SECURITY__BADGE__DISPLAYED="false"
 ```
 
-### Cache configuration options
+### Content Security Policy image sources
 
+Configure the allowed sources for the `img-src` CSP directive.
+
+_default: `["*", "data:", "blob:"]`_
+
+OpenProject always adds `'self'` and `rails_asset_host` (if configured) to `img-src` automatically, so same-origin and asset-hosted images remain allowed even if not listed in this setting.
+
+Example to only allow secure remote images (plus data/blob):
+
+```yaml
+OPENPROJECT_CSP__IMG__SRC="https: data: blob:"
+```
+
+Example to restrict to specific hosts:
+
+```yaml
+OPENPROJECT_CSP__IMG__SRC="https://cdn.example.com https://images.example.com data: blob:"
+```
+
+### Cache configuration options
 
 > [!NOTE]
 > If you are using Redis as cache, you need to set the policy to one of the variants of allkeys.
 > If you don't do this, the cached data doesn't expire, and you will run out of memory.
 > You can get more information on how to set the Redis policy in the Rails [documentation](https://guides.rubyonrails.org/caching_with_rails.html#activesupport-cache-rediscachestore).
 
-* `rails_cache_store`: `memcache` for [memcached](https://www.memcached.org/), `redis` for [Redis cache](https://redis.io/), or `memory_store` (default: `file_store`)
-* When using `memcached`, the following configuration option is relevant:
-  * `cache_memcache_server`: The memcache server host and IP (default: `nil`)
+- `rails_cache_store`: `memcache` for [memcached](https://www.memcached.org/), `redis` for [Redis cache](https://redis.io/), or `memory_store` (default: `file_store`)
+- When using `memcached`, the following configuration option is relevant:
+  - `cache_memcache_server`: The memcache server host and IP (default: `nil`)
 
-* When using `redis`, the following configuration option is relevant:
-  * `cache_redis_url`: The URL of the Redis host (e.g., `redis://host:6379`)
+- When using `redis`, the following configuration option is relevant:
+  - `cache_redis_url`: The URL of the Redis host (e.g., `redis://host:6379`)
 
-* `cache_expires_in`: Expiration time for memcache entries (default: `nil`, no expiry)
-* `cache_namespace`: Namespace for cache keys, useful when multiple applications use a single memcache server (default: `nil`)
+- `cache_expires_in`: Expiration time for memcache entries (default: `nil`, no expiration)
+- `cache_namespace`: Namespace for cache keys, useful when multiple applications use a single memcache server (default: `nil`)
 
 ### Rails asset host
 
@@ -711,19 +903,16 @@ OPENPROJECT_SECURITY__BADGE__DISPLAYED="false"
 
 `after_login_default_redirect_url`: Starting in OpenProject 15.4., users are redirected to the home page after logging in. To customize this behavior (e.g., redirecting them to the My page as before), you can override this with a path.
 
-Example: 
+Example:
 
-```bash
+```shell
 OPENPROJECT_AFTER__LOGIN__DEFAULT__REDIRECT__URL="/my/page"
 ```
 
-
-
 ### Onboarding video url
 
-`onboarding_video_url`: An URL for the video displayed on the onboarding modal. This is only shown when the user logs in for the first time.
-
-*default="[https://player.vimeo.com/video/163426858?autoplay=1](https://player.vimeo.com/video/163426858?autoplay=1)"*
+`onboarding_video_url`: A URL for the video displayed on the onboarding modal.
+This video URL is whitelisted in the content security policy.
 
 ### Enterprise fail fast
 
@@ -733,7 +922,7 @@ If you set `fail_fast` to true, new users cannot be invited or registered if the
 If it is false then you can still invite and register new users but their activation will fail until the
 user limit has been increased (or the number of active users decreased).
 
-*default: false*
+_default: false_
 
 ```yaml
 OPENPROJECT_ENTERPRISE="{ fail_fast: true }"
@@ -756,7 +945,7 @@ enterprise:
 
 If you would like to hide the homescreen links to the OpenProject community, you can do this with the following configuration:
 
-*default=true*
+_default=true_
 
 ```yaml
 OPENPROJECT_SHOW__COMMUNITY__LINKS=false
@@ -764,7 +953,7 @@ OPENPROJECT_SHOW__COMMUNITY__LINKS=false
 
 ### Web worker configuration
 
-Configuration of the main ruby web server (currently puma). Sensible *defaults* are provided.
+Configuration of the main ruby web server (currently puma). Sensible _defaults_ are provided.
 
 ```yaml
 OPENPROJECT_WEB_WORKERS="2"
@@ -821,7 +1010,7 @@ OPENPROJECT_2FA_ACTIVE__STRATEGIES="[]"
 
 #### StatsD
 
-*default: { host: nil, port: 8125 }*
+_default: { host: nil, port: 8125 }_
 
 OpenProject can push metrics to [statsd](https://github.com/statsd/statsd). Currently these are simply the metrics for the puma server, but this may include more in the future.
 

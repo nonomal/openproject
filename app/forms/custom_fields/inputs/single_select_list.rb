@@ -23,7 +23,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
 # See COPYRIGHT and LICENSE files for more details.
 #++
@@ -54,10 +54,10 @@ class CustomFields::Inputs::SingleSelectList < CustomFields::Inputs::Base::Autoc
 
   def list_items
     case @custom_field.field_format
-    when "hierarchy"
-      hierarchy_items.map do |item|
+    when "hierarchy", "weighted_item_list"
+      hierarchical_list_items.map do |item|
         {
-          label: item.ancestry_path,
+          label: item.ancestry_path(include_shorts_and_weights: true),
           value: item.id,
           selected: item.id == @custom_value.value&.to_i
         }
@@ -73,13 +73,25 @@ class CustomFields::Inputs::SingleSelectList < CustomFields::Inputs::Base::Autoc
     end
   end
 
-  def hierarchy_items
+  def hierarchical_list_items
     CustomFields::Hierarchy::HierarchicalItemService.new
       .get_descendants(item: @custom_field.hierarchy_root, include_self: false)
       .value_or([])
   end
 
   def selected?(custom_option)
-    custom_option.id == @custom_value.value&.to_i || custom_option.id == @custom_field.default_value&.to_i
+    custom_option.id == selected_id
+  end
+
+  ##
+  # Returns the ID of the selected CustomOption,
+  # the default option ID if none is selected, or
+  # nil if there is no default.
+  def selected_id
+    if @custom_value.value.present?
+      @custom_value.value.to_i
+    else
+      @custom_field.default_value&.to_i
+    end
   end
 end

@@ -6,16 +6,18 @@ get:
   tags:
     - Work Packages
   description: Returns the collection of work packages that are related to the given project.
+
+    This endpoint is deprecated and replaced by [`/api/v3/workspaces/{id}/work_packages`](https://www.openproject.org/docs/api/endpoints/work-packages/#get-work-packages-of-workspace)
   parameters:
     - description: Project id
-      example: '1'
+      example: 1
       in: path
       name: id
       required: true
       schema:
         type: integer
     - description: Page number inside the requested collection.
-      example: '25'
+      example: 25
       in: query
       name: offset
       required: false
@@ -23,7 +25,7 @@ get:
         default: 1
         type: integer
     - description: Number of elements to display per page.
-      example: '25'
+      example: 25
       in: query
       name: pageSize
       required: false
@@ -32,7 +34,7 @@ get:
     - description: |-
         JSON specifying filter conditions.
         Accepts the same format as returned by the [queries](https://www.openproject.org/docs/api/endpoints/queries/) endpoint. If no filter is to be applied, the client should send an empty array (`[]`).
-      example: '[{ "type_id": { "operator": "=", "values": [''1'', ''2''] }}]'
+      example: '[{ "type_id": { "operator": "=", "values": ["1", "2"] }}]'
       in: query
       name: filters
       required: false
@@ -120,6 +122,8 @@ post:
     When calling this endpoint the client provides a single object, containing at least the properties and links that
     are required, in the body. The required fields of a WorkPackage can be found in its schema, which is embedded in
     the respective form. Note that it is only allowed to provide properties or links supporting the write operation.
+
+    This endpoint is deprecated and replaced by [`/api/v3/workspaces/{id}/work_packages`](https://www.openproject.org/docs/api/endpoints/work-packages/#create-work-package-in-workspace)
   requestBody:
     content:
       application/json:
@@ -127,7 +131,7 @@ post:
           $ref: '../components/schemas/work_package_model.yml'
   parameters:
     - description: Project id
-      example: '1'
+      example: 1
       in: path
       name: id
       required: true

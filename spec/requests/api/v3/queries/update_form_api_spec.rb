@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -108,9 +110,7 @@ RSpec.describe "POST /api/v3/queries/form",
       end
     end
 
-    describe "columns" do
-      let(:relation_columns_allowed) { true }
-
+    describe "columns", with_settings: { work_package_multiple_versions: false } do
       let(:additional_setup) do
         custom_field
 
@@ -119,16 +119,12 @@ RSpec.describe "POST /api/v3/queries/form",
         # There does not seem to appear a way to generate a valid token
         # for testing purposes
         allow(EnterpriseToken).to receive(:allows_to?).and_return(false)
-        allow(EnterpriseToken)
-          .to receive(:allows_to?)
-          .with(:work_package_query_relation_columns)
-          .and_return(relation_columns_allowed)
       end
 
       let(:custom_field) do
         cf = create(:list_wp_custom_field)
         project.work_package_custom_fields << cf
-        cf.types << project.types.first
+        cf.type_variants << project.enabled_variants.first
 
         cf
       end
@@ -160,7 +156,7 @@ RSpec.describe "POST /api/v3/queries/form",
       end
 
       let(:relation_to_type_columns_json) do
-        project.types.map do |type|
+        project.enabled_types.map do |type|
           {
             _type: "QueryColumn::RelationToType",
             id: "relationsToType#{type.id}"
@@ -187,52 +183,26 @@ RSpec.describe "POST /api/v3/queries/form",
       end
 
       context "within a project" do
-        context "with relation columns allowed by the enterprise token" do
-          it "has the static, custom field and relation columns" do
-            expected_columns = static_columns_json +
-                               custom_field_columns_json +
-                               relation_to_type_columns_json +
-                               relation_of_type_columns_json
+        it "has the static, custom field and relation columns" do
+          expected_columns = static_columns_json +
+                             custom_field_columns_json +
+                             relation_to_type_columns_json +
+                             relation_of_type_columns_json
 
-            actual_columns = form.dig("_embedded",
-                                      "schema",
-                                      "columns",
-                                      "_embedded",
-                                      "allowedValues")
-                                 .map do |column|
-                                   {
-                                     _type: column["_type"],
-                                     id: column["id"]
-                                   }
-                                 end
+          actual_columns = form.dig("_embedded",
+                                    "schema",
+                                    "columns",
+                                    "_embedded",
+                                    "allowedValues")
+                               .map do |column|
+                                 {
+                                   _type: column["_type"],
+                                   id: column["id"]
+                                 }
+                               end
 
-            expect(actual_columns).to include(*expected_columns)
-            expect(actual_columns).not_to include(non_project_type_relation_column_json)
-          end
-        end
-
-        context "with relation columns disallowed by the enterprise token" do
-          it "has the static and custom field" do
-            expected_columns = static_columns_json +
-                               custom_field_columns_json
-
-            actual_columns = form.dig("_embedded",
-                                      "schema",
-                                      "columns",
-                                      "_embedded",
-                                      "allowedValues")
-                                 .map do |column|
-                                   {
-                                     _type: column["_type"],
-                                     id: column["id"]
-                                   }
-                                 end
-
-            expect(actual_columns).to include(*expected_columns)
-            expect(actual_columns).not_to include(non_project_type_relation_column_json)
-            expect(actual_columns).not_to include(relation_to_type_columns_json)
-            expect(actual_columns).not_to include(relation_of_type_columns_json)
-          end
+          expect(actual_columns).to include(*expected_columns)
+          expect(actual_columns).not_to include(non_project_type_relation_column_json)
         end
       end
 
@@ -247,58 +217,28 @@ RSpec.describe "POST /api/v3/queries/form",
           # There does not seem to appear a way to generate a valid token
           # for testing purposes
           allow(EnterpriseToken).to receive(:allows_to?).and_return(false)
-          allow(EnterpriseToken)
-            .to receive(:allows_to?)
-            .with(:work_package_query_relation_columns)
-            .and_return(relation_columns_allowed)
         end
 
-        context "with relation columns allowed by the enterprise token" do
-          it "has the static, custom field and relation columns" do
-            expected_columns = static_columns_json +
-                               custom_field_columns_json +
-                               relation_to_type_columns_json +
-                               non_project_type_relation_column_json +
-                               relation_of_type_columns_json
+        it "has the static, custom field and relation columns" do
+          expected_columns = static_columns_json +
+                             custom_field_columns_json +
+                             relation_to_type_columns_json +
+                             non_project_type_relation_column_json +
+                             relation_of_type_columns_json
 
-            actual_columns = form.dig("_embedded",
-                                      "schema",
-                                      "columns",
-                                      "_embedded",
-                                      "allowedValues")
-                                 .map do |column|
-                                   {
-                                     _type: column["_type"],
-                                     id: column["id"]
-                                   }
-                                 end
+          actual_columns = form.dig("_embedded",
+                                    "schema",
+                                    "columns",
+                                    "_embedded",
+                                    "allowedValues")
+                               .map do |column|
+                                 {
+                                   _type: column["_type"],
+                                   id: column["id"]
+                                 }
+                               end
 
-            expect(actual_columns).to include(*expected_columns)
-          end
-        end
-
-        context "with relation columns disallowed by the enterprise token" do
-          it "has the static, custom field and relation columns" do
-            expected_columns = static_columns_json +
-                               custom_field_columns_json
-
-            actual_columns = form.dig("_embedded",
-                                      "schema",
-                                      "columns",
-                                      "_embedded",
-                                      "allowedValues")
-                                 .map do |column|
-                                   {
-                                     _type: column["_type"],
-                                     id: column["id"]
-                                   }
-                                 end
-
-            expect(actual_columns).to include(*expected_columns)
-            expect(actual_columns).not_to include(non_project_type_relation_column_json)
-            expect(actual_columns).not_to include(relation_to_type_columns_json)
-            expect(actual_columns).not_to include(relation_of_type_columns_json)
-          end
+          expect(actual_columns).to include(*expected_columns)
         end
       end
     end
@@ -377,9 +317,7 @@ RSpec.describe "POST /api/v3/queries/form",
     end
 
     it "has the project set" do
-      project_link = { "href" => "/api/v3/projects/#{project.id}", "title" => project.name }
-
-      expect(form.dig("_embedded", "payload", "_links", "project")).to eq project_link
+      expect(form.dig("_embedded", "payload", "_links", "project", "href")).to eq "/api/v3/projects/#{project.id}"
     end
 
     it "is set to public" do
@@ -459,9 +397,7 @@ RSpec.describe "POST /api/v3/queries/form",
       end
 
       it "still finds the project" do
-        project_link = { "href" => "/api/v3/projects/#{project.id}", "title" => project.name }
-
-        expect(form.dig("_embedded", "payload", "_links", "project")).to eq project_link
+        expect(form.dig("_embedded", "payload", "_links", "project", "href")).to eq "/api/v3/projects/#{project.id}"
       end
     end
 

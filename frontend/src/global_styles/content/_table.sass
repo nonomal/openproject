@@ -100,6 +100,7 @@ table.generic-table
       text-align: left
       line-height: 34px
       padding: 0
+      border-bottom: 1px solid var(--borderColor-default)
       // This is needed for a bug in FF as described here
       // https://www.456bereastreet.com/archive/201305/firefox_and_the_magical_text-overflowellipsis_z-index/
       z-index: 1
@@ -150,7 +151,8 @@ table.generic-table
       border-bottom: 1px solid var(--borderColor-default)
 
     @media screen
-      td:not(.-no-ellipsis)
+      th[scope="row"]:not(.-no-ellipsis),
+      td:not(.-no-ellipsis):not(.buttons)
         @include text-shortener
 
     .project td
@@ -162,6 +164,10 @@ table.generic-table
         position: relative
         top: 1px
 
+    th[scope="row"]
+      font-weight: var(--base-text-weight-bold)
+
+    th[scope="row"],
     td
       max-width: 300px
       text-align: left
@@ -172,6 +178,12 @@ table.generic-table
       &.form--td
         vertical-align: middle
 
+      &.-centered
+       text-align: center
+
+      &.-right
+        text-align: right
+
       // Center input fields and select boxes vertically in tables
       .form--field
         margin: 0px
@@ -180,7 +192,9 @@ table.generic-table
         #{$inputElement}~.form-label
           vertical-align: middle
 
-      input[type="checkbox"], input[type="radio"]
+      // N.B. we only adjust margin on non-Primerized controls
+      input[type="checkbox"]:not(.FormControl-checkbox),
+      input[type="radio"]:not(.FormControl-radio)
         margin-top: -0.25rem
 
       // In the interactive table the behaviour is like this:
@@ -200,9 +214,10 @@ table.generic-table
           width: 100%
           max-width: 500px
 
-      &.-min-200
-        @media screen
-          min-width: 200px
+      @each $size in (200, 300)
+        &.-min-#{$size}
+          @media screen
+            min-width: #{$size}px
 
       // The avatar image is not taken into the width calculation of the table cell by the browser.
       // That is why we add the space manually.
@@ -269,7 +284,6 @@ thead.-sticky th
   line-height:  var(--generic-table--header-height)
   height:  var(--generic-table--header-height)
   z-index:      1
-  border-bottom: 1px solid var(--borderColor-default)
 
   &:hover,
   &.hover
@@ -292,7 +306,6 @@ thead.-sticky th
 .generic-table--empty-header
   height:        var(--generic-table--header-height)
   line-height:   var(--generic-table--header-height)
-  border-bottom: 1px solid var(--borderColor-default)
   z-index:       1
 
   // In case the table header contains invisible content for screen readers
@@ -322,6 +335,9 @@ thead.-sticky th
     min-width: initial
   &_centered
     justify-content: center
+
+  &--error-indicator
+    margin-left: var(--base-size-8)
 
   & > a
     flex: 1 1

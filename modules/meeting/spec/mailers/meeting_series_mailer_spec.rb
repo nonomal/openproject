@@ -28,6 +28,7 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
+require "icalendar"
 require_relative "../spec_helper"
 
 RSpec.describe MeetingSeriesMailer do
@@ -49,6 +50,7 @@ RSpec.describe MeetingSeriesMailer do
   let(:i18n) do
     Class.new do
       include Redmine::I18n
+
       public :format_date, :format_time
     end
   end
@@ -61,13 +63,13 @@ RSpec.describe MeetingSeriesMailer do
   end
 
   describe "template_completed" do
-    let(:mail) { described_class.template_completed(series, recipient, author) }
+    let(:mail) { described_class.invited(series, recipient, author) }
 
     it "renders the headers" do
       expect(mail.subject).to include(series.project.name)
       expect(mail.subject).to include(series.title)
       expect(mail.to).to contain_exactly(recipient.mail)
-      expect(mail.from).to eq([Setting.mail_from])
+      expect(mail.from).to eq([ApplicationMailer.reply_to_address])
     end
 
     it "renders the text body" do
@@ -87,32 +89,36 @@ RSpec.describe MeetingSeriesMailer do
     end
   end
 
-  describe "rescheduled" do
-    let(:changes) { { old_schedule: "some old schedule" } }
-    let(:mail) { described_class.rescheduled(series, recipient, author, changes:) }
+  describe "updated" do
+    let(:changes) { { old_schedule: "some old schedule", old_location: "some old location" } }
+    let(:mail) { described_class.updated(series, recipient, author, changes:) }
 
     it "renders the headers" do
       expect(mail.subject).to include(series.project.name)
       expect(mail.subject).to include(series.title)
       expect(mail.to).to contain_exactly(recipient.mail)
-      expect(mail.from).to eq([Setting.mail_from])
+      expect(mail.from).to eq([ApplicationMailer.reply_to_address])
     end
 
     it "renders the text body" do
       User.execute_as(recipient) do
         check_series_mail_content(mail.text_part.body)
-        expect(mail.text_part.body).to include("has changed the schedule")
+        expect(mail.text_part.body).to include("has been updated")
         expect(mail.text_part.body).to include("some old schedule")
+        expect(mail.text_part.body).to include("some old location")
         expect(mail.text_part.body).to include(series.full_schedule_in_words)
+        expect(mail.text_part.body).to include(series.location)
       end
     end
 
     it "renders the html body" do
       User.execute_as(recipient) do
         check_series_mail_content(mail.html_part.body)
-        expect(mail.html_part.body).to include("has changed the schedule")
+        expect(mail.html_part.body).to include("has been updated")
         expect(mail.html_part.body).to include("some old schedule")
+        expect(mail.text_part.body).to include("some old location")
         expect(mail.html_part.body).to include(series.full_schedule_in_words)
+        expect(mail.text_part.body).to include(series.location)
       end
     end
 
@@ -122,7 +128,7 @@ RSpec.describe MeetingSeriesMailer do
   end
 
   describe "icalendar attachment" do
-    let(:mail) { described_class.template_completed(series, recipient, author) }
+    let(:mail) { described_class.invited(series, recipient, author) }
     let(:ical) { mail.parts.detect { |x| !x.multipart? } }
     let(:parsed) { Icalendar::Event.parse(ical.body.raw_source) }
     let(:entry) { parsed.first }
@@ -131,21 +137,79 @@ RSpec.describe MeetingSeriesMailer do
       expect(parsed).to be_a Array
       expect(parsed.length).to eq 1
 
-      expect(entry.summary).to eq "[My project] Recurring Standup"
-      expect(entry.description).to eq "[My project] Meeting series: Recurring Standup"
+      expect(entry.summary).to eq "Recurring Standup"
+      expect(entry.description).to eq "Link to meeting series: http://#{Setting.host_name}/recurring_meetings/#{series.id}"
       expect(entry.location).to eq(series.template&.location.presence)
+    end
+
+    context "with an instantiated occurrence" do
+      let!(:template_participant) do
+        create(:meeting_participant, :invitee, meeting: series.template, user: recipient)
+      end
+      let!(:occurrence) do
+        create(:recurring_meeting_occurrence,
+               recurring_meeting: series,
+               start_time: series.start_time,
+               recurrence_start_time: series.start_time)
+      end
+      let(:calendar) { Icalendar::Calendar.parse(mail.attachments["meeting.ics"].body.decoded).first }
+      let(:master_event) { calendar.events.find { |event| event.recurrence_id.blank? } }
+      let(:occurrence_event) { calendar.events.find { |event| event.recurrence_id.present? } }
+
+      it "renders the series master and occurrence override" do
+        expect(calendar.events.length).to eq(2)
+
+        expect(master_event.uid).to eq(series.uid)
+        expect(master_event.rrule).not_to be_empty
+
+        expect(occurrence_event.uid).to eq(series.uid)
+        expect(occurrence_event.recurrence_id).to eq(occurrence.recurrence_start_time)
+        expect(occurrence_event.description.to_s)
+          .to include("Link to meeting occurrence: http://#{Setting.host_name}/meetings/#{occurrence.id}")
+      end
     end
   end
 
   context "with a recipient with another time zone" do
     let!(:preference) { recipient.pref.update(time_zone: "Asia/Tokyo") }
-    let(:mail) { described_class.template_completed(series, recipient, author) }
+    let(:mail) { described_class.invited(series, recipient, author) }
 
     it "renders the mail with the correct locale" do
       expect(mail.text_part.body).to include(tokyo_offset)
       expect(mail.html_part.body).to include(tokyo_offset)
 
       expect(mail.to).to contain_exactly(recipient.mail)
+    end
+  end
+
+  describe "updated with participant changes" do
+    let(:changes) { { old_schedule: "some old schedule", old_location: "some old location" } }
+    let(:added_names) { ["Added Person"] }
+    let(:removed_names) { ["Removed Person"] }
+    let(:mail) do
+      described_class.updated(series, recipient, author,
+                              changes:,
+                              added_participants: added_names,
+                              removed_participants: removed_names)
+    end
+
+    it "renders added participants bold in the html body" do
+      User.execute_as(recipient) do
+        expect(mail.html_part.body).to include(added_names.first)
+      end
+    end
+
+    it "renders removed participants with strikethrough in the html body" do
+      User.execute_as(recipient) do
+        expect(mail.html_part.body).to include("<s>#{removed_names.first}</s>")
+      end
+    end
+
+    it "renders added and removed participants in the text body" do
+      User.execute_as(recipient) do
+        expect(mail.text_part.body).to include(added_names.first)
+        expect(mail.text_part.body).to include(removed_names.first)
+      end
     end
   end
 

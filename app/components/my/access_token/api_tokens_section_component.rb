@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -33,14 +35,59 @@ module My
       include OpTurbo::Streamable
       include Redmine::I18n
 
-      def initialize(api_tokens:)
+      attr_reader :tokens, :token_type
+
+      def initialize(tokens:, token_type:)
         super
 
-        @api_tokens = api_tokens
+        @tokens = tokens
+        @token_type = token_type
       end
 
-      def id
-        "api-tokens-section-component"
+      private
+
+      def wrapper_key
+        "#{token_type.model_name.element}-token-component"
+      end
+
+      def i18n_scope
+        [:my_account, :access_tokens, token_type.model_name.i18n_key]
+      end
+
+      def token_available?
+        case token_type.to_s
+        when "Token::API" then Setting.api_tokens_enabled?
+        when "Token::ICalMeeting" then Setting.ical_enabled?
+        when "Token::RSS" then Setting.feeds_enabled?
+        else raise ArgumentError, "Unknown token type: #{token_type}"
+        end
+      end
+
+      def show_add_button?
+        return @tokens.empty? if token_type.to_s == "Token::RSS"
+
+        true
+      end
+
+      def add_button_icon
+        case token_type.to_s
+        when "Token::RSS", "Token::ICalMeeting" then :rss
+        else :plus
+        end
+      end
+
+      def add_button_method
+        case token_type.to_s
+        when "Token::RSS" then :post
+        else :get
+        end
+      end
+
+      def add_button_path
+        case token_type.to_s
+        when "Token::RSS" then generate_rss_key_my_access_tokens_path
+        else dialog_my_access_tokens_path(token_type: token_type.model_name.element)
+        end
       end
     end
   end

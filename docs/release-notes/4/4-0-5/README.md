@@ -13,17 +13,17 @@ We advise everyone to update their OpenProject installations.
 
 The following bugs have been fixed in the core:
 
-  - When sorting by a version in the work package table, the result was
-    not shown but an unclear error message displayed
-    ([#17928](https://community.openproject.org/work_packages/17928 "Sorting by version leads to 500 in experimental API (\"Unable to retrieve query from URL\") (closed)")).
-  - Clicking on the project name in a timeline let to “Page not found”
-    ([#17819](https://community.openproject.org/work_packages/17819 "[Regression] Page not found when clicking on project link in timeline (NaN in link) (closed)")).
-  - The “Close” icon of modals was cut off
-    ([#17818](https://community.openproject.org/work_packages/17818 "[Regression] Close icon of modals is cut off (closed)")).
-  - Dates in the work package table were sometimes not displayed properly
-    ([#17043](https://community.openproject.org/work_packages/17043 "Single bad translation on work package table. (closed)")).
-    Thanks a lot to [Mike Lewis](https://community.openproject.org/users/35400) for reporting
-    this error!
+- When sorting by a version in the work package table, the result was
+  not shown but an unclear error message displayed
+  ([#17928](https://community.openproject.org/work_packages/17928 "Sorting by version leads to 500 in experimental API (\"Unable to retrieve query from URL\") (closed)")).
+- Clicking on the project name in a timeline let to “Page not found”
+  ([#17819](https://community.openproject.org/work_packages/17819 "[Regression] Page not found when clicking on project link in timeline (NaN in link) (closed)")).
+- The “Close” icon of modals was cut off
+  ([#17818](https://community.openproject.org/work_packages/17818 "[Regression] Close icon of modals is cut off (closed)")).
+- Dates in the work package table were sometimes not displayed properly
+  ([#17043](https://community.openproject.org/work_packages/17043 "Single bad translation on work package table. (closed)")).
+  Thanks a lot to [Mike Lewis](https://community.openproject.org/users/35400) for reporting
+  this error!
 
 Additionally, the work package export via CSV is working properly again
 ([#16813](https://community.openproject.org/work_packages/16813 "CSV Export is fixed (closed)")).

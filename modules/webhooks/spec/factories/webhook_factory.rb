@@ -28,11 +28,19 @@
 
 FactoryBot.define do
   factory :webhook, class: "Webhooks::Webhook" do
-    name { "Example Webhook" }
+    transient do
+      event_names { [] }
+    end
+
+    sequence(:name) { |i| "Example Webhook ##{i}" }
     url { "http://example.net/webhook_receiver/42" }
     description { "This is an example webhook" }
     secret { "42" }
     enabled { true }
     all_projects { true }
+
+    callback(:after_create) do |webhook, evaluator|
+      evaluator.event_names.each { |name| webhook.events.create!(name:) }
+    end
   end
 end

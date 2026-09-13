@@ -27,7 +27,7 @@
 #++
 
 class Widget::Controls::Delete < Widget::Controls
-  def render
+  def render # rubocop:disable Metrics/AbcSize
     return "" if @subject.new_record? or !@options[:can_delete]
 
     button = link_to(I18n.t(:button_delete),
@@ -37,11 +37,15 @@ class Widget::Controls::Delete < Widget::Controls
     popup = content_tag :div, id: "delete_form", style: "display:none", class: "button_form" do
       question = content_tag :p, I18n.t(:label_really_delete_question)
 
-      url_opts = { id: @subject.id }
+      url_opts = if @subject.project
+                   { controller: 'cost_reports', action: 'destroy', id: @subject.id, project_id: @subject.project.id }
+                 else
+                   { controller: 'cost_reports', action: 'destroy', id: @subject.id }
+                 end
       url_opts[request_forgery_protection_token] = form_authenticity_token # if protect_against_forgery?
       opt1 = link_to I18n.t(:button_delete),
                      url_for(url_opts),
-                     method: :delete,
+                     data: { turbo_method: :delete },
                      class: "button -danger icon-context icon-delete"
       opt2 = link_to I18n.t(:button_cancel),
                      "#",

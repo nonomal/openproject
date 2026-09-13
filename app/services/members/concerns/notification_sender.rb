@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -53,7 +55,7 @@ module Members::Concerns::NotificationSender
     end
 
     def event_type
-      raise NotImplementedError
+      raise SubclassResponsibilityError
     end
   end
 end

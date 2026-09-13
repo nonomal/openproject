@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -35,9 +37,9 @@ class Relations::UpdateService < Relations::BaseService
     self.contract_class = Relations::UpdateContract
   end
 
-  def perform(attributes)
-    in_user_context(send_notifications: attributes[:send_notifications]) do
-      update_relation model, attributes
+  def perform
+    in_user_context(send_notifications: params[:send_notifications]) do
+      update_relation model, params
     end
   end
 end

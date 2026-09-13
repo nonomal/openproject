@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -58,7 +60,7 @@ class WorkPackages::UpdateAncestorsService < BaseServices::BaseCallable
   end
 
   def ancestors(work_packages)
-    work_packages.reject { initiator?(_1) }
+    work_packages.reject { initiator?(it) }
   end
 
   def update_current_and_former_ancestors(attributes)
@@ -72,9 +74,17 @@ class WorkPackages::UpdateAncestorsService < BaseServices::BaseCallable
       end
   end
 
-  def save_updated_work_packages(updated_work_packages)
-    updated_initiators, updated_ancestors = updated_work_packages.partition { initiator?(_1) }
+  def changes?(work_package)
+    changes_before = work_package.changes
+    yield
+    changes_after = work_package.changes
+    changes_before != changes_after
+  end
 
+  def save_updated_work_packages(updated_work_packages)
+    updated_initiators, updated_ancestors = updated_work_packages.partition { initiator?(it) }
+
+    # TODO: Can we do better and not save if not changed?
     # Send notifications for initiator updates
     success = updated_initiators.all? { |wp| wp.save(validate: false) }
     # Do not send notifications for parent updates
@@ -113,7 +123,8 @@ class WorkPackages::UpdateAncestorsService < BaseServices::BaseCallable
 
   def set_journal_note(work_packages)
     work_packages.each do |wp|
-      wp.journal_notes = I18n.t("work_package.updated_automatically_by_child_changes", child: "##{initiator_work_package.id}")
+      wp.journal_notes = I18n.t("work_package.updated_automatically_by_child_changes",
+                                child: "##{initiator_work_package.id}")
     end
   end
 
@@ -124,10 +135,9 @@ class WorkPackages::UpdateAncestorsService < BaseServices::BaseCallable
   def compute_derived_done_ratio(work_package, loader)
     return if no_children?(work_package, loader)
 
-    case Setting.total_percent_complete_mode
-    when "work_weighted_average"
+    if WorkPackage.work_weighted_average_mode?
       calculate_work_weighted_average_percent_complete(work_package)
-    when "simple_average"
+    elsif WorkPackage.simple_average_mode?
       calculate_simple_average_percent_complete(work_package, loader)
     end
   end
@@ -167,13 +177,16 @@ class WorkPackages::UpdateAncestorsService < BaseServices::BaseCallable
   #
   # This method is called only when parent or parent_id attribute of the
   # initiator work package has been changed
-  def switch_to_automatic_mode(work_package, loader)
+  def switch_to_automatic_mode(work_package, loader) # rubocop:disable Metrics/AbcSize
     # it only applies to the initiator's direct parent
     return if initiator_work_package.parent_id.nil?
     return if initiator_work_package.parent_id != work_package.id
 
-    # it only applies if there is no bulk copy in progress: if it's a copy, the copy must stay exact
-    return if state.bulk_copy_in_progress
+    # it does not apply if the child was deleted
+    return if initiator_work_package.destroyed?
+
+    # it only applies if there is no bulk duplicate in progress: if it's a copy, the copy must stay exact
+    return if state.bulk_duplicate_in_progress
 
     # it only applies if the parent is manually scheduled
     return if work_package.schedule_automatically?

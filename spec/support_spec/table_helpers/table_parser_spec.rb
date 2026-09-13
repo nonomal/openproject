@@ -128,12 +128,12 @@ RSpec.describe TableHelpers::TableParser do
     end
 
     it "sets the parent attribute by its identifier" do
-      attributes = parsed_data.flat_map { _1[:attributes] }
+      attributes = parsed_data.flat_map { it[:attributes] }
       expect(attributes.pluck(:parent)).to eq([nil, :parent, :child, :parent, :parent, :child3, nil])
     end
 
     it "sets the subject attribute" do
-      attributes = parsed_data.flat_map { _1[:attributes] }
+      attributes = parsed_data.flat_map { it[:attributes] }
       expect(attributes.pluck(:subject))
         .to eq(["Parent", "Child", "Grand-Child", "Child 2", "Child 3", "Another child", "Root sibling"])
     end

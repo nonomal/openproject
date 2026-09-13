@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -48,8 +48,7 @@ import {
   ResourceState,
   setResourceLoading,
 } from 'core-app/core/state/resource-store';
-import { omit } from 'lodash';
-import isDefinedEntity from 'core-app/core/state/is-defined-entity';
+import { omit } from 'lodash-es';
 import {
   ApiV3ListParameters,
   listParamsString,
@@ -59,10 +58,7 @@ import {
   HttpClient,
   HttpErrorResponse,
 } from '@angular/common/http';
-import {
-  Injectable,
-  Injector,
-} from '@angular/core';
+import { Injectable, Injector, inject } from '@angular/core';
 import { ApiV3Service } from 'core-app/core/apiv3/api-v3.service';
 import { ToastService } from 'core-app/shared/components/toaster/toast.service';
 import idFromLink from 'core-app/features/hal/helpers/id-from-link';
@@ -77,17 +73,14 @@ export type ResourceKeyInput = ApiV3ListParameters|string;
 
 @Injectable()
 export abstract class ResourceStoreService<T extends { id:ID }> {
+  readonly injector = inject(Injector);
+  readonly http = inject(HttpClient);
+  readonly apiV3Service = inject(ApiV3Service);
+  readonly toastService = inject(ToastService);
+
   protected store:ResourceStore<T> = this.createStore();
 
   protected query = new QueryEntity(this.store);
-
-  constructor(
-    readonly injector:Injector,
-    readonly http:HttpClient,
-    readonly apiV3Service:ApiV3Service,
-    readonly toastService:ToastService,
-  ) {
-  }
 
   /**
    * Require the results for the given filter params
@@ -149,7 +142,7 @@ export abstract class ResourceStoreService<T extends { id:ID }> {
     return this
       .collectionState(href)
       .pipe(
-        filter(isDefinedEntity),
+        filter(entity => entity !== undefined),
         switchMap((collection:CollectionResponse) => this.query.selectMany(collection.ids)),
       );
   }
@@ -177,7 +170,7 @@ export abstract class ResourceStoreService<T extends { id:ID }> {
     return this
       .query
       .selectEntity(id)
-      .pipe(filter(isDefinedEntity));
+      .pipe(filter(entity => entity !== undefined));
   }
 
   /**

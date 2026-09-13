@@ -7,13 +7,14 @@ keywords: help, documentation
 --- 
 # OpenProject Documentation
 
-> **Note**: To better read our OpenProject Documentation, please go to [www.openproject.org/docs/](https://www.openproject.org/docs/).
+> [!NOTE]
+> For enhanced usability, access the OpenProject documentation at [www.openproject.org/docs/](https://www.openproject.org/docs).
 
 ## Installation
 
 Get started with installing and upgrading OpenProject using [our Installation Guide starting point](./installation-and-operations/).
 
-The guides [packaged](./installation-and-operations/installation/packaged) and [Docker-based](./installation-and-operations/installation/docker) installations are provided.
+The guides for [packaged](./installation-and-operations/installation/packaged) and [Docker-based](./installation-and-operations/installation/docker) installations are provided.
 
 ## Upgrading
 
@@ -23,11 +24,11 @@ The guides for [upgrading](./installation-and-operations/operation/upgrading) ar
 
 ## Operation
 
-* [Backing up you installation](./installation-and-operations/operation/backing-up)
-* [Alter configuration of OpenProject](./installation-and-operations/configuration)
-* [Manual repository integration for Git and Subversion](./installation-and-operations/configuration/repositories)
-* [Configure incoming mails](./installation-and-operations/configuration/incoming-emails)
-* [Install custom plugins](./installation-and-operations/configuration/plugins)
+- [Backing up your installation](./installation-and-operations/operation/backing-up)
+- [Alter configuration of OpenProject](./installation-and-operations/configuration)
+- [Manual repository integration for Git and Subversion](./installation-and-operations/configuration/repositories)
+- [Configure incoming mails](./installation-and-operations/configuration/incoming-emails)
+- [Install custom plugins](./installation-and-operations/configuration/plugins)
 
 ## User Guides
 
@@ -39,12 +40,12 @@ Please see our [Use Cases section](./use-cases/) for detailed how-to guides and 
 
 ## Development
 
-* [Full development environment for developers](./development/development-environment)
-* [Developing plugins](./development/create-openproject-plugin)
-* [Developing OmniAuth Plugins](./development/create-omniauth-plugin)
-* [Running tests](./development/running-tests)
-* [Code review guidelines](./development/code-review-guidelines)
-* [API documentation](./api)
+- [Full development environment for developers](./development/development-environment)
+- [Developing plugins](./development/create-openproject-plugin)
+- [Developing OmniAuth Plugins](./development/create-omniauth-plugin)
+- [Running tests](./development/testing)
+- [Code review guidelines](./development/code-review-guidelines)
+- [API documentation](./api)
 
 ## APIv3 documentation sources
 

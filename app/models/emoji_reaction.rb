@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -46,11 +48,29 @@ class EmojiReaction < ApplicationRecord
 
   enum :reaction, EMOJI_MAP.each_with_object({}) { |(k, _v), h| h[k] = k.to_s }
 
+  # Lets a polling client detect reaction changes (including removals) by timestamp.
+  # Written directly so it never bumps the reactable's updated_at, which drives the
+  # journal "edited" indicator.
+  after_create :stamp_reactable_reactions_changed_at
+  after_destroy :stamp_reactable_reactions_changed_at
+
   def self.available_emoji_reactions
     EMOJI_MAP.invert.sort
   end
 
   def self.emoji(reaction)
     EMOJI_MAP[reaction.to_sym]
+  end
+
+  def emoji
+    self.class.emoji(reaction)
+  end
+
+  private
+
+  def stamp_reactable_reactions_changed_at
+    return unless reactable.respond_to?(:reactions_changed_at)
+
+    reactable.update_columns(reactions_changed_at: Time.current)
   end
 end

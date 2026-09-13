@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -39,7 +41,8 @@ module OAuth
     skip_before_action :check_if_login_required
     no_authorization_required! :new,
                                :create,
-                               :show
+                               :show,
+                               :destroy
 
     layout "only_logo"
 

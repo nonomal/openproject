@@ -1,10 +1,12 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 require "features/work_packages/work_packages_page"
 require "features/work_packages/details/inplace_editor/shared_examples"
 
 RSpec.describe "custom field inplace editor", :js do
   let(:user) { create(:admin) }
-  let(:type) { create(:type_standard, custom_fields:) }
+  let(:type) { create(:type_task, custom_fields:) }
   let(:project) do
     create(:project,
            types: [type],
@@ -17,7 +19,7 @@ RSpec.describe "custom field inplace editor", :js do
            project:,
            custom_values: initial_custom_values)
   end
-  let(:wp_page) { Pages::SplitWorkPackage.new(work_package) }
+  let(:wp_page) { Pages::PrimerizedSplitWorkPackage.new(work_package) }
 
   let(:property_name) { custom_field.attribute_name(:camel_case) }
   let(:field) { wp_page.edit_field(property_name) }
@@ -128,27 +130,35 @@ RSpec.describe "custom field inplace editor", :js do
     end
     let(:initial_custom_values) { { custom_field.id => 123 } }
 
-    context "with length restrictions" do
+    context "with value bounds" do
       let(:args) do
-        { min_length: 2, max_length: 5 }
+        { min_value: -5, max_value: 100 }
       end
 
       it "renders errors for invalid entries" do
         field.activate!
-        # exceeding max length
-        expect_update "123456",
+        # exceeding the maximum value
+        expect_update "101",
                       type: :error,
-                      message: "MyNumber is too long (maximum is 5 characters)."
+                      message: "MyNumber must be less than or equal to 100."
 
-        # below min length
-        expect_update "1",
+        # below the minimum value
+        expect_update "-6",
                       type: :error,
-                      message: "MyNumber is too short (minimum is 2 characters)."
+                      message: "MyNumber must be greater than or equal to -5."
+
+        # correct value: a negative value inside the bounds
+        expect_update "-5",
+                      message: I18n.t("js.notice_successful_update")
+        wp_page.expect_attributes property_name => "-5"
+
+        # Activate the field once more
+        field.activate!
 
         # Correct value
-        expect_update "9999",
+        expect_update "99",
                       message: I18n.t("js.notice_successful_update")
-        wp_page.expect_attributes property_name => "9999"
+        wp_page.expect_attributes property_name => "99"
       end
     end
 
@@ -218,7 +228,30 @@ RSpec.describe "custom field inplace editor", :js do
         field.expect_state_text "10,000.55"
 
         work_package.reload
-        expect(work_package.custom_value_for(custom_field.id).typed_value).to eq 10000.55
+        expect(work_package.custom_value_for(custom_field).typed_value).to eq 10000.55
+      end
+    end
+
+    context "with decimal value bounds" do
+      let(:user) { create(:admin, language: "en") }
+      let(:args) { { min_value: 0.1234, max_value: 10.25 } }
+      let(:initial_custom_values) { { custom_field.id => 1.5 } }
+
+      it "renders errors for invalid entries" do
+        field.activate!
+        expect_update "10.26",
+                      type: :error,
+                      message: "MyFloat must be less than or equal to 10.25."
+
+        expect_update "0.1233",
+                      type: :error,
+                      message: "MyFloat must be greater than or equal to 0.1234."
+
+        expect_update "0.1234",
+                      message: I18n.t("js.notice_successful_update")
+
+        work_package.reload
+        expect(work_package.custom_value_for(custom_field).typed_value).to eq 0.1234
       end
     end
 
@@ -232,7 +265,7 @@ RSpec.describe "custom field inplace editor", :js do
         field.expect_state_text "10.000,55"
 
         work_package.reload
-        expect(work_package.custom_value_for(custom_field.id).typed_value).to eq 10000.55
+        expect(work_package.custom_value_for(custom_field).typed_value).to eq 10000.55
       end
     end
   end
@@ -249,7 +282,7 @@ RSpec.describe "custom field inplace editor", :js do
       field.update "http://example.com"
 
       field.expect_state_text "http://example.com"
-      expect(field.display_element).to have_css('a[href="http://example.com"]')
+      expect(field.display_element).to have_link("http://example.com", href: "http://example.com")
 
       field.update "bogus", expect_failure: true
 
@@ -259,7 +292,8 @@ RSpec.describe "custom field inplace editor", :js do
       field.save!
 
       field.expect_state_text "http://community.openproject.org"
-      expect(field.display_element).to have_css('a[href="http://community.openproject.org"]')
+      expect(field.display_element).to have_link("http://community.openproject.org",
+                                                 href: "http://community.openproject.org")
     end
   end
 end

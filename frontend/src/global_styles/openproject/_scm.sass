@@ -71,29 +71,41 @@ li.change
     margin-right: 1em
 
 .repository--revision-toolbar
+  display: flex
   margin-top: 3rem
 
-.repository--checkout-instructions--url
-  margin-top: 1rem
+.repository--checkout-container
+  width: 450px
 
-.repository-breadcrumbs
-  font-size: 0.9rem
-  margin: 15px 0
+.repository-input-group
+  display: flex
 
-.repository-breadcrumbs--home
-  font-size: 0.75rem
+.revisions-action-container
+  display: flex
+  gap: 0.5rem
+  width: 50%
+  .button
+    height: 36px
 
-.repository-bradcrumbs--identifier
-  display: inline-block
-  margin-left: 10px
+.revisions-title-container
+  flex: 1 1
+  white-space: nowrap
+  max-width: 100%
 
-.repository-breadcrumbs--sep
-  display: inline-block
-  margin: 0 2px
+.revisions-items
+  display: flex
+  gap: 0.5rem
 
-  &::before
-    content: '▸'
-    color: var(--fgColor-muted)
+  .revisions-item
+    display: flex
+    align-items: center
+
+    .revisions-item--input
+      flex: 1
+      flex-basis: 150px
+
+    .revisions-item--label
+      padding: 0 5px
 
 table.filecontent
   border: 1px solid var(--borderColor-default)

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,8 +30,8 @@
 
 module OpenProject::TextFormatting::Filters::Macros
   module GithubPullRequest
-    CUSTOM_ELEMENT = "opce-github-pull-request".freeze
-    HTML_CLASS = "github_pull_request".freeze
+    CUSTOM_ELEMENT = "opce-github-pull-request"
+    HTML_CLASS = "github_pull_request"
 
     module_function
 

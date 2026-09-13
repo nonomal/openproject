@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -38,7 +40,6 @@ RSpec.describe "Work package attribute help texts", :js do
            help_text: "Some **help text** for status.")
   end
 
-  let(:modal) { Components::AttributeHelpTextModal.new(instance) }
   let(:wp_page) { Pages::FullWorkPackage.new work_package }
 
   before do
@@ -50,23 +51,33 @@ RSpec.describe "Work package attribute help texts", :js do
     wp_page.ensure_page_loaded
   end
 
-  shared_examples "allows to view help texts" do
+  shared_examples "allows to view help texts" do |show_edit:|
     it "shows an indicator for whatever help text exists" do
       expect(page).to have_css('.work-package--single-view [data-qa-help-text-for="status"]')
 
       # Open help text modal
-      modal.open!
-      expect(modal.modal_container).to have_css("strong", text: "help text")
-      modal.expect_edit(editable: user.allowed_globally?(:edit_attribute_help_texts))
+      page.find("[data-qa-help-text-for='status']").click
 
-      modal.close!
+      expect(page).to have_modal "Status"
+      within_modal "Status" do
+        expect(page).to have_css("strong", text: "help text")
+
+        expect(page).to have_button "Close"
+        if show_edit
+          expect(page).to have_link "Edit"
+        end
+
+        click_on "Close"
+      end
+
+      expect(page).to have_no_modal "Status"
     end
   end
 
   describe "as admin" do
     let(:user) { create(:admin) }
 
-    it_behaves_like "allows to view help texts"
+    it_behaves_like "allows to view help texts", show_edit: false
   end
 
   describe "as regular user" do
@@ -74,6 +85,6 @@ RSpec.describe "Work package attribute help texts", :js do
       create(:user, member_with_permissions: { project => [:view_work_packages] })
     end
 
-    it_behaves_like "allows to view help texts"
+    it_behaves_like "allows to view help texts", show_edit: false
   end
 end

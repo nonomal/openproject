@@ -31,17 +31,29 @@ module API
     module CostEntries
       class CostEntryRepresenter < ::API::Decorators::Single
         include API::Decorators::LinkedResource
+        include API::V3::Workspaces::LinkedResource
         include API::Decorators::DateProperty
 
         self_link title_getter: ->(*) {}
-        associated_resource :project
+        associated_project
         associated_resource :user
         associated_resource :cost_type
 
         # for now not embedded, because work packages are quite large
+        associated_resource :entity,
+                            getter: ::API::V3::CostEntries::EntityRepresenterFactory.create_getter_lambda(:entity),
+                            link: ::API::V3::CostEntries::EntityRepresenterFactory.create_link_lambda(:entity)
+
+        # TODO: DEPRECATED!
         associated_resource :work_package,
-                            getter: ->(*) {},
-                            link_title_attribute: :subject
+                            skip_render: ->(*) { represented.entity_type != "WorkPackage" },
+                            getter: ->(*) {
+                              entity = represented.entity
+                              next unless entity.is_a?(WorkPackage) && entity.visible?(current_user)
+
+                              ::API::V3::WorkPackages::WorkPackageRepresenter.create(entity, current_user:)
+                            },
+                            link: ::API::V3::CostEntries::EntityRepresenterFactory.create_work_package_link_lambda
 
         property :id, render_nil: true
         property :units, as: :spentUnits

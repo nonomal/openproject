@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -43,11 +45,16 @@ def scroll_to_element(element, block: :start, inline: :nearest)
   end
 end
 
-def scroll_to_and_click(element)
+def scroll_to_and_click(element, block: :start, inline: :nearest)
   retry_block do
-    scroll_to_element(element)
+    scroll_to_element(element, block:, inline:)
     element.click
   end
+end
+
+def scroll_to_top
+  top_element = page.find_by_id("content-body")
+  page.execute_script("arguments[0].scrollTo(0, 0);", top_element.native)
 end
 
 def expect_element_in_view(element)

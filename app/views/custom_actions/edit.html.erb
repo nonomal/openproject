@@ -43,7 +43,7 @@ See COPYRIGHT and LICENSE files for more details.
 
 <%= error_messages_for @custom_action %>
 
-<% content_controller "hide-sections", dynamic: true %>
+<% content_controller "hide-sections" %>
 
 <%= labelled_tabular_form_for @custom_action,
                               data: { "hide-sections-target": "form" } do |f| %>

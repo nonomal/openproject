@@ -21,12 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { TestBed, waitForAsync } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { HalResourceService } from 'core-app/features/hal/services/hal-resource.service';
 import { Injector } from '@angular/core';
 import { States } from 'core-app/core/states/states.service';
@@ -48,7 +48,8 @@ import { WorkPackageResource } from 'core-app/features/hal/resources/work-packag
 import isNewResource from 'core-app/features/hal/helpers/is-new-resource';
 import { WeekdayService } from 'core-app/core/days/weekday.service';
 import { of } from 'rxjs';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http';
 
 describe('WorkPackage', () => {
   let halResourceService:HalResourceService;
@@ -67,13 +68,9 @@ describe('WorkPackage', () => {
     loadWeekdays: () => of(true),
   };
 
-  beforeEach(waitForAsync(() => {
-    // noinspection JSIgnoredPromiseFromCall
-    TestBed.configureTestingModule({
-      imports: [
-        OpenprojectHalModule,
-        HttpClientTestingModule,
-      ],
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [OpenprojectHalModule],
       providers: [
         HalResourceService,
         States,
@@ -90,27 +87,161 @@ describe('WorkPackage', () => {
         { provide: WorkPackageCreateService, useValue: {} },
         { provide: StateService, useValue: {} },
         { provide: SchemaCacheService, useValue: {} },
-      ],
-    })
-      .compileComponents()
-      .then(() => {
-        halResourceService = TestBed.inject(HalResourceService);
-        injector = TestBed.inject(Injector);
-        halResourceNotification = injector.get(HalResourceNotificationService);
+        provideHttpClient(withXhr(), withInterceptorsFromDi()),
+        provideHttpClientTesting(),
+      ]
+    }).compileComponents();
+    halResourceService = TestBed.inject(HalResourceService);
+    injector = TestBed.inject(Injector);
+    halResourceNotification = injector.get(HalResourceNotificationService);
 
-        halResourceService.registerResource('WorkPackage', { cls: WorkPackageResource });
-      });
-  }));
+    halResourceService.registerResource('WorkPackage', {
+      cls: WorkPackageResource,
+      attrTypes: {
+        parent: 'WorkPackage',
+        ancestors: 'WorkPackage',
+        children: 'WorkPackage',
+      },
+    });
+  });
 
   describe('when creating an empty work package', () => {
     beforeEach(createWorkPackage);
 
     it('should have an attachments property of type `AttachmentCollectionResource`', () => {
-      expect(workPackage.attachments).toEqual(jasmine.any(AttachmentCollectionResource));
+      expect(workPackage.attachments).toEqual(expect.any(AttachmentCollectionResource));
     });
 
     it('should return true for `isNewResource`', () => {
       expect(isNewResource(workPackage)).toBeTruthy();
+    });
+  });
+
+  describe('displayId', () => {
+    afterEach(() => {
+      source = undefined;
+    });
+
+    describe('when displayId is present (semantic mode)', () => {
+      beforeEach(() => {
+        source = { id: 42, displayId: 'PROJ-7' };
+        createWorkPackage();
+      });
+
+      it('should return the semantic identifier', () => {
+        expect(workPackage.displayId).toEqual('PROJ-7');
+      });
+
+      it('should not override the numeric id', () => {
+        expect(workPackage.id).toEqual('42');
+      });
+    });
+
+    describe('when displayId is present (classic mode)', () => {
+      beforeEach(() => {
+        source = { id: 42, displayId: '42' };
+        createWorkPackage();
+      });
+
+      it('should return the numeric displayId as string', () => {
+        expect(workPackage.displayId).toEqual('42');
+      });
+    });
+
+    describe('when displayId is absent but present on the self link (linked ancestor/child)', () => {
+      beforeEach(() => {
+        source = {
+          _links: {
+            self: {
+              href: '/api/v3/work_packages/11099',
+              title: 'subj child',
+              displayId: 'ACSMT-15',
+            },
+          },
+        };
+        createWorkPackage();
+      });
+
+      it('should fall back to the semantic identifier on the self link', () => {
+        expect(workPackage.displayId).toEqual('ACSMT-15');
+      });
+    });
+
+    describe('when built from a parent work package _links.ancestors array', () => {
+      // Mirrors the real HAL pipeline: the parent exposes an ancestors link
+      // array; each entry carries displayId alongside href/title; the builder
+      // creates an ancestor WorkPackageResource through HalLink, which must
+      // preserve displayId end-to-end.
+      beforeEach(() => {
+        source = {
+          _links: {
+            self: { href: '/api/v3/work_packages/42' },
+            ancestors: [
+              {
+                href: '/api/v3/work_packages/11099',
+                title: 'subj child',
+                displayId: 'ACSMT-15',
+              },
+            ],
+          },
+        };
+        createWorkPackage();
+      });
+
+      it('surfaces the semantic displayId on each ancestor resource', () => {
+        const ancestor = (workPackage as any).ancestors[0] as WorkPackageResource;
+
+        expect(ancestor.displayId).toEqual('ACSMT-15');
+      });
+    });
+
+  });
+
+  describe('formattedId', () => {
+    afterEach(() => {
+      source = undefined;
+    });
+
+    it('should return semantic identifier without hash prefix', () => {
+      source = { id: 42, displayId: 'PROJ-7' };
+      createWorkPackage();
+
+      expect(workPackage.formattedId).toEqual('PROJ-7');
+    });
+
+    it('should prefix numeric id with # in classic mode', () => {
+      source = { id: 42, displayId: '42' };
+      createWorkPackage();
+
+      expect(workPackage.formattedId).toEqual('#42');
+    });
+
+  });
+
+  describe('subjectWithId', () => {
+    afterEach(() => {
+      source = undefined;
+    });
+
+    it('should include semantic displayId without hash in parentheses', () => {
+      source = { id: 42, displayId: 'PROJ-7', subject: 'Fix the bug' };
+      createWorkPackage();
+
+      expect(workPackage.subjectWithId()).toEqual('Fix the bug (PROJ-7)');
+    });
+
+    it('should include hash-prefixed numeric id in classic mode', () => {
+      source = { id: 42, displayId: '42', subject: 'Fix the bug' };
+      createWorkPackage();
+
+      expect(workPackage.subjectWithId()).toEqual('Fix the bug (#42)');
+    });
+
+    it('should omit id suffix for new resources', () => {
+      source = { subject: 'New task' };
+      createWorkPackage();
+
+      expect(workPackage.subjectWithId()).toEqual('New task');
     });
   });
 
@@ -123,32 +254,21 @@ describe('WorkPackage', () => {
 
     it('when work package is not new', () => {
       workPackage.$source.id = 420;
+
       expect(workPackage.canAddAttachments).toEqual(false);
     });
 
     it('when the work package has no `addAttachment` link and is not new', () => {
       workPackage.$source.id = 69;
       workPackage.$links.addAttachment = null as any;
+
       expect(workPackage.canAddAttachments).toEqual(false);
     });
 
     it('when the work package has an `addAttachment` link', () => {
-      workPackage.$links.addAttachment = <any> _.noop;
-      expect(workPackage.canAddAttachments).toEqual(true);
-    });
-  });
+      workPackage.$links.addAttachment = () => Promise.resolve();
 
-  describe('when a work package is created with attachments and activities', () => {
-    beforeEach(() => {
-      source = {
-        _links: {
-          schema: { _type: 'Schema', href: 'schema' },
-          attachments: { href: 'attachments' },
-          activities: { href: 'activities' },
-        },
-        isNew: true,
-      };
-      createWorkPackage();
+      expect(workPackage.canAddAttachments).toEqual(true);
     });
   });
 });

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -42,6 +44,14 @@ module WorkPackages
           @journal = journal
           @filter = filter
           @grouped_emoji_reactions = grouped_emoji_reactions
+        end
+
+        def menu_id
+          ItemComponent::AddReactions.menu_id(journal)
+        end
+
+        def reactable?
+          ItemComponent::AddReactions.new(journal:, grouped_emoji_reactions: {}).render?
         end
 
         private

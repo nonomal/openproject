@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -42,7 +44,7 @@ module Pages
     end
 
     def table_container
-      container.find(".work-package-table")
+      container.find("table.work-package-table", wait: 10)
     end
 
     def click_reference_inline_create

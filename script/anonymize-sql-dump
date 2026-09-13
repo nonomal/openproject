@@ -9,8 +9,9 @@ if [ -f "$HOME/openproject/dev/Gemfile" ]; then
   OPENPROJECT_DEV_DIR="$HOME/openproject/dev"
 elif [ -f "$HOME/openproject/Gemfile" ]; then
   OPENPROJECT_DEV_DIR="$HOME/openproject"
-elif [ -f "$HOME/code/opf/openproject/Gemfile" ]; then
-  OPENPROJECT_DEV_DIR="$HOME/code/opf/openproject"
+# maybe parent directory of this script is an OpenProject repository?
+elif [ -f "$(cd "$(dirname $0)/.." && pwd)/Gemfile" ]; then
+  OPENPROJECT_DEV_DIR="$(cd "$(dirname $0)/.." && pwd)"
 else
   OPENPROJECT_DEV_DIR="${2:?Pass the openproject dev directory as second argument (needed to create the admin user)}"
   [ -f "$OPENPROJECT_DEV_DIR/Gemfile" ] || { echo "OpenProject dev directory $OPENPROJECT_DEV_DIR is not an OpenProject repository"; exit 1; }
@@ -42,6 +43,14 @@ Ask help to ops team for the right bastion hosts.
 EOT
   exit 1
 fi
+
+
+
+echo_header "INSTALLING OpenProject DEPENDENCIES"
+
+cd "$OPENPROJECT_DEV_DIR"
+bundle check || bundle install
+cd -
 
 
 
@@ -194,6 +203,7 @@ pg_dump --no-owner --format=plain tmp > tmp.dump.sql
 echo_header "DONE"
 echo "Anonymized database dump saved to $(pwd)/tmp.dump.sql"
 echo "Copy it to your machine and load it like this:"
-echo "  dropdb --if-exists --force openproject_debug_me"
-echo "  createdb --owner=openproject openproject_debug_me"
-echo "  psql --username=openproject openproject_debug_me < tmp.dump.sql"
+echo "  DB_NAME=openproject_debug_me"
+echo '  dropdb --if-exists --force $DB_NAME'
+echo '  createdb --owner=openproject $DB_NAME'
+echo '  psql --username=openproject $DB_NAME < tmp.dump.sql'

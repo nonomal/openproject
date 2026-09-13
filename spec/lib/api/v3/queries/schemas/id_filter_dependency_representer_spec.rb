@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -50,7 +52,7 @@ RSpec.describe API::V3::Queries::Schemas::IdFilterDependencyRepresenter do
         context "within project" do
           let(:path) { "values" }
           let(:type) { "[]WorkPackage" }
-          let(:href) { api_v3_paths.work_packages_by_project(project.id) }
+          let(:href) { api_v3_paths.work_packages_by_workspace(project.id) }
 
           context "for operator 'Queries::Operators::Equals'" do
             let(:operator) { Queries::Operators::Equals }

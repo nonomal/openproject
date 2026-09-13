@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,6 +29,7 @@
 #++
 
 require "spec_helper"
+require_relative "../support/pages/backlog"
 
 RSpec.describe "Empty backlogs project",
                :js do
@@ -34,36 +37,44 @@ RSpec.describe "Empty backlogs project",
   shared_let(:task) { create(:type_task) }
   shared_let(:project) { create(:project, types: [story, task], enabled_module_names: %w(backlogs)) }
   shared_let(:status) { create(:status, is_default: true) }
+  let(:planning_page) { Pages::Backlog.new(project) }
 
   before do
     login_as current_user
-    allow(Setting)
-        .to receive(:plugin_openproject_backlogs)
-                .and_return("story_types" => [story.id.to_s],
-                            "task_type" => task.id.to_s)
-
-    visit backlogs_project_backlogs_path(project)
+    planning_page.visit!
   end
 
   context "as admin" do
     let(:current_user) { create(:admin) }
 
-    it "shows a no results box with action" do
-      expect(page).to have_css(".generic-table--no-results-container", text: I18n.t(:backlogs_empty_title))
-      expect(page).to have_css(".generic-table--no-results-description", text: I18n.t(:backlogs_empty_action_text))
+    it "shows blankslate with description" do
+      within "#owner_backlogs_container .blankslate" do
+        expect(page).to have_heading("Backlog inbox is empty", exact: true)
+        expect(page).to have_text("Open work packages that are not in a sprint or backlog bucket automatically appear here")
+      end
 
-      link = page.find ".generic-table--no-results-description a"
-      expect(link[:href]).to include(new_project_version_path(project))
+      within "#sprint_backlogs_container .blankslate" do
+        expect(page).to have_heading("No sprints present yet", exact: true)
+        expect(page).to have_text("To start planning your sprint, create one here")
+        expect(page).to have_link("project settings")
+      end
     end
   end
 
   context "as regular member" do
-    let(:role) { create(:project_role, permissions: %i(view_master_backlog)) }
+    let(:role) { create(:project_role, permissions: %i(view_sprints)) }
     let(:current_user) { create(:user, member_with_roles: { project => role }) }
 
-    it "only shows a no results box" do
-      expect(page).to have_css(".generic-table--no-results-container", text: I18n.t(:backlogs_empty_title))
-      expect(page).to have_no_css(".generic-table--no-results-description")
+    it "shows a blankslate without description" do
+      within "#owner_backlogs_container .blankslate" do
+        expect(page).to have_heading("Backlog inbox is empty", exact: true)
+        expect(page).to have_text("Open work packages that are not in a sprint or backlog bucket automatically appear here")
+      end
+
+      within "#sprint_backlogs_container .blankslate" do
+        expect(page).to have_heading("No sprints present yet", exact: true)
+        expect(page).to have_text("No sprints are available for this project yet.")
+      end
     end
   end
 end

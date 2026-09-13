@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "rspec/retry"
 require "retriable"
 
@@ -62,7 +64,7 @@ def retry_block(args: {}, screenshot: false, &)
       #{exception.class}: '#{exception.message}'
       occurred on #{exception_source_lines.first}
       backtrace:
-      #{exception_source_lines.map { "  #{_1}" }.join("\n")}
+      #{exception_source_lines.map { "  #{it}" }.join("\n")}
       ran #{try} #{'try'.pluralize(try)} in #{elapsed_time} seconds, #{next_try_message}.
       --
     MSG

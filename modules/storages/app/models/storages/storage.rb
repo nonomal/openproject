@@ -40,49 +40,32 @@
 # db/migrate/20220113144323_create_storage.rb "migration".
 module Storages
   class Storage < ApplicationRecord
-    using Peripherals::ServiceResultRefinements
-
-    PROVIDER_TYPES = [
-      PROVIDER_TYPE_NEXTCLOUD = "Storages::NextcloudStorage",
-      PROVIDER_TYPE_ONE_DRIVE = "Storages::OneDriveStorage"
-    ].freeze
-
-    PROVIDER_TYPE_SHORT_NAMES = {
-      nextcloud: PROVIDER_TYPE_NEXTCLOUD,
-      one_drive: PROVIDER_TYPE_ONE_DRIVE
-    }.with_indifferent_access.freeze
-
     self.inheritance_column = :provider_type
 
     store_attribute :provider_fields, :automatically_managed, :boolean
     store_attribute :provider_fields, :health_notifications_enabled, :boolean, default: true
 
-    has_many :file_links, class_name: "Storages::FileLink"
     belongs_to :creator, class_name: "User"
+    has_many :file_links, class_name: "Storages::FileLink", dependent: :destroy
     has_many :project_storages, dependent: :destroy, class_name: "Storages::ProjectStorage"
     has_many :projects, through: :project_storages
     has_one :oauth_client, as: :integration, dependent: :destroy
     has_one :oauth_application, class_name: "::Doorkeeper::Application", as: :integration, dependent: :destroy
     has_many :remote_identities, as: :integration, dependent: :destroy
+    has_many :health_reports, as: :subject, dependent: :delete_all
 
-    validates_uniqueness_of :host, allow_nil: true
-    validates_uniqueness_of :name
+    validates :host, uniqueness: { allow_nil: true }
+    validates :name, uniqueness: { case_sensitive: false }
 
-    scope :visible, ->(user = User.current) do
-      if user.allowed_in_any_project?(:manage_files_in_project)
+    scope :visible, lambda { |user = User.current|
+      if user.admin? || user.allowed_in_any_project?(:manage_files_in_project)
         all
       else
-        where(
-          project_storages: ::Storages::ProjectStorage.where(
-            project: Project.allowed_to(user, :view_file_links)
-          )
-        )
+        where(project_storages: ProjectStorage.where(project: Project.allowed_to(user, :view_file_links)))
       end
-    end
+    }
 
-    scope :not_enabled_for_project, ->(project) do
-      where.not(id: project.project_storages.pluck(:storage_id))
-    end
+    scope :not_enabled_for_project, ->(project) { where.not(id: project.project_storages.pluck(:storage_id)) }
 
     scope :automatic_management_enabled, -> { where("provider_fields->>'automatically_managed' = 'true'") }
 
@@ -96,55 +79,56 @@ module Storages
       unhealthy: "unhealthy"
     }, prefix: :health
 
-    def self.shorten_provider_type(provider_type)
-      short, = PROVIDER_TYPE_SHORT_NAMES.find { |_, long| provider_type == long }
-      return short.to_s if short
+    class << self
+      def visible? = true
 
-      raise ArgumentError,
-            "Unknown provider_type! Given: #{provider_type}. " \
-            "Known provider types are defined in Storages::Storage::PROVIDER_TYPE_SHORT_NAMES."
-    end
+      def provider_types
+        subclasses.sort_by(&:name) # Guarantees alphabetical ordering
+                  .filter_map { [it.short_provider_name, it] if it.visible? } # Remove non-exposed providers
+                  .to_h.with_indifferent_access
+      end
 
-    def self.one_drive_without_ee_token?(provider_type)
-      provider_type == ::Storages::Storage::PROVIDER_TYPE_ONE_DRIVE &&
-        !EnterpriseToken.allows_to?(:one_drive_sharepoint_file_storage)
-    end
+      def short_provider_name = raise SubclassResponsibilityError
 
-    def self.extract_part_from_piped_string(text, index)
-      return if text.nil?
+      def allowed_by_enterprise_token? = true
 
-      split_reason = text.split(/[|:]/)
-      if split_reason.length > index
-        split_reason[index].strip
+      def disallowed_by_enterprise_token? = !allowed_by_enterprise_token?
+
+      # TODO: Compatibility Method To be Removed once all references are removed - 2025-07-14 @mereghost
+      def shorten_provider_type(provider_type)
+        provider_type.constantize.short_provider_name.to_s
+      end
+
+      def extract_part_from_piped_string(text, index)
+        return if text.nil?
+
+        split_reason = text.split(/[|:]/)
+        split_reason[index].strip if split_reason.length > index
+      end
+
+      def non_confidential_provider_fields
+        %i[automatically_managed health_notifications_enabled]
       end
     end
+
+    delegate :short_provider_name, :allowed_by_enterprise_token?, :disallowed_by_enterprise_token?, to: :class
+    delegate :to_s, to: :short_provider_name
+    alias :short_provider_type :to_s
 
     def oauth_access_granted?(user)
-      selector = Peripherals::StorageInteraction::AuthenticationMethodSelector.new(
-        storage: self,
-        user:
-      )
-      case selector.authentication_method
-      when :sso
-        true
-      when :storage_oauth
-        OAuthClientToken.exists?(user:, oauth_client:)
-      end
+      (user.authentication_provider.is_a?(OpenIDConnect::Provider) && authenticate_via_idp?) ||
+        OAuthClients::TokenFetcher.new(user:).connected?(oauth_client:)
+    end
+
+    # For the time being, all Storages support OAuth redirect.
+    # If a storage does not support OAuth redirect, it should override this method.
+    def supports_oauth_redirect?
+      true
     end
 
     def health_notifications_should_be_sent?
       # it is a fallback for already created storages without health_notifications_enabled configured.
       (health_notifications_enabled.nil? && automatic_management_enabled?) || health_notifications_enabled?
-    end
-
-    def automatically_managed?
-      ActiveSupport::Deprecation.new.warn(
-        "`#automatically_managed?` is deprecated. Use `#automatic_management_enabled?` instead. " \
-        "NOTE: The new method name better reflects the actual behavior of the storage. " \
-        "It's not the storage that is automatically managed, rather the Project (Storage) Folder is. " \
-        "A storage only has this feature enabled or disabled."
-      )
-      super
     end
 
     def automatic_management_enabled?
@@ -161,32 +145,22 @@ module Storages
 
     alias automatic_management_enabled automatically_managed
 
-    def available_project_folder_modes
-      raise Errors::SubclassResponsibility
-    end
+    def available_project_folder_modes = raise SubclassResponsibilityError
 
     # Returns a value of an audience, if configured for this storage.
     # The presence of an audience signals that this storage prioritizes
     # remote authentication via Single-Sign-On if possible.
-    def audience
-      raise Errors::SubclassResponsibility
-    end
+    def audience = raise SubclassResponsibilityError
 
-    def authenticate_via_idp?
-      raise Errors::SubclassResponsibility
-    end
+    def authenticate_via_idp? = raise SubclassResponsibilityError
 
-    def authenticate_via_storage?
-      raise Errors::SubclassResponsibility
-    end
+    def authenticate_via_storage? = raise SubclassResponsibilityError
 
-    def configured?
-      configuration_checks.values.all?
-    end
+    def configured? = configuration_checks.values.all?
 
-    def configuration_checks
-      raise Errors::SubclassResponsibility
-    end
+    def configuration_checks = raise SubclassResponsibilityError
+
+    def skip_client_secret_validation? = false
 
     def uri
       return unless host
@@ -203,32 +177,32 @@ module Storages
       ["#{uri.scheme}://#{uri.host}#{port_part}"]
     end
 
-    def oauth_configuration
-      raise Errors::SubclassResponsibility
-    end
+    def oauth_configuration = raise SubclassResponsibilityError
 
-    def automatic_management_new_record?
-      raise Errors::SubclassResponsibility
-    end
+    def automatic_management_new_record? = raise SubclassResponsibilityError
 
-    def provider_fields_defaults
-      raise Errors::SubclassResponsibility
-    end
+    def provider_fields_defaults = raise SubclassResponsibilityError
 
-    def short_provider_type
-      @short_provider_type ||= self.class.shorten_provider_type(provider_type)
-    end
-
-    def to_s
-      short_provider_type
+    def non_confidential_configuration
+      provider_fields.symbolize_keys
+                     .slice(*self.class.non_confidential_provider_fields)
+                     .merge(
+                       host:,
+                       oauth_client_id: oauth_client&.client_id,
+                       oauth_application_client_id: oauth_application&.uid
+                     )
     end
 
     def provider_type_nextcloud?
-      provider_type == ::Storages::Storage::PROVIDER_TYPE_NEXTCLOUD
+      is_a?(NextcloudStorage)
     end
 
     def provider_type_one_drive?
-      provider_type == ::Storages::Storage::PROVIDER_TYPE_ONE_DRIVE
+      is_a?(OneDriveStorage)
+    end
+
+    def provider_type_share_point?
+      is_a?(SharepointStorage)
     end
 
     def health_reason_identifier
@@ -240,13 +214,13 @@ module Storages
     end
 
     def extract_origin_user_id(token)
-      auth_strategy = ::Storages::Peripherals::Registry
-                        .resolve("#{self}.authentication.specific_bearer_token")
-                        .with_token(token.access_token)
-      ::Storages::Peripherals::Registry
-        .resolve("#{self}.queries.user")
-        .call(auth_strategy:, storage: self)
-        .map { |user| user[:id] } # rubocop:disable Rails/Pluck
+      auth_strategy = Adapters::Input::Strategy.build(key: :bearer_token, token: token.access_token)
+      Adapters::Registry.resolve("#{self}.queries.user").call(auth_strategy:, storage: self).fmap { it[:id] }
+    end
+
+    def typed_label
+      type = I18n.t("storages.provider_types.#{short_provider_name}.name")
+      "#{name} (#{type})"
     end
   end
 end

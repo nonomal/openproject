@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -61,7 +63,7 @@ RSpec.describe Project, "reordering of nested set" do
     it "still resorts them" do
       expect(subject.reload.pluck(:name)).to eq %w[ParentA C e F ParentB B D]
 
-      described_class.create!(parent: parent_project_a, name: "A")
+      create(:project, parent: parent_project_a, name: "A")
 
       expect(subject.reload.pluck(:name)).to eq %w[ParentA A C e F ParentB B D]
     end

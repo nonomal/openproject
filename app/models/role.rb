@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,6 +29,10 @@
 #++
 
 class Role < ApplicationRecord
+  include Lists::MoveAfterAnchor
+
+  SORTABLE_LIST_TYPE = "role"
+
   # Built-in roles
   NON_BUILTIN = 0
   BUILTIN_NON_MEMBER = 1
@@ -78,7 +84,7 @@ class Role < ApplicationRecord
   validates :name,
             presence: true,
             length: { maximum: 256 },
-            uniqueness: { case_sensitive: true }
+            uniqueness: { case_sensitive: false }
 
   # Turn this class into an abstract one by validating the STI column.
   validates :type,

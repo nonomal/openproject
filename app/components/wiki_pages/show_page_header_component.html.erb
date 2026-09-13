@@ -29,7 +29,7 @@ See COPYRIGHT and LICENSE files for more details.
 
 <%=
   render Primer::OpenProject::PageHeader.new do |header|
-    header.with_title(test_selector: "wiki-page-header-title") { h(@page.title) }
+    header.with_title(test_selector: "wiki-page-header-title") { @page.title }
     header.with_breadcrumbs(
       helpers.breadcrumb_for_page(@project, @page),
       data: { "test-selector": "wiki-page-header-breadcrumbs" }
@@ -75,19 +75,19 @@ See COPYRIGHT and LICENSE files for more details.
       }
     ) do |menu|
       if @editable
-        if User.current.allowed_in_project?(:protect_wiki_pages, @project)
+        if User.current.allowed_in_project?(:manage_wiki, @project)
           menu.with_item(
             label: lock_data[:label],
             tag: :a,
             size: :medium,
-            content_arguments: { data: { method: :post } },
+            content_arguments: { data: { turbo_method: :post } },
             href: url_for(controller: "wiki", action: "protect", id: @page, protected: lock_data[:protected])
           ) do |item|
             item.with_leading_visual_icon(icon: lock_data[:icon])
           end
         end
         if @page.current_version?
-          if User.current.allowed_in_project?(:rename_wiki_pages, @project)
+          if User.current.allowed_in_project?(:edit_wiki_pages, @project)
             menu.with_item(
               label: t(:button_rename),
               tag: :a,
@@ -98,7 +98,7 @@ See COPYRIGHT and LICENSE files for more details.
               item.with_leading_visual_icon(icon: "arrow-switch")
             end
           end
-          if User.current.allowed_in_project?(:change_wiki_parent_page, @project)
+          if User.current.allowed_in_project?(:manage_wiki, @project)
             menu.with_item(
               label: t(:button_change_parent_page),
               tag: :a,
@@ -110,13 +110,13 @@ See COPYRIGHT and LICENSE files for more details.
           end
         end
 
-        if User.current.allowed_in_project?(:delete_wiki_pages, @project)
+        if User.current.allowed_in_project?(:manage_wiki, @project)
           menu.with_item(
             label: t(:button_delete),
             scheme: :danger,
             tag: :a,
             size: :medium,
-            content_arguments: { data: { confirm: t(:text_are_you_sure), method: :delete } },
+            content_arguments: { data: { turbo_confirm: t(:text_are_you_sure), turbo_method: :delete } },
             href: url_for(controller: "wiki", action: "destroy", id: @page),
             data: { "test-selector": "wiki-delete-action-menu-item" }
           ) do |item|
@@ -140,7 +140,7 @@ See COPYRIGHT and LICENSE files for more details.
             item.with_leading_visual_icon(icon: :history)
           end
         end
-        if User.current.allowed_in_project?(:manage_wiki_menu, @project)
+        if User.current.allowed_in_project?(:manage_wiki, @project)
           menu.with_item(
             label: t(:button_manage_menu_entry),
             href: url_for(controller: "/wiki_menu_items", action: "edit", project_id: @project.identifier, id: @page),
@@ -161,16 +161,26 @@ See COPYRIGHT and LICENSE files for more details.
         ) do |item|
           item.with_leading_visual_icon(icon: "op-printer")
         end
-        if User.current.allowed_in_project?(:export_wiki_pages, @project)
-          menu.with_item(
+        if User.current.allowed_in_project?(:view_wiki_pages, @project)
+          menu.with_sub_menu_item(
             tag: :a,
             label: t("js.label_export"),
-            size: :medium,
-            href: "",
             title: t("js.label_export"),
-            classes: "modal-delivery-element--activation-link"
+            size: :auto,
+            test_selector: "export-button"
           ) do |item|
             item.with_leading_visual_icon(icon: :download)
+            if show_atom_link?
+              item.with_item(label: t("export.format.atom"), tag: :a, href: export_atom_link) do |subitem|
+                subitem.with_leading_visual_icon(icon: :"op-file-atom")
+              end
+            end
+            item.with_item(
+              label: t("text_formatting.markdown"), tag: :a, href: export_markdown_link,
+              test_selector: "markdown-export"
+            ) do |subitem|
+              subitem.with_leading_visual_icon(icon: :file)
+            end
           end
         end
         menu.with_item(
@@ -185,12 +195,3 @@ See COPYRIGHT and LICENSE files for more details.
     end
   end
 %>
-
-<section data-augmented-model-wrapper
-         data-modal-class-name="wiki-export---modal">
-  <%= link_to t("js.label_export"),
-              "",
-              title: t("js.label_export"),
-              style: "display: none;" %>
-  <%= render partial: "wiki/wiki_export_modal" %>
-</section>

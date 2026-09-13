@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -29,20 +29,20 @@
 import { Observable } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { input, State } from '@openproject/reactivestates';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpErrorResponse, HttpEvent } from '@angular/common/http';
 
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { ConfigurationService } from 'core-app/core/config/configuration.service';
 import waitForUploadsFinished from 'core-app/core/upload/wait-for-uploads-finished';
 import { IHalErrorBase, IHalMultipleError, isHalError } from 'core-app/features/hal/resources/error-resource';
+import { OPToastEvent } from './toast-event';
 
 export function removeSuccessFlashMessages():void {
-  jQuery('.op-toast.-success').remove();
+  document.querySelectorAll('.op-toast.-success').forEach((flashMessage) => flashMessage.remove());
 }
 
 export type ToastType = 'success'|'error'|'warning'|'info'|'upload'|'loading';
-export const OPToastEvent = 'op:toasters:add';
 
 export interface IToast {
   message:string;
@@ -54,17 +54,16 @@ export interface IToast {
 
 @Injectable({ providedIn: 'root' })
 export class ToastService {
+  readonly configurationService = inject(ConfigurationService);
+  readonly I18n = inject(I18nService);
+
   // The current stack of toasters
   private stack = input<IToast[]>([]);
 
-  constructor(
-    readonly configurationService:ConfigurationService,
-    readonly I18n:I18nService,
-  ) {
-    jQuery(window).on(
-      OPToastEvent,
-      (event:JQuery.TriggeredEvent, toast:IToast) => { this.add(toast); },
-    );
+  constructor() {
+    window.addEventListener(OPToastEvent, ({ detail:toast }:CustomEvent<IToast>) => {
+      this.add(toast);
+    });
   }
 
   /**
@@ -80,8 +79,7 @@ export class ToastService {
 
     this.stack.doModify((current) => {
       const nextValue = [toast].concat(current);
-      _.remove(nextValue, (n, i) => i > 0 && this.removeOnAdd(n));
-      return nextValue;
+      return [nextValue[0]].concat(nextValue.slice(1).filter((n) => !this.removeOnAdd(n)));
     });
 
     // auto-hide if success
@@ -168,8 +166,7 @@ export class ToastService {
 
   public remove(toast:IToast):void {
     this.stack.doModify((current) => {
-      _.remove(current, (n) => n === toast);
-      return current;
+      return current.filter((n) => n !== toast);
     });
   }
 

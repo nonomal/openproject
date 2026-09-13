@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -112,7 +114,7 @@ class WorkPackages::SetScheduleService
       reschedule_by_descendants(scheduled, dependency)
     elsif dependency.has_direct_or_indirect_predecessors?
       reschedule_by_predecessors(scheduled, dependency)
-    else
+    elsif switching_to_automatic_mode.exclude?(scheduled) # do not switch to manual a work package forced to automatic
       scheduled.schedule_manually = true
     end
   end

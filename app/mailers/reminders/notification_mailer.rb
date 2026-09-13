@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -73,7 +75,7 @@ class Reminders::NotificationMailer < ApplicationMailer
   end
 
   def work_package_subject_text_wrapper
-    "=" * ("# #{@work_package.id}#{@work_package.subject}".length + 4)
+    "=" * ("#{@work_package.formatted_id} #{@work_package.subject}".length + 4)
   end
 
   def text_email_wrapper

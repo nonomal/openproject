@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -79,7 +81,7 @@ module Copy
       errors.full_messages.join(". ")
     end
 
-    def perform(params:)
+    def perform
       begin
         copy_dependency(params:)
       rescue StandardError => e
@@ -94,7 +96,7 @@ module Copy
     end
 
     def copy_dependency(params:)
-      raise NotImplementedError
+      raise SubclassResponsibilityError
     end
   end
 end

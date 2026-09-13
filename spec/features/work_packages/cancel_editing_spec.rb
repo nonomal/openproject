@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # -- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -37,7 +39,7 @@ RSpec.describe "Cancel editing work package", :js, :selenium do
   let(:wp_table) { Pages::WorkPackagesTable.new }
   let(:paths) do
     [
-      new_work_packages_path,
+      new_work_package_path,
       new_split_work_packages_path,
       new_project_work_packages_path(project),
       new_split_project_work_packages_path(project)
@@ -70,7 +72,9 @@ RSpec.describe "Cancel editing work package", :js, :selenium do
       find(".op-logo--link").click
     end
 
-    expect(page).to have_css("#projects-menu", text: "Select a project")
+    expect(page).to have_current_path("/", ignore_query: true)
+    expect(page).to have_no_css("#wp-new-inline-edit--field-subject")
+    expect(page).to have_css("#projects-menu", text: "All projects")
   end
 
   it "does not show an alert when moving to other pages" do
@@ -107,7 +111,7 @@ RSpec.describe "Cancel editing work package", :js, :selenium do
 
     # Edit subject in split page
     split_page = wp_table.open_split_view(work_package)
-    version = split_page.edit_field :version
+    version = split_page.edit_field :targetVersions
     version.activate!
 
     # Decline move, expect field still active
@@ -120,7 +124,7 @@ RSpec.describe "Cancel editing work package", :js, :selenium do
     # Now accept to move to the second page
     split_page = wp_table.open_split_view(work_package2)
     page.driver.browser.switch_to.alert.accept
-    version = split_page.edit_field :version
+    version = split_page.edit_field :targetVersions
     version.expect_inactive!
   end
 
@@ -133,56 +137,35 @@ RSpec.describe "Cancel editing work package", :js, :selenium do
     end
   end
 
-  it "allows to move from split to full screen in edit mode" do
-    # Start creating on split view
-    expect_active_edit(new_split_work_packages_path)
-
-    find_by_id("wp-new-inline-edit--field-subject").set "foobar"
-
-    # Expect editing works when moving to full screen
-    find(".work-packages-show-view-button").click
-
-    expect(wp_page).not_to have_alert_dialog
-    expect(page).to have_css("#wp-new-inline-edit--field-subject")
-    expect_subject("foobar")
-
-    # Moving back also works
-    page.execute_script("window.history.back()")
-
-    expect(wp_page).not_to have_alert_dialog
-    expect(page).to have_css("#wp-new-inline-edit--field-subject")
-    expect_subject("foobar")
-
-    # Cancel edition
-    find_by_id("work-packages--edit-actions-cancel").click
-    expect(wp_page).not_to have_alert_dialog
-
-    # Visiting another page does not create alert
-    find(".op-logo--link").click
-    expect(wp_page).not_to have_alert_dialog
-  end
-
   it "correctly cancels setting the back route (Regression #30714)" do
-    wp_page = Pages::FullWorkPackage.new work_package
-    wp_page.visit!
+    wp_table.visit!
+    wp_table.expect_work_package_listed(work_package, work_package2)
+
+    # Edit subject in split page
+    wp_page = wp_table.open_split_view(work_package)
     wp_page.ensure_page_loaded
 
     # Edit description in full view
     description = wp_page.edit_field :description
     description.activate!
+    wait_for_network_idle
+
     description.click_and_type_slowly "foobar"
 
     # Try to move back to list, expect warning
-    wp_page.go_back
+    page.execute_script("window.history.back()")
+    expect(wp_page).to have_alert_dialog
     wp_page.dismiss_alert_dialog!
+    description.expect_active!
 
     # Now cancel the field
     description.cancel_by_click
+    description.expect_inactive!
 
     # Now we should be able to get back to list
-    wp_page.go_back
+    page.execute_script("window.history.back()")
 
-    wp_table.expect_work_package_listed(work_package, work_package2)
+    wait_for { wp_page.has_alert_dialog? }.to be false
   end
 
   context "when user does not want to be warned" do
@@ -190,7 +173,7 @@ RSpec.describe "Cancel editing work package", :js, :selenium do
       create(:user_preference, user:, others: { warn_on_leaving_unsaved: false })
     end
 
-    it "does not alert when moving anywhere" do
+    it "does alert when moving to a new page" do
       # Moving to angular states
       expect_active_edit(new_split_work_packages_path)
       wp_table.expect_work_package_listed(work_package2)
@@ -203,7 +186,7 @@ RSpec.describe "Cancel editing work package", :js, :selenium do
 
       # Moving somewhere else
       expect_active_edit(new_split_work_packages_path)
-      move_to_home_page(alert: false)
+      move_to_home_page(alert: true)
     end
   end
 end

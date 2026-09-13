@@ -20,29 +20,46 @@ if [ -d "/var/db/openproject" ]; then
 	exit 2
 fi
 
+# Ensure PGBIN is set according to PGVERSION env var
+if [ -n "$PGVERSION" ]; then
+	export PGBIN="/usr/lib/postgresql/$PGVERSION/bin"
+	export PATH="$PGBIN:$PATH"
+fi
+
 if [ "$(id -u)" = '0' ]; then
 	# reexport PGVERSION and PGBIN env variables according to postgres version of existing cluster (if any)
 	# this must happen in the entrypoint
 	if [ -f "$PGDATA/PG_VERSION" ]; then
-		export PGVERSION="$(cat "$PGDATA/PG_VERSION")"
+		EXISTING_PGVERSION="$(cat "$PGDATA/PG_VERSION")"
 		echo "-----> Existing PostgreSQL cluster found in $PGDATA."
+
+		# Check for version mismatch between configured and existing PostgreSQL versions
+		if [ "$PGVERSION" != "$EXISTING_PGVERSION" ]; then
+			echo "WARNING: PostgreSQL version mismatch detected!"
+			echo "Your container is configured for PostgreSQL $PGVERSION, but existing data is from PostgreSQL $EXISTING_PGVERSION."
+			echo "You need to upgrade your postgresql data before you can use it with PGVERSION=$PGVERSION in the container"
+			echo "Please see the migration guide: https://www.openproject.org/docs/installation-and-operations/misc/migration-to-postgresql17/"
+			echo "Continuing with PostgreSQL $EXISTING_PGVERSION for now..."
+		fi
+
+		export PGVERSION="$EXISTING_PGVERSION"
 	fi
 	export PGBIN="/usr/lib/postgresql/$PGVERSION/bin"
 	export PGCONF_FILE="/etc/postgresql/$PGVERSION/main/postgresql.conf"
 	echo "-----> Setting PGVERSION=$PGVERSION PGBIN=$PGBIN PGCONF_FILE=$PGCONF_FILE"
 	export PATH="$PGBIN:$PATH"
 
-	mkdir -p $APP_DATA_PATH/{files,git,svn}
+	mkdir -p "$APP_DATA_PATH"/{files,git,svn}
 	# The $APP_DATA_PATH may be hosted on a NAS that creates snapshots (or a btrfs filesystem). In such a case, the .snapshot folder cannot be touched.
-  find $APP_DATA_PATH | grep -v .snapshot | xargs -n 1 chown $APP_USER:$APP_USER
+	find "$APP_DATA_PATH" -path '*/.snapshot*' -prune -o -exec chown "$APP_USER:$APP_USER" {} +
 	if [ -d /etc/apache2/sites-enabled ]; then
-		chown -R $APP_USER:$APP_USER /etc/apache2/sites-enabled
+		chown -R "$APP_USER:$APP_USER" /etc/apache2/sites-enabled
 		echo "OpenProject currently expects to be reached on the following domain: ${SERVER_NAME:=localhost}, which does not seem to be how your installation is configured." > /var/www/html/index.html
 		echo "If you are an administrator, please ensure you have correctly set the SERVER_NAME variable when launching your container." >> /var/www/html/index.html
 	fi
 
 	# Clean up any dangling PID file
-	rm -f $APP_PATH/tmp/pids/*
+	rm -f "$APP_PATH"/tmp/pids/*
 
 	# Clean up a dangling PID file of apache
 	if [ -e "$APACHE_PIDFILE" ]; then
@@ -67,11 +84,33 @@ if [ "$(id -u)" = '0' ]; then
 		exec "$@"
 	fi
 
-	if [ "$1" = "./docker/prod/supervisord" ] || [ "$1" = "./docker/prod/proxy" ]; then
+	if [ "$1" = "./docker/prod/supervisord" ]; then
+		if [ "$OPENPROJECT_COLLABORATIVE__EDITING__HOCUSPOCUS__URL" = "auto" ]; then
+			# If no hocuspocus config was defined, we generate one here to use the bundled hocuspocus
+			# which is started via supervisord along side everything else.
+			# Exporting the config here will apply to all services, though it's only needed by
+			# web and hocuspocus.
+			HP_PROTOCOL="wss"
+			if [ "$OPENPROJECT_HTTPS" = "false" ]; then
+				HP_PROTOCOL="ws"
+			fi
+
+			HP_HOST=${OPENPROJECT_HOST__NAME:="localhost"}
+			export OPENPROJECT_COLLABORATIVE__EDITING__HOCUSPOCUS__URL="${HP_PROTOCOL}://${HP_HOST}/hocuspocus"
+			# Use a YAML-safe secret charset because environment values are parsed via YAML.
+			export OPENPROJECT_COLLABORATIVE__EDITING__HOCUSPOCUS__SECRET="$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32)"
+		fi
+
+		exec "$@"
+	elif [ "$1" = "./docker/prod/proxy" ]; then
 		exec "$@"
 	fi
 
-	exec gosu $APP_USER "$BASH_SOURCE" "$@"
+	# setpriv keeps the current environment, so we need to update HOME to the APP_USER
+	HOME="$(getent passwd "$APP_USER" | cut -d: -f6)"
+	export HOME
+
+	exec setpriv --reuid "$APP_USER" --regid "$(id -g "$APP_USER")" --init-groups "$BASH_SOURCE" "$@"
 fi
 
 exec "$@"

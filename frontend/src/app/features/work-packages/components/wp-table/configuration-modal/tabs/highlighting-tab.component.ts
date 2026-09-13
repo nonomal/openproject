@@ -1,9 +1,32 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  Injector,
-  ViewChild,
-} from '@angular/core';
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
+import { ChangeDetectionStrategy, Component, Injector, ViewChild, OnInit, inject } from '@angular/core';
 import { TabComponent } from 'core-app/features/work-packages/components/wp-table/configuration-modal/tab-portal-outlet';
 import { WorkPackageViewHighlightingService } from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-view-highlighting.service';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
@@ -19,16 +42,22 @@ import { repositionDropdownBugfix } from 'core-app/shared/components/autocomplet
 @Component({
   templateUrl: './highlighting-tab.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
-export class WpTableConfigurationHighlightingTabComponent implements TabComponent {
+export class WpTableConfigurationHighlightingTabComponent implements TabComponent, OnInit {
+  readonly injector = inject(Injector);
+  readonly I18n = inject(I18nService);
+  readonly states = inject(States);
+  readonly querySpace = inject(IsolatedQuerySpace);
+  readonly Banners = inject(BannersService);
+  readonly wpTableHighlight = inject(WorkPackageViewHighlightingService);
+
   // Display mode
   public highlightingMode:HighlightingMode = 'inline';
 
   public entireRowMode = false;
 
   public lastEntireRowAttribute:HighlightingMode = 'status';
-
-  public eeShowBanners = false;
 
   public availableInlineHighlightedAttributes:HalResource[] = [];
 
@@ -52,18 +81,8 @@ export class WpTableConfigurationHighlightingTabComponent implements TabComponen
       priority: this.I18n.t('js.work_packages.table_configuration.highlighting_mode.priority'),
       entire_row_by: this.I18n.t('js.work_packages.table_configuration.highlighting_mode.entire_row_by'),
     },
-    upsellAttributeHighlighting: this.I18n.t('js.work_packages.table_configuration.upsell.attribute_highlighting'),
-    upsellCheckOutLink: this.I18n.t('js.work_packages.table_configuration.upsell.check_out_link'),
     more_info_link: enterpriseDocsUrl.tableHighlighting,
   };
-
-  constructor(readonly injector:Injector,
-    readonly I18n:I18nService,
-    readonly states:States,
-    readonly querySpace:IsolatedQuerySpace,
-    readonly Banners:BannersService,
-    readonly wpTableHighlight:WorkPackageViewHighlightingService) {
-  }
 
   ngOnInit() {
     this.availableInlineHighlightedAttributes = this.availableHighlightedAttributes;
@@ -73,13 +92,7 @@ export class WpTableConfigurationHighlightingTabComponent implements TabComponen
     ];
 
     this.setSelectedValues();
-
-    this.eeShowBanners = this.Banners.showBannerFor('conditional_highlighting');
     this.updateMode(this.wpTableHighlight.current.mode);
-
-    if (this.eeShowBanners) {
-      this.updateMode('none');
-    }
   }
 
   public onSave() {
@@ -94,7 +107,7 @@ export class WpTableConfigurationHighlightingTabComponent implements TabComponen
       this.highlightingMode = mode;
     }
 
-    if (['status', 'priority'].indexOf(this.highlightingMode) !== -1) {
+    if (['status', 'priority'].includes(this.highlightingMode)) {
       this.lastEntireRowAttribute = this.highlightingMode;
       this.entireRowMode = true;
     } else {
@@ -104,10 +117,6 @@ export class WpTableConfigurationHighlightingTabComponent implements TabComponen
 
   public updateHighlightingAttributes(model:HalResource[]) {
     this.selectedAttributes = model;
-  }
-
-  public disabledValue(value:boolean):string | null {
-    return value ? 'disabled' : null;
   }
 
   public get availableHighlightedAttributes():HalResource[] {

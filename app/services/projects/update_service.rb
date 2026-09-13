@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,6 +31,7 @@
 module Projects
   class UpdateService < ::BaseServices::Update
     prepend Projects::Concerns::UpdateDemoData
+    include Projects::Concerns::ManageMembershipsFromCustomFields
 
     private
 
@@ -44,10 +47,17 @@ module Projects
       ret
     end
 
+    def before_perform(service_call)
+      super.tap do
+        update_calculated_value_custom_fields
+      end
+    end
+
     def after_perform(service_call)
       ret = super
-      reset_section_scoped_validation
+
       touch_on_custom_values_update
+      update_semantic_ids_on_identifier_change if Setting::WorkPackageIdentifier.semantic?
       notify_on_identifier_renamed
       send_update_notification
       update_wp_versions_on_parent_change
@@ -58,6 +68,13 @@ module Projects
 
     def touch_on_custom_values_update
       model.touch if only_custom_values_updated?
+    end
+
+    def update_semantic_ids_on_identifier_change
+      return unless memoized_changes["identifier"]
+
+      old_identifier = memoized_changes["identifier"].first
+      model.handle_semantic_rename(old_identifier)
     end
 
     def notify_on_identifier_renamed
@@ -80,6 +97,24 @@ module Projects
       WorkPackage.update_versions_from_hierarchy_change(model)
     end
 
+    def update_calculated_value_custom_fields
+      changed_cf_ids = model.custom_values.select(&:changed?).map(&:custom_field_id)
+
+      # Using unscope(where: :admin_only) to fix an issue when non admin user
+      # edits a custom field which is used by an admin only calculated value
+      # field. Without this unscoping, admin only value and all fields
+      # referencing it (recursively) will not be recalculated and there will
+      # even be no place for that recalculatin to be triggered unless an admin
+      # edits same value again.
+      #
+      # This may need to be handled differently to make it work for other custom
+      # field containers, like WorkPackage. User custom fields also has
+      # admin_only check.
+      affected_cfs = model.available_custom_fields.unscope(where: :admin_only).affected_calculated_fields(changed_cf_ids)
+
+      model.calculate_custom_fields(affected_cfs)
+    end
+
     def handle_archiving
       return unless model.saved_change_to_active?
 
@@ -96,12 +131,6 @@ module Projects
       # already been checked in Projects::UpdateContract
       service = service_class.new(user:, model:, contract_class: EmptyContract)
       service.call
-    end
-
-    def reset_section_scoped_validation
-      # Reset the section scope after saving in order to not silently
-      # carry this setting in this instance.
-      model._limit_custom_fields_validation_to_section_id = nil
     end
   end
 end

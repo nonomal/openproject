@@ -18,8 +18,11 @@ We understand that the loading time when working in Gantt Chart is too long for 
 
 ## Can I export the Gantt?
 
-At the moment that's not possible, but you can use the print feature of your browser to print it as PDF (we optimized this for Google Chrome). Please find out more [here](../#how-to-print-a-gantt-chart).
-The respective feature request can be found [here](https://community.openproject.org/wp/15444).
+Yes, you can. Please keep in mind that [PDF export of a Gantt chart](../#gantt-chart-pdf-export-enterprise-add-on) is an Enterprise add-on. 
+
+You can also use the print feature of your browser to print it as PDF (we optimized this for Google Chrome). Please find out more [here](../#how-to-print-a-gantt-chart).
+
+If you only want to export the data from the work packages included into the Gantt chart, you can use the [work package export feature](../../work-packages/exporting/). 
 
 ## I can no longer see my Gantt chart filters, what can I do?
 
@@ -27,8 +30,7 @@ Gantt charts became a separate module in OpenProject 13.3. To see the filters yo
 
 ## How can I build in a "buffer" (e.g. two weeks gap) between two consecutive work packages, so that even if the first one is postponed the second one always starts e.g. two weeks later?
 
-Adding a buffer directly is currently not possible in OpenProject. When you create a follows-precedes relationship between a preceding and a following work package and leave a gap between the finish date of the preceding and the start date of the following work package, and then postpone the preceding work package, the "buffer" will be used up. Only when the finish date of the preceding work package is moved past the start date of the following work package, will the following work package be postponed.
-As a workaround you could create a separate work package (type) which acts as a buffer. You can then create a precedes-follows relationship between the first item and the "buffer work package" and the "buffer work package" and the second item. To avoid cluttering up your view you could use the filter to not display the buffer work packages.
+You can do this by setting up **Predecessor/Successor** relation between the consecutive work packages and defining the respective lag. Read more about [work package relations](../../work-packages/work-package-relations-hierarchies/#work-package-relations).
 
 ## Is there a critical path feature?
 

@@ -1,21 +1,26 @@
+---
 sv:
-  label_job_status_plural: "Job statuses"
-  plugin_openproject_job_status:
-    name: "OpenProject Job status"
-    description: "Listing and status of background jobs."
+  activerecord:
+    models:
+      job_status/status:
+        one: Status för bakgrundsjobb
+        other: Statusar för bakgrundsjobb
   job_status_dialog:
-    download_starts: 'The download should start automatically.'
-    link_to_download: 'Or, %{link} to download.'
-    click_here: 'click here'
-    title: 'Background job status'
-    redirect: 'You are being redirected.'
-    redirect_link: 'Please click here to continue.'
-    redirect_errors: 'Due to these errors, you will not be redirected automatically.'
-    errors: 'Something went wrong'
+    click_to_download: Eller [klicka här](download_url) för att hämta.
+    download_starts: Nedladdningen bör starta automatiskt.
+    errors: Något gick fel
     generic_messages:
-      not_found: 'This job could not be found.'
-      in_queue: 'The job has been queued and will be processed shortly.'
-      in_process: 'The job is currently being processed.'
-      error: 'The job has failed to complete.'
-      cancelled: 'The job has been cancelled due to an error.'
-      success: 'The job completed successfully.'
+      cancelled: Jobbet har avbrutits på grund av ett fel.
+      error: Jobbet har inte slutförts.
+      in_process: Jobbet håller på att bearbetas.
+      in_queue: Jobbet har ställts i kö och kommer att behandlas inom kort.
+      not_found: Det här jobbet kunde inte hittas.
+      success: Jobbet slutfördes framgångsrikt.
+    redirect: Du blir omdirigerad.
+    redirect_errors: På grund av dessa fel kommer du inte att omdirigeras automatiskt.
+    redirect_link: Klicka här för att fortsätta.
+    title: Status för bakgrundsjobb
+  label_job_status_plural: Jobbstatusar
+  plugin_openproject_job_status:
+    description: Lista och status för bakgrundsjobb.
+    name: OpenProject jobbstatus

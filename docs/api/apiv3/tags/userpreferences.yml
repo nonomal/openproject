@@ -1,5 +1,8 @@
 ---
 description: |-
+  The user preferences endpoints return collections or single entities of type `UserPreferences`. The following tables list the different properties
+  of `UserPreferences` entities.
+
   ## Linked Properties
 
   |  Link     | Description                                              | Type           | Constraints           | Supported operations |

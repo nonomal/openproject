@@ -36,15 +36,15 @@ module Storages
       def static_link(storage)
         api_static_link = ::API::V3::Utilities::PathHelper::ApiV3Path.storage_open(storage.id)
 
-        case storage.provider_type
-        when Storage::PROVIDER_TYPE_NEXTCLOUD
+        case storage
+        when NextcloudStorage
           api_static_link
-        when Storage::PROVIDER_TYPE_ONE_DRIVE
+        when OneDriveStorage, SharepointStorage
           raise Errors::ConfigurationError, "No OAuth credential information configured." if storage.oauth_client.nil?
 
           oauth_clients_ensure_connection_url(
             oauth_client_id: storage.oauth_client.client_id,
-            storage_id: storage.id,
+            integration_id: storage.id,
             destination_url: api_static_link
           )
         else
@@ -53,10 +53,10 @@ module Storages
       end
 
       def can_generate_static_link?(storage)
-        case storage.provider_type
-        when Storage::PROVIDER_TYPE_NEXTCLOUD
+        case storage
+        when NextcloudStorage
           true
-        when Storage::PROVIDER_TYPE_ONE_DRIVE
+        when OneDriveStorage, SharepointStorage
           storage.oauth_client&.persisted?
         else
           false

@@ -21,25 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import {
-  AfterContentInit,
-  ChangeDetectorRef,
-  Component,
-  ElementRef,
-  EventEmitter,
-  forwardRef,
-  Injector,
-  Input,
-  OnInit,
-  Output,
-  ViewChild,
-  ViewEncapsulation,
-} from '@angular/core';
+import { AfterContentInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, forwardRef, Injector, Input, OnInit, Output, ViewChild, ViewEncapsulation, inject } from '@angular/core';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { onDayCreate, parseDate, setDates } from 'core-app/shared/components/datepicker/helpers/date-modal.helpers';
@@ -48,12 +35,11 @@ import { DatePicker } from '../datepicker';
 import flatpickr from 'flatpickr';
 import { DayElement } from 'flatpickr/dist/types/instance';
 import { populateInputsFromDataset } from '../../dataset-inputs';
-import { debounce } from 'lodash';
+import { debounce } from 'lodash-es';
 import {
   SpotDropModalTeleportationService,
 } from 'core-app/spot/components/drop-modal/drop-modal-teleportation.service';
 
-// eslint-disable-next-line change-detection-strategy/on-push
 @Component({
   selector: 'op-modal-single-date-picker',
   templateUrl: './modal-single-date-picker.component.html',
@@ -66,11 +52,23 @@ import {
       multi: true,
     },
   ],
+  standalone: false,
+  // TODO: This component has been partially migrated to be zoneless-compatible.
+  // After testing, this should be updated to ChangeDetectionStrategy.OnPush.
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class OpModalSingleDatePickerComponent implements ControlValueAccessor, OnInit, AfterContentInit {
-  @Output('closed') closed = new EventEmitter();
+  readonly I18n = inject(I18nService);
+  readonly timezoneService = inject(TimezoneService);
+  readonly injector = inject(Injector);
+  readonly cdRef = inject(ChangeDetectorRef);
+  readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly spotDropModalTeleportationService = inject(SpotDropModalTeleportationService);
 
-  @Output('valueChange') valueChange = new EventEmitter();
+  @Output() closed = new EventEmitter();
+
+  @Output() valueChange = new EventEmitter();
 
   private _value = '';
 
@@ -83,7 +81,7 @@ export class OpModalSingleDatePickerComponent implements ControlValueAccessor, O
     return this._value;
   }
 
-  @Input() inputId = `flatpickr-input-${+(new Date())}`;
+  @Input() id = `flatpickr-input-${+(new Date())}`;
 
   @Input() name = '';
 
@@ -119,7 +117,7 @@ export class OpModalSingleDatePickerComponent implements ControlValueAccessor, O
 
   @Input() ignoreNonWorkingDays = false;
 
-  @ViewChild('flatpickrTarget') flatpickrTarget:ElementRef;
+  @ViewChild('flatpickrTarget') flatpickrTarget:ElementRef<HTMLElement>;
 
   public workingValue = '';
 
@@ -140,14 +138,7 @@ export class OpModalSingleDatePickerComponent implements ControlValueAccessor, O
     },
   };
 
-  constructor(
-    readonly I18n:I18nService,
-    readonly timezoneService:TimezoneService,
-    readonly injector:Injector,
-    readonly cdRef:ChangeDetectorRef,
-    readonly elementRef:ElementRef,
-    readonly spotDropModalTeleportationService:SpotDropModalTeleportationService,
-  ) {
+  constructor() {
     populateInputsFromDataset(this);
   }
 
@@ -156,7 +147,7 @@ export class OpModalSingleDatePickerComponent implements ControlValueAccessor, O
   }
 
   ngAfterContentInit() {
-    const trigger = (this.elementRef.nativeElement as HTMLElement).querySelector("[slot='trigger']");
+    const trigger = this.elementRef.nativeElement.querySelector("[slot='trigger']");
     this.useDefaultTrigger = trigger === null;
   }
 
@@ -229,7 +220,7 @@ export class OpModalSingleDatePickerComponent implements ControlValueAccessor, O
 
     this.datePickerInstance = new DatePicker(
       this.injector,
-      this.inputId,
+      this.id,
       this.workingDate || '',
       {
         mode: 'single',
@@ -258,7 +249,7 @@ export class OpModalSingleDatePickerComponent implements ControlValueAccessor, O
           );
         },
       },
-      this.flatpickrTarget.nativeElement as HTMLElement,
+      this.flatpickrTarget.nativeElement,
     );
   }
 

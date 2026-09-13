@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 require_relative "../../support/pages/ifc_models/show_default"
 
@@ -45,13 +47,13 @@ RSpec.describe "Copy work packages through Rails view", :js, with_config: { edit
     find("body").send_keys [:control, "a"]
   end
 
-  describe "accessing the bulk copy from the card view" do
+  describe "accessing the bulk duplicate from the card view" do
     context "with permissions" do
       let(:current_user) { mover }
 
       it "does allow to copy" do
         context_menu.open_for work_package, card_view: true
-        context_menu.expect_options "Bulk copy"
+        context_menu.expect_options "Bulk duplicate"
       end
     end
 

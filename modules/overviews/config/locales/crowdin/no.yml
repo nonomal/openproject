@@ -1,4 +1,11 @@
-"no":
+---
+'no':
+  activerecord:
+    models:
+      grids/overview:
+        one: Overview
+        other: Overviews
   overviews:
-    label: 'Oversikt'
-  permission_manage_overview: 'Endre oversiktsside'
+    label_dashboard: Kontrollpanel
+    label_home: "%{workspace_type} home"
+    label_overview: Oversikt

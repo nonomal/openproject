@@ -20,6 +20,9 @@ properties:
     type: array
     items:
       $ref: './formattable.yml'
+  internal:
+    type: boolean
+    description: Whether this activity is internal (only visible to users with view_internal_comments permission)
   createdAt:
     type: string
     format: date-time
@@ -40,10 +43,14 @@ properties:
           - $ref: './work_package_model.yml'
           - description: |-
               The work package this activity belongs to
-              
+
               # Conditions
-              
+
               Only embedded when the `journable` of the activity is a work package
+      emojiReactions:
+        allOf:
+          - $ref: './emoji_reactions_model.yml'
+          - description: Collection of emoji reactions for this activity
   _links:
     type: object
     properties:
@@ -87,9 +94,16 @@ properties:
 
               # Conditions
 
-              **Permissions**: 
+              **Permissions**:
               - `add_work_package_comments`
               - for internal comments: `add_internal_comments`
+      emojiReactions:
+        allOf:
+          - $ref: './link.yml'
+          - description: |-
+              The emoji reactions collection of this activity
+
+              **Resource**: EmojiReactions
 example:
   id: 1
   _type: Activity::Comment
@@ -133,6 +147,47 @@ example:
       _links:
         self:
           href: "/api/v3/activities/79090/attachments"
+    emojiReactions:
+      _type: Collection
+      total: 2
+      count: 2
+      _embedded:
+        elements:
+          - _type: "EmojiReaction"
+            id: "1-thumbs_up"
+            reaction: "thumbs_up"
+            emoji: "👍"
+            reactionsCount: 3
+            firstReactionAt: "2024-04-08T15:37:19.275Z"
+            _links:
+              self:
+                href: "/api/v3/emoji_reactions/1-thumbs_up"
+              reactable:
+                href: "/api/v3/activities/1"
+              reactingUsers:
+                - href: "/api/v3/users/435"
+                  title: "John Doe"
+                - href: "/api/v3/users/436"
+                  title: "Jane Smith"
+                - href: "/api/v3/users/437"
+                  title: "Bob Johnson"
+          - _type: "EmojiReaction"
+            id: "1-heart"
+            reaction: "heart"
+            emoji: "❤️"
+            reactionsCount: 1
+            firstReactionAt: "2024-04-08T15:38:19.275Z"
+            _links:
+              self:
+                href: "/api/v3/emoji_reactions/1-heart"
+              reactable:
+                href: "/api/v3/activities/1"
+              reactingUsers:
+                - href: "/api/v3/users/435"
+                  title: "John Doe"
+      _links:
+        self:
+          href: "/api/v3/activities/1/emoji_reactions"
     workPackage:
       _type: WorkPackage
       id: 10403
@@ -169,6 +224,15 @@ example:
         project:
           href: "/api/v3/projects/918"
           title: "RVC Test"
+        schema:
+          href: "/api/v3/work_packages/schemas/11-2"
+        author:
+          href: "/api/v3/users/1"
+          title: OpenProject Admin - admin
+        priority:
+          href: "/api/v3/priorities/2"
+          title: Normal
+        ancestors: []
   _links:
     self:
       href: "/api/v3/activity/1"
@@ -181,6 +245,8 @@ example:
       title: John Sheppard - admin
     attachments:
       href: "/api/v3/activities/1/attachments"
+    emojiReactions:
+      href: "/api/v3/activities/1/emoji_reactions"
     addAttachment:
       href: "/api/v3/activities/1/attachments"
       method: post

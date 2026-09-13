@@ -98,6 +98,10 @@ class Projects::IndexPageHeaderComponent < ApplicationComponent
     query.editable?
   end
 
+  def can_export?
+    current_user.allowed_in_any_project?(:export_projects)
+  end
+
   def show_state?
     state == :show
   end
@@ -106,14 +110,13 @@ class Projects::IndexPageHeaderComponent < ApplicationComponent
     query.persisted?
   end
 
-  def can_toggle_favor? = query.persisted?
+  def can_toggle_favorite? = query.persisted?
 
-  def currently_favored? = query.favored_by?(current_user)
+  def currently_favorited? = query.favorited_by?(current_user)
 
   def breadcrumb_items
     [
-      { href: home_path, text: helpers.organization_name },
-      { href: projects_path, text: t(:label_project_plural) },
+      { href: projects_path, text: t(:label_project_plural), skip_for_mobile: first_menu_item? },
       current_breadcrumb_element
     ]
   end
@@ -136,6 +139,11 @@ class Projects::IndexPageHeaderComponent < ApplicationComponent
       .selected_menu_group
   end
 
+  def first_menu_item?
+    current_item = current_section&.children&.select { |x| x.selected == true }&.first
+    current_item&.title == ::ProjectQueries::Static.query(ProjectQueries::Static::DEFAULT).name
+  end
+
   def header_save_action(header:, message:, label:, href:, method: nil)
     header.with_action_text { message }
 
@@ -143,8 +151,12 @@ class Projects::IndexPageHeaderComponent < ApplicationComponent
       mobile_icon: nil, # Do not show on mobile as it is already part of the menu
       mobile_label: nil,
       href:,
-      data: { "turbo-stream": true, method: },
-      target: ""
+      target: "_self",
+      data: {
+        turbo_stream: true,
+        turbo_method: method
+      },
+      test_selector: "header-save-button"
     ) do
       render(
         Primer::Beta::Octicon.new(
@@ -162,7 +174,10 @@ class Projects::IndexPageHeaderComponent < ApplicationComponent
       label:,
       href:,
       content_arguments: {
-        data: { "turbo-stream": true, method: }
+        data: {
+          turbo_stream: true,
+          turbo_method: method
+        }
       }
     ) do |item|
       item.with_leading_visual_icon(icon: :"op-save")

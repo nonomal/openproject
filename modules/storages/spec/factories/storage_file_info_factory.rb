@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,7 +29,7 @@
 #++
 
 FactoryBot.define do
-  factory :storage_file_info, class: "::Storages::StorageFileInfo" do
+  factory :storage_file_info, class: "::Storages::Adapters::Results::StorageFileInfo" do
     status { "OK" }
     status_code { 200 }
     sequence(:id) { |n| "20000#{n}" } # rubocop:disable FactoryBot/IdSequence

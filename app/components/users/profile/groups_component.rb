@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -37,7 +39,9 @@ module Users
         super()
 
         @user = user
-        @groups = user.groups.visible.order(lastname: :asc)
+        # Departments (organizational units) are surfaced as their own attribute,
+        # so they are excluded from the regular group membership list.
+        @groups = user.groups.visible.not_organizational_units.order(lastname: :asc)
       end
 
       def render?

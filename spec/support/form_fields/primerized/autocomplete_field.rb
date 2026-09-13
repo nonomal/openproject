@@ -5,13 +5,13 @@ require_relative "form_field"
 module FormFields
   module Primerized
     class AutocompleteField < FormField
+      include RSpec::Wait
+
       ### actions
 
       def select_option(*values)
         values.each do |val|
-          wait_for_autocompleter_options_to_be_loaded
-
-          field_container.find(".ng-select-container").click
+          open_options
 
           expect(page).to have_css(".ng-option", text: val, visible: :all)
           page.find(".ng-option", text: val, visible: :all).click
@@ -21,9 +21,7 @@ module FormFields
 
       def deselect_option(*values)
         values.each do |val|
-          wait_for_autocompleter_options_to_be_loaded
-
-          field_container.find(".ng-select-container").click
+          open_options
           page.find(".ng-value", text: val, visible: :all).find(".ng-value-icon").click
           sleep 0.25 # still required?
         end
@@ -35,6 +33,17 @@ module FormFields
         field_container.find(".ng-select-container input").set text
       end
 
+      # For remote typeahead autocompleters, where options are only loaded for
+      # the typed search term. Unlike select_option, it does not reopen the
+      # dropdown, as that would discard the term.
+      def search_and_select_option(*values)
+        values.each do |value|
+          search(value)
+          wait_for_autocompleter_options_to_be_loaded
+          page.find(".ng-option", text: value, visible: :all).click
+        end
+      end
+
       def close_autocompleter
         if page.has_css?(".ng-select-container input", wait: 0.1)
           field_container.find(".ng-select-container input").send_keys :escape
@@ -43,7 +52,13 @@ module FormFields
 
       def open_options
         wait_for_autocompleter_options_to_be_loaded
-        field_container.find(".ng-select-container").click
+        wait(timeout: 3).for do
+          # click the arrow to prevent clicking inside the input field and
+          # risking to remove some elements in a mult-select (clicking the "x")
+          # this may close the dropdown, but it will be clicked again if it's not open anyway.
+          field_container.find(".ng-select-container .ng-arrow-wrapper").click
+          page
+        end.to have_css(".ng-dropdown-panel-items", wait: 0.25)
       end
 
       def clear
@@ -61,6 +76,18 @@ module FormFields
       def expect_not_selected(*values)
         values.each do |val|
           expect(field_container).to have_no_css(".ng-value", text: val, wait: 1)
+        end
+      end
+
+      def expect_disabled(*values)
+        values.each do |val|
+          expect(page).to have_css(".ng-option.ng-option-disabled", text: val)
+        end
+      end
+
+      def expect_not_disabled(*values)
+        values.each do |val|
+          expect(page).to have_no_css(".ng-option.ng-option-disabled", text: val, wait: 1)
         end
       end
 

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -71,6 +73,12 @@ module BaseServices
     def persist(call)
       # Return only the unsaved copy
       return call if params[:attributes_only]
+
+      super
+    end
+
+    def after_persist(call)
+      return call unless call.result&.persisted?
 
       super.tap do |super_call|
         copy_instance = super_call.result

@@ -21,19 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import {
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-  HostBinding,
-  OnInit,
-  ViewEncapsulation,
-} from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostBinding, OnInit, ViewEncapsulation, inject } from '@angular/core';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { WorkPackageViewBaselineService } from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-view-baseline.service';
 import { IsolatedQuerySpace } from 'core-app/features/work-packages/directives/query-space/isolated-query-space';
@@ -44,12 +37,12 @@ import {
   getPartsFromTimestamp,
   getBaselineState,
   offsetToUtcString,
+  BaselineMode,
 } from 'core-app/features/work-packages/components/wp-baseline/baseline-helpers';
 import { TimezoneService } from 'core-app/core/datetime/timezone.service';
-import * as moment from 'moment-timezone';
+import moment, { Moment } from 'moment-timezone';
 import { ConfigurationService } from 'core-app/core/config/configuration.service';
 import { UntilDestroyedMixin } from 'core-app/shared/helpers/angular/until-destroyed.mixin';
-import { Moment } from 'moment';
 import { filter } from 'rxjs/operators';
 
 @Component({
@@ -58,8 +51,17 @@ import { filter } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'op-baseline-legends',
   encapsulation: ViewEncapsulation.None,
+  standalone: false,
 })
 export class OpBaselineLegendsComponent extends UntilDestroyedMixin implements OnInit {
+  readonly I18n = inject(I18nService);
+  readonly wpTableBaseline = inject(WorkPackageViewBaselineService);
+  readonly querySpace = inject(IsolatedQuerySpace);
+  readonly schemaCache = inject(SchemaCacheService);
+  readonly timezoneService = inject(TimezoneService);
+  readonly configuration = inject(ConfigurationService);
+  readonly cdRef = inject(ChangeDetectorRef);
+
   @HostBinding('class.op-baseline-legends') className = true;
 
   public numAdded = 0;
@@ -84,18 +86,6 @@ export class OpBaselineLegendsComponent extends UntilDestroyedMixin implements O
     maintained_with_changes: this.I18n.t('js.baseline.legends.maintained_with_changes'),
     in_your_timezone: this.I18n.t('js.baseline.legends.in_your_timezone'),
   };
-
-  constructor(
-    readonly I18n:I18nService,
-    readonly wpTableBaseline:WorkPackageViewBaselineService,
-    readonly querySpace:IsolatedQuerySpace,
-    readonly schemaCache:SchemaCacheService,
-    readonly timezoneService:TimezoneService,
-    readonly configuration:ConfigurationService,
-    readonly cdRef:ChangeDetectorRef,
-  ) {
-    super();
-  }
 
   ngOnInit() {
     this
@@ -200,7 +190,7 @@ export class OpBaselineLegendsComponent extends UntilDestroyedMixin implements O
     this.numAdded = 0;
     this.numRemoved = 0;
     this.numUpdated = 0;
-    let state = '';
+    let state:BaselineMode;
     const baselineIsActive= this.wpTableBaseline.isActive();
     const results = this.querySpace.results.value;
     if (baselineIsActive && results && results.elements.length > 0) {

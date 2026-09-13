@@ -21,12 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { Directive, ElementRef } from '@angular/core';
+import { Directive, ElementRef, inject } from '@angular/core';
 import { IsolatedQuerySpace } from 'core-app/features/work-packages/directives/query-space/isolated-query-space';
 import {
   OpTableActionsService,
@@ -123,7 +123,6 @@ import { HalResourceNotificationService } from 'core-app/features/hal/services/h
 import {
   WorkPackageNotificationService,
 } from 'core-app/features/work-packages/services/notifications/work-package-notification.service';
-import { TimeEntryCreateService } from 'core-app/shared/components/time_entries/create/create.service';
 import {
   WorkPackageViewCollapsedGroupsService,
 } from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-view-collapsed-groups.service';
@@ -131,7 +130,6 @@ import { WorkPackageService } from 'core-app/features/work-packages/services/wor
 import {
   WorkPackageViewBaselineService,
 } from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-view-baseline.service';
-import { TimeEntryEditService } from 'core-app/shared/components/time_entries/edit/edit.service';
 
 /**
  * Directive to open a work package query 'space', an isolated injector hierarchy
@@ -189,8 +187,6 @@ import { TimeEntryEditService } from 'core-app/shared/components/time_entries/ed
     WorkPackageCardViewService,
 
     HalResourceEditingService,
-    TimeEntryCreateService,
-    TimeEntryEditService,
     WorkPackageCreateService,
 
     WorkPackageStatesInitializationService,
@@ -200,10 +196,11 @@ import { TimeEntryEditService } from 'core-app/shared/components/time_entries/ed
   ],
 })
 export class WorkPackageIsolatedQuerySpaceDirective {
-  constructor(
-    public querySpace:IsolatedQuerySpace,
-    elementRef:ElementRef,
-  ) {
+  querySpace = inject(IsolatedQuerySpace);
+
+  constructor() {
+    const elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+
     debugLog('Opening isolated query space in %O', elementRef.nativeElement);
   }
 }

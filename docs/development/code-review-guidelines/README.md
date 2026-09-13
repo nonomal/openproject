@@ -10,13 +10,16 @@ We try to adhere to the [Ruby community style guide](https://github.com/bbatsov/
 
 Due to the age of our codebase, a lot of our code might not yet adhere to these style guides, but we want all new code to adhere to it. You do not have to improve existing code when making changes, but we encourage it. If you do, please do all improvements in a separate commit from the actual change, so the improvements do not hide your actual code changes in a diff.
 
-Before committing, please run your new code through [Rubocop](https://github.com/bbatsov/rubocop). It detects deviations from a lot of things in the style guide and things that are bad practice in general. You obviously do not have to fix issues with existing code. There is a [list of editor plugins](https://docs.rubocop.org/rubocop/1.31/integration_with_other_tools.html#editor-integration) in the Rubocop docs. You can also use `bin/dirty-rubocop` to test them. Pull requests are being linted automatically through a GitHub action.
+Before committing, please run your new code through [Rubocop](https://github.com/bbatsov/rubocop). It detects deviations from a lot of things in the style guide and things that are bad practice in general. You obviously do not have to fix issues with existing code. There is a [list of editor plugins](https://docs.rubocop.org/rubocop/integration_with_other_tools.html#editor-integration) in the Rubocop docs. You can also use `bin/dirty-rubocop` to test them. Pull requests are being linted automatically through a GitHub action.
 
 The same is true for eslint. Your editor will likely have support for eslint checks, and allows you to correct them before committing.
 
 **Lefthook**
 
-For automatically linting your files on committing them, please have a look at [Lefthook](https://github.com/evilmartians/lefthook). You can install these rules by using `bundle exec lefthook install`.
+For automatically linting your files on committing them, please have a look
+at [Lefthook](https://github.com/evilmartians/lefthook). You can install these rules by using `lefthook install`. There
+are several options on how to install `lefthook` on your system, including using `brew`, `apt`, `bundle`, or `npm`. For
+example, one can add a `Gemfile.local` and thus the `lefthook` to the bundle.
 
 ### Structure of commit messages
 
@@ -64,7 +67,7 @@ Before requesting a review, double check your own changes:
 - Are they complete? Did you add that spec Did you take a look at the diff yourself?
 - Did you forget to remove any temporary code, debugging steps, or similar?
 
-Once your pull request is ready to be reviewed, convert it from a draft and add the label `needs review`. You can bookmark this query to always show all pull requests recently marked as reviewable: https://github.com/opf/openproject/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs+review%22
+Once your pull request is ready to be reviewed, convert it from a draft and add the label `needs review`. You can bookmark this query to always show all pull requests recently [marked as reviewable](https://github.com/opf/openproject/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs+review%22)
 
 Do not explicitly request people or groups as reviewers unless you have collaborated with them already, or have a good reason to request specific feedback.
 
@@ -92,7 +95,7 @@ If you're ready to perform a review for a pull request, do these things:
 
 ### Correctness
 
-As a reviewer, your job is not to make sure that the code is what you would have written – *because it will not be*. Your job as a reviewer of a piece of code is to make sure that the code as written by its author is correct.
+As a reviewer, your job is not to make sure that the code is what you would have written – _because it will not be_. Your job as a reviewer of a piece of code is to make sure that the code as written by its author is correct.
 
 Try to think of edge cases when testing or evaluating the code, double check the test coverage. But do not frown if you merged the pull request and something broke after all. This is the learning path to avoiding this mistake on the next attempt. Not doing a review in the first place will not move you forward either.
 
@@ -117,7 +120,7 @@ If there are breaking changes (e.g., to permissions, code relevant for developer
 
 ## Other
 
-- For external contributions: Check whether the author has signed a [Contributor License Agreement](../#openproject-contributor-license-agreement-cla) and kindly ask for it if not.
+- For external contributions: Check whether the author has signed a [Contributor License Agreement](../#openproject-contributor-license-agreement-cla) and kindly ask for it if not. There is a GitHub workflow ensuring the contributor signed the current CLA. If the action is green, consider this point done.
 
 - Copyright notice: When new files are added, make sure they contain the OpenProject copyright notice (copy from any file in OpenProject).
 
@@ -127,9 +130,9 @@ If there are breaking changes (e.g., to permissions, code relevant for developer
 
 The reviewer should understand the code without explanations outside the code.
 
-*There is never anything wrong with just saying “Yup, looks good”. If you constantly go hunting to try to find something to criticize, then all that you accomplish is to wreck your own credibility.*
+_There is never anything wrong with just saying “Yup, looks good”. If you constantly go hunting to try to find something to criticize, then all that you accomplish is to wreck your own credibility._
 
-*You should not rush through a code review – but also, you need to do it promptly. Your coworkers are waiting for you.*
+_You should not rush through a code review – but also, you need to do it promptly. Your coworkers are waiting for you._
 
 ## Completing the review
 
@@ -152,7 +155,7 @@ The only exception to this rule are single commit pull requests, which can be ap
 
 ## Citations
 
-[Things everyone should do: code review](https://blog.csdn.net/zhangmike/article/details/30198411)
+[Things everyone should do: code review](https://goodmath.scientopia.org/2011/07/06/things-everyone-should-do-code-review/)
 
 [Why code reviews are good for you](https://beust.com/weblog/2006/06/22/why-code-reviews-are-good-for-you/)
 

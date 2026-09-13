@@ -18,16 +18,16 @@ This guide is an evolving description of the steps taken from collecting require
 
 The product development process involves various roles during the different phases:
 
-* Product Manager (PM)
-* Designer
-* QA/Tester
-* Developer
-* Security & Privacy engineers
-* DevOps
-* Customer
-* Marketing
-* Community
-* UX researcher
+- Product Manager (PM)
+- Designer
+- QA/Tester
+- Developer
+- Security & Privacy engineers
+- DevOps
+- Customer
+- Marketing
+- Community
+- UX researcher
 
 All of those roles interact to guide a feature from the initial idea to it being released. The following picture gives an overview of the steps taken on that course.
 
@@ -161,7 +161,7 @@ Based on the Product Managers judgement (taking among other things the RICE scor
 
 3. PM and Developer validate solution (technical feasibility / solution).
 
-   *If this solution touches security relevant components of the application, a Security Engineer is involved to identity and model the associated risks and impacts (thread modelling) according to the documented risks in the [Secure Coding Guidelines](../../development/concepts/secure-coding/#secure-coding-guidelines).*
+   _If this solution touches security relevant components of the application, a Security Engineer is involved to identity and model the associated risks and impacts (thread modelling) according to the documented risks in the [Secure Coding Guidelines](../../development/concepts/secure-coding/#secure-coding-guidelines)._
 
 4. PM / UX Researcher validates the solution through user interviews. (optional)
 
@@ -195,8 +195,8 @@ During the building phase we develop, improve and test the validated solutions.
 
 The preparations the development team conducts consists of two parts:
 
-* Preparing for the implementation
-* Preparing for the quality assurance
+- Preparing for the implementation
+- Preparing for the quality assurance
 
 For the implementation, prior to working on a new feature, the development team analyzes the feature from a technical viewpoint and breaks them down into technical work packages:
 
@@ -223,7 +223,7 @@ Ideally the preparation of both QA and development happen at the same time so th
 4. Developer hands over "Implementation" work package upon completion to another developer for review (status: “In review”).
 5. Developer (different from the one implementing the code) performs a review and, if changes are accepted according to the points mentioned below merges the pull request and closes the "Implementation" work package.
    1. [Secure coding guidelines](../concepts/secure-coding/) have been evaluated for the proposed changes.
-   2. New or changed functionality is covered following the [Writing and Running Tests guide](../running-tests/) to ensure the entire required spectrum of tests were added.
+   2. New or changed functionality is covered following the [Writing and Running Tests guide](../testing/) to ensure the entire required spectrum of tests were added.
    3. [Code review guidelines](../code-review-guidelines/) are followed by the submitter and reviewer
    4. [Pull request targets the correct version](../git-workflow/#create-a-pull-request), and has a related work package that will form the changelog.
 7. The feature lead developer updates the status of the feature to "merged" once the feature is fully implemented. This can be done even with bugs still open that QA has already identified.
@@ -243,7 +243,7 @@ Changes to the technical documentation, e.g API documentation, are done in paral
 | - QA     | Tested feature                                                                                                                         |
 
 1. Tester adapts test plan if acceptance criteria was altered since the original creation of the test plan.
-2. Tester performs and verifies additional tests according to the  [Writing and Running Tests guide](../../development/running-tests/) to ensure the application has been tested according to specifications and requirements.
+2. Tester performs and verifies additional tests according to the  [Writing and Running Tests guide](../../development/testing/) to ensure the application has been tested according to specifications and requirements.
 3. Tester tests feature (based on test plan)
    1. Tester adjusts status when no errors in feature (status: “tested”).
    2. Tester adjusts status when errors occur (status: “test failed”) and notifies developer (move back to phase 2 - Implementation)
@@ -284,10 +284,8 @@ Developed features are bundled into a version that is released to the public via
 3. QA identifies important bugs to be fixed in the release.
 4. Developer fixes bugs from regression testing as well as bugs from former versions.
 5. Tester retests bugs
-
-  * Tester adjusts status on errors (status: “test failed").
-  * Tester adjusts status when no errors are found (status: “closed").
-
+   - Tester adjusts status on errors (status: “test failed").
+   - Tester adjusts status when no errors are found (status: “closed").
 6. Developer fixes bugs that were not fixed successfully.
 7. DevOps deploys release candidate on community.openproject.org.
 8. DevOps monitors for failures.
@@ -403,7 +401,7 @@ The effort score ranges from 0.03 (XS = less than a day of effort) to 20 (XXXL =
 
 ### 4.3 Opportunity Canvas
 
-One of the main artifacts used in the evaluation phase is the Opportunity Canvas. The Opportunity Canvas - [slightly adapted from GitLab](https://about.gitlab.com/handbook/product-development-flow) - provides a quick overview of a requirement and includes four main sections as well as two supplemental sections:
+One of the main artifacts used in the evaluation phase is the Opportunity Canvas. The Opportunity Canvas - [slightly adapted from GitLab](https://handbook.gitlab.com/handbook/product/product-processes/#product-development-flow) - provides a quick overview of a requirement and includes four main sections as well as two supplemental sections:
 
 **<u>Main sections:</u>**
 

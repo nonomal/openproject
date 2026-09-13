@@ -36,33 +36,14 @@ module API
         self_link
 
         include API::Decorators::LinkedResource
+        include API::V3::Workspaces::LinkedResource
         include API::Decorators::DateProperty
 
-        associated_resource :project,
-                            setter: ->(fragment:, **) {
-                              id = id_from_href "projects", fragment["href"]
-
-                              # In case an identifier is provided, which might
-                              # start with numbers, the id needs to be looked up
-                              # in the DB.
-                              id = if id.to_i.to_s == id
-                                     id.to_i # return numerical ID
-                                   else
-                                     Project.where(identifier: id).pick(:id) # lookup Project by identifier
-                                   end
-
-                              represented.project_id = id if id
-                            },
-                            skip_link: ->(*) {
-                              false
-                            },
-                            skip_render: ->(*) {
-                              represented.project.nil?
-                            }
+        associated_project
 
         link :results do
           path = if represented.project
-                   api_v3_paths.work_packages_by_project(represented.project.id)
+                   api_v3_paths.work_packages_by_workspace(represented.project.id)
                  else
                    api_v3_paths.work_packages
                  end
@@ -95,7 +76,7 @@ module API
 
         link :schema do
           href = if represented.project
-                   api_v3_paths.query_project_schema(represented.project.identifier)
+                   api_v3_paths.query_workspace_schema(represented.project.identifier)
                  else
                    api_v3_paths.query_schema
                  end
@@ -327,7 +308,6 @@ module API
                        results: nil,
                        embed_links: false,
                        params: {})
-
           self.results = results
           self.params = params
 
@@ -349,22 +329,7 @@ module API
         end
 
         def filters=(filters_hash)
-          represented.filters = []
-
-          filters_hash.each do |filter_attributes|
-            name = get_filter_name filter_attributes
-
-            if name
-              filter_class = Query.find_registered_filter(name) || ::Queries::Filters::NotExistingFilter
-              filter_representer = ::API::V3::Queries::Filters::QueryFilterInstanceRepresenter
-                                     .new(filter_class.create!(name:))
-
-              filter = filter_representer.from_hash filter_attributes
-              represented.filters << filter
-            else
-              raise API::Errors::InvalidRequestBody, "Could not read filter from: #{filter_attributes}"
-            end
-          end
+          represented.filters = filters_hash.map { filter_from_hash(it) }
         end
 
         private
@@ -391,11 +356,18 @@ module API
           ::API::Utilities::PropertyNameConverter.from_ar_name(attribute)
         end
 
-        def get_filter_name(filter_attributes)
+        def filter_from_hash(filter_attributes)
           href = filter_attributes.dig("_links", "filter", "href")
           id = id_from_href "queries/filters", href
+          name = ::API::Utilities::QueryFiltersNameConverter.to_ar_name(id, refer_to_ids: true) if id
 
-          ::API::Utilities::QueryFiltersNameConverter.to_ar_name id, refer_to_ids: true if id
+          raise API::Errors::InvalidRequestBody, "Could not read filter from: #{filter_attributes}" if name.nil?
+
+          filter_class = Query.find_registered_filter(name) || ::Queries::Filters::NotExistingFilter
+
+          ::API::V3::Queries::Filters::QueryFilterInstanceRepresenter
+            .new(filter_class.create!(name:))
+            .from_hash(filter_attributes)
         end
 
         def id_from_href(expected_namespace, href)
@@ -432,7 +404,7 @@ module API
 
         def default_query_path
           if represented.project
-            api_v3_paths.query_project_default(represented.project.id)
+            api_v3_paths.query_workspace_default(represented.project.id)
           else
             api_v3_paths.query_default
           end

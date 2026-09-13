@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -58,7 +60,7 @@ module API
     private
 
     def deduce_representer(_model)
-      raise NotImplementedError
+      raise SubclassResponsibilityError
     end
 
     def parsing_representer

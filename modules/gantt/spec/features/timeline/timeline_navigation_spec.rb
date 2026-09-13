@@ -112,6 +112,9 @@ RSpec.describe "Work package timeline navigation",
       # Visit timeline query
       wp_timeline.visit_query query_tl
 
+      expect(wp_timeline).to have_test_selector("op-breadcrumbs--item", text: "Gantt charts")
+      expect(wp_timeline).to have_css(".op-breadcrumbs--current", text: "Query with Timeline", aria: { current: "page" })
+
       wp_timeline.expect_timeline!(open: true)
       wp_timeline.expect_work_package_listed work_package2
       wp_timeline.ensure_work_package_not_listed! work_package
@@ -151,7 +154,7 @@ RSpec.describe "Work package timeline navigation",
       retry_block do
         find(".wp-row-#{work_package2.id}-timeline").right_click
         find(".menu-item", text: "Add predecessor")
-        find(".menu-item", text: "Add follower")
+        find(".menu-item", text: "Add successor")
       end
     end
   end

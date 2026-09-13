@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -68,14 +70,16 @@ require "paper_trail/frameworks/rspec"
 require_relative "support/parallel_helper"
 require_relative "support/download_list"
 require_relative "support/capybara"
-Dir[Rails.root.join("spec/support/**/*.rb")].sort.each { |f| require_relative f }
-Dir[Rails.root.join("spec/features/support/**/*.rb")].sort.each { |f| require f }
-Dir[Rails.root.join("spec/lib/api/v3/support/**/*.rb")].sort.each { |f| require f }
-Dir[Rails.root.join("spec/requests/api/v3/support/**/*.rb")].sort.each { |f| require f }
+Rails.root.glob("spec/support/**/*.rb").each { |f| require_relative f }
+Rails.root.glob("spec/features/support/**/*.rb").each { |f| require f }
+Rails.root.glob("spec/lib/api/v3/support/**/*.rb").each { |f| require f }
+Rails.root.glob("spec/requests/api/v3/support/**/*.rb").each { |f| require f }
 
 # Checks for pending migration and applies them before tests are run.
 # If you are not using ActiveRecord, you can remove this line.
 ActiveRecord::Migration.maintain_test_schema! unless ENV["CI"]
+
+ActiveRecord::Base.logger = ActiveSupport::Logger.new($stdout, level: :debug) if ENV["SQL_DEBUG_OUTPUT"]
 
 RSpec.configure do |config|
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
@@ -93,5 +97,5 @@ RSpec.configure do |config|
   config.include ActiveSupport::Testing::Assertions
   config.include ActiveJob::TestHelper
 
-  OpenProject::Configuration["attachments_storage_path"] = "tmp/files"
+  OpenProject::Configuration["attachments_storage_path"] = "tmp/files#{ENV.fetch('TEST_ENV_NUMBER', nil)}"
 end

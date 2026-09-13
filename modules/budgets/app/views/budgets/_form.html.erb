@@ -42,6 +42,13 @@ See COPYRIGHT and LICENSE files for more details.
 <div class="form--field">
   <%= f.date_picker :fixed_date %>
 </div>
+<div class="form--field">
+  <%= f.text_field :base_amount,
+                   size: 12,
+                   inputmode: :decimal,
+                   container_class: "-wide",
+                   value: unitless_currency_number(@budget.base_amount) %>
+</div>
 
 <%= render partial: "budgets/subform/material_budget_subform" %>
 <%= render partial: "budgets/subform/labor_budget_subform" %>

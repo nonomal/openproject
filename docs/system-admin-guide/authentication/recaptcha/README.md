@@ -1,13 +1,13 @@
 ---
 sidebar_navigation:
   title: reCAPTCHA
-  priority: 600
+  priority: 300
 description: configure reCAPTCHA for OpenProject.
 keywords: reCAPTCHA, turnstile
 ---
 # reCAPTCHA configuration
 
-To activate and **configure reCAPTCHA** for OpenProject, navigate to *Administration* -> *Authentication* and choose -> *reCAPTCHA.*
+To activate and **configure reCAPTCHA** for OpenProject, navigate to _Administration_ -> _Authentication_ and choose -> _reCAPTCHA._
 
  If enabled, a captcha form will be rendered upon login for all users that have not verified a captcha yet. Please see the following link for more details on reCAPTCHA and their versions, and how to create the website and secret keys: [https://www.google.com/recaptcha](https://www.google.com/recaptcha).
 

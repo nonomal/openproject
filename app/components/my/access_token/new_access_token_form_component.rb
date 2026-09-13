@@ -34,10 +34,18 @@ module My
       include OpTurbo::Streamable
       include OpPrimer::ComponentHelpers
 
+      attr_reader :token
+
       def initialize(token:)
         super
 
         @token = token
+      end
+
+      private
+
+      def i18n_scope
+        [:my, :access_token, :dialog, token.model_name.i18n_key]
       end
     end
   end

@@ -47,7 +47,7 @@ zh-TW:
           name: 衝突
       global_queries:
         item_0:
-          name: '嵌入式表：子集'
+          name: 嵌入式表：子集
       type_configuration:
         item_0:
           form_configuration:
@@ -120,31 +120,31 @@ zh-TW:
                 options:
                   name: 開始使用
                   text: |
-                    我們很高興您的加入！我們建議嘗試一些方法來開始使用 OpenProject。
+                    我們很高興您加入！我們建議您嘗試以下幾件事來開始使用 OpenProject。
 
-                    但在直接開始之前，您應該知道這個範例專案分為兩個不同的專案：
+                    但在一開始之前，您應該知道這個模範專案被劃分為兩個不同的專案：
 
-                    1. [建設專案]({{opSetting:base_url}}/projects/demo-planning-constructing-project)：在這裡您可以找到您的建置專案的經典角色、一些工作流程和工作包。
-                    2. [建立 BIM 模型]({{opSetting:base_url}}/projects/demo-bim-project)：此專案也提供角色、工作流程和工作包，但特別是在 BIM 環境中。
+                    [營建專案]({{opSetting:base_url}}/projects/demo-planning-constructing-project)：在這裡您可以找到營建專案的經典角色、一些工作流程和工作套件。
+                    2. [建立 BIM 模型]({{opSetting:base_url}}/projects/demo-bim-project)：這個專案也提供角色、工作流程和工作套件，尤其是在 BIM 的情境下。
 
-                    _嘗試以下步驟：_
+                    _請嘗試以下步驟：_
 
-                    1. _邀請新成員加入您的專案_: → 前往專案導覽中的[成員]({{opSetting:base_url}}/projects/demo-construction-project/members)。
-                    2. _查看專案中的工作_： → 前往[工作包]({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B%22type % 22%2C%22id%22%2C%22主題%22%2C%22狀態%22%2C%22受讓人%22%2C%22優先級%22%5D%2C%22hl%22%3A% 22優先權%22%2C%22hi% 22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B% 7B%22n%22%3A%22bcfIssueAssociated% 22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa% 22%3A1%2C%22pp%22% 3A100%2C%22dr%22%3A%22list%22%7D) 在專案導覽中。
-                    3._建立新的工作包_：→前往[工作包→建立]({{opSetting:base_url}}/projects/demo-construction-project/work_packages/new?query_props=%7B%22c%22%3A %5B %22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22受讓人%22%2C%22priority%22%5D%2C%22hl%22%3A% 22priority%22%2C %22hi%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B% 22n%22%3A %22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22% 3A1%2C%22pp %22%3A100%2C%22dr%22%3A%22list%22%7D&型=11）。
-                    4._建立並更新甘特圖_： → 到[甘特圖]({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B %22type% 22%2C%22id%22%2C%22subject%22%2C%22受讓人%22%2C%22負責%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A %22weeks%22%2C% 22hl%22%3A%22優先級%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc %22%2C%22f%22% 3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D）在專案導航中。
-                    5. _啟動更多模組_： → 前往 [專案設定 → 模組]({{opSetting:base_url}}/projects/demo-construction-project/settings/modules)。
-                    6. _查看圖塊視圖以大致了解 BCF 問題：_ → 到 [工作包]({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c% 22%3A %5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22受讓人%22%2C%22priority%22%5D%2C%22hl%22%3A% 22優先權%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22id%3Aasc%22%2C%22f%22%3A%5B% 5D% 2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22card%22%7D）
-                    7._敏捷工作？看看我們全新的開發板：_ → 前往 [Boards]({{opSetting:base_url}}/projects/demo-construction-project/boards)
+                    邀請新成員加入您的專案：前往專案導航中的 [成員]({{opSetting:base_url}}/projects/demo-construction-project/members)。
+                    2. _檢視專案中的工作_：→ 在專案導航中前往 [工作套件]({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D)。
+                    3. _建立新的工作套件_: → 前往 [工作套件 → 建立]({{opSetting:base_url}}/projects/demo-construction-project/work_packages/new?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D&type=11)。
+                    4. _建立與更新甘特圖_：在專案導航中前往 [Gantt chart]({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22assignee%22%2C%22responsible%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D)。
+                    5. _啟用更多模組_: → 前往 [專案設定 → 模組]({{opSetting:base_url}}/projects/demo-construction-project/settings/modules)。
+                    6. _查看方塊檢視以概覽您的 BCF 問題：_ → 前往 [工作套件]({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22id%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22card%22%7D)
+                    7. 敏捷工作法？請查看我們全新的看板：前往 [Boards]({{opSetting:base_url}}/projects/demo-construction-project/boards)
 
                     在這裡您可以找到我們的[使用者指南](https://www.openproject.org/docs/user-guide/)。
-                    如果您有任何疑問或需要支持，請告訴我們。聯絡我們：[support\[at\]openproject.com](mailto:support@openproject.com)。
+                    如果您有任何問題或需要協助，請隨時與我們聯繫：[support\[at\]openproject.com](mailto:support@openproject.com)。
               item_4:
                 options:
                   name: 成員
               item_5:
                 options:
-                  name: 工作項目
+                  name: 工作套件
               item_6:
                 options:
                   name: 里程碑
@@ -179,27 +179,27 @@ zh-TW:
                 options:
                   name: 開始
                   text: |
-                    我們很高興您的加入！我們建議嘗試一些方法來開始使用 OpenProject。
+                    我們很高興您加入！我們建議您嘗試以下幾件事來開始使用 OpenProject。
 
-                    在這裡您將找到適合您的建築專案的經典角色、一些工作流程和工作包。
+                    在這裡您將找到傳統的角色、一些工作流程以及您建築專案的工作套件。
 
-                    _嘗試以下步驟：_
+                    邀請新成員加入您的專案：前往專案導航中的 [成員]({{opSetting:base_url}}/projects/demo-planning-constructing-project/members)。
 
-                    1._邀請新成員加入您的專案：_→前往專案導覽中的[成員]({{opSetting:base_url}}/projects/demo-planning-constructing-project/members)。
-                    2. _查看專案中的工作：_ → 前往 [工作包]({{opSetting:base_url}}/projects/demo-planning-constructing-project/work_packages?query_props=%7B%22c%22%3A%5B %22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22受讓人%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority% 22%2C %22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n% 22%3A %22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%22%5D%7D%5D%2C%22pa%22%3A1% 2C%22pp %22%3A100%2C%22dr%22%3A%22list%22%7D) 在專案導覽中。
-                    3. _建立新的工作包：_→前往[工作包→建立]({{opSetting:base_url}}/projects/demo-planning-constructing-project/work_packages/new?query_props=%7B%22c%22 % 3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22受讓人%22%2C%22priority%22%5D%2C%22hl%22% 3A%22priority% 22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B% 7B%22n% 22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa% 22%3A1% 2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D&類型=11）。
-                    4._建立並更新甘特圖：_→前往[甘特圖]({{opSetting:base_url}}/projects/demo-planning-constructing-project/work_packages?query_props=%7B%22c%22%3A %5B %22type%22%2C%22id%22%2C%22subject%22%2C%22受讓人%22%2C%22負責%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22 %3A%22weeks%22 %2C%22hl%22%3A%22優先權%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate %3Aasc%22%2C%22f %22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D）在專案導航中。
-                    5. _啟動更多模組：_ → 前往 [專案設定 → 模組]({{opSetting:base_url}}/projects/demo-planning-constructing-project/settings/modules)。
-                    6. _工作敏捷嗎？建立一個新板：_ → 到 [Boards]({{opSetting:base_url}}/projects/demo-planning-constructing-project/boards)
+                    2.  _檢視您專案中的工作:_ → 在專案導航中前往 [工作套件]({{opSetting:base_url}}/projects/demo-planning-constructing-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D)。
+                    _請嘗試以下步驟：_
+                    3.  _建立新的工作套件:_ → 前往 [工作套件 → 建立]({{opSetting:base_url}}/projects/demo-planning-constructing-project/work_packages/new?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D&type=11)。
+                    4.  _建立與更新甘特圖：_ 前往專案導航中的 [甘特圖]({{opSetting:base_url}}/projects/demo-planning-constructing-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22assignee%22%2C%22responsible%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D)。
+                    5.  _啟用更多模組：_ → 前往 [專案設定 → 模組]({{opSetting:base_url}}/projects/demo-planning-constructing-project/settings/modules)。
+                    6. 採用敏捷開發？建立新的看板：前往 [看板]({{opSetting:base_url}}/projects/demo-planning-constructing-project/boards)
 
                     在這裡您可以找到我們的[使用者指南](https://www.openproject.org/docs/user-guide/)。
-                    如果您有任何疑問或需要支持，請告訴我們。聯絡我們：[support\[at\]openproject.com](mailto:support@openproject.com)。
+                    如果您有任何問題或需要協助，請隨時與我們聯繫：[support\[at\]openproject.com](mailto:support@openproject.com)。
               item_4:
                 options:
                   name: 成員
               item_5:
                 options:
-                  name: 工作項目
+                  name: 工作套件
               item_6:
                 options:
                   name: 里程碑
@@ -211,7 +211,7 @@ zh-TW:
 
                 下一步可能是透過查看[甘特圖]({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%來檢查時間表並調整約會3A%5B% 22id%22%2C%22subject%22%2C%22startDate%22%2C%22dueDate%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%221%22tzl%22%3A%22weeks%22%2C%222hi% 3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A% 22狀態%22 %2C%22o%22%3A%22o%22%2C%22v%22%3A%5B%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%7D) 。
             item_1:
-              subject: ' 基本評估'
+              subject: " 基本評估"
               description: 此類型在層級上是「衝突&quot;」類型&quot;的父代。因此，「請求&quot;」和「請求&quot;」代表一般註釋。
               children:
                 item_0:
@@ -225,7 +225,7 @@ zh-TW:
                     ＃＃ 描述
 
                     * 透過與客戶舉行研討會來確定客戶需求
-                    * 每個需求代表一個任務及其對應的工作包
+                    * 每個需求代表一個任務及其對應的工作套件
                     * 得出成本估算與時間範圍
                 item_1:
                   subject: 結果彙整
@@ -430,30 +430,30 @@ zh-TW:
                 options:
                   name: 開始
                   text: |
-                    我們很高興您的加入！我們建議嘗試一些方法來開始使用 OpenProject。
+                    我們很高興您加入！我們建議您嘗試以下幾件事來開始使用 OpenProject。
 
-                    此演示專案提供專門針對 BIM 的角色、工作流程和工作包。
+                    這個示範專案提供針對 BIM 專業化的角色、工作流程和工作套件。
 
-                    _嘗試以下步驟：_
+                    邀請新成員加入您的專案：前往專案導航中的 [成員]({{opSetting:base_url}}/projects/demo-bim-project/members)。
 
-                    1._邀請新成員加入您的專案：_→前往專案導覽中的[成員]({{opSetting:base_url}}/projects/demo-bim-project/members)。
-                    2. _上傳並檢視 IFC 格式的 3D 模型：_ → 前往專案導覽中的 [BCF]({{opSetting:base_url}}/projects/demo-bim-project/bcf)。
-                    3. _建立和管理直接在 IFC 模型中連結的 BCF 問題：_ → 到 [BCF]({{opSetting:base_url}}/projects/demo-bim-project/bcf) → 建立。
-                    4. _查看專案中的工作：_ → 前往 [工作包]({{opSetting:base_url}}/projects/demo-bim-project/work_packages?query_props=%7B%22c%22%3A%5B%22type %22%2C%22id%22%2C%22主題%22%2C%22狀態%22%2C%22受讓人%22%2C%22優先級%22%5D%2C%22hl%22%3A% 22優先權%22%2C%22hi %22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B% 7B%22n%22%3A%22bcfIssue關聯%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa %22%3A1%2C%22pp%22 %3A100%2C%22dr%22%3A%22list%22%7D) 在專案導覽中。
-                    5. _建立新的工作包：_→前往[工作包→建立]({{opSetting:base_url}}/projects/demo-bim-project/work_packages/new?query_props=%7B%22c%22%3A % 5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22受讓人%22%2C%22priority%22%5D%2C%22hl%22%3A% 22priority%22% 2C%22hi%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B% 22n%22% 3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22% 3A1%2C% 22pp%22%3A100%2C%22dr%22%3A%22list%22%7D&type=11）。
-                    6._建立並更新甘特圖：_→前往[甘特圖]({{opSetting:base_url}}/projects/demo-bim-project/work_packages?query_props=%7B%22c%22%3A%5B %22type %22%2C%22id%22%2C%22subject%22%2C%22受讓人%22%2C%22負責%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A %22weeks%22%2C %22hl%22%3A%22優先級%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc %22%2C%22f%22 %3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D）在專案導航中。
-                    7. _啟動其他模組：_ → 前往 [專案設定 → 模組]({{opSetting:base_url}}/projects/demo-bim-project/settings/modules)。
-                    8. _查看圖塊視圖以大致了解 BCF 問題：_ → 到 [工作包]({{opSetting:base_url}}/projects/demo-bim-project/work_packages?query_props=%7B%22c% 22%3A %5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22受讓人%22%2C%22priority%22%5D%2C%22hl%22%3A% 22優先權%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22id%3Aasc%22%2C%22f%22%3A%5B% 5D% 2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22card%22%7D）
-                    9. _工作敏捷嗎？建立一個新板：_ → 到 [Boards]({{opSetting:base_url}}/projects/demo-bim-project/boards)
+                    2.  _上傳和檢視 IFC 格式的 3D 模型：_ → 前往專案導航中的[BCF]({{opSetting:base_url}}/projects/demo-bim-project/bcf)。
+                    _請嘗試以下步驟：_
+                    3.  _建立並管理與 IFC 模型直接連結的 BCF 問題：_ → 前往 [BCF]({{opSetting:base_url}}/projects/demo-bim-project/bcf) → 建立。
+                    4.  _檢視專案中的工作:_ → 在專案導航中前往 [工作套件]({{opSetting:base_url}}/projects/demo-bim-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D)。
+                    5.  _建立新的工作套件:_ → 前往 [工作套件 → 建立]({{opSetting:base_url}}/projects/demo-bim-project/work_packages/new?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D&type=11)。
+                    6.  _建立並更新甘特圖：_ → 在專案導航中前往 [甘特圖]({{opSetting:base_url}}/projects/demo-bim-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22assignee%22%2C%22responsible%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D)。
+                    7.  _啟用更多模組：_ → 前往 [專案設定 → 模組]({{opSetting:base_url}}/projects/demo-bim-project/settings/modules)。
+                    8.  _查看鑲嵌圖以概覽您的 BCF 問題：_ → 前往 [工作套件]({{opSetting:base_url}}/projects/demo-bim-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22id%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22card%22%7D)
+                    9. 運用敏捷開發？建立新的看板：前往 [看板]({{opSetting:base_url}}/projects/demo-bim-project/boards)
 
                     在這裡您可以找到我們的[使用者指南](https://www.openproject.org/docs/user-guide/)。
-                    如果您有任何疑問或需要支持，請告訴我們。聯絡我們：[support\[at\]openproject.com](mailto:support@openproject.com)。
+                    如果您有任何問題或需要協助，請隨時與我們聯繫：[support\[at\]openproject.com](mailto:support@openproject.com)。
               item_4:
                 options:
                   name: 成員
               item_5:
                 options:
-                  name: 工作項目
+                  name: 工作套件
               item_6:
                 options:
                   name: 里程碑
@@ -728,4 +728,4 @@ zh-TW:
                   name: 成員
               item_5:
                 options:
-                  name: 工作項目
+                  name: 工作套件

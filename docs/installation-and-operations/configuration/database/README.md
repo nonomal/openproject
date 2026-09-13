@@ -28,7 +28,7 @@ point to an external database.
 Example:
 
 ```shell
-docker run -d ... -e DATABASE_URL=postgres://user:pass@host:port/dbname openproject/openproject:15
+docker run -d ... -e DATABASE_URL=postgres://user:pass@host:port/dbname openproject/openproject:17
 ```
 
 Best practice is using the file `docker-compose.override.yml`. If you run the Compose based docker stack, you can simply override the `DATABASE_URL` environment variable, and remove the `db` service from the `docker-compose.yml` file, but because by pulling a new version `docker-compose.yml` might get replaced. Then you can restart the stack with:
@@ -66,13 +66,6 @@ OpenProject will merge the settings from `DATABASE_URL` with manually specified 
 | OPENPROJECT_DB_SSLMODE                  | Uses libpq default | https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-SSLMODE |                                                              |
 | OPENPROJECT_DB_SSLCOMPRESSION           | Uses libpq default | https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-SSLCOMPRESSION |                                                              |
 | OPENPROJECT_DB_SSL_MIN_PROTOCOL_VERSION | Uses libpq default | https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-SSL-MIN-PROTOCOL-VERSION |                                                              |
-|                                         |                    |                                                              |                                                              |
-|                                         |                    |                                                              |                                                              |
-|                                         |                    |                                                              |                                                              |
-|                                         |                    |                                                              |                                                              |
-|                                         |                    |                                                              |                                                              |
-
-
 
 ## Using SSL/TLS with a PostgreSQL database
 
@@ -86,16 +79,16 @@ DATABASE_URL=postgres://user:pass@host:port/dbname?sslmode=require-full&sslcert=
 
 Alternatively, for better readability, you can set these parameters with separate environment variables:
 
-| Environment variable                    | Default                      | Description                                                  | PostgreSQL documentation                                     |
-| --------------------------------------- | ---------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| OPENPROJECT_DB_SSLMODE                  | prefer                       | connection mode for SSL. See                                 | [sslmode](https://www.postgresql.org/docs/13/libpq-connect.html#LIBPQ-CONNECT-SSLMODE) |
-| OPENPROJECT_DB_SSLCOMPRESSION           | 0                            | If set to 1, data sent over SSL connections will be compressed | [sslcompression](https://www.postgresql.org/docs/13/libpq-connect.html#LIBPQ-CONNECT-SSLCOMPRESSION) |
-| OPENPROJECT_DB_SSLCERT                  | ~/.postgresql/postgresql.crt | Path to certificate                                          | [sslcert](https://www.postgresql.org/docs/13/libpq-connect.html#LIBPQ-CONNECT-SSLCERT) |
-| OPENPROJECT_DB_SSLKEY                   | ~/.postgresql/postgresql.key | Path to certificate key                                      | [sslkey](https://www.postgresql.org/docs/13/libpq-connect.html#LIBPQ-CONNECT-SSLKEY) |
-| OPENPROJECT_DB_SSLPASSWORD              |                              | Password to certificate key                                  | [sslpassword](https://www.postgresql.org/docs/13/libpq-connect.html#LIBPQ-CONNECT-SSLPASSWORD) |
-| OPENPROJECT_DB_SSLROOTCERT              | ~/.postgresql/root.crt       | Path to CA                                                   | [sslrootcert](https://www.postgresql.org/docs/13/libpq-connect.html#LIBPQ-CONNECT-SSLROOTCERT) |
-| OPENPROJECT_DB_SSLCRL                   | ~/.postgresql/root.crl       | Path to revocation list                                      | [sslcrl](https://www.postgresql.org/docs/13/libpq-connect.html#LIBPQ-CONNECT-SSLCRL) |
-| OPENPROJECT_DB_SSL_MIN_PROTOCOL_VERSION | Uses libpq default           | https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-SSL-MIN-PROTOCOL-VERSION |                                                              |
+| Environment variable                    | Default                      | Description                                                                                                   | PostgreSQL documentation                                     |
+| --------------------------------------- | ---------------------------- |---------------------------------------------------------------------------------------------------------------| ------------------------------------------------------------ |
+| OPENPROJECT_DB_SSLMODE                  | prefer                       | connection mode for SSL. See                                                                                  | [sslmode](https://www.postgresql.org/docs/13/libpq-connect.html#LIBPQ-CONNECT-SSLMODE) |
+| OPENPROJECT_DB_SSLCOMPRESSION           | 0                            | If set to 1, data sent over SSL connections will be compressed                                                | [sslcompression](https://www.postgresql.org/docs/13/libpq-connect.html#LIBPQ-CONNECT-SSLCOMPRESSION) |
+| OPENPROJECT_DB_SSLCERT                  | ~/.postgresql/postgresql.crt | Path to certificate                                                                                           | [sslcert](https://www.postgresql.org/docs/13/libpq-connect.html#LIBPQ-CONNECT-SSLCERT) |
+| OPENPROJECT_DB_SSLKEY                   | ~/.postgresql/postgresql.key | Path to certificate key                                                                                       | [sslkey](https://www.postgresql.org/docs/13/libpq-connect.html#LIBPQ-CONNECT-SSLKEY) |
+| OPENPROJECT_DB_SSLPASSWORD              |                              | Password to certificate key                                                                                   | [sslpassword](https://www.postgresql.org/docs/13/libpq-connect.html#LIBPQ-CONNECT-SSLPASSWORD) |
+| OPENPROJECT_DB_SSLROOTCERT              | ~/.postgresql/root.crt       | Path to CA                                                                                                    | [sslrootcert](https://www.postgresql.org/docs/13/libpq-connect.html#LIBPQ-CONNECT-SSLROOTCERT) |
+| OPENPROJECT_DB_SSLCRL                   | ~/.postgresql/root.crl       | Path to revocation list                                                                                       | [sslcrl](https://www.postgresql.org/docs/13/libpq-connect.html#LIBPQ-CONNECT-SSLCRL) |
+| OPENPROJECT_DB_SSL_MIN_PROTOCOL_VERSION | Uses libpq default           | see [here](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-SSL-MIN-PROTOCOL-VERSION) |                                                              |
 
 ```text
 ="prefer" # disable, allow, prefer, require, verify-ca, verify-full
@@ -107,4 +100,4 @@ Alternatively, for better readability, you can set these parameters with separat
 ="~/.postgresql/root.crl" # Path to revocation list
 ```
 
-PostgreSQL supports a wide variety of options in its connection string. This is not specific to OpenProject or Rails. See the following guide for more information: https://www.postgresql.org/docs/13/libpq-connect.html#LIBPQ-PARAMKEYWORDS
+PostgreSQL supports a wide variety of options in its connection string. This is not specific to OpenProject or Rails. See this [guide](https://www.postgresql.org/docs/13/libpq-connect.html#LIBPQ-PARAMKEYWORDS) for more information.

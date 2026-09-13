@@ -49,7 +49,7 @@ module TimeEntries
                        type: "time",
                        required: start_and_end_time_required?,
                        label: TimeEntry.human_attribute_name(:start_time),
-                       value: model.start_timestamp&.strftime("%H:%M"),
+                       value: start_time_in_local_time,
                        show_clear_button: true,
                        data: {
                          "time-entry-target" => "startTimeInput",
@@ -60,7 +60,7 @@ module TimeEntries
                        type: "time",
                        required: start_and_end_time_required?,
                        label: TimeEntry.human_attribute_name(:end_time),
-                       value: model.end_timestamp&.strftime("%H:%M"),
+                       value: end_time_in_local_time,
                        show_clear_button: true,
                        caption: end_time_caption,
                        data: {
@@ -70,15 +70,37 @@ module TimeEntries
         end
       end
 
-      f.text_field name: :hours,
+      f.hidden name: :hours,
+               value: precise_hours_value,
+               data: { "time-entry-target" => "hoursHiddenInput" }
+
+      f.text_field name: :hours_display,
                    required: true,
                    label: TimeEntry.human_attribute_name(:hours),
                    value: hours_value,
+                   validation_message: hours_validation_message,
                    data: { "time-entry-target" => "hoursInput",
                            "action" => "blur->time-entry#hoursChanged keypress.enter->time-entry#hoursKeyEnterPress" }
     end
 
     private
+
+    # Validations record their errors on :hours, which is only rendered as a hidden input.
+    def hours_validation_message
+      model.errors.full_messages_for(:hours).to_sentence.presence
+    end
+
+    def start_time_in_local_time
+      return if model.start_timestamp.blank?
+
+      model.start_timestamp.in_time_zone(model.user.time_zone).strftime("%H:%M")
+    end
+
+    def end_time_in_local_time
+      return if model.end_timestamp.blank?
+
+      model.end_timestamp.in_time_zone(model.user.time_zone).strftime("%H:%M")
+    end
 
     def show_start_and_end_time_fields?
       TimeEntry.can_track_start_and_end_time?
@@ -96,6 +118,10 @@ module TimeEntries
       else
         ""
       end
+    end
+
+    def precise_hours_value
+      model.ongoing? ? model.ongoing_hours : model.hours
     end
 
     def end_time_caption # rubocop:disable Metrics/AbcSize

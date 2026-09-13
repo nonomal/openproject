@@ -28,7 +28,7 @@
 
 class CostQuery::SqlStatement < Report::SqlStatement
   COMMON_FIELDS = %w[
-    user_id project_id work_package_id rate_id
+    user_id project_id entity_type entity_id rate_id
     comments spent_on created_at updated_at tyear tmonth tweek
     costs overridden_costs type
   ]
@@ -58,7 +58,8 @@ class CostQuery::SqlStatement < Report::SqlStatement
   #   id                        | id                       | id
   #   user_id                   | user_id                  | user_id
   #   project_id                | project_id               | project_id
-  #   work_package_id           | work_package_id          | work_package_id
+  #   entity_type               | entity_type              | entity_type
+  #   entity_id                 | entity_id                | entity_id
   #   rate_id                   | rate_id                  | rate_id
   #   comments                  | comments                 | comments
   #   spent_on                  | spent_on                 | spent_on
@@ -88,10 +89,13 @@ class CostQuery::SqlStatement < Report::SqlStatement
       query.select COMMON_FIELDS
       query.desc = "Subquery for #{table}"
       query.select({
-                     count: 1, id: [model, :id], display_costs: 1,
+                     count: 1,
+                     id: [model, :id],
+                     display_costs: 1,
                      real_costs: switch("#{table}.overridden_costs IS NULL" => [model, :costs], else: [model, :overridden_costs]),
                      week: iso_year_week(field_name_for([model, :spent_on])),
-                     singleton_value: 1
+                     singleton_value: 1,
+                     entity_gid: "CONCAT('gid://#{GlobalID.app}/', #{table}.entity_type, '/', #{table}.entity_id)"
                    })
       # FIXME: build this subquery from a sql_statement
       query.from "(SELECT *, #{typed :text, model.model_name.to_s} AS type FROM #{table}) AS #{table}"

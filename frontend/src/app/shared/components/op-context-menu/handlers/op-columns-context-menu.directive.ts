@@ -21,18 +21,15 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import {
-  Directive, ElementRef, Injector, Input,
-} from '@angular/core';
+import { Directive, Injector, Input, inject } from '@angular/core';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 
 import { OpContextMenuTrigger } from 'core-app/shared/components/op-context-menu/handlers/op-context-menu-trigger.directive';
-import { OPContextMenuService } from 'core-app/shared/components/op-context-menu/op-context-menu.service';
 import { OpModalService } from 'core-app/shared/components/modal/modal.service';
 import { WorkPackageViewColumnsService } from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-view-columns.service';
 import { WorkPackageViewGroupByService } from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-view-group-by.service';
@@ -43,11 +40,22 @@ import { QueryColumn } from 'core-app/features/work-packages/components/wp-query
 import { WpTableConfigurationModalComponent } from 'core-app/features/work-packages/components/wp-table/configuration-modal/wp-table-configuration.modal';
 import { QUERY_SORT_BY_ASC, QUERY_SORT_BY_DESC } from 'core-app/features/hal/resources/query-sort-by-resource';
 import { ConfirmDialogService } from 'core-app/shared/components/modals/confirm-dialog/confirm-dialog.service';
+import { computePosition, ComputePositionReturn, flip, shift } from '@floating-ui/dom';
 
 @Directive({
   selector: '[opColumnsContextMenu]',
+  standalone: false,
 })
 export class OpColumnsContextMenu extends OpContextMenuTrigger {
+  readonly wpTableColumns = inject(WorkPackageViewColumnsService);
+  readonly wpTableSortBy = inject(WorkPackageViewSortByService);
+  readonly wpTableGroupBy = inject(WorkPackageViewGroupByService);
+  readonly wpTableHierarchies = inject(WorkPackageViewHierarchiesService);
+  readonly opModalService = inject(OpModalService);
+  readonly injector = inject(Injector);
+  readonly I18n = inject(I18nService);
+  readonly confirmDialog = inject(ConfirmDialogService);
+
   @Input('opColumnsContextMenu-column') public column:QueryColumn;
 
   @Input('opColumnsContextMenu-table') public table:WorkPackageTable;
@@ -59,20 +67,7 @@ export class OpColumnsContextMenu extends OpContextMenuTrigger {
     },
   };
 
-  constructor(readonly elementRef:ElementRef,
-    readonly opContextMenu:OPContextMenuService,
-    readonly wpTableColumns:WorkPackageViewColumnsService,
-    readonly wpTableSortBy:WorkPackageViewSortByService,
-    readonly wpTableGroupBy:WorkPackageViewGroupByService,
-    readonly wpTableHierarchies:WorkPackageViewHierarchiesService,
-    readonly opModalService:OpModalService,
-    readonly injector:Injector,
-    readonly I18n:I18nService,
-    readonly confirmDialog:ConfirmDialogService) {
-    super(elementRef, opContextMenu);
-  }
-
-  protected open(evt:JQuery.TriggeredEvent) {
+  protected open(evt:Event) {
     if (!this.table.configuration.columnMenuEnabled) {
       return;
     }
@@ -88,24 +83,19 @@ export class OpColumnsContextMenu extends OpContextMenuTrigger {
     };
   }
 
-  /**
-   * Positioning args for jquery-ui position.
-   *
-   * @param {Event} openerEvent
-   */
-  public positionArgs(evt:JQuery.TriggeredEvent) {
-    const additionalPositionArgs = {
-      of: this.$element.find('.generic-table--sort-header-outer'),
-    };
-
-    const position = super.positionArgs(evt);
-    _.assign(position, additionalPositionArgs);
-
-    return position;
+  public computePosition(floating:HTMLElement, openerEvent:Event):Promise<ComputePositionReturn> {
+    const reference = this.element.querySelector<HTMLElement>('.generic-table--sort-header-outer')!;
+    return computePosition(reference, floating, {
+      placement: this.placement,
+      middleware: [
+        flip(),
+        shift({ padding: 10 }),
+      ],
+    });
   }
 
-  protected get afterFocusOn():JQuery {
-    return this.$element.find(`#${this.column.id}`);
+  protected get afterFocusOn() {
+    return this.element.querySelector<HTMLElement>(`#${this.column.id}`)!;
   }
 
   private buildItems() {
@@ -193,7 +183,7 @@ export class OpColumnsContextMenu extends OpContextMenuTrigger {
 
           setTimeout(() => {
             if (focusColumn) {
-              jQuery(`#${focusColumn.id}`).focus();
+              document.querySelector<HTMLElement>(`#${focusColumn.id}`)?.focus();
             }
           });
           return true;

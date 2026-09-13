@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,9 +33,10 @@ require_relative "base"
 class Tables::Categories < Tables::Base
   def self.table(migration)
     create_table migration do |t|
-      t.integer :project_id, default: 0, null: false
-      t.string :name, limit: 256, null: false, default: ""
-      t.integer :assigned_to_id
+      t.bigint :project_id, null: false
+      t.string :name, null: false, default: ""
+      t.bigint :assigned_to_id
+      t.timestamps precision: nil
 
       t.index :assigned_to_id, name: "index_categories_on_assigned_to_id"
       t.index :project_id, name: "issue_categories_project_id"

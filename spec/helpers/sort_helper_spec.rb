@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -143,7 +145,7 @@ RSpec.describe SortHelper do
 
     it "renders a th with a sort link" do
       expect(output).to be_html_eql(<<-HTML)
-        <th title="Sort by &quot;Id&quot;">
+        <th title="Sort by &quot;Id&quot;" aria-label="Id">
           <div class="generic-table--sort-header-outer">
             <div class="generic-table--sort-header">
               <span>
@@ -163,7 +165,7 @@ RSpec.describe SortHelper do
 
       it "adds the sort class" do
         expect(output).to be_html_eql(<<-HTML)
-          <th title="Ascending sorted by &quot;Id&quot;">
+          <th title="Ascending sorted by &quot;Id&quot;" aria-label="Id">
             <div class="generic-table--sort-header-outer">
               <div class="generic-table--sort-header">
                 <span class="sort asc">
@@ -185,7 +187,7 @@ RSpec.describe SortHelper do
 
       it "adds the sort class" do
         expect(output).to be_html_eql(<<-HTML)
-          <th title="Descending sorted by &quot;Id&quot;">
+          <th title="Descending sorted by &quot;Id&quot;" aria-label="Id">
             <div class="generic-table--sort-header-outer">
               <div class="generic-table--sort-header">
                 <span class="sort desc">
@@ -217,7 +219,7 @@ RSpec.describe SortHelper do
       context "when not given allowed parameters" do
         it "copies default ones to the link" do
           expect(output).to be_html_eql(<<-HTML)
-            <th title="Sort by &quot;Id&quot;">
+            <th title="Sort by &quot;Id&quot;" aria-label="Id">
               <div class="generic-table--sort-header-outer">
                 <div class="generic-table--sort-header">
                   <span>
@@ -238,7 +240,7 @@ RSpec.describe SortHelper do
 
         it "copies them to the link" do
           expect(output).to be_html_eql(<<-HTML)
-            <th title="Sort by &quot;Id&quot;">
+            <th title="Sort by &quot;Id&quot;" aria-label="Id">
               <div class="generic-table--sort-header-outer">
                 <div class="generic-table--sort-header">
                   <span>
@@ -260,7 +262,7 @@ RSpec.describe SortHelper do
 
       it "includes the passed data param in the link" do
         expect(output).to be_html_eql(<<~HTML)
-          <th title="Sort by &quot;Id&quot;">
+          <th title="Sort by &quot;Id&quot;" aria-label="Id">
             <div class="generic-table--sort-header-outer">
               <div class="generic-table--sort-header">
                 <span>

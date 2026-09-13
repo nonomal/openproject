@@ -51,7 +51,10 @@ RSpec.describe "API v3 Time Entries resource",
 
   let(:path) { api_v3_paths.time_entries }
   let(:parameters) { {} }
+  # Rack::MockResponse does not expose parsed_body.
+  # rubocop:disable Rails/ResponseParsedBody
   let(:json_response) { JSON.parse(response.body) }
+  # rubocop:enable Rails/ResponseParsedBody
 
   subject(:response) { last_response }
 
@@ -65,7 +68,7 @@ RSpec.describe "API v3 Time Entries resource",
         let(:parameters) do
           {
             _links: {
-              workPackage: { href: api_v3_paths.work_package(work_package.id) },
+              entity: { href: api_v3_paths.work_package(work_package.id) },
               project: { href: api_v3_paths.project(project.id) },
               activity: { href: api_v3_paths.time_entries_activity(active_activity.id) }
             },
@@ -87,6 +90,37 @@ RSpec.describe "API v3 Time Entries resource",
           expect(time_entry.start_time).to eq(13 * 60) # 12:00 UTC = 13:00 Berlin on December 24th, 2024
           expect(time_entry.time_zone).to eq("Europe/Berlin")
           expect(time_entry.user).to eq(german_user)
+          expect(time_entry.entity).to eq(work_package)
+        end
+
+        context "with the deprecated workPackage field" do
+          let(:parameters) do
+            {
+              _links: {
+                workPackage: { href: api_v3_paths.work_package(work_package.id) },
+                project: { href: api_v3_paths.project(project.id) },
+                activity: { href: api_v3_paths.time_entries_activity(active_activity.id) }
+              },
+              spentOn: "2024-12-24",
+              hours: "PT2H",
+              startTime: "2024-12-24T12:00:00Z"
+            }
+          end
+
+          it "creates the time entry" do
+            post path, parameters.to_json
+
+            expect(subject).to have_http_status(:created)
+            time_entry_id = json_response["id"]
+            time_entry = TimeEntry.find(time_entry_id)
+
+            expect(time_entry.spent_on).to eq(Date.new(2024, 12, 24))
+            expect(time_entry.hours).to eq(2)
+            expect(time_entry.start_time).to eq(13 * 60) # 12:00 UTC = 13:00 Berlin on December 24th, 2024
+            expect(time_entry.time_zone).to eq("Europe/Berlin")
+            expect(time_entry.user).to eq(german_user)
+            expect(time_entry.entity).to eq(work_package)
+          end
         end
       end
 
@@ -95,7 +129,7 @@ RSpec.describe "API v3 Time Entries resource",
           {
             _links: {
               user: { href: api_v3_paths.user(japanese_user.id) },
-              workPackage: { href: api_v3_paths.work_package(work_package.id) },
+              entity: { href: api_v3_paths.work_package(work_package.id) },
               project: { href: api_v3_paths.project(project.id) },
               activity: { href: api_v3_paths.time_entries_activity(active_activity.id) }
             },
@@ -117,6 +151,117 @@ RSpec.describe "API v3 Time Entries resource",
           expect(time_entry.start_time).to eq(21 * 60) # 12:00 UTC = 21:00 Tokyo on Dec 24th, 2024
           expect(time_entry.time_zone).to eq("Asia/Tokyo")
           expect(time_entry.user).to eq(japanese_user)
+          expect(time_entry.entity).to eq(work_package)
+        end
+      end
+    end
+
+    describe "entity visibility" do
+      let(:other_project) { create(:project) }
+      let(:hidden_meeting) { create(:meeting, project: other_project) }
+      let(:parameters) do
+        {
+          _links: {
+            entity: { href: api_v3_paths.meeting(hidden_meeting.id) },
+            project: { href: api_v3_paths.project(project.id) },
+            activity: { href: api_v3_paths.time_entries_activity(active_activity.id) }
+          },
+          spentOn: "2024-12-24",
+          hours: "PT2H"
+        }
+      end
+
+      it "rejects a meeting from a project invisible to the user" do
+        expect { post path, parameters.to_json }
+          .not_to change(TimeEntry, :count)
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body)
+          .to be_json_eql("is invalid.".to_json)
+          .at_path("message")
+      end
+    end
+
+    describe "custom fields" do
+      let(:base_parameters) do
+        {
+          _links: {
+            entity: { href: api_v3_paths.work_package(work_package.id) },
+            project: { href: api_v3_paths.project(project.id) },
+            activity: { href: api_v3_paths.time_entries_activity(active_activity.id) }
+          },
+          spentOn: "2024-12-24",
+          hours: "PT2H"
+        }
+      end
+
+      context "with a required custom field" do
+        let!(:required_custom_field) do
+          create(:time_entry_custom_field, :string,
+                 name: "Department",
+                 is_required: true)
+        end
+
+        context "when no custom field value is provided" do
+          let(:parameters) { base_parameters }
+
+          it "responds with 422 and explains the custom field error" do
+            post path, parameters.to_json
+
+            expect(response).to have_http_status(:unprocessable_entity)
+
+            expect(response.body)
+              .to be_json_eql("Department can't be blank.".to_json)
+              .at_path("message")
+          end
+        end
+
+        context "when the custom field is provided but empty" do
+          let(:parameters) do
+            base_parameters.merge(
+              "customField#{required_custom_field.id}" => ""
+            )
+          end
+
+          it "responds with 422 and explains the custom field error" do
+            post path, parameters.to_json
+
+            expect(response).to have_http_status(:unprocessable_entity)
+
+            expect(response.body)
+              .to be_json_eql("Department can't be blank.".to_json)
+              .at_path("message")
+          end
+        end
+
+        context "when the custom field value is provided and valid" do
+          let(:parameters) do
+            base_parameters.merge(
+              "customField#{required_custom_field.id}" => "Engineering"
+            )
+          end
+
+          it "responds with 201" do
+            post path, parameters.to_json
+
+            expect(response).to have_http_status(:created)
+          end
+
+          it "returns the newly created time entry" do
+            post path, parameters.to_json
+
+            expect(response.body)
+              .to be_json_eql("TimeEntry".to_json)
+              .at_path("_type")
+          end
+
+          it "creates a time entry with the custom field value" do
+            post path, parameters.to_json
+
+            time_entry = TimeEntry.last
+            expect(time_entry.typed_custom_value_for(required_custom_field))
+              .to eq("Engineering")
+          end
         end
       end
     end

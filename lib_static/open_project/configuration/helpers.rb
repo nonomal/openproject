@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -82,6 +84,14 @@ module OpenProject
         end
       end
 
+      def enterprise_chargebee_site
+        if Rails.env.production?
+          self["enterprise_chargebee_site"]
+        else
+          "openproject-enterprise-test"
+        end
+      end
+
       def file_storage?
         attachments_storage == :file
       end
@@ -123,11 +133,15 @@ module OpenProject
       end
 
       def fog_credentials
-        (Hash(self["fog"])["credentials"] || {}).map { |key, value| [key.to_sym, value] }.to_h
+        (Hash(self["fog"])["credentials"] || {}).symbolize_keys
       end
 
       def fog_directory
         Hash(self["fog"])["directory"]
+      end
+
+      def fog_s3_upload_host
+        fog_credentials[:endpoint].presence || "#{fog_directory}.s3-#{fog_credentials[:region]}.amazonaws.com"
       end
 
       def file_uploader
@@ -174,6 +188,10 @@ module OpenProject
         Integer(ENV["RACK_TIMEOUT_WAIT_TIMEOUT"].presence || web["wait_timeout"].presence)
       end
 
+      def term_on_timeout
+        Integer(ENV["RACK_TIMEOUT_TERM_ON_TIMEOUT"].presence || web["term_on_timeout"].presence)
+      end
+
       def web_min_threads
         Integer(ENV["RAILS_MIN_THREADS"].presence || web["min_threads"].presence)
       end
@@ -192,6 +210,17 @@ module OpenProject
 
       def lookbook_enabled?
         self["lookbook_enabled"]
+      end
+
+      def ssrf_protection_ip_allowlist
+        @ssrf_protection_ip_allowlist ||= self["ssrf_protection_ip_allowlist"]
+          .split(/[\s,]+/)
+          .map(&:strip)
+          .map do |addr|
+            IPAddr.new(addr)
+          rescue IPAddr::InvalidAddressError => e
+            raise IPAddr::InvalidAddressError, "#{e.message} #{addr.inspect}"
+          end
       end
 
       private

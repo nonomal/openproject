@@ -44,26 +44,22 @@ RSpec.describe Storages::CopyProjectFoldersJob, :job, :webmock, with_good_job: S
   let(:target_work_packages) { create_list(:work_package, 4, project: target.project) }
 
   let(:work_packages_map) do
-    source_work_packages
-      .pluck(:id)
-      .map(&:to_s)
-      .zip(target_work_packages.pluck(:id))
-      .to_h
+    source_work_packages.pluck(:id).map(&:to_s).zip(target_work_packages.pluck(:id)).to_h
   end
 
   let(:polling_url) { "https://polling.url.de/cool/subresources" }
-  let(:copy_result) { Storages::Peripherals::StorageInteraction::ResultData::CopyTemplateFolder.new(nil, nil, false) }
+  let(:copy_result) { Storages::Adapters::Results::CopyTemplateFolder.new(nil, nil, false) }
 
   let(:target_deep_file_ids) do
     source_file_links.each_with_object({}) do |fl, hash|
-      hash["#{target.managed_project_folder_path}#{fl.name}"] = Storages::StorageFileInfo.from_id("RANDOM_ID_#{fl.hash}")
+      hash["#{target.managed_project_folder_path}#{fl.name}"] = Storages::StorageFileId.new("RANDOM_ID_#{fl.hash}")
     end
   end
 
   let(:source_file_links) { source_work_packages.map { |wp| create(:file_link, container: wp, storage:) } }
   let(:source_file_infos) do
     source_file_links.map do |fl|
-      Storages::StorageFileInfo.new(
+      Storages::Adapters::Results::StorageFileInfo.new(
         status: "OK",
         status_code: 200,
         id: fl.origin_id,
@@ -120,22 +116,21 @@ RSpec.describe Storages::CopyProjectFoldersJob, :job, :webmock, with_good_job: S
   end
 
   # rubocop:disable Lint/UnusedBlockArgument
+  # TODO: Update to use verifying doubles for the queries and commands - 2025-02-10 @mereghost
   describe "managed project folders" do
     before do
-      Storages::Peripherals::Registry
-        .stub("#{storage}.queries.file_path_to_id_map", lambda { |storage:, auth_strategy:, folder:|
-          ServiceResult.success(result: target_deep_file_ids)
+      Storages::Adapters::Registry.stub("nextcloud.queries.file_path_to_id_map",
+                                        ->(storage:, auth_strategy:, input_data:) { Success(target_deep_file_ids) })
+
+      Storages::Adapters::Registry
+        .stub("#{storage}.queries.files_info", lambda { |storage:, auth_strategy:, input_data:|
+          Success(source_file_infos)
         })
 
-      Storages::Peripherals::Registry
-        .stub("#{storage}.queries.files_info", lambda { |storage:, auth_strategy:, file_ids:|
-          ServiceResult.success(result: source_file_infos)
-        })
-
-      Storages::Peripherals::Registry
+      Storages::Adapters::Registry
         .stub("#{storage}.commands.copy_template_folder",
-              lambda { |auth_strategy:, storage:, source_path:, destination_path:|
-                ServiceResult.success(result: copy_result.with(id: "copied-folder", polling_url:))
+              lambda { |auth_strategy:, storage:, input_data:|
+                Success(copy_result.with(id: "copied-folder", polling_url:))
               })
     end
 
@@ -171,20 +166,20 @@ RSpec.describe Storages::CopyProjectFoldersJob, :job, :webmock, with_good_job: S
       end
 
       before do
-        Storages::Peripherals::Registry
+        Storages::Adapters::Registry
           .stub("#{storage}.commands.copy_template_folder",
-                lambda { |auth_strategy:, storage:, source_path:, destination_path:|
-                  ServiceResult.success(result: copy_result.with(polling_url:, requires_polling: true))
+                lambda { |auth_strategy:, storage:, input_data:|
+                  Success(copy_result.with(polling_url:, requires_polling: true))
                 })
 
-        Storages::Peripherals::Registry
-          .stub("#{storage}.queries.file_path_to_id_map", lambda { |storage:, auth_strategy:, folder:|
-            ServiceResult.success(result: target_deep_file_ids)
+        Storages::Adapters::Registry
+          .stub("#{storage}.queries.file_path_to_id_map", lambda { |storage:, auth_strategy:, input_data:|
+            Success(target_deep_file_ids)
           })
 
-        Storages::Peripherals::Registry
-          .stub("#{storage}.queries.files_info", lambda { |storage:, auth_strategy:, file_ids:|
-            ServiceResult.success(result: source_file_infos)
+        Storages::Adapters::Registry
+          .stub("#{storage}.queries.files_info", lambda { |storage:, auth_strategy:, input_data:|
+            Success(source_file_infos)
           })
 
         stub_request(:get, polling_url)
@@ -240,13 +235,10 @@ RSpec.describe Storages::CopyProjectFoldersJob, :job, :webmock, with_good_job: S
 
     context "when an error occurs" do
       before do
-        Storages::Peripherals::Registry
+        Storages::Adapters::Registry
           .stub("#{storage}.commands.copy_template_folder",
-                lambda { |auth_strategy:, storage:, source_path:, destination_path:|
-                  ServiceResult.failure(
-                    result: :error,
-                    errors: Storages::StorageError.new(code: :error, log_message: "General Failure reporting for duty")
-                  )
+                lambda { |auth_strategy:, storage:, input_data:|
+                  Failure(SimpleError.new(code: :error, source: self.class))
                 })
       end
 

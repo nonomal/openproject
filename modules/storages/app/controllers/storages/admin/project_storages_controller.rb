@@ -30,14 +30,14 @@
 
 class Storages::Admin::ProjectStoragesController < Projects::SettingsController
   include Storages::OAuthAccessGrantable
+  include OpTurbo::ComponentStream
 
-  model_object Storages::ProjectStorage
-
-  before_action :find_model_object, only: %i[oauth_access_grant edit update destroy destroy_info]
+  before_action :find_project_by_project_id
+  before_action :find_project_storage, only: %i[oauth_access_grant edit update destroy destroy_info]
   menu_item :settings_project_storages
 
   def external_file_storages
-    @project_storages = Storages::ProjectStorage.where(project: @project).includes(:storage)
+    @project_storages = @project.project_storages.includes(:storage)
     render "/storages/project_settings/external_file_storages"
   end
 
@@ -59,6 +59,17 @@ class Storages::Admin::ProjectStoragesController < Projects::SettingsController
     render template: "/storages/project_settings/new"
   end
 
+  def edit
+    @project_storage.project_folder_mode = project_folder_mode_from_params if project_folder_mode_from_params.present?
+
+    @last_project_folders = Storages::LastProjectFolder
+                              .where(project_storage: @project_storage)
+                              .pluck(:mode, :origin_folder_id)
+                              .to_h
+
+    render "/storages/project_settings/edit"
+  end
+
   def create
     service_result = ::Storages::ProjectStorages::CreateService
                        .new(user: current_user)
@@ -75,10 +86,8 @@ class Storages::Admin::ProjectStoragesController < Projects::SettingsController
   end
 
   def oauth_access_grant
-    @project_storage = @object
     storage = @project_storage.storage
-    auth_state = ::Storages::Peripherals::StorageInteraction::Authentication
-                   .authorization_state(storage:, user: current_user)
+    auth_state = ::Storages::Adapters::Authentication.authorization_state(storage:, user: current_user)
 
     if auth_state == :connected
       redirect_to(external_file_storages_project_settings_project_storages_path)
@@ -91,21 +100,9 @@ class Storages::Admin::ProjectStoragesController < Projects::SettingsController
     end
   end
 
-  def edit
-    @project_storage = @object
-    @project_storage.project_folder_mode = project_folder_mode_from_params if project_folder_mode_from_params.present?
-
-    @last_project_folders = Storages::LastProjectFolder
-                              .where(project_storage: @project_storage)
-                              .pluck(:mode, :origin_folder_id)
-                              .to_h
-
-    render "/storages/project_settings/edit"
-  end
-
   def update
     service_result = ::Storages::ProjectStorages::UpdateService
-                       .new(user: current_user, model: @object)
+                       .new(user: current_user, model: @project_storage)
                        .call(permitted_storage_settings_params)
 
     if service_result.success?
@@ -113,14 +110,13 @@ class Storages::Admin::ProjectStoragesController < Projects::SettingsController
       flash[:notice] = I18n.t(:notice_successful_update)
       redirect_to_project_storages_path_with_oauth_access_grant_confirmation(@project_storage.storage)
     else
-      @project_storage = @object
       render "/storages/project_settings/edit"
     end
   end
 
   def destroy
     Storages::ProjectStorages::DeleteService
-      .new(user: current_user, model: @object)
+      .new(user: current_user, model: @project_storage)
       .call
       .on_failure { |service_result| flash[:error] = service_result.errors.full_messages }
 
@@ -128,19 +124,24 @@ class Storages::Admin::ProjectStoragesController < Projects::SettingsController
   end
 
   def destroy_info
-    @project_storage_to_destroy = @object
-
-    render "/storages/project_settings/destroy_info"
+    respond_with_dialog Storages::ProjectStorages::DestroyConfirmationDialogComponent.new(
+      project_storage: @project_storage,
+      target: :project
+    )
   end
 
   private
+
+  def find_project_storage
+    @project_storage = @project.project_storages.find(params[:id])
+  end
 
   def permitted_storage_settings_params
     params
       .require(:storages_project_storage)
       .permit("storage_id", "project_folder_mode", "project_folder_id")
       .to_h
-      .reverse_merge(project_id: @project.id)
+      .merge(project_id: @project.id)
   end
 
   def project_folder_mode_from_params
@@ -150,10 +151,7 @@ class Storages::Admin::ProjectStoragesController < Projects::SettingsController
   end
 
   def available_storages
-    Storages::Storage
-      .visible
-      .not_enabled_for_project(@project)
-      .select(&:configured?)
+    Storages::Storage.visible.not_enabled_for_project(@project).select(&:configured?)
   end
 
   def redirect_to_project_storages_path_with_oauth_access_grant_confirmation(storage)

@@ -21,12 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { ChangeDetectionStrategy, Component, Injector, Input, TemplateRef, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, Input, TemplateRef, ViewChild, inject } from '@angular/core';
 import {
   IAutocompleterTemplateComponent,
   OpAutocompleterComponent,
@@ -38,18 +38,16 @@ import {
 @Component({
   templateUrl: './time-entries-work-package-autocompleter-template.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
 export class TimeEntriesWorkPackageAutocompleterTemplateComponent implements IAutocompleterTemplateComponent {
+  readonly injector = inject(Injector);
+
   @Input() public mode:string|undefined;
-  @Input() public isOpenedInModal:boolean = false;
-  @Input() public hoverCards:boolean = true;
+  @Input() public isOpenedInModal = false;
+  @Input() public hoverCards = true;
 
   @ViewChild('headerTemplate') headerTemplate:TemplateRef<Element>;
 
   autocompleter:TimeEntriesWorkPackageAutocompleterComponent = this.injector.get(OpAutocompleterComponent) as TimeEntriesWorkPackageAutocompleterComponent;
-
-  constructor(
-    readonly injector:Injector,
-  ) {
-  }
 }

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -72,11 +74,9 @@ module Components
 
       def choose_delete_and_confirm_deletion
         choose "Delete"
-        # only handle the case where the modal does _not_ ask for descendants deletion confirmation
-        within_modal(I18n.t("js.modals.destroy_work_package.title", label: "work package")) do
-          click_button "Delete"
-        end
-        expect_and_dismiss_toaster
+
+        dialog = ::Components::WorkPackages::DestroyModal.new
+        dialog.confirm_deletion
       end
 
       def expect_no_options(*options)

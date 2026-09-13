@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -90,11 +92,11 @@ module Components
         end
       end
 
-      def open_emoji_reactions_overlay_for_journal(journal, &block)
+      def open_emoji_reactions_overlay_for_journal(journal, &)
         within_journal_entry(journal) do
           click_on "Add reaction"
-          wait_for { page }.to have_test_selector("emoji-reactions-overlay")
-          within_emoji_reactions_overlay(&block)
+          expect(page).to have_test_selector("emoji-reactions-overlay", wait: 10)
+          within_emoji_reactions_overlay(&)
         end
       end
 

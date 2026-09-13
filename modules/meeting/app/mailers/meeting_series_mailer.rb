@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,7 +29,9 @@
 #++
 
 class MeetingSeriesMailer < UserMailer
-  def template_completed(series, user, actor)
+  include CalendarAttachment
+
+  def invited(series, user, actor)
     @actor = actor
     @series = series
     @template = series.template
@@ -43,32 +46,41 @@ class MeetingSeriesMailer < UserMailer
     end
   end
 
-  def rescheduled(series, user, actor, changes:)
+  def updated(series, user, actor, changes:, added_participants: [], removed_participants: [])
     @actor = actor
     @series = series
     @user = user
     @changes = changes
+    @added_participants = Array(added_participants)
+    @removed_participants = Array(removed_participants)
 
     set_headers(series)
 
     with_attached_ics(series, user) do
-      subject = I18n.t("meeting.email.series_rescheduled.title", title: series.title, project_name: series.project.name)
+      subject = I18n.t("meeting.email.series_updated.title", title: series.title, project_name: series.project.name)
       mail(to: user, subject:)
     end
   end
 
   private
 
-  def with_attached_ics(series, user)
+  def with_attached_ics(series, user, cancelled: false)
     User.execute_as(user) do
       call = ::RecurringMeetings::ICalService
-        .new(user:, series: series)
-        .generate_series
+        .new(user:, series:)
+        .generate_series(cancelled:)
 
       call.on_success do
-        attachments["meeting.ics"] = call.result
+        ics_content = call.result
 
-        yield
+        # The attachment has to be added before the mail is created
+        add_calendar_attachment(ics_content, cancelled:)
+
+        message = yield
+
+        add_calendar_part(message, ics_content, cancelled:)
+
+        message
       end
 
       call.on_failure do
@@ -79,7 +91,5 @@ class MeetingSeriesMailer < UserMailer
 
   def set_headers(series)
     open_project_headers "Project" => series.project.identifier, "Meeting-Id" => series.id
-    headers["Content-Type"] = 'text/calendar; charset=utf-8; method="PUBLISH"; name="meeting.ics"'
-    headers["Content-Transfer-Encoding"] = "8bit"
   end
 end

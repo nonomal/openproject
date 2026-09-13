@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Loads two files automatically from plugins:
 #
 # 1. `spec/disable_specs.rbs` to disable specs which don't work in conjunction with the

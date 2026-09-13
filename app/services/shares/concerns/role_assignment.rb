@@ -38,7 +38,7 @@ module Shares::Concerns::RoleAssignment
   # into account are those that have not been inherited.
   def existing_ids
     model.member_roles
-         .select { _1.inherited_from.nil? }
+         .select { it.inherited_from.nil? }
          .map(&:role_id)
   end
 end

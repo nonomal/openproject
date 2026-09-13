@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # -- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -95,6 +97,26 @@ RSpec.describe Members::Scopes::Visible do
         expect(subject).to contain_exactly view_members_member,
                                            manage_members_member,
                                            view_shared_work_packages_work_package_share
+      end
+
+      context "when another work package is shared with a different user" do
+        let(:other_principal) { create(:user) }
+        let(:inaccessible_work_package) { create(:work_package, project: view_shared_work_packages_project) }
+        let!(:share_for_other_principal) do
+          create(:member,
+                 project: view_shared_work_packages_project,
+                 entity: inaccessible_work_package,
+                 principal: other_principal,
+                 roles: [create(:edit_work_package_role)])
+        end
+
+        it "does not display shares for work packages the user cannot view" do
+          expect(subject).not_to include(share_for_other_principal)
+        end
+
+        it "still includes shares on work packages visible to the user" do
+          expect(subject).to include(view_shared_work_packages_work_package_share)
+        end
       end
     end
   end

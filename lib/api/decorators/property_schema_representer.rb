@@ -44,7 +44,9 @@ module API
         attribute_group: nil,
         description: nil,
         current_user: nil,
-        deprecated: nil
+        deprecated: nil,
+        placeholder: nil,
+        options: nil
       )
         @type = type
         @name = name
@@ -55,6 +57,8 @@ module API
         @location = derive_location(location)
         @description = description
         @deprecated = deprecated
+        @placeholder = placeholder
+        @options = options
 
         super(nil, current_user:)
       end
@@ -67,11 +71,15 @@ module API
                     :attribute_group,
                     :min_length,
                     :max_length,
+                    :minimum,
+                    :maximum,
                     :regular_expression,
                     :options,
+                    :formula,
                     :location,
                     :description,
-                    :deprecated
+                    :deprecated,
+                    :placeholder
 
       property :type, exec_context: :decorator
       property :name, exec_context: :decorator
@@ -81,9 +89,13 @@ module API
       property :attribute_group, exec_context: :decorator
       property :min_length, exec_context: :decorator
       property :max_length, exec_context: :decorator
+      property :minimum, exec_context: :decorator
+      property :maximum, exec_context: :decorator
       property :regular_expression, exec_context: :decorator
       property :deprecated, exec_context: :decorator
       property :options, exec_context: :decorator
+      property :formula, exec_context: :decorator, render_nil: false
+      property :placeholder, exec_context: :decorator, render_nil: false
 
       property :location, exec_context: :decorator
 

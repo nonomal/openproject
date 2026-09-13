@@ -58,6 +58,8 @@ RSpec.describe "Relations children tab", :js, :with_cuprite do
 
       wait_for_network_idle
 
+      expect_and_dismiss_flash type: :success, exact_message: "New work package created and added as a child"
+
       page.within("#work-package-relations-tab-content") do
         expect(page).to have_content("Hello there")
         expect(page).to have_content("RISK")
@@ -65,7 +67,7 @@ RSpec.describe "Relations children tab", :js, :with_cuprite do
     end
 
     context "when being on the split screen" do
-      let(:wp_split_page) { Pages::SplitWorkPackage.new(work_package, project) }
+      let(:wp_split_page) { Pages::PrimerizedSplitWorkPackage.new(work_package, project) }
 
       it "can render the page correctly after creation (regression #60629)" do
         wp_split_page.visit_tab!("relations")
@@ -83,6 +85,8 @@ RSpec.describe "Relations children tab", :js, :with_cuprite do
 
         wait_for_network_idle
 
+        expect_and_dismiss_flash type: :success, exact_message: "New work package created and added as a child"
+
         page.within("#work-package-relations-tab-content") do
           expect(page).to have_content("Hello there")
           expect(page).to have_content("RISK")
@@ -98,7 +102,7 @@ RSpec.describe "Relations children tab", :js, :with_cuprite do
       it "shows only the action to add a parent" do
         wp_page.visit_tab!("relations")
         relations_tab.expect_add_relation_button
-        relations_tab.expect_no_new_relation_type("Related to")
+        relations_tab.expect_no_new_relation_type("Related To")
         relations_tab.expect_no_new_relation_type("Child")
         relations_tab.expect_no_new_relation_type("Create new child")
         relations_tab.expect_new_relation_type("Parent")
@@ -135,6 +139,8 @@ RSpec.describe "Relations children tab", :js, :with_cuprite do
         create_dialog.submit
 
         wait_for_network_idle
+
+        expect_and_dismiss_flash type: :success, exact_message: "New work package created and added as a child"
 
         page.within("#work-package-relations-tab-content") do
           expect(page).to have_content("Hello there")
@@ -181,7 +187,7 @@ RSpec.describe "Relations children tab", :js, :with_cuprite do
 
     before do
       all_possible_custom_fields.each do |cf|
-        project.types.first.custom_fields << cf
+        project.enabled_variants.first.custom_fields << cf
         project.work_package_custom_fields << cf
       end
     end

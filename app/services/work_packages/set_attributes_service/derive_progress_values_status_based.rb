@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -74,7 +76,7 @@ class WorkPackages::SetAttributesService
         self.remaining_work = nil
       else
         set_hint(:remaining_hours, :derived)
-        self.remaining_work = remaining_work_from_percent_complete_and_work
+        self.remaining_work = calculate_remaining_work(work:, percent_complete:)
       end
     end
   end

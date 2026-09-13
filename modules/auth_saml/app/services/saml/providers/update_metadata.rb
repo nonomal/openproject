@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,7 +31,7 @@
 module Saml
   module Providers
     module UpdateMetadata
-      def after_validate(_params, call)
+      def after_validate(call)
         model = call.result
         return call unless model&.metadata_updated?
 

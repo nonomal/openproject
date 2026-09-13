@@ -21,15 +21,14 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
 import { Injector } from '@angular/core';
-import * as moment from 'moment';
+import moment, { Moment } from 'moment';
 import { IsolatedQuerySpace } from 'core-app/features/work-packages/directives/query-space/isolated-query-space';
-import { KeyCodes } from 'core-app/shared/helpers/keyCodes.enum';
 import { LoadingIndicatorService } from 'core-app/core/loading-indicator/loading-indicator.service';
 
 import { HalResourceEditingService } from 'core-app/shared/components/fields/edit/services/hal-resource-editing.service';
@@ -46,7 +45,7 @@ import {
 } from './timeline-cell-renderer';
 import { RenderInfo } from '../wp-timeline';
 import { WorkPackageTimelineTableController } from '../container/wp-timeline-container.directive';
-import Moment = moment.Moment;
+import { target } from 'core-app/shared/helpers/event-helpers';
 
 export function registerWorkPackageMouseHandler(this:void,
   injector:Injector,
@@ -65,7 +64,7 @@ export function registerWorkPackageMouseHandler(this:void,
   renderInfo.change = halEditing.changeFor(renderInfo.workPackage);
 
   let placeholderForEmptyCell:HTMLElement;
-  const jBody = jQuery('body');
+  const bodyTarget = target(document.body);
 
   // handles change to existing work packages
   bar.onmousedown = (ev:MouseEvent) => {
@@ -96,7 +95,7 @@ export function registerWorkPackageMouseHandler(this:void,
     // add/remove css class while drag'n'drop is active
     const classNameActiveDrag = 'active-drag';
     bar.classList.add(classNameActiveDrag);
-    jBody.on('mouseup.timelinecell', () => bar.classList.remove(classNameActiveDrag));
+    bodyTarget.on('mouseup.timelinecell', () => bar.classList.remove(classNameActiveDrag));
 
     workPackageTimeline.disableViewParamsCalculation = true;
     mouseDownStartDay = getCursorOffsetInDaysFromLeft(ev);
@@ -111,14 +110,14 @@ export function registerWorkPackageMouseHandler(this:void,
     // Determine what attributes of the work package should be changed
     const direction = renderer.onMouseDown(ev, null, renderInfo, labels);
 
-    jBody.on('mousemove.timelinecell', createMouseMoveFn(direction));
-    jBody.on('keyup.timelinecell', keyPressFn);
-    jBody.on('mouseup.timelinecell', () => deactivate(direction, false));
+    bodyTarget.on('mousemove.timelinecell', createMouseMoveFn(direction));
+    bodyTarget.on('keyup.timelinecell', keyPressFn);
+    bodyTarget.on('mouseup.timelinecell', () => deactivate(direction, false));
   }
 
   function createMouseMoveFn(direction:MouseDirection) {
-    return (ev:JQuery.MouseMoveEvent) => {
-      const days = getCursorOffsetInDaysFromLeft(ev.originalEvent as MouseEvent) - (mouseDownStartDay as number);
+    return (ev:MouseEvent) => {
+      const days = getCursorOffsetInDaysFromLeft(ev) - (mouseDownStartDay!);
       const offsetDayCurrent = Math.floor(ev.offsetX / renderInfo.viewParams.pixelPerDay);
       const dayUnderCursor = renderInfo.viewParams.dateDisplayStart.clone().add(offsetDayCurrent, 'days');
 
@@ -126,9 +125,8 @@ export function registerWorkPackageMouseHandler(this:void,
     };
   }
 
-  function keyPressFn(ev:JQuery.TriggeredEvent) {
-    const kev:KeyboardEvent = ev.originalEvent as KeyboardEvent;
-    if (kev.keyCode === KeyCodes.ESCAPE) {
+  function keyPressFn(kev:KeyboardEvent) {
+    if (kev.key === 'Escape') {
       deactivate(null, true);
     }
   }
@@ -184,19 +182,19 @@ export function registerWorkPackageMouseHandler(this:void,
         return;
       }
 
-      jBody.on('mousemove.emptytimelinecell', mouseMoveOnEmptyCellFn(offsetDayStart, direction));
-      jBody.on('mouseup.emptytimelinecell', () => deactivate(direction, false));
+      bodyTarget.on('mousemove.emptytimelinecell', mouseMoveOnEmptyCellFn(offsetDayStart, direction));
+      bodyTarget.on('mouseup.emptytimelinecell', () => deactivate(direction, false));
 
       cell.onmouseup = () => {
         deactivate(direction, false);
       };
 
-      jBody.on('keyup.timelinecell', keyPressFn);
+      bodyTarget.on('keyup.timelinecell', keyPressFn);
     };
   }
 
   function mouseMoveOnEmptyCellFn(offsetDayStart:number, mouseDownType:MouseDirection) {
-    return (ev:JQuery.MouseMoveEvent) => {
+    return (ev:MouseEvent) => {
       placeholderForEmptyCell.remove();
       const relativePosition = Math.abs(cell.getBoundingClientRect().x - ev.clientX);
       const offsetDayCurrent = Math.floor(relativePosition / renderInfo.viewParams.pixelPerDay);
@@ -218,8 +216,8 @@ export function registerWorkPackageMouseHandler(this:void,
 
     bar.style.pointerEvents = 'auto';
 
-    jBody.off('.timelinecell');
-    jBody.off('.emptytimelinecell');
+    bodyTarget.off('.timelinecell');
+    bodyTarget.off('.emptytimelinecell');
     workPackageTimeline.resetCursor();
     mouseDownStartDay = null;
 
@@ -270,7 +268,7 @@ export function registerWorkPackageMouseHandler(this:void,
       .save<WorkPackageResource, WorkPackageChangeset>(change)
       .then((result) => {
         notificationService.showSave(result.resource);
-        const ids = _.map(querySpace.tableRendered.value, (row) => row.workPackageId);
+        const ids = (querySpace.tableRendered.value ?? []).map((row) => row.workPackageId);
         return apiv3Service
           .work_packages
           .filterUpdatedSince(ids, updatedAt)

@@ -51,5 +51,16 @@ module Meetings
     def status_button
       render(Meetings::SidePanel::StatusButtonComponent.new(meeting: @meeting))
     end
+
+    def href(state)
+      change_state_project_meeting_path(@project, @meeting, state: state)
+    end
+
+    def button_data_attributes(href)
+      {
+        action: "click->meetings--submit#intercept",
+        href: href
+      }
+    end
   end
 end

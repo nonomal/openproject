@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -36,6 +38,8 @@ RSpec.describe "API v3 Work package resource",
   shared_let(:project) do
     create(:project, identifier: "test_project", public: false)
   end
+  shared_let(:type) { project.enabled_types.first }
+
   let(:role) { create(:project_role, permissions:) }
   let(:permissions) { %i[add_work_packages view_project view_work_packages] + extra_permissions }
   let(:extra_permissions) { [] }
@@ -49,7 +53,6 @@ RSpec.describe "API v3 Work package resource",
     let(:other_user) { nil }
     let(:status) { build(:status, is_default: true) }
     let(:priority) { build(:priority, is_default: true) }
-    let(:type) { project.types.first }
     let(:parameters) do
       {
         subject: "new work packages",
@@ -63,11 +66,13 @@ RSpec.describe "API v3 Work package resource",
         }
       }
     end
+    let(:project_storage) { nil }
 
     before do
       status.save!
       priority.save!
       other_user
+      project_storage
 
       perform_enqueued_jobs do
         post path, parameters.to_json
@@ -162,7 +167,7 @@ RSpec.describe "API v3 Work package resource",
           bogus: "bogus",
           _links: {
             type: {
-              href: api_v3_paths.type(project.types.first.id)
+              href: api_v3_paths.type(project.enabled_types.first.id)
             },
             project: {
               href: api_v3_paths.project(project.id)
@@ -253,11 +258,11 @@ RSpec.describe "API v3 Work package resource",
         end
 
         context "when the work package has no direct or indirect predecessors and no children" do
-          # TODO: should the API return an error here?
-          it "does not set the scheduling mode to automatic as requested " \
-             "and keeps manual scheduling mode (schedule_manually: true)" do
-            expect(created_work_package.schedule_manually).to be true
-          end
+          it_behaves_like "error response",
+                          422,
+                          "PropertyConstraintViolation",
+                          I18n.t("activerecord.errors.models.work_package.attributes." \
+                                 "schedule_manually.cannot_be_automatically_scheduled")
         end
       end
 
@@ -274,7 +279,7 @@ RSpec.describe "API v3 Work package resource",
           subject: nil,
           _links: {
             type: {
-              href: api_v3_paths.type(project.types.first.id)
+              href: api_v3_paths.type(project.enabled_types.first.id)
             },
             project: {
               href: api_v3_paths.project(project.id)
@@ -292,6 +297,208 @@ RSpec.describe "API v3 Work package resource",
       end
     end
 
+    describe "targetVersions" do
+      let(:target_version) { create(:version, project:) }
+      let(:extra_permissions) { %i[assign_versions] }
+      let(:target_versions_links) { [{ href: api_v3_paths.version(target_version.id) }] }
+      let(:parameters) do
+        super().deep_merge(_links: { targetVersions: target_versions_links })
+      end
+      let(:created_work_package) { WorkPackage.find_by(subject: "new work packages") }
+
+      context "with a single version" do
+        it "returns Created(201)" do
+          expect(last_response).to have_http_status(:created)
+        end
+
+        it "assigns the target version" do
+          expect(created_work_package.target_versions).to contain_exactly(target_version)
+        end
+
+        it "responds with the target version link" do
+          expect(last_response.body)
+            .to be_json_eql(api_v3_paths.version(target_version.id).to_json)
+                  .at_path("_links/targetVersions/0/href")
+        end
+      end
+
+      context "with an empty collection" do
+        let(:target_versions_links) { [] }
+
+        it "returns Created(201)" do
+          expect(last_response).to have_http_status(:created)
+        end
+
+        it "creates the work package without target versions" do
+          expect(created_work_package.target_versions).to be_empty
+        end
+      end
+
+      context "with more than one version while multiple versions is disabled",
+              with_settings: { work_package_multiple_versions: false } do
+        let(:other_version) { create(:version, project:) }
+        let(:target_versions_links) do
+          [{ href: api_v3_paths.version(target_version.id) },
+           { href: api_v3_paths.version(other_version.id) }]
+        end
+
+        it "returns 422" do
+          expect(last_response).to have_http_status(:unprocessable_entity)
+        end
+
+        it "rejects the creation with a single-value error" do
+          expect(last_response.body).to include("Target Versions can only hold a single value")
+        end
+
+        it "does not create a work package" do
+          expect(WorkPackage.count).to eq(0)
+        end
+      end
+
+      context "with more than one version while multiple versions is enabled",
+              with_settings: { work_package_multiple_versions: true } do
+        let(:other_version) { create(:version, project:) }
+        let(:target_versions_links) do
+          [{ href: api_v3_paths.version(target_version.id) },
+           { href: api_v3_paths.version(other_version.id) }]
+        end
+
+        it "returns Created(201)" do
+          expect(last_response).to have_http_status(:created)
+        end
+
+        it "assigns all target versions" do
+          expect(created_work_package.target_versions)
+            .to contain_exactly(target_version, other_version)
+        end
+
+        it "responds with a link per target version" do
+          hrefs = parse_json(last_response.body, "_links/targetVersions").pluck("href")
+
+          expect(hrefs)
+            .to contain_exactly(api_v3_paths.version(target_version.id),
+                                api_v3_paths.version(other_version.id))
+        end
+      end
+
+      context "for a user lacking the assign_versions permission" do
+        let(:extra_permissions) { [] }
+
+        it "returns 422" do
+          expect(last_response).to have_http_status(:unprocessable_entity)
+        end
+
+        it "has a readonly error" do
+          expect(last_response.body)
+            .to be_json_eql("urn:openproject-org:api:v3:errors:PropertyIsReadOnly".to_json)
+                  .at_path("errorIdentifier")
+        end
+
+        it "does not create a work package" do
+          expect(WorkPackage.count).to eq(0)
+        end
+      end
+    end
+
+    describe "custom fields" do
+      context "when the custom field is required" do
+        shared_let(:required_custom_field) do
+          create(:work_package_custom_field,
+                 field_format: "string",
+                 name: "Department",
+                 is_required: true,
+                 projects: [project],
+                 types: [type])
+        end
+
+        context "when no custom field value is provided" do
+          let(:parameters) do
+            {
+              subject: "new work package with CF",
+              _links: {
+                type: {
+                  href: api_v3_paths.type(type.id)
+                },
+                project: {
+                  href: api_v3_paths.project(project.id)
+                }
+              }
+            }
+          end
+
+          it "responds with 422 and explains the custom field error" do
+            expect(last_response).to have_http_status(:unprocessable_entity)
+
+            expect(last_response.body)
+              .to be_json_eql("Department can't be blank.".to_json)
+              .at_path("message")
+          end
+        end
+
+        context "when the custom field is provided but empty" do
+          let(:parameters) do
+            {
+              subject: "new work package with CF",
+              "customField#{required_custom_field.id}" => "",
+              _links: {
+                type: {
+                  href: api_v3_paths.type(type.id)
+                },
+                project: {
+                  href: api_v3_paths.project(project.id)
+                }
+              }
+            }
+          end
+
+          it "responds with 422 and explains the custom field error" do
+            expect(last_response).to have_http_status(:unprocessable_entity)
+
+            expect(last_response.body)
+              .to be_json_eql("Department can't be blank.".to_json)
+              .at_path("message")
+          end
+        end
+
+        context "when the custom field value is provided and valid" do
+          let(:parameters) do
+            {
+              subject: "new work package with CF",
+              "customField#{required_custom_field.id}" => "Engineering",
+              _links: {
+                type: {
+                  href: api_v3_paths.type(type.id)
+                },
+                project: {
+                  href: api_v3_paths.project(project.id)
+                }
+              }
+            }
+          end
+
+          it "responds with 201" do
+            expect(last_response).to have_http_status(:created)
+          end
+
+          it "returns the newly created work package" do
+            expect(last_response.body)
+              .to be_json_eql("WorkPackage".to_json)
+              .at_path("_type")
+
+            expect(last_response.body)
+              .to be_json_eql("new work package with CF".to_json)
+              .at_path("subject")
+          end
+
+          it "creates a work package with the custom field value" do
+            work_package = WorkPackage.last
+            expect(work_package.typed_custom_value_for(required_custom_field))
+              .to eq("Engineering")
+          end
+        end
+      end
+    end
+
     context "when attachments are being claimed" do
       let(:attachment) { create(:attachment, container: nil, author: current_user) }
       let(:parameters) do
@@ -299,13 +506,13 @@ RSpec.describe "API v3 Work package resource",
           subject: "subject",
           _links: {
             type: {
-              href: api_v3_paths.type(project.types.first.id)
+              href: api_v3_paths.type(project.enabled_types.first.id)
             },
             project: {
               href: api_v3_paths.project(project.id)
             },
             attachments: [
-              href: api_v3_paths.attachment(attachment.id)
+              { href: api_v3_paths.attachment(attachment.id) }
             ]
           }
         }
@@ -321,8 +528,93 @@ RSpec.describe "API v3 Work package resource",
       end
     end
 
+    context "when attachments are referenced in the description" do
+      let(:attachment) { create(:attachment, container: nil, author: current_user) }
+      let(:parameters) do
+        {
+          subject: "subject",
+          description: {
+            raw: %(<img class="op-uc-image" src="/api/v3/attachments/#{attachment.id}/content">)
+          },
+          _links: {
+            type: {
+              href: api_v3_paths.type(project.enabled_types.first.id)
+            },
+            project: {
+              href: api_v3_paths.project(project.id)
+            },
+            attachments: []
+          }
+        }
+      end
+
+      it "creates the work package, claims the attachment and journals it" do
+        expect(last_response).to have_http_status(:created)
+
+        work_package = WorkPackage.last
+        expect(work_package.attachments).to match_array(attachment)
+        expect(attachment.reload.container).to eq(work_package)
+        expect(work_package.journals.first.attachable_journals.map(&:attachment_id))
+          .to contain_exactly(attachment.id)
+      end
+
+      context "and the referenced attachment belongs to another user" do
+        let(:attachment) { create(:attachment, container: nil, author: create(:user)) }
+
+        it "creates the work package without claiming the attachment" do
+          expect(last_response).to have_http_status(:created)
+
+          expect(WorkPackage.last.attachments).to be_empty
+          expect(attachment.reload.container).to be_nil
+        end
+      end
+
+      context "and the referenced attachment is already containered in another work package" do
+        let(:attachment) do
+          create(:attachment, container: create(:work_package, project:), author: current_user)
+        end
+
+        it "creates the work package without claiming the attachment" do
+          expect(last_response).to have_http_status(:created)
+
+          expect(WorkPackage.last.attachments).to be_empty
+          expect(attachment.reload.container).not_to eq(WorkPackage.last)
+        end
+      end
+
+      context "and attachment_ids explicitly names another attachment" do
+        let(:explicitly_claimed_attachment) { create(:attachment, container: nil, author: current_user) }
+        let(:parameters) do
+          {
+            subject: "subject",
+            description: {
+              raw: %(<img class="op-uc-image" src="/api/v3/attachments/#{attachment.id}/content">)
+            },
+            _links: {
+              type: {
+                href: api_v3_paths.type(project.enabled_types.first.id)
+              },
+              project: {
+                href: api_v3_paths.project(project.id)
+              },
+              attachments: [
+                { href: api_v3_paths.attachment(explicitly_claimed_attachment.id) }
+              ]
+            }
+          }
+        end
+
+        it "claims both the explicit and the description-referenced attachments" do
+          expect(last_response).to have_http_status(:created)
+
+          expect(WorkPackage.last.attachments).to contain_exactly(attachment, explicitly_claimed_attachment)
+        end
+      end
+    end
+
     context "when file links are being claimed" do
       let(:storage) { create(:nextcloud_storage) }
+      let(:project_storage) { create(:project_storage, project:, storage:) }
       let(:file_link) do
         create(:file_link,
                container_id: nil,
@@ -335,35 +627,43 @@ RSpec.describe "API v3 Work package resource",
           subject: "subject",
           _links: {
             type: {
-              href: api_v3_paths.type(project.types.first.id)
+              href: api_v3_paths.type(project.enabled_types.first.id)
             },
             project: {
               href: api_v3_paths.project(project.id)
             },
             fileLinks: [
-              href: api_v3_paths.file_link(file_link.id)
+              { href: api_v3_paths.file_link(file_link.id) }
             ]
           }
         }
       end
-      let(:extra_permissions) do
-        %i[view_file_links]
+      let(:extra_permissions) { %i[view_file_links manage_file_links] }
+
+      context "when user is not allowed to manage file links" do
+        let(:extra_permissions) { %i[view_file_links] }
+
+        it "does not create a work package and responds with an error" do
+          expect(WorkPackage.count).to eq(0)
+          expect(last_response.body).to be_json_eql(
+            "urn:openproject-org:api:v3:errors:MissingPermission".to_json
+          ).at_path("errorIdentifier")
+        end
       end
 
-      it "does not create a work packages and responds with an error " \
-         "when user is not allowed to manage file links", :aggregate_failtures do
-        expect(WorkPackage.count).to eq(0)
-        expect(last_response.body).to be_json_eql(
-          "urn:openproject-org:api:v3:errors:MissingPermission".to_json
-        ).at_path("errorIdentifier")
+      context "when there is no project storage for the file link's storage" do
+        let(:project_storage) { create(:project_storage, project:) }
+
+        it "does not create a work package and responds with an error" do
+          expect(WorkPackage.count).to eq(0)
+          expect(last_response.body).to be_json_eql(
+            "urn:openproject-org:api:v3:errors:PropertyConstraintViolation".to_json
+          ).at_path("errorIdentifier")
+        end
       end
 
       context "when user is allowed to manage file links" do
-        let(:extra_permissions) do
-          %i[view_file_links manage_file_links]
-        end
-
-        it "creates a work package and assigns the file links", :aggregate_failtures do
+        it "creates a work package and assigns the file links" do
           expect(WorkPackage.count).to eq(1)
           work_package = WorkPackage.first
           expect(work_package.file_links).to eq([file_link])

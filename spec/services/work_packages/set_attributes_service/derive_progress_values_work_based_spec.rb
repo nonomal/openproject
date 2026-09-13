@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -436,6 +438,142 @@ RSpec.describe WorkPackages::SetAttributesService::DeriveProgressValuesWorkBased
       include_examples "update progress values",
                        description: "is an error state (to be detected by contract), and all values are kept",
                        expected_hints: {}
+    end
+  end
+
+  context "given a work package with work, remaining work, and % complete being set " \
+          "with incorrect but fixable % complete value" do
+    before do
+      # remaining hours and % complete are inconsistent with each other
+      work_package.estimated_hours = 100.0
+      work_package.remaining_hours = 30.0 # should be 58h if % complete is 42%
+      work_package.done_ratio = 42 # should be 70% if remaining work is 30h
+      work_package.clear_changes_information
+    end
+
+    context "when nothing is changed by the user" do
+      let(:set_attributes) { {} }
+      let(:expected_derived_attributes) { { done_ratio: 70 } }
+      let(:expected_kept_attributes) { %w[estimated_hours remaining_hours] }
+
+      include_examples "update progress values", description: "derives % complete from work and remaining work",
+                                                 expected_hints: {
+                                                   done_ratio: :derived
+                                                 }
+    end
+
+    context "when something else is changed (like the subject)" do
+      let(:set_attributes) { { subject: "modified subject" } }
+      let(:expected_derived_attributes) { { done_ratio: 70 } }
+      let(:expected_kept_attributes) { %w[estimated_hours remaining_hours] }
+
+      include_examples "update progress values", description: "derives % complete from work and remaining work",
+                                                 expected_hints: {
+                                                   done_ratio: :derived
+                                                 }
+    end
+
+    context "when remaining work is updated by the user" do
+      let(:set_attributes) { { remaining_hours: 25.0 } }
+      let(:expected_derived_attributes) { { done_ratio: 75 } }
+      let(:expected_kept_attributes) { %w[estimated_hours] }
+
+      include_examples "update progress values", description: "derives % complete from work and remaining work",
+                                                 expected_hints: {
+                                                   done_ratio: :derived
+                                                 }
+    end
+
+    context "when work is cleared by the user" do
+      let(:set_attributes) { { estimated_hours: nil } }
+      let(:expected_derived_attributes) { { remaining_hours: nil } }
+      let(:expected_kept_attributes) { %w[done_ratio] }
+
+      include_examples "update progress values", description: "keeps % complete and clears remaining work",
+                                                 expected_hints: {
+                                                   remaining_work: :cleared_because_work_is_empty
+                                                 }
+    end
+
+    context "when % complete is set by the user" do
+      let(:set_attributes) { { done_ratio: 75 } }
+      let(:expected_derived_attributes) { { remaining_hours: 25.0 } }
+      let(:expected_kept_attributes) { %w[estimated_hours] }
+
+      include_examples "update progress values", description: "derives remaining work from work and % complete",
+                                                 expected_hints: {
+                                                   remaining_work: :derived
+                                                 }
+    end
+
+    context "when work is initially 0h and nothing is changed by the user" do
+      let(:set_attributes) { {} }
+      let(:expected_derived_attributes) { {} }
+      let(:expected_kept_attributes) { %w[estimated_hours remaining_hours done_ratio] }
+
+      before do
+        work_package.estimated_hours = 0
+        work_package.clear_changes_information
+      end
+
+      include_examples "update progress values", description: "does not change anything",
+                                                 expected_hints: {}
+    end
+
+    context "when work is initially unset and nothing is changed by the user" do
+      let(:set_attributes) { {} }
+      let(:expected_derived_attributes) { {} }
+      let(:expected_kept_attributes) { %w[estimated_hours remaining_hours done_ratio] }
+
+      before do
+        work_package.estimated_hours = nil
+        work_package.clear_changes_information
+      end
+
+      include_examples "update progress values", description: "does not change anything",
+                                                 expected_hints: {}
+    end
+  end
+
+  context "given a work package with work, remaining work, and % complete being set " \
+          "with incorrect but fixable remaining work value (100% complete with work set)" do
+    before do
+      # remaining hours and % complete are inconsistent with each other
+      work_package.estimated_hours = 10.0
+      work_package.remaining_hours = 5.0 # should be 0h if % complete is 100%
+      work_package.done_ratio = 100
+      work_package.clear_changes_information
+    end
+
+    context "when nothing is changed by the user" do
+      let(:set_attributes) { {} }
+      let(:expected_derived_attributes) { { remaining_hours: 0 } }
+      let(:expected_kept_attributes) { %w[estimated_hours done_ratio] }
+
+      include_examples "update progress values", description: "keeps % complete and sets remaining work to 0h",
+                                                 expected_hints: {
+                                                   remaining_hours: :derived
+                                                 }
+    end
+
+    context "when work is changed by the user" do
+      let(:set_attributes) { { estimated_hours: 12 } }
+      let(:expected_derived_attributes) { { remaining_hours: 7, done_ratio: 42 } }
+
+      include_examples "update progress values", description: "remaining work is increased like work, and % complete is derived",
+                                                 expected_hints: {
+                                                   remaining_hours: { increased_by_delta_like_work: { delta: 2.0 } },
+                                                   done_ratio: :derived
+                                                 }
+    end
+
+    context "when remaining work is changed by the user" do
+      let(:set_attributes) { { remaining_hours: 12 } }
+      let(:expected_derived_attributes) { {} }
+      let(:expected_kept_attributes) { %w[estimated_hours done_ratio] }
+
+      include_examples "update progress values", description: "keeps work and % complete (error to be detected by the contract)",
+                                                 expected_hints: {}
     end
   end
 

@@ -1,3 +1,33 @@
+# frozen_string_literal: true
+
+#-- copyright
+# OpenProject is an open source project management software.
+# Copyright (C) the OpenProject GmbH
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License version 3.
+#
+# OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+# Copyright (C) 2006-2013 Jean-Philippe Lang
+# Copyright (C) 2010-2013 the ChiliProject Team
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# See COPYRIGHT and LICENSE files for more details.
+#++
+
 # Be sure to restart your server when you modify this file.
 #
 # This file eases your Rails 7.0 framework defaults upgrade.
@@ -86,7 +116,8 @@ Rails.application.config.active_record.partial_inserts = false
 # https://guides.rubyonrails.org/configuring.html#config-action-controller-raise-on-open-redirects
 # Protect from open redirect attacks in `redirect_back_or_to` and `redirect_to`.
 # Previous versions had false. Rails 7.0+ default is true.
-Rails.application.config.action_controller.raise_on_open_redirects = true
+# `raise_on_open_redirects` is deprecated in Rails 8.2; use `action_on_open_redirect` instead.
+Rails.application.config.action_controller.action_on_open_redirect = :raise
 
 # https://guides.rubyonrails.org/configuring.html#config-active-storage-variant-processor
 # Change the variant processor for Active Storage.
@@ -115,14 +146,13 @@ Rails.application.config.action_controller.raise_on_open_redirects = true
 
 # https://guides.rubyonrails.org/configuring.html#config-action-dispatch-default-headers
 # Change the default headers to disable browsers' flawed legacy XSS protection.
-# Rails.application.config.action_dispatch.default_headers = {
-#   "X-Frame-Options" => "SAMEORIGIN",
-#   "X-XSS-Protection" => "0",
-#   "X-Content-Type-Options" => "nosniff",
-#   "X-Download-Options" => "noopen",
-#   "X-Permitted-Cross-Domain-Policies" => "none",
-#   "Referrer-Policy" => "strict-origin-when-cross-origin"
-# }
+Rails.application.config.action_dispatch.default_headers = {
+  "X-Frame-Options" => "SAMEORIGIN",
+  "X-Content-Type-Options" => "nosniff",
+  "X-Download-Options" => "noopen",
+  "X-Permitted-Cross-Domain-Policies" => "none",
+  "Referrer-Policy" => "strict-origin-when-cross-origin"
+}
 
 # https://guides.rubyonrails.org/configuring.html#config-active-support-cache-format-version
 # ** Please read carefully, this must be configured in config/application.rb **

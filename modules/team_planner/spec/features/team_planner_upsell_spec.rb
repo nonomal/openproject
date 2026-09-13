@@ -40,21 +40,21 @@ RSpec.describe "Team planner index",
     login_as current_user
   end
 
-  it "redirects routes to upsell" do
+  it "shows an upsell banner" do
     visit team_planners_path
 
-    expect(page).to have_enterprise_upsell_page(:premium)
+    expect(page).to have_enterprise_banner(:basic)
 
     visit project_team_planners_path(project)
 
-    expect(page).to have_enterprise_upsell_page(:premium)
+    expect(page).to have_enterprise_banner(:basic)
 
     visit new_project_team_planners_path(project)
 
-    expect(page).to have_enterprise_upsell_page(:premium)
+    expect(page).to have_enterprise_banner(:basic)
 
     visit project_team_planner_path(project, id: "new")
 
-    expect(page).to have_enterprise_upsell_page(:premium)
+    expect(page).to have_enterprise_banner(:basic)
   end
 end

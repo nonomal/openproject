@@ -33,6 +33,7 @@ module My
     class ListComponent < ApplicationComponent
       include OpTurbo::Streamable
       include OpPrimer::ComponentHelpers
+      include My::TimeTrackingHelper
 
       options time_entries: [],
               mode: :week,
@@ -43,7 +44,6 @@ module My
       def wrapper_data
         {
           "controller" => "my--time-tracking",
-          "application-target" => "dynamic",
           "my--time-tracking-mode-value" => mode,
           "my--time-tracking-view-mode-value" => "list"
         }
@@ -52,14 +52,15 @@ module My
       def range
         case mode
         when :day then [date]
-        when :week then date.all_week
-        when :month then date.all_month.map(&:beginning_of_week).uniq
+        when :week then date.all_week(week_start_day)
+        when :workweek then workweek_days
+        when :month then month_days
         end
       end
 
       def grouped_time_entries
         @grouped_time_entries ||= time_entries
-          .group_by { |entry| mode == :month ? entry.spent_on.beginning_of_week : entry.spent_on }
+          .group_by { |entry| mode == :month ? entry.spent_on.beginning_of_week(week_start_day) : entry.spent_on }
           .tap do |hash|
             hash.default_proc = ->(h, k) { h[k] = [] }
           end
@@ -67,21 +68,47 @@ module My
 
       def date_title(date)
         if mode == :month
-          I18n.t(:label_specific_week, week: date.strftime("%W"))
+          week_date_range(date)
         else
           I18n.l(date, format: "%A %d")
         end
       end
 
-      def collapsed?(date)
-        date.past?
+      def workweek_days
+        workdays_normalized = Setting.working_days.map { |day| day % 7 }.sort
+        date.all_week(week_start_day).select { |d| workdays_normalized.include?(d.wday) }
+      end
+
+      def month_days
+        date.all_month.map(&:beginning_of_week).uniq
+      end
+
+
+      def week_start_day
+        case Setting.start_of_week
+        when 6 then :saturday
+        when 7 then :sunday
+        else :monday
+        end
+      end
+
+      def collapsed?(date) # rubocop:disable Metrics/AbcSize
+        return false if mode == :day
+        return false if mode.in?(%i[week workweek]) && range.exclude?(Date.current)
+        return false if mode == :month && range.exclude?(Date.current.beginning_of_week)
+
+        if mode == :month
+          Date.current.cweek != date.cweek
+        else
+          !date.today?
+        end
       end
 
       def date_caption(date)
         if mode == :month
-          if Date.current.beginning_of_week == date
+          if Date.current.beginning_of_week(week_start_day) == date
             t(:label_this_week)
-          elsif 1.week.ago.beginning_of_week == date
+          elsif 1.week.ago.beginning_of_week(week_start_day) == date
             t(:label_last_week)
           end
         elsif date.today?

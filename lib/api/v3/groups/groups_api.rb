@@ -32,7 +32,9 @@ module API
       class GroupsAPI < ::API::OpenProjectAPI
         resources :groups do
           after_validation do
-            authorize_in_any_project(%i[view_members manage_members])
+            authorize_globally(:view_all_principals) do
+              authorize_in_any_project(%i[view_members manage_members])
+            end
           end
 
           get &::API::V3::Utilities::Endpoints::SqlFallbackedIndex
@@ -44,7 +46,7 @@ module API
 
           route_param :id, type: Integer, desc: "Group ID" do
             after_validation do
-              @group = Group.visible(current_user).find(params[:id])
+              @group = Group.visible(current_user).includes(:group_detail).find(params[:id])
             end
 
             get &::API::V3::Utilities::Endpoints::Show

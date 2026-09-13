@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -40,6 +42,10 @@ class RootSeeder < Seeder
     load_available_seeders
   end
 
+  def applicable?
+    true
+  end
+
   # Returns the demo data in the default language.
   def seed_data
     @seed_data ||= begin
@@ -71,10 +77,13 @@ class RootSeeder < Seeder
     seed_basic_data
     seed_admin_user
     seed_oauth_data
+    # The demo data references the development users, so they have to exist before it runs.
+    seed_development_people if seed_development_data?
     seed_demo_data
     seed_development_data if seed_development_data?
     seed_plugins_data
     seed_env_data
+    seed_mcp_configuration
     cleanup_seed_data
   end
 
@@ -143,6 +152,11 @@ class RootSeeder < Seeder
     OAuthApplicationsSeeder.new(seed_data).seed!
   end
 
+  def seed_development_people
+    print_status "*** Seeding development departments and users"
+    DevelopmentPeopleSeeder.new(seed_data).seed!
+  end
+
   def seed_demo_data
     print_status "*** Seeding demo data"
     DemoDataSeeder.new(seed_data).seed!
@@ -171,6 +185,12 @@ class RootSeeder < Seeder
       print_status "*** Loading #{engine.engine_name} seed data"
       engine.load_seed
     end
+  end
+
+  def seed_mcp_configuration
+    print_status "*** Seeding MCP configuration"
+    McpConfigurationSeeder.new(seed_data).seed!
+    McpConfigurationSeeder
   end
 
   def desired_lang

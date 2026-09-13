@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -53,7 +55,7 @@ class UserFilterComponent < IndividualPrincipalBaseFilterComponent
     end
 
     def base_query
-      Queries::Users::UserQuery
+      UserQuery
     end
 
     protected

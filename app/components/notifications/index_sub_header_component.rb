@@ -45,5 +45,25 @@ module Notifications
     def current_filters
       @current_filters ||= { filter: @filter_type, name: @filter_name }.compact
     end
+
+    def unread_notifications?
+      unread_notifications_query.valid? && unread_notifications_query.results.any?
+    end
+
+    private
+
+    def unread_notifications_query
+      @unread_notifications_query ||= Queries::Notifications::NotificationQuery.new(user: User.current).tap do |query|
+        query.where(:read_ian, "=", "f")
+
+        case filter_type
+        when "project"
+          id = filter_name.to_i
+          query.where(:project_id, "=", [id])
+        when "reason"
+          query.where(:reason, "=", [filter_name])
+        end
+      end
+    end
   end
 end

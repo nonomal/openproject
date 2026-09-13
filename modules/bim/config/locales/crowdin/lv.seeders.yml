@@ -105,7 +105,7 @@ lv:
             item_1:
               name: Atskaites punkti
             item_2:
-              name: Pieteikumi
+              name: Uzdevumi
             item_3:
               name: Komandas plānotājs
           boards:
@@ -147,7 +147,7 @@ lv:
                   name: Pieteikumi
               item_6:
                 options:
-                  name: Atskaites punkts
+                  name: Atskaites punkti
         demo-planning-constructing-project:
           name: "(Demo) Planning & constructing"
           status_explanation: All tasks are on schedule. The people involved know their tasks. The system is completely set up.
@@ -165,7 +165,7 @@ lv:
             item_0:
               name: Project plan
             item_1:
-              name: Atskaites punkti
+              name: Atskaites punkts
             item_2:
               name: Uzdevumi
             item_3:
@@ -421,7 +421,7 @@ lv:
             item_1:
               name: Atskaites punkti
             item_2:
-              name: Uzdevumi
+              name: Pieteikumi
             item_3:
               name: Komandas plānotājs
           project-overview:

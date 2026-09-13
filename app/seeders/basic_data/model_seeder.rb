@@ -52,6 +52,9 @@ module BasicData
       model_class
         .create!(model_attributes(model_data))
         .tap { |model| seed_data.store_reference(model_data["reference"], model) }
+    rescue ActiveRecord::RecordInvalid => e
+      Rails.logger.error { "Failed to create #{model_class} seed_data: %e" }
+      raise e
     end
 
     def mapped_models_data
@@ -65,11 +68,15 @@ module BasicData
     end
 
     def model_attributes(model_data)
-      raise NotImplementedError
+      raise SubclassResponsibilityError
     end
 
     def applicable?
-      model_class.none?
+      model_class.none? && seed_data.all_references_exist?(all_required_references)
+    end
+
+    def all_required_references
+      get_required_references(models_data)
     end
 
     def lookup_existing_references
@@ -80,6 +87,8 @@ module BasicData
         if model = model_class.find_by(lookup_attributes)
           seed_data.store_reference(model_data["reference"], model)
         end
+      rescue ArgumentError
+        # ignore when lookups can not be done because of missing references
       end
     end
 

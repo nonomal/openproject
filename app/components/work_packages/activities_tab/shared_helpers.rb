@@ -31,11 +31,19 @@
 module WorkPackages
   module ActivitiesTab
     module SharedHelpers
+      extend ActiveSupport::Concern
+
+      included do
+        include WorkPackages::ActivitiesTab::JournalSortingInquirable
+      end
+
       def truncated_user_name(user, hover_card: false)
         helpers.primer_link_to_user(user, scheme: :primary, font_weight: :bold, hover_card:)
       end
 
       def activity_anchor_link(journal)
+        auto_scrolling_controller = WorkPackages::ActivitiesTab::StimulusControllers.auto_scrolling_stimulus_controller
+
         render(Primer::Beta::Link.new(
                  href: activity_url(journal),
                  scheme: :secondary,
@@ -44,23 +52,19 @@ module WorkPackages
                  data: {
                    test_selector: "activity-anchor-link",
                    turbo: false,
-                   action: "click->work-packages--activities-tab--index#setAnchor:prevent",
-                   "work-packages--activities-tab--index-id-param": journal_activity_id(journal),
-                   "work-packages--activities-tab--index-anchor-name-param": activity_anchor_name
+                   action: "click->#{auto_scrolling_controller}#setAnchor:prevent",
+                   "#{auto_scrolling_controller}-id-param": journal_activity_id(journal),
+                   "#{auto_scrolling_controller}-anchor-name-param": activity_anchor_name
                  }
                )) do
-          block_given? ? yield : "##{journal_activity_id(journal)}"
+          journal_created_at_formatted_time(journal)
         end
       end
 
-      def journal_updated_at_formatted_time(journal)
+      def journal_created_at_formatted_time(journal)
         render(Primer::Beta::Text.new(font_size: :small, color: :subtle, mt: 1)) do
-          format_time(journal.updated_at)
+          format_time(journal.created_at)
         end
-      end
-
-      def journal_sorting
-        User.current.preference&.comments_sorting || OpenProject::Configuration.default_comment_sort_order
       end
 
       def activity_url(journal)
@@ -72,15 +76,11 @@ module WorkPackages
       end
 
       def activity_anchor_name
-        OpenProject::FeatureDecisions.work_package_comment_id_url_active? ? "comment" : "activity"
+        "comment"
       end
 
       def journal_activity_id(journal)
-        if OpenProject::FeatureDecisions.work_package_comment_id_url_active?
-          journal.id
-        else
-          journal.sequence_version
-        end
+        journal.id
       end
     end
   end

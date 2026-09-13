@@ -33,16 +33,12 @@ We are delighted about the GitLab integration, which is officially available wit
 
 With this integration, you can manage GitLab's units of work (merge requests and issues) from within OpenProject by linking them with work packages. Read more about OpenProject's GitLab integration [in our system admin guide](../../../system-admin-guide/integrations/gitlab-integration/).
 
-<div class="blog-box-info">
-
 **Already using the user-generated GitLab plugin?** With OpenProject 13.4, the existing plugin will be replaced by the new integration. We recommend removing the plugin module folder and bundler references before upgrading to OpenProject. Your historical dataset will remain unaffected within OpenProject as there were no changes to the data model.
 
 Before upgrading, please do the following:
 
 1. Remove traces of the GitLab integration in your **Gemfile.lock** and **Gemfile.modules**. See [btey/openproject-gitlab-integration#configuration](https://github.com/btey/openproject-gitlab-integration?tab=readme-ov-file#configuration). Failure to do so may result in a `Bundler::GemfileError` matching the following error message: _Your Gemfile lists the gem openproject-gitlab_integration (>= 0) more than once._
 2. Remove the module code traces of the GitLab integration by running this command: `rm -rf /path/to/openproject/modules/gitlab_integration`
-
-</div>
 
 ![OpenProject's GitLab integration](GitLab_integration.png)
 
@@ -64,11 +60,7 @@ Another long-awaited improvement: When you copy a dynamic meeting, **existing ag
 
 And finally, the .ics file now also contains information about the (dynamic) meeting attendees - in addition to other existing information such as PARTSTAT. This now allows you to **confirm or decline invitations to a meeting directly in your calendar software**.
 
-<div class="blog-box-info">
-
 Stay tuned: Further advanced features for our Meetings module are planned for upcoming releases – take a look at [this EPIC](https://community.openproject.org/projects/openproject/work_packages/52820/activity?query_id=4929) for detailed information.
-
-</div>
 
 ### Virus scanning functionality with ClamAV (Enterprise add-on)
 

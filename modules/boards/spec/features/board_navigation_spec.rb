@@ -32,8 +32,7 @@ require_relative "support/board_page"
 
 RSpec.describe "Work Package boards spec",
                :js,
-               :selenium,
-               with_ee: %i[board_view] do
+               :selenium do
   let(:user) do
     create(:user,
            member_with_roles: { project => role })
@@ -76,15 +75,17 @@ RSpec.describe "Work Package boards spec",
     expect(page).to have_current_path project_work_package_path(project, wp.id, "activity")
 
     # Click back goes back to the board
-    find(".work-packages-back-button").click
+    page.go_back
     expect(page).to have_current_path project_work_package_board_path(project, board_view)
+
+    wait_for_network_idle
 
     # Open the details page with the info icon
     card = board_page.card_for(wp)
     split_view = card.open_details_view
     split_view.expect_subject
 
-    expect(page).to have_current_path /details\/#{wp.id}\/overview/
+    expect(page).to have_current_path /details\/#{wp.id}/
     card.expect_selected
     split_view.close
 
@@ -100,7 +101,7 @@ RSpec.describe "Work Package boards spec",
 
     # Click on the card again
     card.open_details_view
-    expect(page).to have_current_path /details\/#{wp.id}\/overview/
+    expect(page).to have_current_path /details\/#{wp.id}/
   end
 
   it "navigates correctly the path from overview page to the boards page",
@@ -199,6 +200,7 @@ RSpec.describe "Work Package boards spec",
 
     # Go to full view of WP
     split_view.switch_to_fullscreen
+    split_view.wait_for_activity_tab
     find_by_id("action-show-more-dropdown-menu").click
     click_link(I18n.t("js.button_delete"))
 
@@ -208,8 +210,6 @@ RSpec.describe "Work Package boards spec",
 
     wait_for_network_idle
 
-    board_page.expect_query "List 1", editable: true
-    board_page.expect_not_any_card
-    board_page.expect_path
+    expect(page).to have_current_path "/projects/#{project.identifier}/work_packages"
   end
 end

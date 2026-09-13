@@ -79,7 +79,7 @@ RSpec.describe BasicData::GlobalRoleSeeder do
 
     it "gives all assignable permissions to the role" do
       expect(GlobalRole.find_by(name: "Project admin").permissions)
-        .to match_array(Roles::CreateContract.new(GlobalRole.new, nil).assignable_permissions.map { _1.name.to_sym })
+        .to match_array(Roles::CreateContract.new(GlobalRole.new, nil).assignable_permissions.map { it.name.to_sym })
     end
   end
 end

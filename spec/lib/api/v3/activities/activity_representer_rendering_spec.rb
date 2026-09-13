@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -107,6 +109,24 @@ RSpec.describe API::V3::Activities::ActivityRepresenter, "rendering" do
     describe "version" do
       it_behaves_like "property", :version do
         let(:value) { journal.version }
+      end
+    end
+
+    describe "internal" do
+      context "when internal" do
+        let(:journal) { build_stubbed(:work_package_journal, internal: true) }
+
+        it_behaves_like "property", :internal do
+          let(:value) { true }
+        end
+      end
+
+      context "when not internal" do
+        let(:journal) { build_stubbed(:work_package_journal, internal: false) }
+
+        it_behaves_like "property", :internal do
+          let(:value) { false }
+        end
       end
     end
 

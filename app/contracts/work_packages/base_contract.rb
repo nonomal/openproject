@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,6 +32,7 @@ module WorkPackages
   class BaseContract < ::ModelContract
     include ::Attachments::ValidateReplacements
     include AssignableValuesContract
+    include WorkPackages::SetAttributesService::ProgressValuesCalculations
 
     attribute :subject
     attribute :description
@@ -43,12 +46,18 @@ module WorkPackages
     attribute :type_id
     attribute :priority_id
     attribute :category_id
-    attribute :version_id,
+    attribute :target_versions,
               permission: :assign_versions do
-      validate_version_is_assignable
+      validate_target_versions_are_assignable
+    end
+    attribute :observed_in_versions,
+              permission: :assign_versions do
+      validate_observed_in_versions_are_assignable
     end
 
     validate :validate_no_reopen_on_closed_version
+    validate :validate_versions_permission
+    validate :validate_target_versions_length
 
     attribute :project_id
 
@@ -81,6 +90,12 @@ module WorkPackages
 
     attribute :parent_id,
               permission: :manage_subtasks
+
+    attribute :project_phase_definition_id,
+              permission: :view_project_phases do
+      validate_phase_active_in_project
+    end
+    attribute_alias :project_phase_definition_id, :project_phase_id
 
     attribute :assigned_to_id do
       next unless model.project
@@ -122,6 +137,11 @@ module WorkPackages
 
     attribute :budget
 
+    validates :subject,
+              presence: true,
+              unless: -> { model.type_variant&.replacement_pattern_defined_for?(:subject) }
+    validates :subject, length: { maximum: 255 }
+
     validates :due_date,
               date: { after_or_equal_to: :start_date,
                       message: :greater_than_or_equal_to_start_date,
@@ -138,6 +158,7 @@ module WorkPackages
     validate :validate_parent_in_same_project
     validate :validate_parent_not_self
     validate :validate_parent_not_subtask
+    validate :user_allowed_to_change_parent
 
     validate :validate_status_exists
     validate :validate_status_transition
@@ -180,11 +201,7 @@ module WorkPackages
     end
 
     def assignable_types
-      scope = if model.project.nil?
-                Type
-              else
-                model.project.types.includes(:color)
-              end
+      scope = model.project&.enabled_types || Type
 
       scope.includes(:color)
     end
@@ -197,9 +214,24 @@ module WorkPackages
       IssuePriority.active
     end
 
+    def assignable_project_phases
+      if model.project
+        model
+          .project
+          .phases
+          .active
+          .order_by_position
+      else
+        Project::Phase.none
+      end
+    end
+
     def assignable_versions(only_open: true)
       model.try(:assignable_versions, only_open:) if model.project
     end
+
+    def assignable_target_versions = assignable_versions
+    def assignable_observed_in_versions = assignable_versions(only_open: false)
 
     def assignable_budgets
       model.project&.budgets
@@ -218,6 +250,16 @@ module WorkPackages
 
     def valid?(context = :saving_custom_fields) = super
 
+    def writable_attributes
+      attributes = super
+
+      unless auto_generated_attributes_writable?
+        attributes -= auto_generated_attribute_names
+      end
+
+      attributes
+    end
+
     private
 
     def validate_after_soonest_start(date_attribute)
@@ -234,7 +276,7 @@ module WorkPackages
 
     def validate_enabled_type
       # Checks that the issue can not be added/moved to a disabled type
-      if type_context_changed? && model.project.types.exclude?(model.type)
+      if type_context_changed? && model.project.project_types.none? { |pt| pt.type_id == model.type_id }
         errors.add :type_id, :inclusion
       end
     end
@@ -268,6 +310,7 @@ module WorkPackages
 
     def validate_parent_not_self
       if model.parent == model
+        errors.delete(:parent_id) # remove the error added by closure_tree's cycle detection
         errors.add :parent, :cannot_be_self_assigned
       end
     end
@@ -283,8 +326,33 @@ module WorkPackages
       if model.parent_id_changed? &&
          model.parent_id &&
          errors.exclude?(:parent) &&
-         WorkPackage.relatable(model, Relation::TYPE_PARENT).where(id: model.parent_id).empty?
+         current_parent_unrelatable?
+        # closure_tree adds an error on :parent_id because of the cycle
+        # detection, and active_record sees the error when saving the children
+        # association and adds an error on :children as well. We need to remove
+        # them.
+        errors.delete(:parent_id) # remove the error added by closure_tree
+        errors.delete(:children) # remove the error added by active_record
+        # add our own error
         errors.add :parent, :cant_link_a_work_package_with_a_descendant
+      end
+    end
+
+    def current_parent_unrelatable?
+      WorkPackage.relatable(model, Relation::TYPE_PARENT).where(id: model.parent_id).empty?
+    end
+
+    # Assigning a parent requires :manage_subtasks in the parent's project, not
+    # only in the work package's own project. Without this, a cross-project
+    # parent could be set by a user authorized only in the child's project.
+    def user_allowed_to_change_parent # rubocop:disable Metrics/AbcSize
+      return if model.parent_id.nil? || model.parent.nil?
+      return unless model.parent_id_changed?
+      return unless user.allowed_in_project?(:manage_subtasks, model.project)
+
+      unless model.parent.visible?(user) &&
+             user.allowed_in_project?(:manage_subtasks, model.parent.project)
+        errors.add :parent_id, :error_unauthorized
       end
     end
 
@@ -294,7 +362,9 @@ module WorkPackages
 
     def validate_status_transition
       if status_changed? && status_exists? && !(model.type_id_changed? || status_transition_exists?)
-        errors.add :status_id, :status_transition_invalid
+        # Use :status (not :status_id) so human_attribute_name matches en.attributes.status
+        # and nested API error rendering (e.g. BCF topics) does not look up a missing status_id key.
+        errors.add :status, :status_transition_invalid
       end
     end
 
@@ -316,9 +386,60 @@ module WorkPackages
       end
     end
 
-    def validate_version_is_assignable
-      if model.version_id && model.assignable_versions.map(&:id).exclude?(model.version_id)
-        errors.add :version_id, :inclusion
+    # Only user-requested overrides need the permission; system-initiated
+    # overrides (e.g. clearing versions not shared with the project the work
+    # package is moved to) are exempt, like change_by_system attributes.
+    def validate_versions_permission
+      target_override = user_target_versions_override?
+      observed_in_override = user_observed_in_versions_override?
+
+      return unless target_override || observed_in_override
+      return if user.allowed_in_project?(:assign_versions, model.project)
+
+      errors.add(:target_versions, :error_readonly) if target_override
+      errors.add(:observed_in_versions, :error_readonly) if observed_in_override
+    end
+
+    def user_target_versions_override?
+      model.override_target_versions? && !model.system_version_override?("target")
+    end
+
+    def user_observed_in_versions_override?
+      model.override_observed_in_versions? && !model.system_version_override?("observed_in")
+    end
+
+    # target_versions behaves as a single value while the multiple-versions feature is disabled
+    def validate_target_versions_length
+      return if Setting::WorkPackageMultipleVersions.active?
+      return unless model.override_target_versions?
+
+      if model.target_version_ids_replacements.length > 1
+        errors.add :base, :target_versions_only_allow_single_value
+      end
+    end
+
+    def validate_target_versions_are_assignable
+      return if model.target_version_ids_replacements.nil?
+
+      validate_version_ids_assignable(model.target_version_ids_replacements,
+                                      :target_versions,
+                                      assignable_target_versions)
+    end
+
+    def validate_observed_in_versions_are_assignable
+      return if model.observed_in_version_ids_replacements.nil?
+
+      validate_version_ids_assignable(model.observed_in_version_ids_replacements,
+                                      :observed_in_versions,
+                                      assignable_observed_in_versions)
+    end
+
+    def validate_version_ids_assignable(ids, error_field, assignable)
+      return if ids.nil?
+
+      assignable_ids = assignable&.map(&:id) || []
+      if (ids - assignable_ids).any?
+        errors.add error_field, :inclusion
       end
     end
 
@@ -365,9 +486,7 @@ module WorkPackages
     end
 
     def validate_percent_complete_matches_work_and_remaining_work
-      return if percent_complete_derivation_unapplicable?
-
-      if !percent_complete_range_derived_from_work_and_remaining_work.cover?(percent_complete)
+      if correctable_percent_complete_value?(work:, remaining_work:, percent_complete:)
         errors.add(:done_ratio, :does_not_match_work_and_remaining_work)
       end
     end
@@ -443,23 +562,10 @@ module WorkPackages
       percent_complete.nil?
     end
 
-    def percent_complete_derivation_unapplicable?
-      WorkPackage.status_based_mode? || # only applicable in work-based mode
-        work_empty? || remaining_work_empty? || percent_complete_empty? || # only applicable if all 3 values are set
-        work == 0 || percent_complete == 100 # only applicable if not in special cases leading to divisions by zero
-    end
-
-    def percent_complete_range_derived_from_work_and_remaining_work
-      work_done = work - remaining_work
-      percentage = (100 * work_done.to_f / work)
-
-      lower_bound = percentage.truncate
-      upper_bound = lower_bound + 1
-      lower_bound..upper_bound
-    end
-
     def validate_no_reopen_on_closed_version
-      if model.version_id && model.reopened? && model.version.closed?
+      return unless model.effective_target_versions.any?(&:closed?)
+
+      if model.reopened?
         errors.add :base, I18n.t(:error_can_not_reopen_work_package_on_closed_version)
       end
     end
@@ -467,7 +573,11 @@ module WorkPackages
     def validate_people_visible(attribute, id_attribute, list)
       id = model[id_attribute]
 
-      return if id.nil? || id == 0 || model.changed.exclude?(id_attribute)
+      # Re-validate not only when the person itself is written, but also when the
+      # work package is moved to another project, since that changes who can be
+      # assigned. Otherwise a person who is not assignable in the target project
+      # would silently survive the move.
+      return if id.nil? || id == 0 || (model.changed.exclude?(id_attribute) && !model.project_id_changed?)
 
       unless principal_visible?(id, list)
         errors.add attribute,
@@ -499,7 +609,7 @@ module WorkPackages
     end
 
     def validate_duration_matches_dates
-      return unless calculated_duration && model.duration
+      return unless calculated_duration && model.duration && model.duration > 0
 
       if calculated_duration > model.duration
         errors.add :duration, :smaller_than_dates
@@ -521,6 +631,15 @@ module WorkPackages
         if not_set_but_others_are_present?(field)
           errors.add field, :cannot_be_null
         end
+      end
+    end
+
+    def validate_phase_active_in_project
+      if model.project.present? &&
+        model.project_phase_definition_id.present? &&
+        model.project_phase_definition_changed? &&
+        !project_definition_assignable?
+        errors.add :project_phase_id, :inclusion
       end
     end
 
@@ -573,7 +692,7 @@ module WorkPackages
     end
 
     def category_not_of_project?
-      model.category && model.project.categories.exclude?(model.category)
+      model.category && (model.project.nil? || model.project.categories.exclude?(model.category))
     end
 
     def status_changed?
@@ -596,6 +715,10 @@ module WorkPackages
       model.type.is_a?(Type::InexistentType)
     end
 
+    def project_definition_assignable?
+      assignable_project_phases.exists?(definition_id: model.project_phase_definition_id)
+    end
+
     # Returns a scope of status the user is able to apply
     def new_statuses_allowed_from(status)
       return Status.none if status.nil?
@@ -613,16 +736,18 @@ module WorkPackages
     end
 
     def closed_version_and_status?(status = model.status)
-      model.version&.closed? && status.is_closed?
+      status&.is_closed? && model.effective_target_versions.any?(&:closed?)
     end
 
     def new_statuses_by_workflow(status)
-      workflows = Workflow
-                  .from_status(status.id,
-                               model.type_id,
-                               user_roles.map(&:id),
-                               user_is_author?,
-                               user_was_or_is_assignee?)
+      return Status.none unless model.type_variant
+
+      workflows = model.type_variant
+                       .workflows
+                       .from_status(status.id,
+                                    user_roles.map(&:id),
+                                    author: user_is_author?,
+                                    assignee: user_was_or_is_assignee?)
 
       Status.where(id: workflows.select(:new_status_id))
     end
@@ -650,6 +775,12 @@ module WorkPackages
 
     def leaf_or_manually_scheduled?
       model.leaf? || model.schedule_manually?
+    end
+
+    def auto_generated_attributes_writable? = false
+
+    def auto_generated_attribute_names
+      model.type_variant&.enabled_patterns.to_h.keys.map(&:to_s)
     end
   end
 end

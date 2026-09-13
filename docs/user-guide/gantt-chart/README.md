@@ -9,7 +9,9 @@ keywords: gantt chart, timeline, project plan
 # Gantt charts
 
 <div class="glossary">
+
 The **Gantt charts** module in OpenProject displays the work packages in a timeline. You can collaboratively create and manage your project plan, have your project timelines available to all team members, and share up-to-date information with stakeholders. You can add start and finish dates and adapt them via drag and drop directly in the Gantt chart. Also, you can add dependencies, predecessors, or followers within the Gantt chart.
+
 </div>
 
 | Topic                                                                                                           | Content                                                                   |
@@ -23,7 +25,7 @@ The **Gantt charts** module in OpenProject displays the work packages in a timel
 | [Multi project views](#multi-project-views)                                                                     | Create project overarching timelines.                                     |
 | [Aggregation by project](#aggregation-by-project)                                                               | How to display an aggregated view of all milestones of multiple projects. |
 
-<video src="https://openproject-docs.s3.eu-central-1.amazonaws.com/videos/OpenProject-Project-Plan-and-Timelines-Gantt-charts.mp4" type="video/mp4" controls="" style="width:100%"></video>
+<video src="https://openproject-docs.s3.eu-central-1.amazonaws.com/videos/OpenProject-Project-Plan-and-Timelines-Gantt-charts.mp4"></video>
 
 ## Activate the Gantt chart
 
@@ -74,7 +76,7 @@ You can use any of the following options.
 - **Delete** - deletes a work package. You will need to confirm the deletion.
 - **Indent hierarchy** - creates a child-parent relationship with the work package directly above. The work package you selected becomes the child work package. The work package directly above becomes the parent work package.
 - **Add predecessor** - adds a predecessor (it will prompt you to select a work package in Gantt view).
-- **Add follower** - adds a follower (it will prompt you to select a work package in Gantt view).
+- **Add successor** - adds a successor (it will prompt you to select a work package in Gantt view).
 - **Show relations** - opens the details view of a work package and displays the **Relations** tab.
 - **Create new child** - opens a new work package on the right side of the screen. This new work package already has a child relationship to the work package you selected. **This option will not be available if the work package type is a milestone**.
 
@@ -105,7 +107,7 @@ You can track dependencies of work packages (e.g. phases, milestones, tasks) in 
 
 To add a dependency, right-click on an element in the Gantt chart, which will open a quick context menu.
 
-In the menu, choose **Add predecessor** or **Add follower**.
+In the menu, choose **Add predecessor** or **Add successor**.
 
 Select the item to which you want to create a dependency. The precede and follow relation is marked with a small blue line in the Gantt chart.
 
@@ -151,9 +153,9 @@ Click the **Apply** button to save your changes.
 
 To export the data from your Gantt chart, there are several possibilities:
 
-* [Export via the work package view](../work-packages/edit-work-package/#export-work-packages)
-* [Print (e.g., to PDF)](#how-to-print-a-gantt-chart)
-* [Synchronize data from OpenProject to Excel](../../system-admin-guide/integrations/excel-synchronization/) ←→ MS Project
+- [Export via the work package view](../work-packages/edit-work-package/#export-work-packages)
+- [Print (e.g., to PDF)](#how-to-print-a-gantt-chart)
+- [Synchronize data from OpenProject to Excel](../../system-admin-guide/integrations/excel-synchronization/) ←→ MS Project
 
 ### How to print a Gantt chart
 
@@ -181,10 +183,9 @@ To synchronize your work package data between OpenProject and Excel (two-way syn
 
 ### Gantt chart PDF Export (Enterprise add-on)
 
-> [!NOTE]
-> Gantt chart PDF export is an Enterprise add-on and can only be used with [Enterprise cloud](../../enterprise-guide/enterprise-cloud-guide) or [Enterprise on-premises](../../enterprise-guide/enterprise-on-premises-guide). An upgrade from the free Community edition is easy and helps support OpenProject.
+[feature: gantt_pdf_export ]
 
-To export a Gantt chart in a PDF format, click the **More** (three dots) icon in the top right corner and select *Export*.
+To export a Gantt chart in a PDF format, click the **More** (three dots) icon in the top right corner and select _Export_.
 
 ![Export Gantt chart option in OptionProject](openproject-user-guide-gantt-charts-export.png)
 
@@ -197,7 +198,7 @@ Configure the parameters of the PDF export, such as zoom level for the dates, co
 You can then save the Gantt chart in PDF form to share with your project stakeholders or print it directly.
 
 > [!TIP]
-> You can also export Gantt charts in PDF format from the [work packages module](../work-packages/exporting/#gantt-chart-pdf).
+> You can also export Gantt charts in PDF format from the [work packages module](../work-packages/exporting/gantt-chart-pdf/).
 
 ## Gantt chart views
 
@@ -217,7 +218,7 @@ Please note that the **auto zoom button** may not be selectable if it has been p
 
 ### Zen mode
 
-The zen mode gives you more space to focus on the tasks at hand. It's almost like activating the full screen view in your browser. To exit, press the *Esc* key or click on the **zen mode** symbol again.
+The zen mode gives you more space to focus on the tasks at hand. It's almost like activating the full screen view in your browser. To exit, press the _Esc_ key or click on the **zen mode** symbol again.
 
 ![zen-mode-Gantt-chart](openproject-user-guide-gantt-charts-zen-mode.png)
 

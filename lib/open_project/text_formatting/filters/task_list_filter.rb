@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -56,7 +58,7 @@ module OpenProject::TextFormatting
       # Modifications apply to the parsed document directly.
       #
       # Returns nothing.
-      def filter!
+      def filter! # rubocop:disable Metrics/AbcSize
         list_items(doc).reverse_each do |li|
           next if list_items(li.parent).empty?
 

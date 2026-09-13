@@ -29,6 +29,8 @@
 #++
 
 require "spec_helper"
+require "fileutils"
+require "tmpdir"
 
 RSpec.describe OpenProject::SCM::Adapters::Git do
   shared_examples "git adapter specs" do
@@ -530,8 +532,48 @@ RSpec.describe OpenProject::SCM::Adapters::Git do
               +It is written in Python.
             DIFF
           end
+
+          it "does not parse options from rev" do
+            tmpdir = Dir.mktmpdir("op-git-diff-")
+            outfile = File.join(tmpdir, "openproject-options.txt")
+            branch = "--output=#{outfile}"
+
+            begin
+              adapter.diff("", branch)
+              expect(File.exist?(outfile)).to be(false)
+            ensure
+              FileUtils.remove_entry(tmpdir) if File.directory?(tmpdir)
+            end
+          end
         end
       end
+    end
+  end
+
+  describe "#checkout_path" do
+    let(:repos_dir) { Dir.mktmpdir }
+
+    before do
+      allow(OpenProject::Configuration)
+        .to receive(:scm_local_checkout_path)
+        .and_return(repos_dir)
+    end
+
+    after { FileUtils.remove_entry(repos_dir) }
+
+    it "returns a path within the configured root for a normal identifier" do
+      adapter = described_class.new("file:///some/repo.git", nil, nil, nil, nil, "my-project")
+      expect(adapter.checkout_path.to_s).to eq(File.join(repos_dir, "my-project"))
+    end
+
+    it "raises ArgumentError when the identifier contains path traversal" do
+      adapter = described_class.new("file:///some/repo.git", nil, nil, nil, nil, "../../etc")
+      expect { adapter.checkout_path }.to raise_error(ArgumentError, /escapes the configured root/)
+    end
+
+    it "raises ArgumentError for an identifier that resolves to the root itself" do
+      adapter = described_class.new("file:///some/repo.git", nil, nil, nil, nil, ".")
+      expect { adapter.checkout_path }.to raise_error(ArgumentError, /escapes the configured root/)
     end
   end
 

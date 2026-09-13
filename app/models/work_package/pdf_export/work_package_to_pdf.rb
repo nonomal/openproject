@@ -29,15 +29,15 @@
 #++
 
 class WorkPackage::PDFExport::WorkPackageToPdf < Exports::Exporter
-  include WorkPackage::PDFExport::Common::Common
-  include WorkPackage::PDFExport::Common::Logo
-  include WorkPackage::PDFExport::Common::Attachments
-  include WorkPackage::PDFExport::Export::MarkdownField
-  include WorkPackage::PDFExport::Export::Page
-  include WorkPackage::PDFExport::Export::Wp::Styles
-  include WorkPackage::PDFExport::Export::Wp::Attributes
-  include WorkPackage::PDFExport::Export::WpTable
-  include WorkPackage::PDFExport::Common::Badge
+  include Exports::PDF::Common::Common
+  include Exports::PDF::Common::Logo
+  include Exports::PDF::Common::Attachments
+  include Exports::PDF::Common::Badge
+  include Exports::PDF::Components::Page
+  include Exports::PDF::Components::WpTable
+  include WorkPackage::PDFExport::Wp::Styles
+  include WorkPackage::PDFExport::Wp::Attributes
+  include WorkPackage::PDFExport::Common::MarkdownField
 
   attr_accessor :pdf
 
@@ -59,8 +59,9 @@ class WorkPackage::PDFExport::WorkPackageToPdf < Exports::Exporter
     render_work_package
     success(pdf.render)
   rescue StandardError => e
-    Rails.logger.error "Failed to generate PDF export:  #{e.message}:\n#{e.backtrace.join("\n")}"
-    error(I18n.t(:error_pdf_failed_to_export, error: e.message))
+    error(e)
+  ensure
+    delete_all_resized_images
   end
 
   def setup_page!
@@ -89,44 +90,35 @@ class WorkPackage::PDFExport::WorkPackageToPdf < Exports::Exporter
   def write_wp_title!(work_package)
     badge_text = work_package.status.name.downcase
     offset = 2
+    style = styles.page_heading
     with_margin(styles.page_heading_margins) do
       pdf.formatted_text(
         [
-          wp_title_formatted_text(work_package),
+          wp_title_formatted_text(work_package, style),
           { text: " " },
-          prawn_badge(badge_text, wp_status_prawn_color(work_package), offset:)
+          prawn_badge(badge_text, wp_status_prawn_color(work_package), offset:, line_height: style[:size])
         ],
-        { draw_text_callback: prawn_badge_draw_text_callback(badge_text, offset) }
+        style.merge({ draw_text_callback: prawn_badge_draw_text_callback(badge_text, offset) })
       )
     end
   end
 
-  def wp_title_formatted_text(work_package)
-    styles.page_heading.merge({ text: heading, link: url_helpers.work_package_url(work_package) })
-  end
-
-  def prawn_badge_draw_text_callback(badge_text, offset)
-    # prawn does not support vertical alignment of text fragments, so we need to adjust the y position of the badge
-    ->(text, opts) do
-      if text.include? badge_text
-        opts[:at][1] += offset
-      end
-      pdf.draw_text!(text, opts)
-    end
+  def wp_title_formatted_text(work_package, style)
+    style.merge({ text: heading, link: url_helpers.work_package_url(work_package) })
   end
 
   def heading
-    "#{work_package.type} ##{work_package.id} - #{work_package.subject}"
+    "#{work_package.type} #{work_package.formatted_id} - #{work_package.subject}"
   end
 
   def footer_title
-    options[:footer_text_right]
+    options[:footer_text]
   end
 
   def title
     # <project>_<type>_<ID>_<subject><YYYY-MM-DD>_<HH-MM>.pdf
     build_pdf_filename([work_package.project, work_package.type,
-                        "##{work_package.id}", work_package.subject].join("_"))
+                        work_package.display_id, work_package.subject].join("_"))
   end
 
   def write_description!(work_package)

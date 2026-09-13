@@ -21,24 +21,15 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import {
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-  Input,
-  OnChanges,
-  OnInit,
-  Output,
-  ViewChild,
-} from '@angular/core';
+import { sortBy } from 'lodash-es';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnChanges, OnInit, Output, ViewChild, inject } from '@angular/core';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { DebouncedEventEmitter } from 'core-app/shared/helpers/rxjs/debounced-event-emitter';
-import { trackByName } from 'core-app/shared/helpers/angular/tracking-functions';
 import { NgSelectComponent } from '@ng-select/ng-select';
 import { WorkPackageViewFiltersService } from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-view-filters.service';
 import { WorkPackageFiltersService } from 'core-app/features/work-packages/components/filters/wp-filters/wp-filters.service';
@@ -57,8 +48,16 @@ const ADD_FILTER_SELECT_INDEX = -1;
   selector: 'op-query-filters',
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './query-filters.component.html',
+  standalone: false,
 })
 export class QueryFiltersComponent extends UntilDestroyedMixin implements OnInit, OnChanges {
+  readonly wpTableFilters = inject(WorkPackageViewFiltersService);
+  readonly wpTableBaseline = inject(WorkPackageViewBaselineService);
+  readonly wpFiltersService = inject(WorkPackageFiltersService);
+  readonly I18n = inject(I18nService);
+  readonly alternativeSearchService = inject(AlternativeSearchService);
+  readonly cdRef = inject(ChangeDetectorRef);
+
   @ViewChild(NgSelectComponent) public ngSelectComponent:NgSelectComponent;
 
   @Input() public filters:QueryFilterInstanceResource[];
@@ -70,13 +69,11 @@ export class QueryFiltersComponent extends UntilDestroyedMixin implements OnInit
     500,
   );
 
-  public remainingFilters:any[] = [];
+  public remainingFilters:QueryFilterResource[] = [];
 
   public focusElementIndex = 0;
 
   public baselineIncompatibleFilters:string[] = [];
-
-  public trackByName = trackByName;
 
   public text = {
     open_filter: this.I18n.t('js.filter.description.text_open_filter'),
@@ -89,17 +86,6 @@ export class QueryFiltersComponent extends UntilDestroyedMixin implements OnInit
     filter_by_text: this.I18n.t('js.work_packages.label_filter_by_text'),
     baseline_warning: this.I18n.t('js.work_packages.filters.baseline_warning'),
   };
-
-  constructor(
-    readonly wpTableFilters:WorkPackageViewFiltersService,
-    readonly wpTableBaseline:WorkPackageViewBaselineService,
-    readonly wpFiltersService:WorkPackageFiltersService,
-    readonly I18n:I18nService,
-    readonly alternativeSearchService:AlternativeSearchService,
-    readonly cdRef:ChangeDetectorRef,
-  ) {
-    super();
-  }
 
   ngOnInit():void {
     this.wpTableFilters.live$()
@@ -141,7 +127,7 @@ export class QueryFiltersComponent extends UntilDestroyedMixin implements OnInit
 
   public deactivateFilter(removedFilter:QueryFilterInstanceResource) {
     const index = this.filters.indexOf(removedFilter);
-    _.remove(this.filters, (f) => f.id === removedFilter.id);
+    this.filters.splice(index, 1);
 
     this.filtersChanged.emit(this.filters);
 
@@ -150,14 +136,14 @@ export class QueryFiltersComponent extends UntilDestroyedMixin implements OnInit
   }
 
   public get isSecondSpacerVisible():boolean {
-    const hasSearch = !!_.find(this.filters, (f) => f.id === 'search');
-    const hasAvailableFilter = !!this.filters.find((f) => f.id !== 'search' && this.isFilterAvailable(f));
+    const hasSearch = this.filters.some((f) => f.id === 'search');
+    const hasAvailableFilter = this.filters.some((f) => f.id !== 'search' && this.isFilterAvailable(f));
 
     return hasSearch && hasAvailableFilter;
   }
 
   private updateRemainingFilters() {
-    this.remainingFilters = _.sortBy(this.wpTableFilters.remainingVisibleFilters(this.filters), 'name');
+    this.remainingFilters = sortBy(this.wpTableFilters.remainingVisibleFilters(this.filters), 'name');
   }
 
   private updateFilterFocus(index:number) {

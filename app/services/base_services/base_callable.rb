@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,14 +33,25 @@ module BaseServices
     extend ActiveModel::Callbacks
     define_model_callbacks :call
 
-    include ::WithReversibleState
+    around_call :assign_state
 
     def call(*args)
       self.params = extract_options!(args).deep_symbolize_keys
 
       run_callbacks(:call) do
-        perform(*args, **params)
+        perform(*args)
       end
+    end
+
+    # Reuse or append state to the service
+    def with_state(state = {})
+      @state = ::Shared::ServiceState.build(state)
+      self
+    end
+
+    # Access to the shared service state.
+    def state
+      @state ||= ::Shared::ServiceState.build
     end
 
     protected
@@ -46,10 +59,18 @@ module BaseServices
     attr_accessor :params
 
     def perform(*)
-      raise NotImplementedError
+      raise SubclassResponsibilityError
     end
 
     private
+
+    # Assign state to the service result obtained after the service call.
+    # Called by an `around_call` callback.
+    def assign_state
+      yield.tap do |service_result|
+        service_result.state = state
+      end
+    end
 
     def extract_options!(args)
       if args.last.is_a?(Hash)

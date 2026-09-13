@@ -35,4 +35,7 @@ class RemoteIdentity < ApplicationRecord
 
   validates :user, uniqueness: { scope: %i[auth_source integration] }
   validates :origin_user_id, :user, :auth_source, :integration, presence: true
+
+  # FIXME: This needs a better name - 2025.03.18 @mereghost
+  scope :of_user_and_client, ->(user, client, integration) { find_by(user:, auth_source: client, integration:) }
 end

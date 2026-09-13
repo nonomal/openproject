@@ -21,13 +21,13 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
 import { WorkPackageResource } from 'core-app/features/hal/resources/work-package-resource';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit, inject } from '@angular/core';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { UntilDestroyedMixin } from 'core-app/shared/helpers/angular/until-destroyed.mixin';
 import { OpModalService } from 'core-app/shared/components/modal/modal.service';
@@ -48,28 +48,25 @@ import { CollectionResource } from 'core-app/features/hal/resources/collection-r
   selector: 'wp-share-button',
   templateUrl: './wp-share-button.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
 export class WorkPackageShareButtonComponent extends UntilDestroyedMixin implements OnInit {
+  readonly I18n = inject(I18nService);
+  readonly opModalService = inject(OpModalService);
+  readonly cdRef = inject(ChangeDetectorRef);
+  readonly bannersService = inject(BannersService);
+  readonly apiV3Service = inject(ApiV3Service);
+  readonly actions$ = inject(ActionsService);
+
   @Input() public workPackage:WorkPackageResource;
 
-  showEnterpriseIcon = this.bannersService.showBannerFor('work_package_sharing');
+  showEnterpriseIcon = !this.bannersService.allowsTo('work_package_sharing');
 
   shareCount$:Observable<number>;
 
   public text = {
     share: this.I18n.t('js.sharing.share'),
   };
-
-  constructor(
-    readonly I18n:I18nService,
-    readonly opModalService:OpModalService,
-    readonly cdRef:ChangeDetectorRef,
-    readonly bannersService:BannersService,
-    readonly apiV3Service:ApiV3Service,
-    readonly actions$:ActionsService,
-  ) {
-    super();
-  }
 
   ngOnInit() {
     this.shareCount$ = this
@@ -90,7 +87,7 @@ export class WorkPackageShareButtonComponent extends UntilDestroyedMixin impleme
   private countShares():Observable<number> {
     const filters = new ApiV3FilterBuilder()
       .add('entityType', '=', ['WorkPackage'])
-      .add('entityId', '=', [this.workPackage.id as string]);
+      .add('entityId', '=', [this.workPackage.id!]);
 
     return this
       .apiV3Service

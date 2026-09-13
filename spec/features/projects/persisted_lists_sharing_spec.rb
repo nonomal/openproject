@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -84,7 +86,7 @@ RSpec.describe "Project list sharing",
       projects_index_page.open_share_dialog
 
       share_dialog.expect_open
-      share_dialog.expect_upsell_banner
+      expect(page).to have_enterprise_banner(:premium)
     end
   end
 
@@ -125,7 +127,7 @@ RSpec.describe "Project list sharing",
 
           wait_for_reload
 
-          projects_index_page.expect_can_only_save_as_label
+          projects_index_page.expect_save_as_label
           projects_index_page.save_query_as("Member-of and active list")
 
           wait_for_network_idle
@@ -288,7 +290,7 @@ RSpec.describe "Project list sharing",
 
             projects_index_page.open_filters
             projects_index_page.filter_by_active("yes")
-            projects_index_page.expect_can_only_save_as_label
+            projects_index_page.expect_save_as_label
             projects_index_page.save_query_as("Member-of and active list")
 
             wait_for_network_idle
@@ -338,6 +340,43 @@ RSpec.describe "Project list sharing",
             # TODO: Toast is currently not rendered in turbo actions
             # projects_index_page.expect_toast(message: "The modified list has been saved")
           end
+        end
+      end
+
+      context "when the list is invalid" do
+        shared_let(:invalid_list) do
+          create(:project_query, name: "Invalid shared list", user: sharer, select: %w[name cf_1]) do |query|
+            query.where("member_of", "=", OpenProject::Database::DB_VALUE_TRUE)
+            query.where("cf_1", "=", 1)
+            query.save(validate: false)
+          end
+        end
+
+        it "allows sharing and handles the invalid state gracefully" do
+          login_as(sharer)
+          visit projects_path(query_id: invalid_list.id)
+
+          # The page should load and show the list
+          expect(page).to have_content("Invalid shared list")
+
+          # Open the share dialog
+          projects_index_page.open_share_dialog
+          share_dialog.expect_open
+
+          # Toggle the switch to make the project list query public
+          share_dialog.expect_toggle_public_off
+
+          wait_for_turbo_stream do
+            share_dialog.toggle_public
+          end
+
+          share_dialog.expect_toggle_public_on
+          share_dialog.close
+
+          # Reopen the dialog and expect the public state to be kept
+          projects_index_page.open_share_dialog
+          share_dialog.expect_open
+          share_dialog.expect_toggle_public_on
         end
       end
     end

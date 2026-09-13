@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -39,7 +41,7 @@ module Projects
 
           @project = project
           @project_custom_field_section = project_custom_field_section
-          @project_custom_fields = project_custom_field_section.custom_fields
+          @project_custom_fields = project_custom_field_section.custom_fields_in_order
         end
 
         private

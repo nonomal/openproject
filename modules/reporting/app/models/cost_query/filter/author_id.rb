@@ -27,7 +27,7 @@
 #++
 
 class CostQuery::Filter::AuthorId < CostQuery::Filter::UserId
-  join_table WorkPackage
+  join_table WorkPackage => [Entry, :entity]
   applies_for :label_work_package_attributes
 
   def self.label
@@ -35,6 +35,6 @@ class CostQuery::Filter::AuthorId < CostQuery::Filter::UserId
   end
 
   def self.available_values(*)
-    CostQuery::Filter::UserId.available_values
+    []
   end
 end

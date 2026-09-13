@@ -50,6 +50,8 @@ RSpec.describe Queries::Projects::Orders::ProjectPhaseOrder do
   end
 
   describe "#available?" do
+    let!(:project_phase_def) { create(:project_phase_definition) }
+
     let(:instance) { described_class.new("project_phase_#{project_phase_def.id}") }
 
     let(:permissions) { %i(view_project_phases) }
@@ -62,28 +64,15 @@ RSpec.describe Queries::Projects::Orders::ProjectPhaseOrder do
 
     current_user { user }
 
-    context "without feature flag set" do
-      let!(:project_phase_def) { create(:project_phase_definition) }
-
-      it "does not allow to sort by it" do
-        expect(instance).not_to be_available
-      end
+    it "allows to sort by it" do
+      expect(instance).to be_available
     end
 
-    context "with feature flag set", with_flag: { stages_and_gates: true } do
-      let!(:project_phase_def) { create(:project_phase_definition) }
+    context "without permission in any project" do
+      let(:permissions) { [] }
 
-      it "allows to sort by it" do
-        expect(instance).to be_available
-      end
-
-      context "without permission in any project" do
-        let!(:project_phase_def) { create(:project_phase_definition) }
-        let(:permissions) { [] }
-
-        it "is not available" do
-          expect(instance).not_to be_available
-        end
+      it "is not available" do
+        expect(instance).not_to be_available
       end
     end
   end

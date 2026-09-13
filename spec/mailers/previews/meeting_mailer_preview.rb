@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -62,10 +64,10 @@ class MeetingMailerPreview < ActionMailer::Preview
     recurring_meeting = RecurringMeeting.last
     raise "Need to have a recurring meeting in your dev db" unless recurring_meeting
 
-    schedule = recurring_meeting.scheduled_meetings.first
-    raise "Need to have a recurring meeting with at least a schedule meeting" unless schedule
+    meeting = recurring_meeting.meetings.not_templated.last
+    raise "Need to have a recurring meeting with at least a schedule meeting" unless meeting
 
-    MeetingMailer.cancelled(schedule.meeting, user, actor)
+    MeetingMailer.cancelled(meeting, user, actor)
   end
 
   def cancelled_series

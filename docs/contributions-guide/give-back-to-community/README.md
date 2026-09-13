@@ -26,7 +26,7 @@ Your unique experience with OpenProject can inspire others and provide valuable 
   - Your overall experience: What works well for you? What could be improved?
   - Include screenshots showcasing your OpenProject setup (with permission to publish).
 
-  **Example**: take a look one one our case studies with an [NGO](https://www.openproject.org/project-management-ngos-foundations/case-study-open-source-initiative-osi/) , a [university project](https://www.openproject.org/project-management-universities-research/case-study-rewrite/) or a [municipality](https://www.openproject.org/project-management-public-sector/case-study-city-ravensburg/).
+  **Example**: take a look one one our case studies with an [NGO](https://www.openproject.org/project-management-ngos-foundations/case-study-open-source-initiative-osi/) , a [university project](https://www.openproject.org/project-management-universities-research/case-study-rewrite/) or a [municipality](https://www.openproject.org/project-management-public-sector/case-study-berlin-senate-department-education/).
 
 - **Blog Posts**
   Write a detailed blog post about your OpenProject journey. You can either:
@@ -51,7 +51,7 @@ Help OpenProject reach more users by engaging with our content and sharing it wi
   - Share your experience with OpenProject on your social channels, including a link to our website. 
   - You can also re-share content from the [OpenProject blog](https://www.openproject.org/blog/) or our official social media accounts.
   
-      [Follow us on LinkedIn](https://www.linkedin.com/company/openproject-gmbh)
+      [Follow us on LinkedIn](https://www.linkedin.com/company/openproject)
   
       [Follow us on Reddit](https://www.reddit.com/r/openproject)
   
@@ -63,7 +63,7 @@ Help OpenProject reach more users by engaging with our content and sharing it wi
 - **Add a backlink to your website**
   Include a link to OpenProject’s website on your blog, portfolio, or company website to help more people discover our tool.
 - **Write a Review**
-  Share your thoughts about OpenProject on one of our review platforms. [Leave a review ](https://www.openproject.org/reviews/).
+  Share your thoughts about OpenProject on one of our review platforms. [Leave a review](https://www.openproject.org/reviews/).
 
 ## Spread the word
 

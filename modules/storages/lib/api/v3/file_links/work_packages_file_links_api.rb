@@ -36,11 +36,7 @@ module API
           def sync_and_convert_relation(file_links)
             return ::Storages::FileLink.none if file_links.empty?
 
-            sync_result = ::Storages::FileLinkSyncService
-                            .new(user: current_user)
-                            .call(file_links)
-                            .result
-
+            sync_result = ::Storages::FileLinkSyncService.new(user: current_user).call(file_links).result
             id_status_map = {}
 
             sync_result.each do |file_link|
@@ -53,11 +49,11 @@ module API
 
         resources :file_links do
           get do
-            query = ParamsToQueryService
-                      .new(::Storages::Storage,
-                           current_user,
-                           query_class: ::Queries::Storages::FileLinks::FileLinkQuery)
-                      .call(params)
+            query = ParamsToQueryService.new(
+              ::Storages::Storage,
+              current_user,
+              query_class: ::Queries::Storages::FileLinks::FileLinkQuery
+            ).call(params)
 
             unless query.valid?
               message = I18n.t("api_v3.errors.missing_or_malformed_parameter", parameter: "filters")
@@ -80,6 +76,7 @@ module API
 
             FileLinkCollectionRepresenter.new(
               relation,
+              page: params[:offset],
               per_page: params[:pageSize],
               self_link: api_v3_paths.file_links(@work_package.id),
               current_user:

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 
 # OpenProject is an open source project management software.
@@ -32,6 +34,8 @@ module DemoData
 
     include ::DemoData::References
 
+    self.attribute_names_for_required_references = %w[statuses]
+
     def initialize(project, project_data)
       super(project_data)
       @project = project
@@ -60,10 +64,15 @@ module DemoData
       end
     end
 
+    def all_required_references
+      seed_data.each("boards").to_a
+               .flat_map { |_board_name, board_data| get_required_references(board_data) }
+    end
+
     private
 
     def seed_kanban_board(board_data)
-      widgets = seed_kanban_board_widgets
+      widgets = seed_kanban_board_widgets(board_data.lookup("statuses"))
       board =
         ::Boards::Grid.new(
           project:,
@@ -77,8 +86,8 @@ module DemoData
       board.save!
     end
 
-    def seed_kanban_board_widgets
-      seed_kanban_board_queries.each_with_index.map do |query, i|
+    def seed_kanban_board_widgets(status_references)
+      seed_kanban_board_queries(status_references).each_with_index.map do |query, i|
         Grids::Widget.new start_row: 1, end_row: 2,
                           start_column: i + 1, end_column: i + 2,
                           options: { query_id: query.id,
@@ -100,13 +109,8 @@ module DemoData
       end
     end
 
-    def seed_kanban_board_queries
-      statuses(
-        :default_status_new,
-        :default_status_in_progress,
-        :default_status_closed,
-        :default_status_rejected
-      ).map do |status|
+    def seed_kanban_board_queries(status_references)
+      seed_data.find_references(status_references).map do |status|
         Query.new_default(project:, user: admin_user).tap do |query|
           # Make it public so that new members can see it too
           query.public = true
@@ -121,16 +125,6 @@ module DemoData
           query.save!
         end
       end
-    end
-
-    def statuses(*status_references)
-      statuses = seed_data.find_references(status_references)
-
-      if statuses.size < status_references.size
-        raise StandardError, "Not all statuses needed for seeding a board are present. Check that they got seeded."
-      end
-
-      statuses
     end
 
     def seed_basic_board(board_data)

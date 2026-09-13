@@ -3,7 +3,7 @@ sidebar_navigation:
   title: API and webhooks
   priority: 900
 description: Configure APIs and webhooks in OpenProject.
-keywords: api webhooks
+keywords: api webhooks, cors, token, api token
 ---
 # API and webhooks
 
@@ -15,11 +15,13 @@ Navigate to **Administration → API and webhooks**.
 
 ![API settings in OpenProject administration](openproject_system_admin_guide_api.png)
 
-Here, you can manage the **REST web service** to selectively control whether foreign applications may access your OpenProject API endpoints from within the browser. This setting allows users to access the OpenProject API using an API token created from the users "Account settings" page. You can set the **maximum page size** the API will respond with. It will not be possible to perform API requests that return more values on a single page. You can also enable **write access to read-only attributes**, which will allow administrators to write static read-only attributes during creation, such as *createdAt* and *author*. 
+Here, you can manage whether users can create personal API tokens, this setting allows users to access the OpenProject APIs using an API token created from the user's "Account settings" page.
+You can set the **maximum page size** the API will respond with. It will not be possible to perform API requests that return more values on a single page.
+You can also enable **write access to read-only attributes**, which will allow administrators to write static read-only attributes during creation, such as _createdAt_ and _author_. This can be useful during data imports.
 
 ### Documentation
 
-If the **docs page** is enabled you can get an interactive view of the APIv3 documentation under https://qa.openproject-edge.com/api/docs*.*
+If the **docs page** is enabled you can get an interactive view of the [APIv3 documentation](https://www.openproject.org/docs/api/introduction).
 
 ### Cross-Origin Resource Sharing (CORS)
 
@@ -49,7 +51,7 @@ You can configure the following options for webhooks:
 3. Freely choose an additional **description** to further identify the intent of the respective webhook.
 4. By defining a **Signature secret** you guarantee that the sender of the payload request is actually OpenProject. The client will then check this signature secret.
 5. **Enable** if **the webhook** should be active.
-6. **Set the events** for which the webhook should be activate, i.e. webhook for updating or creating projects or work packages, or for creating time entries.
+6. **Set the events** for which the webhook should be activate, i.e. webhook for updating or creating projects, work packages, work package comments, time entries and attachments.
 7. **Select for which projects the webhook should be active**. You can choose all projects or only specific projects. For example if you select the project "System admin guide", an event (ie. create a new time entry) will be fired via the webhook. This will only happen if a user logs time within the selected projects.
 8. Press the green **Create** button to save your changes (you may nee to scroll down to find it). There you can also cancel your input.
 

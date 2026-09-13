@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -78,11 +80,7 @@ module Activities
       when :default
         OpenProject::Activity.default_event_types.to_a
       else
-        scope = Array(scope)
-
-        scope << "project_details" if scope.delete("project_attributes")
-
-        scope & event_types
+        Array(scope) & event_types
       end
     end
 
@@ -126,7 +124,8 @@ module Activities
       journal_ids = events.map(&:event_id)
 
       Journal
-        .includes(:data, :customizable_journals, :attachable_journals, :bcf_comment)
+        .includes(:data, :customizable_journals, :attachable_journals, :target_version_journals,
+                  :observed_in_version_journals, :bcf_comment)
         .find(journal_ids)
         .then { |journals| ::API::V3::Activities::ActivityEagerLoadingWrapper.wrap(journals) }
         .index_by(&:id)

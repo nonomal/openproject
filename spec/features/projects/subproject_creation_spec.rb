@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,10 +31,10 @@
 require "spec_helper"
 
 RSpec.describe "Subproject creation", :js do
-  let(:name_field) { FormFields::InputFormField.new :name }
   let(:parent_field) { FormFields::SelectFormField.new :parent }
   let(:add_subproject_role) { create(:project_role, permissions: %i[edit_project add_subprojects]) }
   let(:view_project_role) { create(:project_role, permissions: %i[edit_project]) }
+  let!(:default_project_role) { create(:project_creator_role) }
   let!(:parent_project) do
     create(:project,
            name: "Foo project",
@@ -49,20 +51,26 @@ RSpec.describe "Subproject creation", :js do
   end
 
   before do
+    allow(Setting).to receive(:new_project_user_role_id).and_return(default_project_role.id.to_s)
     visit project_settings_general_path(parent_project)
   end
 
   it "can create a subproject" do
-    click_link "Subproject"
+    page.find_test_selector("project-settings-more-menu").click
+    wait_for_turbo { click_on "Add subproject" }
+    expect(page).to have_heading "New project"
 
-    name_field.set_value "Foo child"
-    parent_field.expect_required
-    # The other project is not a valid parent since the user is lacking
-    # the add_subproject permission therein.
-    parent_field.expect_no_option(other_project.name)
-    parent_field.expect_selected parent_project.name
+    # Step 1: Select workspace type (blank project)
+    click_on "Continue"
 
-    click_button "Save"
+    # Step 2: Fill in project details
+    fill_in "Name", with: "Foo child"
+
+    expect(page).to have_no_field "Subproject of"
+
+    click_on "Complete"
+
+    expect_and_dismiss_flash type: :success, message: "Successful creation."
 
     expect(page).to have_current_path /\/projects\/foo-child\/?/
 

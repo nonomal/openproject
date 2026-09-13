@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,24 +32,36 @@ module CustomFields
   class BaseContract < ::ModelContract
     include RequiresAdminGuard
 
+    attribute :admin_only
+    attribute :allow_non_open_versions
+    attribute :content_right_to_left
+    attribute :custom_field_section_id
+    attribute :default_value
     attribute :editable
-    attribute :type
     attribute :field_format
+    attribute :formula
+    attribute :has_comment
     attribute :is_filter
     attribute :is_for_all
-    attribute :is_required
+    attribute :is_required do
+      validate_non_true_for_some_formats
+    end
     attribute :max_length
     attribute :min_length
+    attribute :max_value
+    attribute :min_value
+    attribute :multi_value
     attribute :name
     attribute :possible_values
     attribute :regexp
     attribute :searchable
-    attribute :admin_only
-    attribute :default_value
-    attribute :possible_values
-    attribute :multi_value
-    attribute :content_right_to_left
-    attribute :custom_field_section_id
-    attribute :allow_non_open_versions
+    attribute :visible_on_user_card
+    attribute :type
+
+    def validate_non_true_for_some_formats
+      return unless %w[bool calculated_value].include?(field_format)
+
+      errors.add(:is_required, :cannot_be_true) if is_required == true
+    end
   end
 end

@@ -1,3 +1,31 @@
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
 import { Injector } from '@angular/core';
 import { scrollTableRowIntoView } from 'core-app/features/work-packages/components/wp-fast-table/helpers/wp-table-row-helpers';
 import {
@@ -14,12 +42,13 @@ import {
 import { indicatorCollapsedClass } from 'core-app/features/work-packages/components/wp-fast-table/builders/modes/hierarchy/single-hierarchy-row-builder';
 import { tableRowClassName } from 'core-app/features/work-packages/components/wp-fast-table/builders/rows/single-row-builder';
 import { WorkPackageViewHierarchies } from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-table-hierarchies';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
+import { LazyInject } from 'core-app/shared/helpers/angular/lazy-inject.decorator';
+import { getNodeIndex } from 'core-app/shared/helpers/dom-helpers';
 
 export class HierarchyTransformer {
-  @InjectField() public wpTableHierarchies:WorkPackageViewHierarchiesService;
+  @LazyInject() public wpTableHierarchies:WorkPackageViewHierarchiesService;
 
-  @InjectField() public querySpace:IsolatedQuerySpace;
+  @LazyInject() public querySpace:IsolatedQuerySpace;
 
   constructor(public readonly injector:Injector,
     table:WorkPackageTable) {
@@ -61,16 +90,20 @@ export class HierarchyTransformer {
     const rendered = this.querySpace.tableRendered.value!;
 
     // Show all hierarchies
-    jQuery('[class^="__hierarchy-group-"]').removeClass((i:number, classNames:string):string => (classNames.match(/__collapsed-group-\d+/g) || []).join(' '));
+    document.querySelectorAll('[class^="__hierarchy-group-"]').forEach((el) => {
+      Array.from(el.classList)
+        .filter((className) => /__collapsed-group-\d+/g.test(className))
+        .forEach((className) => el.classList.remove(className));
+    });
 
     // Mark which rows were hidden by some other hierarchy group
     // (e.g., by a collapsed parent)
-    const collapsed:{ [index:number]:boolean } = {};
+    const collapsed:Record<number, boolean> = {};
 
     // Hide all collapsed hierarchies
-    _.each(state.collapsed, (isCollapsed:boolean, wpId:string) => {
+    Object.entries(state.collapsed).forEach(([wpId, isCollapsed]) => {
       // Toggle the root style
-      jQuery(`.${hierarchyRootClass(wpId)} .wp-table--hierarchy-indicator`).toggleClass(indicatorCollapsedClass, isCollapsed);
+      document.querySelector(`.${hierarchyRootClass(wpId)} .wp-table--hierarchy-indicator`)?.classList.toggle(indicatorCollapsedClass, isCollapsed);
 
       // Get parent row and mark/unmark it as collapsed
       const hierarchyRoot = document.querySelector(`.wp-timeline-cell.__hierarchy-root-${wpId}`);
@@ -84,15 +117,17 @@ export class HierarchyTransformer {
       }
 
       // Get all affected children rows
-      const affected = jQuery(`.${hierarchyGroupClass(wpId)}`);
+      const affected = Array.from(document.querySelectorAll(`.${hierarchyGroupClass(wpId)}`));
 
       // Hide/Show the descendants.
-      affected.toggleClass(collapsedGroupClass(wpId), isCollapsed);
+      affected.forEach((el) => el.classList.toggle(collapsedGroupClass(wpId), isCollapsed));
 
       // Update the hidden section of the rendered state
-      affected.filter(`.${tableRowClassName}`).each((i, el) => {
+      affected
+        .filter((el) => el.matches(`.${tableRowClassName}`))
+        .forEach((el) => {
         // Get the index of this row
-        const index = jQuery(el).index();
+        const index = getNodeIndex(el);
 
         // Update the hidden state
         if (!collapsed[index]) {

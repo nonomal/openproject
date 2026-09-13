@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,8 +34,8 @@ module Admin
       class NewCustomFieldProjectsFormModalComponent < ApplicationComponent
         include OpTurbo::Streamable
 
-        DIALOG_ID = "new-custom-field-projects-modal".freeze
-        DIALOG_BODY_ID = "new-custom-field-projects-modal-body".freeze
+        DIALOG_ID = "new-custom-field-projects-modal"
+        DIALOG_BODY_ID = "new-custom-field-projects-modal-body"
 
         def initialize(custom_field_project_mapping:, custom_field:, **)
           @custom_field_project_mapping = custom_field_project_mapping

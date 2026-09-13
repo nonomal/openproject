@@ -170,10 +170,24 @@ class BulkRunner
     @tests ||= found_tests.map { |test_path| Test.new(test_path) }
   end
 
+  def copy_screenshots_from_capybara_dir_to_bulk_run_dir
+    capybara_screenshots_dir.glob("screenshot_*").each do |screenshot|
+      FileUtils.cp(screenshot, bulk_run_dir("screenshots/"))
+    end
+  end
+
+  def copy_screenshots_from_bulk_run_dir_to_capybara_dir
+    bulk_run_dir.glob("screenshots/screenshot_*").each do |screenshot|
+      FileUtils.cp(screenshot, capybara_screenshots_dir)
+    end
+  end
+
   # rubocop:disable Metrics/AbcSize
   def run
     FileUtils.rm_rf(bulk_run_dir("logs")) if bulk_run_dir("logs").exist?
-    `mkdir -p #{bulk_run_dir("logs")}`
+    FileUtils.mkdir_p([bulk_run_dir("logs"),
+                       bulk_run_dir("screenshots"),
+                       capybara_screenshots_dir])
     puts "#{tests.count} tests to run"
     puts "logs: #{bulk_run_dir('logs')}"
     tests.each do |test|
@@ -189,6 +203,7 @@ class BulkRunner
           run.passed!
         else
           puts "ko".red
+          copy_screenshots_from_capybara_dir_to_bulk_run_dir
           run.failed!
         end
         File.write(bulk_run_dir("logs/#{test.normalized_name}.#{run.result}.#{i}.log"), run.output)
@@ -199,13 +214,18 @@ class BulkRunner
         puts "PASSED".green
       else
         puts "FAILED".red
+        copy_screenshots_from_bulk_run_dir_to_capybara_dir
       end
     end
   end
   # rubocop:enable Metrics/AbcSize
 
-  def bulk_run_dir(path)
+  def bulk_run_dir(path = "")
     RAILS_ROOT.join("tmp/bulk_run").join(path)
+  end
+
+  def capybara_screenshots_dir
+    RAILS_ROOT.join("tmp/capybara")
   end
 
   def save

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # -- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,9 +31,5 @@
 class Queries::Projects::Selects::CreatedAt < Queries::Selects::Base
   def self.key
     :created_at
-  end
-
-  def self.available?
-    User.current.admin?
   end
 end

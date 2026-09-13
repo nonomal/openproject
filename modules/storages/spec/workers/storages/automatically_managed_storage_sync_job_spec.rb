@@ -61,18 +61,18 @@ RSpec.describe Storages::AutomaticallyManagedStorageSyncJob, type: :job do
     it "only runs for automatically managed storages" do
       unmanaged_nextcloud = create(:nextcloud_storage_configured, :as_not_automatically_managed)
 
-      allow(Storages::NextcloudManagedFolderSyncService)
+      allow(Storages::ManagedFolderSyncService)
         .to receive(:call).with(managed_nextcloud).and_return(ServiceResult.success)
 
       job_instance.perform(managed_nextcloud)
       job_instance.perform(unmanaged_nextcloud)
 
-      expect(Storages::NextcloudManagedFolderSyncService).to have_received(:call).with(managed_nextcloud)
-      expect(Storages::NextcloudManagedFolderSyncService).not_to have_received(:call).with(unmanaged_nextcloud)
+      expect(Storages::ManagedFolderSyncService).to have_received(:call).with(managed_nextcloud)
+      expect(Storages::ManagedFolderSyncService).not_to have_received(:call).with(unmanaged_nextcloud)
     end
 
     it "marks storage as healthy if sync was successful" do
-      allow(Storages::NextcloudManagedFolderSyncService)
+      allow(Storages::ManagedFolderSyncService)
         .to receive(:call).with(managed_nextcloud).and_return(ServiceResult.success)
 
       Timecop.freeze("2023-03-14T15:17:00Z") do
@@ -91,10 +91,10 @@ RSpec.describe Storages::AutomaticallyManagedStorageSyncJob, type: :job do
       allow(Storages::HealthStatusMailerJob).to receive(:set).and_return(job)
       allow(job).to receive(:perform_later)
 
-      errors = ActiveModel::Errors.new(Storages::NextcloudManagedFolderSyncService.new(managed_nextcloud))
+      errors = ActiveModel::Errors.new(Storages::NextcloudManagedFolderCreateService.new(storage: managed_nextcloud))
       errors.add(:remote_folders, :not_found, group_folder: managed_nextcloud.group_folder)
 
-      allow(Storages::NextcloudManagedFolderSyncService)
+      allow(Storages::ManagedFolderSyncService)
         .to receive(:call)
         .with(managed_nextcloud)
         .and_return(ServiceResult.failure(errors:))
@@ -111,12 +111,55 @@ RSpec.describe Storages::AutomaticallyManagedStorageSyncJob, type: :job do
       end
     end
 
+    context "when several sync steps fail with the same error" do
+      let(:errors) do
+        ActiveModel::Errors.new(Storages::NextcloudManagedFolderPermissionsService.new(storage: managed_nextcloud))
+          .tap do |messages|
+            messages.add(:ensure_root_folder_permissions, :invalid_response)
+            messages.add(:set_folder_permission, :invalid_response)
+          end
+      end
+
+      before do
+        mailer_job = class_double(Storages::HealthStatusMailerJob)
+        allow(Storages::HealthStatusMailerJob).to receive(:set).and_return(mailer_job)
+        allow(mailer_job).to receive(:perform_later)
+
+        allow(Storages::ManagedFolderSyncService)
+          .to receive(:call).with(managed_nextcloud).and_return(ServiceResult.failure(errors:))
+      end
+
+      it "reports the error code as health reason identifier and the message only once" do
+        perform_enqueued_jobs { described_class.perform_later(managed_nextcloud) }
+
+        managed_nextcloud.reload
+        expect(managed_nextcloud.health_reason_identifier).to eq("invalid_response")
+        expect(managed_nextcloud.health_reason_description).to eq(I18n.t("services.errors.messages.invalid_response"))
+      end
+
+      context "with errors of different types" do
+        let(:errors) do
+          ActiveModel::Errors.new(Storages::NextcloudManagedFolderPermissionsService.new(storage: managed_nextcloud))
+            .tap do |messages|
+              messages.add(:set_folder_permission, :invalid_response)
+              messages.add(:base, :unauthorized)
+            end
+        end
+
+        it "reports a generic health reason identifier" do
+          perform_enqueued_jobs { described_class.perform_later(managed_nextcloud) }
+
+          expect(managed_nextcloud.reload.health_reason_identifier).to eq("sync_failed")
+        end
+      end
+    end
+
     context "when Storages::Errors::IntegrationJobError is raised" do
       before do
-        errors = ActiveModel::Errors.new(Storages::NextcloudManagedFolderSyncService.new(managed_nextcloud))
+        errors = ActiveModel::Errors.new(Storages::ManagedFolderSyncService.new(managed_nextcloud))
         errors.add(:base, :error)
 
-        allow(Storages::NextcloudManagedFolderSyncService)
+        allow(Storages::ManagedFolderSyncService)
           .to receive(:call).with(managed_nextcloud)
                             .and_return(ServiceResult.failure(errors:))
 

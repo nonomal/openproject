@@ -142,9 +142,9 @@ This list is not conclusive but rather serves to highlight the difference to the
 
 OpenProject embeds some release information into the packages and containers to ensure they are traceable. For all containers, the following files exist under `/app`. For packages, these files reside under `/opt/openproject/` and `/opt/openproject/config`, depending on the used version.
 
-- **CORE_VERSION**: Reference to the commit of the https://github.com/opf/openproject core repository of OpenProject that is the foundation of the build
+- **CORE_VERSION**: Reference to the commit of the [core repository of OpenProject](https://github.com/opf/openproject) that is the foundation of the build
 - **CORE_URL** URL to the commit at GitHub for easier reference
-- **PRODUCT_VERSION** Commit of the flavour/product version. In case of the [openDesk container](https://hub.docker.com/r/openproject/open_desk), contains a reference to the openDesk repository https://github.com/opf/openproject-open_desk
+- **PRODUCT_VERSION** Commit of the flavour/product version. In case of the [openDesk container](https://hub.docker.com/r/openproject/open_desk), contains a reference to the [openDesk repository](https://github.com/opf/openproject-open_desk)
 - **BUILDER_VERSION** Internal reference of the building CI repository that we use to create and publish the images.
 
 ### Support of releases
@@ -209,7 +209,7 @@ This approach has the significant disadvantage to go through the entire Rails st
 
 #### Exemplary Rails view request augmented by Angular
 
-A response that is fully controlled by Rails but extended by some Angular components in the frontend might look as follows. Let's take a look at the request to [edit a type's form configuration](../../system-admin-guide/manage-work-packages/work-package-types/#work-package-form-configuration-enterprise-add-on) `/types/1/edit/form_configuration`:
+A response that is fully controlled by Rails but extended by some Angular components in the frontend might look as follows. Let's take a look at the request to [edit a type's form configuration](../../system-admin-guide/manage-work-packages/work-package-types/form-configuration/) `/types/1/edit/form_configuration`:
 
 1. Rails receives the request and according to its [`config/routes.rb`](https://github.com/opf/openproject/blob/dev/config/routes.rb#L257), will handle the request with the [TypesController#edit action](https://github.com/opf/openproject/blob/dev/app/controllers/types_controller.rb#L71-L82) with its tab set to `form_configuration`.
 

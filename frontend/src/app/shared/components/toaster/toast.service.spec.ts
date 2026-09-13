@@ -21,41 +21,36 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { TestBed, waitForAsync } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { ToastService } from 'core-app/shared/components/toaster/toast.service';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ConfigurationService } from 'core-app/core/config/configuration.service';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { OpenprojectHalModule } from 'core-app/features/hal/openproject-hal.module';
 import { Observable, of } from 'rxjs';
-import { HttpEvent } from '@angular/common/http';
+import { HttpEvent, provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http';
 
 describe('ToastService', () => {
   let toastService:ToastService;
 
-  beforeEach(waitForAsync(() => {
-    // noinspection JSIgnoredPromiseFromCall
-    TestBed.configureTestingModule({
-      imports: [
-        OpenprojectHalModule,
-        HttpClientTestingModule,
-      ],
-      providers: [
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+    imports: [OpenprojectHalModule],
+    providers: [
         { provide: ConfigurationService, useValue: { autoHidePopups: () => true } },
         I18nService,
         ToastService,
-      ],
-    })
-      .compileComponents()
-      .then(() => {
-        toastService = TestBed.inject(ToastService);
-      });
-  }));
+        provideHttpClient(withXhr(), withInterceptorsFromDi()),
+        provideHttpClientTesting(),
+    ]
+}).compileComponents();
+    toastService = TestBed.inject(ToastService);
+  });
 
   it('should be able to create warnings', () => {
     const toaster = toastService.addWarning('warning!');
@@ -65,6 +60,7 @@ describe('ToastService', () => {
 
   it('should be able to create error messages with errors', () => {
     const toaster = toastService.addError('a super cereal error', ['fooo', 'baarr']);
+
     expect(toaster).toEqual({
       message: 'a super cereal error',
       data: ['fooo', 'baarr'],
@@ -74,6 +70,7 @@ describe('ToastService', () => {
 
   it('should be able to create error messages with only a message', () => {
     const toaster = toastService.addError('a super cereal error');
+
     expect(toaster).toEqual({
       message: 'a super cereal error',
       data: [],
@@ -88,6 +85,7 @@ describe('ToastService', () => {
       [new File([], '3'), of()],
     ];
     const toaster = toastService.addUpload('uploading...', uploadData);
+
     expect(toaster).toEqual({
       message: 'uploading...',
       type: 'upload',
@@ -103,16 +101,18 @@ describe('ToastService', () => {
 
   it('sends a broadcast to remove the first toaster upon adding a second success toaster',
     () => {
-      const firstToast = toastService.addSuccess('blubs');
+      toastService.addSuccess('blubs');
+
       expect(toastService.current.value!.length).toEqual(1);
 
       toastService.addSuccess('blubs2');
+
       expect(toastService.current.value!.length).toEqual(1);
     });
 
   it('sends a broadcast to remove the first toaster upon adding a second error toaster',
     () => {
-      const firstToast = toastService.addSuccess('blubs');
+      toastService.addSuccess('blubs');
       toastService.addError('blubs2');
 
       expect(toastService.current.value!.length).toEqual(1);

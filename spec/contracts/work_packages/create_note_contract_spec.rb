@@ -40,7 +40,6 @@ RSpec.describe WorkPackages::CreateNoteContract do
     # we need to clear the changes information because otherwise the
     # contract will complain about all the changes to read_only attributes
     wp.send(:clear_changes_information)
-    allow(wp).to receive(:valid?).and_return true
 
     wp
   end
@@ -82,32 +81,40 @@ RSpec.describe WorkPackages::CreateNoteContract do
       end
     end
 
-    describe "journal_internal" do
+    describe "journal_internal", with_ee: [:internal_comments] do
       before do
         # Setting the journal_notes to not trigger a :blank error
         work_package.journal_notes = "blubs"
+        # Enable internal comments on project
+        allow(project).to receive(:enabled_internal_comments).and_return(true)
       end
 
-      context "and journal_internal is true, and internal_comments_active? is disabled",
-              with_flag: { internal_comments_active: false } do
-        before do
-          work_package.journal_internal = true
-        end
-
-        it_behaves_like "contract is invalid", journal_internal: :feature_disabled
-      end
-
-      context "and journal_internal is true, and internal_comments_active? is enabled",
-              with_flag: { internal_comments_active: true } do
+      context "and journal_internal is true" do
         before do
           work_package.journal_internal = true
         end
 
         it_behaves_like "contract is valid"
+
+        context "and the enterprise token does not allow internal comments", with_ee: [] do
+          it "invalidates the contract, and shows the least required enterprise plan" do
+            expect(contract.validate).to be(false)
+
+            expect(contract.errors.full_messages)
+              .to eq(["Internal Journal requires at least the Professional enterprise plan."])
+          end
+        end
+
+        context "and the project setting does not allow internal comments" do
+          before do
+            allow(project).to receive(:enabled_internal_comments).and_return(false)
+          end
+
+          it_behaves_like "contract is invalid", journal_internal: :feature_disabled_for_project
+        end
       end
 
-      context "and journal_internal is false, and internal_comments_active? is disabled",
-              with_flag: { internal_comments_active: false } do
+      context "and journal_internal is false" do
         before do
           work_package.journal_internal = false
         end
@@ -115,8 +122,7 @@ RSpec.describe WorkPackages::CreateNoteContract do
         it_behaves_like "contract is valid"
       end
 
-      context "with journal_internal is true, internal_comments_active? is active but lacking permissions",
-              with_flag: { internal_comments_active: true } do
+      context "with journal_internal is true, but lacking permissions" do
         let(:permissions) { super() - [:add_internal_comments] }
 
         before do
@@ -126,8 +132,7 @@ RSpec.describe WorkPackages::CreateNoteContract do
         it_behaves_like "contract is invalid", journal_internal: :error_unauthorized
       end
 
-      context "with journal_internal is false, internal_comments_active? is active and lacking permissions",
-              with_flag: { internal_comments_active: true } do
+      context "with journal_internal is false and lacking permissions" do
         let(:permissions) { super() - [:add_internal_comments] }
 
         before do
@@ -144,6 +149,19 @@ RSpec.describe WorkPackages::CreateNoteContract do
       end
 
       it_behaves_like "contract is invalid", subject: :error_readonly
+    end
+
+    describe "with the work package already being invalid" do
+      before do
+        work_package.done_ratio = -100
+
+        # Otherwise, the contract would complain about changing a read-only attribute
+        work_package.send(:clear_changes_information)
+
+        work_package.journal_notes = "abc"
+      end
+
+      it_behaves_like "contract is valid"
     end
   end
 end

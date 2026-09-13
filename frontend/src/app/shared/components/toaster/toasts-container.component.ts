@@ -21,12 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { UntilDestroyedMixin } from 'core-app/shared/helpers/angular/until-destroyed.mixin';
 import { IToast, ToastService } from './toast.service';
 
@@ -35,22 +35,21 @@ import { IToast, ToastService } from './toast.service';
   template: `
     <div class="op-toast--wrapper">
       <div class="op-toast--casing">
-        <op-toast [toast]="toast" *ngFor="let toast of stack"></op-toast>
+        @for (toast of stack; track toast) {
+          <op-toast [toast]="toast" />
+        }
       </div>
     </div>
-  `,
+    `,
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'opce-toasts-container',
+  standalone: false,
 })
 export class ToastsContainerComponent extends UntilDestroyedMixin implements OnInit {
-  public stack:IToast[] = [];
+  readonly toastService = inject(ToastService);
+  readonly cdRef = inject(ChangeDetectorRef);
 
-  constructor(
-    readonly toastService:ToastService,
-    readonly cdRef:ChangeDetectorRef,
-  ) {
-    super();
-  }
+  public stack:IToast[] = [];
 
   ngOnInit():void {
     this.toastService

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -68,7 +70,6 @@ class CustomActions::UpdateWorkPackageService
 
     if new_actions.any? && actions.length != new_actions.length
       work_package.restore_attributes(work_package.changes.keys - changes_before.keys)
-
       apply_actions(work_package, new_actions)
     end
   end

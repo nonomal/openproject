@@ -29,7 +29,7 @@
 class Widget::Table::EntryTable < Widget::Table
   include ReportingHelper
 
-  FIELDS = %i[user_id activity_id work_package_id comments logged_by_id project_id].freeze
+  FIELDS = %i[user_id activity_id entity_gid comments logged_by_id project_id].freeze
 
   def render
     content = content_tag :div, class: "generic-table--container -with-footer" do
@@ -175,8 +175,7 @@ class Widget::Table::EntryTable < Widget::Table
           icons << link_to(icon_wrapper("icon-context icon-delete", I18n.t(:button_delete)),
                            action_for(result, action: "destroy")
                              .reverse_merge(authenticity_token: form_authenticity_token),
-                           data: { confirm: I18n.t(:text_are_you_sure) },
-                           method: :delete,
+                           data: { turbo_method: :delete, turbo_confirm: I18n.t(:text_are_you_sure) },
                            class: "no-decoration-on-hover",
                            title: I18n.t(:button_delete))
         else

@@ -150,7 +150,7 @@ af:
                   name: Mylpaal
         demo-planning-constructing-project:
           name: "(Demo) Beplanning en konstruksie"
-          status_explanation: Alle take en die subprojekte is op skedule. Die betrokke mense ken hul take. Die stelsel is heeltemal opgestel.
+          status_explanation: Alle take is op skedule. Die betrokke mense ken hul take. Die stelsel is heeltemal opgestel.
           description: Dit is 'n kort opsomming van die doelwitte van hierdie demo-konstruksieprojek.
           news:
             item_0:
@@ -404,7 +404,9 @@ af:
                     *   Bring some drinks, snacks and your smile
         demo-bim-project:
           name: "(Demo) BIM-projek"
-          status_explanation: "Alle take en die subprojekte is op skedule. Die betrokke mense ken hul take. Die stelsel is heeltemal opgestel.\n"
+          status_explanation: 'Alle take en die subprojekte is op skedule. Die betrokke mense ken hul take. Die stelsel is heeltemal opgestel.
+
+            '
           description: Dit is 'n kort opsomming van die doelwitte van hierdie demo-Gebou inligtingsmodellering konstruksieprojek.
           news:
             item_0:
@@ -669,7 +671,7 @@ af:
               description: Geniet jou gebou :)
         demo-bcf-management-project:
           name: "(Demo) BCF management"
-          status_explanation: Alle take is op skedule. Die betrokke mense ken hul take. Die stelsel is heeltemal opgestel.
+          status_explanation: Alle take en die subprojekte is op skedule. Die betrokke mense ken hul take. Die stelsel is heeltemal opgestel.
           description: This is a short summary of the goals of this demo BCF management project.
           ifc_models:
             item_0:
@@ -682,7 +684,7 @@ af:
             item_0: Kategorie 1 (moet verander word in Projek-instellings)
           queries:
             item_0:
-              name: Kwessie
+              name: Kwessies
             item_1:
               name: Botsings
             item_2:

@@ -1,4 +1,4 @@
-<%#-- copyright
+<%# -- copyright
 OpenProject is an open source project management software.
 Copyright (C) the OpenProject GmbH
 
@@ -25,10 +25,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 See COPYRIGHT and LICENSE files for more details.
 
-++#%>
+++# %>
+
+<% if @tab == "WorkPackageCustomField" %>
+  <%= render(EnterpriseEdition::BannerComponent.new(:custom_field_hierarchies)) %>
+<% end %>
 
 <% if @custom_fields_by_type[tab[:name]].blank? %>
-  <%= no_results_box(action_url: new_custom_field_path(type: tab[:name]), display_action: true) %>
+  <%= no_results_box(display_action: false) %>
 <% else %>
   <div class="generic-table--container">
     <div class="generic-table--results-container">
@@ -137,16 +141,17 @@ See COPYRIGHT and LICENSE files for more details.
                       <%= t(:label_x_projects, count: custom_field.projects.count) %>
                     </span>
                   <% elsif !custom_field.is_for_all? %>
-                    <%= t(:label_x_projects, count: custom_field.projects.count) %></td>
+                    <%= t(:label_x_projects, count: custom_field.projects.count) %>
                   <% end %>
+                </td>
                 <td>
-                  <% type_links = custom_field.types.map { |t| link_to(t.name, edit_tab_type_path(id: t.id, tab: "form_configuration")) } %>
+                  <% type_links = custom_field.type_variants.map { |variant| link_to(variant.composite_name, edit_type_form_configuration_path(**variant.path_args)) } %>
                   <% if type_links.empty? %>
                     <span class="icon-context icon-warning">
                       <%= link_to t(:label_custom_field_add_no_type), types_path %>
                     </span>
                   <% end %>
-                  <%= safe_join type_links, ", ".html_safe %>
+                  <%= safe_join(type_links, ", ") %>
                 </td>
               <% end %>
               <% unless tab[:name] == 'WorkPackageCustomField' %>
@@ -156,8 +161,10 @@ See COPYRIGHT and LICENSE files for more details.
                 <%= link_to(
                       op_icon("icon icon-delete"),
                       custom_field_path(custom_field),
-                      method: :delete,
-                      data: { confirm: I18n.t(:text_are_you_sure) },
+                      data: {
+                        turbo_method: :delete,
+                        turbo_confirm: I18n.t(:text_are_you_sure)
+                      },
                       title: t(:button_delete)
                     ) %>
               </td>

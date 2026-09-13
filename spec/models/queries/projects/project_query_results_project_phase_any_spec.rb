@@ -363,6 +363,32 @@ RSpec.describe ProjectQuery, "results of 'Project phase: Any' filter" do
         end
       end
     end
+
+    context "when being on Wednesday before the phase, the phase starts on Monday and the week is configured to start on Monday",
+            with_settings: { start_of_week: 1 } do
+      before do
+        phase.update_column(:start_date, Date.parse("2025-02-03"))
+      end
+
+      it "returns no project as the phase starts in the next week" do
+        Timecop.travel(Date.parse("2025-01-29").noon) do
+          expect(instance.results).to be_empty
+        end
+      end
+    end
+
+    context "when being on Sunday, same as the phase's start date and the week is configured to start on Monday",
+            with_settings: { start_of_week: 1 } do
+      before do
+        phase.update_column(:start_date, Date.parse("2025-02-09"))
+      end
+
+      it "returns the project whose gate is in the current week" do
+        Timecop.travel(Date.parse("2025-02-09").noon) do
+          expect(instance.results).to contain_exactly(project_with_phase)
+        end
+      end
+    end
   end
 
   context "with a <>d (between) operator" do

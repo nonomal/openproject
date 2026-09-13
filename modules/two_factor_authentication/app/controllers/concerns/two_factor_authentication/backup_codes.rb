@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module ::TwoFactorAuthentication
   module BackupCodes
     extend ActiveSupport::Concern
@@ -19,6 +21,7 @@ module ::TwoFactorAuthentication
       if result.success?
         complete_stage_redirect
       else
+        @authenticated_user.log_failed_login
         fail_login(t("two_factor_authentication.error_invalid_backup_code"))
       end
     end

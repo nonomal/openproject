@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,6 +30,8 @@
 
 module Token
   class ICal < HashedToken
+    prefix :opical
+
     # restrict the usage of one ical token to one query (calendar)
     has_one :ical_token_query_assignment, required: true, dependent: :destroy, foreign_key: :ical_token_id,
                                           class_name: "ICalTokenQueryAssignment", inverse_of: :ical_token
@@ -35,6 +39,10 @@ module Token
 
     has_one :query, through: :ical_token_query_assignment
     has_one :project, through: :query
+
+    def token_name
+      ical_token_query_assignment.name
+    end
 
     class << self
       def create_and_return_value(user, query, token_name)

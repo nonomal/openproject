@@ -38,7 +38,8 @@
   &-input-wrap[invalid='true'] input:not(:focus)
     border-color: var(--control-borderColor-danger)
 
-  &-spacingWrapper > :empty
+  &-spacingWrapper > :empty,
+  &-spacingWrapper:not(:has(> :not([hidden])))
     display: none
 
 .UnderlineNav
@@ -48,14 +49,14 @@
   @media screen and (min-width: $breakpoint-sm)
     scroll-behavior: smooth
 
-/* Remove margin-left: 2rem from Breadcrumbs */
+/* Remove margin-left: 2rem from Primer components using lists */
 page-header,
 sub-header,
 .op-work-package-details-tab-component,
 .UnderlineNav,
 .tabnav,
 .Box-header,
-action-menu anchored-position
+action-list
   ol, ul
     margin-left: 0
 
@@ -68,8 +69,18 @@ ul.SegmentedControl,
     display: none
 
 .Overlay
+  &--size-large-portrait
+    --overlay-height: 800px !important
+    --overlay-width: 640px !important
+
   &-body_autocomplete_height
-    min-height: 300px
+    min-height: 320px
+
+  &-body_autocomplete_height--lg
+    min-height: 480px
+
+  &--size-xlarge-maximized-empty-footer
+    min-height: 534px
 
 // For some specific cases like progress form in small screens,
 // we need to change the direction of elements to column,
@@ -80,14 +91,19 @@ ul.SegmentedControl,
       flex-direction: column
       row-gap: 1rem
 
-.Button.op-app-header--primer-button,
-.Button.op-app-header--primer-button .Button-visual
-  color: var(--header-item-font-color)
-  width: auto
+.Button.op-app-header--primer-button
+  align-self: center
+  min-width: var(--control-medium-size)
 
   &:hover
-    background: var(--header-item-bg-hover-color)
     color: var(--header-item-font-hover-color)
+
+  &:not(.Button--primary),
+  &:not(.Button--primary) svg
+    color: var(--header-item-font-color)
+
+  svg
+    align-self: center
 
 // Prototypical CKEditor adjustments to better match Primer styles
 .ck-editor-primer-adjusted
@@ -113,3 +129,87 @@ ul.SegmentedControl,
 .generic-table
   .generic-table--action-menu-button
     min-width: max-content !important
+
+.FormControl-label:has(.op-attribute-help-text)
+  @extend .op-attribute-label
+
+  // the width of a space between the label text and asterisk
+  > :not(.op-attribute-help-text)::before
+    content: "\00a0"
+
+  // we override ordering to display help text after the asterisk
+  > .op-attribute-help-text
+    order: 1
+
+.Truncate
+  &.Truncate--expanded
+    max-width: none
+    min-width: 0
+    overflow: visible
+    white-space: normal
+
+    .Truncate-text
+      white-space: normal
+      overflow: visible
+      text-overflow: clip
+
+.ActionListContent[aria-disabled="true"]
+  .ActionListItem-label[class^="__hl_"], .ActionListItem-label[class*=" __hl_"]
+    color: var(--control-fgColor-disabled) !important
+
+// Apply the mobile styles as soon as the banner itself is small
+// Styles are copied from the PVC repo
+.op-primer-flash
+  x-banner
+    container-type: inline-size
+    display: block
+
+  .Banner
+    @container (max-width: 543.98px)
+      grid-template-areas: 'visual message close' '. actions actions'
+      grid-template-columns: min-content 1fr min-content
+      grid-template-rows: min-content min-content
+
+      & .Banner-actions
+        margin: var(--base-size-8) 0 0 var(--base-size-8)
+
+// Bug in @openproject/primer-view-components: .FormControl-checkbox:indeterminate
+// has no background rule, and :indeterminate:before doesn't cancel checkmarkOut
+.FormControl-checkbox:indeterminate
+  background: var(--control-checked-bgColor-rest, var(--color-accent-fg))
+  border-color: var(--control-checked-borderColor-rest, var(--color-accent-fg))
+
+  &:before
+    animation: none
+    clip-path: inset(0)
+
+  // Mirror Primer's :checked:disabled so a disabled indeterminate box reads as
+  // inactive instead of keeping the accent background from the rule above
+  &:disabled
+    background: var(--control-fgColor-disabled)
+    border-color: var(--control-fgColor-disabled)
+    cursor: not-allowed
+
+// At some point in time, this needs to be extracted into a proper component,
+// something like `FilterableTreeViewSelectPanel`
+@mixin keep-project-select-actions-clear-of-scrollbar
+  .TreeViewItemContainer
+    width: calc(100% - var(--base-size-16))
+
+.op-project-select--body
+  .FilterableTreeViewLayout
+    > .Stack
+      padding-right: var(--base-size-16)
+    .FilterableTreeViewTreeContainer
+      scrollbar-gutter: stable
+
+      // Overlay scrollbars can cover the tree content on narrow screens and
+      // touch devices.
+      @media screen and (max-width: $breakpoint-sm), (pointer: coarse)
+        @include keep-project-select-actions-clear-of-scrollbar
+
+      // Firefox on Windows can render the scrollbar over the tree content,
+      // so keep trailing actions out of that area.
+      // see https://bugzilla.mozilla.org/show_bug.cgi?id=1980289
+      body.-browser-windows.-browser-firefox &
+        @include keep-project-select-actions-clear-of-scrollbar

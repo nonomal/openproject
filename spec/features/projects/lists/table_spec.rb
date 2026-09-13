@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # -- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) 2010-2024 the OpenProject GmbH
@@ -44,6 +46,7 @@ RSpec.describe "Projects lists table display and actions", :js, with_settings: {
     end
   end
   shared_let(:development_project) { create(:project, name: "Development project", identifier: "development-project") }
+  shared_let(:archived_project) { create(:project, name: "Archived project", identifier: "archived-project", active: false) }
 
   let(:news) { create(:news, project:) }
   let(:projects_page) { Pages::Projects::Index.new }
@@ -166,7 +169,7 @@ RSpec.describe "Projects lists table display and actions", :js, with_settings: {
           expect(page)
             .to have_no_text(
               development_project.custom_values_for_custom_field(
-                id: custom_field.id,
+                custom_field,
                 all: true
               ).first.value
             )
@@ -205,9 +208,9 @@ RSpec.describe "Projects lists table display and actions", :js, with_settings: {
 
         # Test visibility of 'more' menu list items
         projects_page.activate_menu_of(project) do |menu|
-          expect(menu).to have_text("Copy")
+          expect(menu).to have_text("Duplicate")
           expect(menu).to have_text("Project settings")
-          expect(menu).to have_text("New subproject")
+          expect(menu).to have_text("Add subproject")
           expect(menu).to have_text("Delete")
           expect(menu).to have_text("Archive")
         end
@@ -217,13 +220,26 @@ RSpec.describe "Projects lists table display and actions", :js, with_settings: {
           expect(page)
             .to have_css("th", text: "REQUIRED DISK STORAGE")
           expect(page)
-            .to have_css("th", text: "CREATED ON")
-          expect(page)
-            .to have_css("td", text: project.created_at.strftime("%m/%d/%Y"))
-          expect(page)
             .to have_css("th", text: "LATEST ACTIVITY AT")
           expect(page)
             .to have_css("td", text: news.created_at.strftime("%m/%d/%Y"))
+        end
+      end
+
+      specify "archived projects offer no option to be marked as favorite" do
+        login_as(admin)
+        visit projects_path
+        load_and_open_filters admin
+        projects_page.filter_by_active("no")
+        wait_for_reload
+
+        projects_page.within_row(archived_project) do
+          expect(page).to have_text(archived_project.name)
+          expect(page).not_to have_test_selector("project-list-favorite-button")
+        end
+
+        projects_page.activate_menu_of(archived_project) do |menu|
+          expect(menu).to have_no_text("Add to favorites")
         end
       end
 
@@ -237,7 +253,7 @@ RSpec.describe "Projects lists table display and actions", :js, with_settings: {
         end
 
         visit project_path(project)
-        expect(project).to be_favored_by(admin)
+        expect(project).to be_favorited_by(admin)
 
         visit projects_path
         projects_page.activate_menu_of(project) do |menu|
@@ -246,7 +262,7 @@ RSpec.describe "Projects lists table display and actions", :js, with_settings: {
         end
 
         visit project_path(project)
-        expect(project).not_to be_favored_by(admin)
+        expect(project).not_to be_favorited_by(admin)
 
         visit projects_path
         projects_page.within_row(project) do
@@ -258,16 +274,38 @@ RSpec.describe "Projects lists table display and actions", :js, with_settings: {
         projects_page.activate_menu_of(project) do |menu|
           expect(menu).to have_text("Remove from favorites")
         end
-        expect(project).to be_favored_by(admin)
+        expect(project).to be_favorited_by(admin)
 
         projects_page.within_row(project) do
           page.find_test_selector("project-list-favorite-button").click
         end
 
+        wait_for_network_idle
+
         projects_page.activate_menu_of(project) do |menu|
           expect(menu).to have_text("Add to favorites")
         end
-        expect(project).not_to be_favored_by(admin)
+        expect(project).not_to be_favorited_by(admin)
+      end
+
+      specify "project can be deleted" do
+        login_as(admin)
+        visit projects_path
+
+        projects_page.activate_menu_of(project) do |menu|
+          expect(menu).to have_text("Delete")
+          click_link_or_button "Delete"
+        end
+
+        expect(page).to have_modal "Delete project"
+
+        within_modal "Delete project" do
+          expect(page).to have_heading "Permanently delete this project?"
+
+          # We test the actual deletion in spec/features/projects/destroy_spec.rb
+          click_on "Cancel"
+        end
+        expect(page).to have_no_modal "Delete project"
       end
 
       specify "flash sortBy is being escaped" do
@@ -334,6 +372,7 @@ RSpec.describe "Projects lists table display and actions", :js, with_settings: {
 
   context "with valid Enterprise token" do
     shared_let(:long_text_custom_field) { create(:text_project_custom_field) }
+
     specify "CF columns and filters are not visible by default" do
       load_and_open_filters admin
 
@@ -352,7 +391,7 @@ RSpec.describe "Projects lists table display and actions", :js, with_settings: {
 
       # Admins shall be the only ones to see invisible CFs
       expect(page).to have_text(invisible_custom_field.name.upcase)
-      expect(page).to have_select("add_filter_select", with_options: [invisible_custom_field.name])
+      projects_page.expect_filter_available(invisible_custom_field.name)
     end
 
     specify "long-text fields are truncated" do
@@ -406,6 +445,7 @@ RSpec.describe "Projects lists table display and actions", :js, with_settings: {
     it "keeps applied filters, orders and columns" do
       load_and_open_filters admin
 
+      click_button accessible_name: "Project name filter"
       projects_page.filter_by_name_and_identifier("project")
 
       wait_for_reload
@@ -532,7 +572,7 @@ RSpec.describe "Projects lists table display and actions", :js, with_settings: {
 
       projects_page.activate_menu_of(parent_project) do |menu|
         expect(menu).to have_text("Add to favorites")
-        expect(menu).to have_no_text("Copy")
+        expect(menu).to have_no_text("Duplicate")
       end
 
       # For a project member with :copy_projects privilege the 'More' menu is visible.
@@ -542,7 +582,7 @@ RSpec.describe "Projects lists table display and actions", :js, with_settings: {
       expect(page).to have_text(parent_project.name)
 
       projects_page.activate_menu_of(parent_project) do |menu|
-        expect(menu).to have_text("Copy")
+        expect(menu).to have_text("Duplicate")
       end
 
       # For a project member with :add_subprojects privilege the 'More' menu is visible.
@@ -551,7 +591,7 @@ RSpec.describe "Projects lists table display and actions", :js, with_settings: {
 
       projects_page.activate_menu_of(parent_project) do |menu|
         expect(menu).to have_text("Add to favorites")
-        expect(menu).to have_text("New subproject")
+        expect(menu).to have_text("Add subproject")
       end
 
       # Test admin only properties are invisible
@@ -559,13 +599,7 @@ RSpec.describe "Projects lists table display and actions", :js, with_settings: {
         expect(page)
           .to have_no_css("th", text: "REQUIRED DISK STORAGE")
         expect(page)
-          .to have_no_css("th", text: "CREATED ON")
-        expect(page)
-          .to have_no_css("td", text: project.created_at.strftime("%m/%d/%Y"))
-        expect(page)
           .to have_no_css("th", text: "LATEST ACTIVITY AT")
-        expect(page)
-          .to have_no_css("td", text: news.created_at.strftime("%m/%d/%Y"))
       end
     end
   end
@@ -628,6 +662,39 @@ RSpec.describe "Projects lists table display and actions", :js, with_settings: {
         expect(page).to have_current_path(project_activity_index_path(project_with_activity_enabled), ignore_query: true)
         expect(page).to have_checked_field(id: "event_types_project_details")
         expect(page).to have_unchecked_field(id: "event_types_work_packages")
+      end
+    end
+  end
+
+  describe "workspace type badges" do
+    shared_let(:portfolio_project) { create(:portfolio, name: "Test Portfolio") }
+    shared_let(:program_project) { create(:program, name: "Test Program") }
+    shared_let(:regular_project) { project }
+
+    before do
+      login_as(admin)
+      projects_page.visit!
+    end
+
+    it "displays badges for portfolio and program workspaces but not for regular projects" do
+      # Check portfolio has badge with icon and label
+      projects_page.within_row(portfolio_project) do
+        expect(page).to have_css("svg.octicon-briefcase")
+        expect(page).to have_text("Portfolio")
+      end
+
+      # Check program has badge with icon and label
+      projects_page.within_row(program_project) do
+        expect(page).to have_css("svg.octicon-versions")
+        expect(page).to have_text("Program")
+      end
+
+      # Check regular project does NOT have workspace badge
+      projects_page.within_row(regular_project) do
+        expect(page).to have_no_css("svg.octicon-briefcase")
+        expect(page).to have_no_css("svg.octicon-versions")
+        expect(page).to have_no_text("Portfolio", exact: false)
+        expect(page).to have_no_text("Program", exact: false)
       end
     end
   end

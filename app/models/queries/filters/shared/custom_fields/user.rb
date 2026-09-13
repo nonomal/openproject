@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -38,6 +40,45 @@ module Queries::Filters::Shared
 
       def allowed_values
         @allowed_values ||= me_allowed_value + super
+      end
+
+      def values_replaced
+        vals = super
+        vals + group_members_added(vals) + user_groups_added(vals)
+      end
+
+      def autocomplete_options
+        {
+          component: "opce-user-autocompleter",
+          hideSelected: true,
+          defaultData: false,
+          placeholder: I18n.t(:label_user_search),
+          resource: "principals",
+          url: ::API::V3::Utilities::PathHelper::ApiV3Path.principals,
+          filters: [
+            { name: "status", operator: "!", values: [Principal.statuses["locked"].to_s] }
+          ],
+          searchKey: "any_name_attribute",
+          focusDirectly: false
+        }
+      end
+
+      private
+
+      def group_members_added(vals)
+        ::User
+          .joins(:groups)
+          .where(groups_users: { id: vals })
+          .pluck(:id)
+          .map(&:to_s)
+      end
+
+      def user_groups_added(vals)
+        Group
+          .joins(:users)
+          .where(users_users: { id: vals })
+          .pluck(:id)
+          .map(&:to_s)
       end
     end
   end

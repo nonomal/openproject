@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,7 +30,7 @@
 
 module OpenProject::TextFormatting::Filters::Macros
   module IncludeWikiPage
-    HTML_CLASS = "include_wiki_page".freeze
+    HTML_CLASS = "include_wiki_page"
 
     module_function
 

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -35,6 +37,10 @@ module DemoData
       BasicData::PrioritySeeder,
       AdminUserSeeder
     ]
+    # :parent is not strictly a required reference: they are most often created
+    # while seeding work packages so it would not make sense to not seed if they
+    # are not referenced yet.
+    self.attribute_names_for_required_references = %w[status type]
 
     attr_reader :project, :statuses, :repository, :types
     alias_method :project_data, :seed_data
@@ -45,7 +51,7 @@ module DemoData
       @project_data = project_data
       @statuses = Status.all
       @repository = Repository.first
-      @types = project.types.all.reject(&:is_milestone?)
+      @types = project.enabled_types.reject(&:is_milestone?)
       @relations_to_create = []
     end
 
@@ -56,9 +62,13 @@ module DemoData
       end
     end
 
-    private
+    def all_required_references
+      collect_required_references(project_data.lookup("work_packages"))
+    end
 
     RelationData = Data.define(:from, :to_reference, :type)
+
+    private
 
     attr_reader :relations_to_create
 
@@ -78,7 +88,8 @@ module DemoData
     def create_work_package(attributes)
       wp_attr = base_work_package_attributes attributes
 
-      set_version! wp_attr, attributes
+      set_target_versions! wp_attr, attributes
+      set_observed_in_versions! wp_attr, attributes
       set_time_tracking_attributes! wp_attr, attributes
       set_backlogs_attributes! wp_attr, attributes
 
@@ -139,8 +150,10 @@ module DemoData
       seed_data.find_reference(reference)
     end
 
+    # The referenced principals are seeded with the development data, so they are absent on
+    # production instances and the work packages fall back to the admin.
     def find_principal(reference)
-      seed_data.find_reference(reference) || admin_user
+      seed_data.find_reference(reference, default: nil) || admin_user
     end
 
     def find_status(attributes)
@@ -151,11 +164,29 @@ module DemoData
       seed_data.find_reference(attributes["type"].to_sym)
     end
 
-    def set_version!(wp_attr, attributes)
-      version = seed_data.find_reference(attributes["version"])
-      if version
-        wp_attr[:version] = version
+    def collect_required_references(work_packages_data)
+      Array.wrap(work_packages_data).each_with_object(Set.new) do |work_package_data, acc|
+        acc.merge(get_required_references(work_package_data))
+        if work_package_data["children"]
+          acc.merge(collect_required_references(work_package_data["children"]))
+        end
       end
+    end
+
+    def set_target_versions!(wp_attr, attributes)
+      version_ids = version_ids_for(attributes, "target_versions")
+
+      wp_attr[:target_version_ids_replacements] = version_ids if version_ids.any?
+    end
+
+    def set_observed_in_versions!(wp_attr, attributes)
+      version_ids = version_ids_for(attributes, "observed_in_versions")
+
+      wp_attr[:observed_in_version_ids_replacements] = version_ids if version_ids.any?
+    end
+
+    def version_ids_for(attributes, key)
+      seed_data.find_references(attributes[key]).filter_map { it&.id }
     end
 
     def set_time_tracking_attributes!(wp_attr, attributes)
@@ -200,7 +231,9 @@ module DemoData
           duration:,
           ignore_non_working_days:,
           schedule_manually:,
-          estimated_hours:
+          estimated_hours:,
+          remaining_hours:,
+          done_ratio:
         }
       end
 
@@ -241,6 +274,14 @@ module DemoData
 
       def estimated_hours
         attributes["estimated_hours"]&.to_i
+      end
+
+      def remaining_hours
+        attributes["remaining_hours"]&.to_i
+      end
+
+      def done_ratio
+        attributes["done_ratio"]&.to_i
       end
 
       def all_days

@@ -21,12 +21,14 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { debounce } from 'lodash-es';
+import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, inject } from '@angular/core';
+import type { Editor as CodeMirrorEditor } from 'codemirror';
 import { ToastService } from 'core-app/shared/components/toaster/toast.service';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { ConfigurationService } from 'core-app/core/config/configuration.service';
@@ -36,16 +38,17 @@ import {
   ICKEditorWatchdog,
 } from 'core-app/shared/components/editor/components/ckeditor/ckeditor.types';
 import { CKEditorSetupService } from 'core-app/shared/components/editor/components/ckeditor/ckeditor-setup.service';
-import { KeyCodes } from 'core-app/shared/helpers/keyCodes.enum';
+import { CodeMirrorLoaderService } from 'core-app/shared/components/editor/components/ckeditor/codemirror-loader.service';
+import { KeyCodes } from 'core-app/shared/helpers/keycodes';
 import { debugLog } from 'core-app/shared/helpers/debug_output';
 import { UntilDestroyedMixin } from 'core-app/shared/helpers/angular/until-destroyed.mixin';
-
-declare module 'codemirror';
 
 @Component({
   selector: 'op-ckeditor',
   templateUrl: './op-ckeditor.html',
   styleUrls: ['./op-ckeditor.sass'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
 export class OpCkeditorComponent extends UntilDestroyedMixin implements OnInit, OnDestroy {
   @Input() context:ICKEditorContext;
@@ -83,9 +86,9 @@ export class OpCkeditorComponent extends UntilDestroyedMixin implements OnInit, 
   @Output() editorFocus = new EventEmitter<string>();
 
   // View container of the replacement used to initialize CKEditor5
-  @ViewChild('opCkeditorReplacementContainer', { static: true }) opCkeditorReplacementContainer:ElementRef;
+  @ViewChild('opCkeditorReplacementContainer', { static: true }) opCkeditorReplacementContainer:ElementRef<HTMLDivElement>;
 
-  @ViewChild('codeMirrorPane') codeMirrorPane:ElementRef;
+  @ViewChild('codeMirrorPane') codeMirrorPane:ElementRef<HTMLDivElement>;
 
   // CKEditor instance once initialized
   public watchdog:ICKEditorWatchdog;
@@ -100,16 +103,23 @@ export class OpCkeditorComponent extends UntilDestroyedMixin implements OnInit, 
 
   private _content = '';
 
+  private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly Notifications = inject(ToastService);
+  private readonly I18n = inject(I18nService);
+  private readonly configurationService = inject(ConfigurationService);
+  private readonly ckEditorSetup = inject(CKEditorSetupService);
+  private readonly codeMirrorLoader = inject(CodeMirrorLoaderService);
+
   public text = {
     errorTitle: this.I18n.t('js.editor.ckeditor_error'),
   };
 
   // Codemirror instance, initialized lazily when running source mode
-  public codeMirrorInstance:undefined|any;
+  public codeMirrorInstance:CodeMirrorEditor|null = null;
 
   // Debounce change listener for both CKE and codemirror
   // to read back changes as they happen
-  private debouncedEmitter = _.debounce(
+  private debouncedEmitter = debounce(
     () => {
       const val = this.getTransformedContent(false);
       this.contentChanged.emit(val);
@@ -117,18 +127,6 @@ export class OpCkeditorComponent extends UntilDestroyedMixin implements OnInit, 
     1000,
     { leading: true },
   );
-
-  private $element:JQuery;
-
-  constructor(
-    private readonly elementRef:ElementRef,
-    private readonly Notifications:ToastService,
-    private readonly I18n:I18nService,
-    private readonly configurationService:ConfigurationService,
-    private readonly ckEditorSetup:CKEditorSetupService,
-  ) {
-    super();
-  }
 
   /**
    * Get the current live data from CKEditor. This may raise in cases
@@ -138,8 +136,7 @@ export class OpCkeditorComponent extends UntilDestroyedMixin implements OnInit, 
     let content:string;
 
     if (this.manualMode) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-      content = this.codeMirrorInstance.getValue() as string;
+      content = this.codeMirrorInstance!.getValue();
     } else {
       content = this.ckEditorInstance.getData({ trim: false });
     }
@@ -173,16 +170,17 @@ export class OpCkeditorComponent extends UntilDestroyedMixin implements OnInit, 
 
       return this.getRawData();
     } catch (e) {
-      console.error(`Failed to save CKEditor content: ${e}.`);
+      if (e instanceof Error) {
+        console.error(`Failed to save CKEditor content: ${e.message}.`);
 
-      const error = this.I18n.t(
-        'js.editor.error_saving_failed',
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-call
-        { error: e.toString() || this.I18n.t('js.error.internal') },
-      );
+        const error = this.I18n.t(
+          'js.editor.error_saving_failed',
+          { error: e.message },
+        );
 
-      if (notificationOnError) {
-        this.Notifications.addError(error);
+        if (notificationOnError) {
+          this.Notifications.addError(error);
+        }
       }
 
       return this._content;
@@ -203,14 +201,14 @@ export class OpCkeditorComponent extends UntilDestroyedMixin implements OnInit, 
   ngOnInit() {
     try {
       this.initializeEditor();
-    } catch (error:unknown) {
+    } catch (e) {
       // We will run into this error if, among others, the browser does not fully support
       // CKEditor's requirements on ES6.
-
-      const message = (error as Error).toString();
-      console.error('Failed to setup CKEditor instance: %O', error);
-      this.error = message;
-      this.initializationFailed.emit(message);
+      console.error('Failed to setup CKEditor instance: %O', e);
+      if (e instanceof Error) {
+        this.error = e.message;
+        this.initializationFailed.emit(e.message);
+      }
     }
   }
 
@@ -223,9 +221,7 @@ export class OpCkeditorComponent extends UntilDestroyedMixin implements OnInit, 
   }
 
   private initializeEditor() {
-    this.$element = jQuery(this.elementRef.nativeElement);
-
-    const editorPromise = this.ckEditorSetup
+    void this.ckEditorSetup
       .create(
         this.opCkeditorReplacementContainer.nativeElement,
         this.context,
@@ -262,8 +258,6 @@ export class OpCkeditorComponent extends UntilDestroyedMixin implements OnInit, 
         this.initializeDone.emit(watchdog.editor);
         return watchdog.editor;
       });
-
-    this.$element.data('editor', editorPromise);
   }
 
   private interceptModifiedEnterKeystrokes(editor:ICKEditorInstance) {
@@ -271,13 +265,13 @@ export class OpCkeditorComponent extends UntilDestroyedMixin implements OnInit, 
       editor.editing.view.document,
       'keydown',
       (evt, data) => {
-        if ((data.ctrlKey || data.metaKey) && data.keyCode === Number(KeyCodes.ENTER)) {
+        if ((data.ctrlKey || data.metaKey) && data.keyCode === KeyCodes.ENTER) {
           debugLog('Sending save request from CKEditor.');
           this.saveRequested.emit();
           evt.stop();
         }
 
-        if (data.keyCode === Number(KeyCodes.ESCAPE)) {
+        if (data.keyCode === KeyCodes.ESCAPE) {
           this.editorEscape.emit();
           evt.stop();
         }
@@ -338,25 +332,23 @@ export class OpCkeditorComponent extends UntilDestroyedMixin implements OnInit, 
     const current = this.getRawData();
     const cmMode = 'gfm';
 
-    Promise
-      .all([
-        import('codemirror'),
-        import(/* webpackChunkName: "codemirror-mode" */ `codemirror/mode/${cmMode}/${cmMode}.js`),
-      ])
-      .then((imported:any[]) => {
-        const CodeMirror = imported[0].default;
+    void this.codeMirrorLoader
+      .ensureModeLoaded(cmMode)
+      .then((modeLoaded) => modeLoaded ? cmMode : '')
+      .then(async (resolvedMode) => {
+        const CodeMirror = await this.codeMirrorLoader.loadCore();
         this.codeMirrorInstance = CodeMirror(
-          this.$element.find('.ck-editor__source')[0],
+          this.elementRef.nativeElement.querySelector<HTMLElement>('.ck-editor__source')!,
           {
             lineNumbers: true,
             smartIndent: true,
             value: current,
-            mode: '',
+            mode: resolvedMode,
           },
         );
 
         this.codeMirrorInstance.on('change', this.debouncedEmitter);
-        setTimeout(() => this.codeMirrorInstance.refresh(), 100);
+        setTimeout(() => this.codeMirrorInstance!.refresh(), 100);
         this.manualMode = true;
       });
   }

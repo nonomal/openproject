@@ -4,7 +4,7 @@ We are pleased that you are thinking about contributing to OpenProject! This gui
 
 ## Get in touch
 
-Please get in touch with us using our [development forum](https://community.openproject.org/projects/openproject/boards/7) or send us an email to [info@openproject.com](mailto:info@openproject.com).
+Please get in touch with us using our [OpenProject community platform](https://community.openproject.org/) or send us an email to [info@openproject.com](mailto:info@openproject.com).
 
 ## Issue tracking and coordination
 
@@ -12,7 +12,6 @@ We eat our own ice cream so we use OpenProject for roadmap planning and team col
 
 - [Product roadmap](https://community.openproject.org/projects/openproject/roadmap)
 - [Wish list](https://community.openproject.org/projects/openproject/work_packages?query_id=180)
-- [Bug backlog board](https://community.openproject.org/projects/openproject/boards/2905)
 - [Report a bug](https://www.openproject.org/docs/development/report-a-bug/)
 - [Submit a feature idea](https://www.openproject.org/docs/development/submit-feature-idea/)
 
@@ -140,6 +139,7 @@ version 1.0.0, available at
 
 ## Contributors license agreement
 
-Contributors have to sign a CLA before contributing to OpenProject.
-The [CLA can be found here](https://www.openproject.org/legal/contributor-license-agreement/)
-and has to be filled out and sent to info@openproject.org.
+If you want to contribute to OpenProject, please make sure to accept our Contributor License Agreement (CLA). The CLA documents the rights granted by contributors to OpenProject.
+The [CLA can be found here](https://www.openproject.org/legal/contributor-license-agreement/).
+
+A GitHub action will enforce the CLA has been read and accepted by every new contributor. You will only be asked once, the document is short, and signing is easy.

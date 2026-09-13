@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -35,7 +37,7 @@ class Settings::WorkingDaysAndHoursUpdateService < Settings::UpdateService
     super
   end
 
-  def validate_params(params)
+  def validate_params
     contract = Settings::WorkingDaysAndHoursParamsContract.new(model, user, params:)
     ServiceResult.new success: contract.valid?,
                       errors: contract.errors,
@@ -58,11 +60,16 @@ class Settings::WorkingDaysAndHoursUpdateService < Settings::UpdateService
 
   def after_perform(call)
     super.tap do
-      WorkPackages::ApplyWorkingDaysChangeJob.perform_later(
-        user_id: User.current.id,
-        previous_working_days:,
-        previous_non_working_days:
-      )
+      [
+        Projects::Phases::ApplyWorkingDaysChangeJob,
+        WorkPackages::ApplyWorkingDaysChangeJob
+      ].each do |job_class|
+        job_class.perform_later(
+          user_id: User.current.id,
+          previous_working_days:,
+          previous_non_working_days:
+        )
+      end
     end
   end
 

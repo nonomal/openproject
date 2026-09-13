@@ -41,17 +41,23 @@ class CustomFields::Inputs::Base::Input < ApplicationForm
     @options = options
   end
 
+  def model
+    @object
+  end
+
   def input_attributes
     base_input_attributes.merge(
       {
-        data: { "qa-field-name": qa_field_name },
-        value:
+        data: {
+          "custom-field-id": @custom_field.id,
+          "test-selector": test_selector
+        }
       }
     )
   end
 
   def custom_value
-    @custom_value ||= @object.custom_value_for(@custom_field.id)
+    @custom_value ||= model.custom_value_for(@custom_field)
   end
 
   def invalid?

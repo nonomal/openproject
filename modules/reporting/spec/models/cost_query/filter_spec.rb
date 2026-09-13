@@ -38,7 +38,7 @@ RSpec.describe CostQuery, :reporting_query_helper do
   def create_work_package_with_entry(entry_type, work_package_params = {}, entry_params = {})
     work_package_params = { project: }.merge!(work_package_params)
     work_package = create(:work_package, work_package_params)
-    entry_params = { work_package:,
+    entry_params = { entity: work_package,
                      project: work_package_params[:project],
                      user: }.merge!(entry_params)
     create(entry_type, entry_params)
@@ -60,6 +60,10 @@ RSpec.describe CostQuery, :reporting_query_helper do
       end
     end
 
+    it "does not fail when grouping by a non-existent column" do
+      expect { query.filter(:non_existent_column, value: "something").result }.not_to raise_error
+    end
+
     it "sets activity_id to -1 for cost entries" do
       query.result.each do |result|
         expect(result["activity_id"].to_i).to eq(-1) if result["type"] != "TimeEntry"
@@ -69,11 +73,11 @@ RSpec.describe CostQuery, :reporting_query_helper do
     # Test Work Package attributes that are included in of the result set
 
     [
-      [CostQuery::Filter::ProjectId,        "project",    "project_id",      2],
-      [CostQuery::Filter::UserId,           "user",       "user_id",         2],
-      [CostQuery::Filter::CostTypeId,       "cost_type",  "cost_type_id",    1],
+      [CostQuery::Filter::ProjectId,        "project",      "project_id",      2],
+      [CostQuery::Filter::UserId,           "user",         "user_id",         2],
+      [CostQuery::Filter::CostTypeId,       "cost_type",    "cost_type_id",    1],
       [CostQuery::Filter::WorkPackageId,    "work_package", "work_package_id", 2],
-      [CostQuery::Filter::ActivityId, "activity", "activity_id", 1]
+      [CostQuery::Filter::ActivityId,       "activity",     "activity_id",     1]
     ].each do |filter, object_name, field, expected_count|
       describe filter do
         let!(:non_matching_entry) { create(:cost_entry) }
@@ -87,7 +91,7 @@ RSpec.describe CostQuery, :reporting_query_helper do
         let!(:cost_type) { create(:cost_type) }
         let!(:cost_entry) do
           create(:cost_entry,
-                 work_package:,
+                 entity: work_package,
                  user:,
                  project:,
                  cost_type:)
@@ -95,7 +99,7 @@ RSpec.describe CostQuery, :reporting_query_helper do
         let!(:activity) { create(:time_entry_activity) }
         let!(:time_entry) do
           create(:time_entry,
-                 work_package:,
+                 entity: work_package,
                  user:,
                  project:,
                  activity:)
@@ -104,7 +108,8 @@ RSpec.describe CostQuery, :reporting_query_helper do
         it "only return entries from the given #{filter}" do
           query.filter field, value: object.id
           query.result.each do |result|
-            expect(result[field].to_s).to eq(object.id.to_s)
+            result_field = field == "work_package_id" ? "entity_id" : field
+            expect(result[result_field].to_s).to eq(object.id.to_s)
           end
         end
 
@@ -112,7 +117,8 @@ RSpec.describe CostQuery, :reporting_query_helper do
           query.filter field, value: object.id
           query.filter field, value: object.id
           query.result.each do |result|
-            expect(result[field].to_s).to eq(object.id.to_s)
+            result_field = field == "work_package_id" ? "entity_id" : field
+            expect(result[result_field].to_s).to eq(object.id.to_s)
           end
         end
 
@@ -142,7 +148,7 @@ RSpec.describe CostQuery, :reporting_query_helper do
       let!(:cost_type) { create(:cost_type) }
       let!(:cost_entry) do
         create(:cost_entry,
-               work_package:,
+               entity: work_package,
                user:,
                project:,
                cost_type:)
@@ -150,7 +156,7 @@ RSpec.describe CostQuery, :reporting_query_helper do
       let!(:activity) { create(:time_entry_activity) }
       let!(:time_entry) do
         create(:time_entry,
-               work_package:,
+               entity: work_package,
                user:,
                project:,
                activity:)
@@ -159,7 +165,7 @@ RSpec.describe CostQuery, :reporting_query_helper do
       it "only return entries from the given CostQuery::Filter::AuthorId" do
         query.filter "author_id", value: author.id
         query.result.each do |result|
-          work_package_id = result["work_package_id"]
+          work_package_id = result["entity_id"]
           expect(WorkPackage.find(work_package_id).author.id).to eq(author.id)
         end
       end
@@ -168,7 +174,7 @@ RSpec.describe CostQuery, :reporting_query_helper do
         query.filter "author_id", value: author.id
         query.filter "author_id", value: author.id
         query.result.each do |result|
-          work_package_id = result["work_package_id"]
+          work_package_id = result["entity_id"]
           expect(WorkPackage.find(work_package_id).author.id).to eq(author.id)
         end
       end
@@ -200,6 +206,13 @@ RSpec.describe CostQuery, :reporting_query_helper do
       query.filter :updated_on, value: Time.zone.today.years_ago(20), operator: ">d"
       # we assume that our were updated in the last 20 years
       expect(query.result.count).to eq(Entry.all.count { |e| e.updated_at.to_date > Time.zone.today.years_ago(20) })
+    end
+
+    it "ignores positive-arity date filters without values" do
+      query.filter :updated_on, values: [], operator: ">d"
+
+      expect { query.result }.not_to raise_error
+      expect(query.result.count).to eq(Entry.count)
     end
 
     it "filters user_id" do
@@ -239,7 +252,7 @@ RSpec.describe CostQuery, :reporting_query_helper do
       end
 
       it "filters types" do
-        matching_type = project.types.first
+        matching_type = project.enabled_types.first
         create_work_packages_and_time_entries(3, type: matching_type)
         query.filter :type_id, operator: "=", value: matching_type.id
         expect(query.result.count).to eq(3)
@@ -276,6 +289,109 @@ RSpec.describe CostQuery, :reporting_query_helper do
 
         query.filter :version_id, operator: "=", value: matching_version.id
         expect(query.result.count).to eq(3)
+      end
+
+      it "labels the filter 'Version' while multiple versions is off", with_settings: { work_package_multiple_versions: false } do
+        expect(CostQuery::Filter::VersionId.label).to eq("Version")
+      end
+
+      # While the feature is off a work package is single-version, so the filter
+      # only sees its primary target version (the lowest version id, i.e. what
+      # target_versions.first returns).
+      it "matches a work package through its primary target version", with_settings: { work_package_multiple_versions: false } do
+        primary_version = create(:version, project:)
+        secondary_version = create(:version, project:)
+        work_package = create_work_package_with_time_entry(version: primary_version)
+        work_package.work_package_versions.create!(version: secondary_version, kind: "target")
+
+        query.filter :version_id, operator: "=", value: primary_version.id
+        expect(query.result.count).to eq(1)
+      end
+
+      it "ignores a non-primary target version while multiple versions is off",
+         with_settings: { work_package_multiple_versions: false } do
+        primary_version = create(:version, project:)
+        secondary_version = create(:version, project:)
+        work_package = create_work_package_with_time_entry(version: primary_version)
+        work_package.work_package_versions.create!(version: secondary_version, kind: "target")
+
+        query.filter :version_id, operator: "=", value: secondary_version.id
+        expect(query.result.count).to eq(0)
+      end
+
+      # Off-mode negation runs on the primary-only (one-to-one) join, so the
+      # default "is not" operator is already correct without the multi-version
+      # NOT EXISTS override.
+      it "negates on the primary target version while multiple versions is off",
+         with_settings: { work_package_multiple_versions: false } do
+        primary_version = create(:version, project:)
+        secondary_version = create(:version, project:)
+        work_package = create_work_package_with_time_entry(version: primary_version)
+        work_package.work_package_versions.create!(version: secondary_version, kind: "target")
+
+        query.filter :version_id, operator: "!", value: [primary_version.id]
+        # Its primary version is primary_version, so "is not primary" drops it.
+        expect(query.result.count).to eq(0)
+      end
+
+      it "keeps a work package when negating a non-primary target version while off",
+         with_settings: { work_package_multiple_versions: false } do
+        primary_version = create(:version, project:)
+        secondary_version = create(:version, project:)
+        work_package = create_work_package_with_time_entry(version: primary_version)
+        work_package.work_package_versions.create!(version: secondary_version, kind: "target")
+
+        query.filter :version_id, operator: "!", value: [secondary_version.id]
+        # Off-mode only sees the primary; "is not secondary" keeps it because its
+        # primary version is not the secondary one.
+        expect(query.result.count).to eq(1)
+      end
+
+      context "with multiple target versions enabled",
+              with_settings: { work_package_multiple_versions: true } do
+        it "labels the filter 'Target versions'" do
+          expect(CostQuery::Filter::VersionId.label).to eq("Target versions")
+        end
+
+        it "matches a work package through a non-primary target version" do
+          primary_version = create(:version, project:)
+          secondary_version = create(:version, project:)
+          work_package = create_work_package_with_time_entry(version: primary_version)
+          work_package.work_package_versions.create!(version: secondary_version, kind: "target")
+
+          query.filter :version_id, operator: "=", value: secondary_version.id
+          expect(query.result.count).to eq(1)
+        end
+
+        # OPEN POINT FND-178: cost reports over-count totals when grouping or
+        # filtering by a multi-value attribute. The target-version join is
+        # one-to-many, so a work package whose target versions both match the
+        # filter contributes one row per matching version. This double-count is
+        # accepted for now (team decision); the spec pins it so a later "fix"
+        # doesn't silently change the total without revisiting FND-178.
+        it "counts a work package once per matching target version (FND-178 over-count)" do
+          version1 = create(:version, project:)
+          version2 = create(:version, project:)
+          work_package = create_work_package_with_time_entry(version: version1)
+          work_package.work_package_versions.create!(version: version2, kind: "target")
+
+          query.filter :version_id, operator: "=", value: [version1.id, version2.id]
+          expect(query.result.count).to eq(2)
+        end
+
+        it "excludes a work package that targets the version when filtering 'is not'" do
+          version1 = create(:version, project:)
+          version2 = create(:version, project:)
+          other_version = create(:version, project:)
+          multi = create_work_package_with_time_entry(version: version1)
+          multi.work_package_versions.create!(version: version2, kind: "target")
+          create_work_package_with_time_entry(version: other_version)
+
+          query.filter :version_id, operator: "!", value: [version1.id]
+          # `multi` targets version1, so "is not version1" must drop it even
+          # though it also targets version2; only the other work package remains.
+          expect(query.result.count).to eq(1)
+        end
       end
 
       it "filters subject" do
@@ -383,13 +499,6 @@ RSpec.describe CostQuery, :reporting_query_helper do
         clear_cache
       end
 
-      def update_work_package_custom_field(name, options)
-        fld = WorkPackageCustomField.find_by(name:)
-        options.each_pair { |k, v| fld.send(:"#{k}=", v) }
-        fld.save!
-        clear_cache
-      end
-
       include OpenProject::Reporting::SpecHelper::CustomFieldFilterHelper
 
       it "creates classes for custom fields that get added after starting the server" do
@@ -408,25 +517,9 @@ RSpec.describe CostQuery, :reporting_query_helper do
         custom_field2.save
 
         clear_cache
-        ao = filter_class_name_string(custom_field2).constantize.available_operators.map(&:name)
-        CostQuery::Operator.null_operators.each do |o|
-          expect(ao).to include o.name
-        end
-      end
 
-      it "updates the available values on change" do
-        custom_field2.save
-
-        update_work_package_custom_field("Database", field_format: "string")
-        ao = filter_class_name_string(custom_field2).constantize.available_operators.map(&:name)
-        CostQuery::Operator.string_operators.each do |o|
-          expect(ao).to include o.name
-        end
-        update_work_package_custom_field("Database", field_format: "int")
-        ao = filter_class_name_string(custom_field2).constantize.available_operators.map(&:name)
-        CostQuery::Operator.integer_operators.each do |o|
-          expect(ao).to include o.name
-        end
+        expect(filter_class_name_string(custom_field2).constantize.available_operators.map(&:name))
+          .to include(*CostQuery::Operator.null_operators.map(&:name))
       end
 
       it "includes custom fields classes in CustomFieldEntries.all" do

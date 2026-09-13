@@ -29,8 +29,10 @@
 #++
 module Projects
   class RowComponent < ::RowComponent
+    include CalculatedValues::ErrorsHelper
+
     delegate :identifier, to: :project
-    delegate :favored_project_ids,
+    delegate :favorited_project_ids,
              :project_phase_by_definition,
              to: :table
 
@@ -47,55 +49,74 @@ module Projects
       ""
     end
 
-    def favored
+    def favorited # rubocop:disable Metrics/AbcSize,Metrics/PerceivedComplexity
+      return nil unless User.current.logged?
+      return nil if project.archived?
+
       render(Primer::Beta::IconButton.new(
-               icon: currently_favored? ? "star-fill" : "star",
+               icon: currently_favorited? ? "star-fill" : "star",
                scheme: :invisible,
-               mobile_icon: currently_favored? ? "star-fill" : "star",
+               mobile_icon: currently_favorited? ? "star-fill" : "star",
                size: :medium,
                tag: :a,
                tooltip_direction: :e,
                href: helpers.build_favorite_path(project, format: :html),
-               data: { "turbo-method": currently_favored? ? :delete : :post },
-               classes: currently_favored? ? "op-primer--star-icon " : "op-project-row-component--favorite",
-               label: currently_favored? ? I18n.t(:button_unfavorite) : I18n.t(:button_favorite),
-               aria: { label: currently_favored? ? I18n.t(:button_unfavorite) : I18n.t(:button_favorite) },
+               data: { turbo_method: currently_favorited? ? :delete : :post },
+               classes: currently_favorited? ? "op-primer--star-icon " : "op-project-row-component--favorite",
+               label: currently_favorited? ? I18n.t(:button_unfavorite) : I18n.t(:button_favorite),
+               aria: { label: currently_favorited? ? I18n.t(:button_unfavorite) : I18n.t(:button_favorite) },
                test_selector: "project-list-favorite-button"
              ))
     end
 
-    def currently_favored?
-      @currently_favored ||= favored_project_ids.include?(project.id)
+    def currently_favorited?
+      @currently_favorited ||= favorited_project_ids.include?(project.id)
     end
 
     def column_value(column)
-      if custom_field_column?(column)
-        custom_field_column(column)
-      elsif project_phase_column?(column)
-        project_phase_column(column)
-      else
-        send(column.attribute)
-      end
+      return custom_field_column(column) if custom_field_column?(column)
+      return custom_comment_column(column) if custom_comment_column?(column)
+      return project_phase_column(column) if project_phase_column?(column)
+
+      send(column.attribute)
     end
 
     def custom_field_column(column)
-      return nil unless user_can_view_project?
+      return nil unless user_can_view_project_attributes?
 
-      cf = column.custom_field
-      custom_value = project.formatted_custom_value_for(cf)
+      super
+    end
 
-      if cf.field_format == "text" && custom_value.present?
-        render OpenProject::Common::AttributeComponent.new(
-          "dialog-#{project.id}-cf-#{cf.id}",
-          cf.name,
-          custom_value,
-          formatted: true
-        )
-      elsif custom_value.is_a?(Array)
-        safe_join(Array(custom_value).compact_blank, ", ")
+    def render_calculated_value(custom_field, custom_value)
+      if (error = custom_field.first_calculation_error(project))
+        render(Primer::Alpha::Dialog.new(title: I18n.t("calculated_values.error_dialog.title"),
+                                         data: {
+                                           test_selector: "calculated-value-error-dialog-#{custom_field.id}"
+                                         })) do |dialog|
+          dialog.with_show_button(icon: "alert-fill",
+                                  "aria-label": I18n.t("calculated_values.error_dialog.title"),
+                                  data: { test_selector: "calculated-value-error-btn-#{custom_field.id}" },
+                                  scheme: :invisible)
+          dialog.with_body { calculated_value_error_msg(error) }
+        end
       else
         custom_value
       end
+    end
+
+    def custom_comment_column(column)
+      return nil unless user_can_view_project_attributes?
+
+      cf = column.custom_field
+      comment = cf.comment_for(project)&.text
+      return nil if comment.blank?
+
+      render OpenProject::Common::AttributeComponent.new(
+        "dialog-#{project.id}-cfc-#{cf.id}",
+        column.caption,
+        comment,
+        format: false
+      )
     end
 
     def project_phase_column(column)
@@ -116,6 +137,10 @@ module Projects
       helpers.format_date(project.latest_activity_at)
     end
 
+    def updated_at
+      helpers.format_date(project.updated_at)
+    end
+
     def required_disk_space
       return "" unless project.required_disk_space.to_i > 0
 
@@ -127,36 +152,62 @@ module Projects
     end
 
     def name
-      content = content_tag(:i, "", class: "projects-table--hierarchy-icon")
+      content = [
+        hierarchy_icon,
+        name_link_section,
+        archived_label,
+        workspace_type_badge
+      ].compact_blank
 
-      if project.archived?
-        content << " "
-        content << content_tag(:span, I18n.t("project.archive.archived"), class: "archived-label")
+      content_tag(:div, safe_join(content), class: "projects-table--name")
+    end
+
+    def hierarchy_icon
+      content_tag(:i, "", class: "projects-table--hierarchy-icon")
+    end
+
+    def name_link_section
+      content_tag(:span, class: "projects-table--name-text") do
+        helpers.link_to_project(project, {}, { data: { turbo: false } }, false)
       end
+    end
 
-      content << " "
-      content << helpers.link_to_project(project, {}, { data: { turbo: false } }, false)
-      content
+    def workspace_type_badge
+      # Only show icon and type for non-project workspaces
+      return unless project.workspace_type.in?(["portfolio", "program"])
+
+      render(Primer::Beta::Text.new(classes: "projects-table--name-description")) do
+        icon = render(Primer::Beta::Octicon.new(
+                        icon: helpers.workspace_icon(project.workspace_type),
+                        size: :xsmall
+                      ))
+
+        safe_join([icon, " ", I18n.t(:"label_#{project.workspace_type}")])
+      end
+    end
+
+    def archived_label
+      return unless project.archived?
+
+      content_tag(:span, "(#{I18n.t('project.archive.archived')})", class: "archived-label")
     end
 
     def project_status
-      return nil unless user_can_view_project?
-
-      content = "".html_safe
+      return nil unless user_can_view_project_attributes?
 
       status_code = project.status_code
-
       if status_code
         classes = helpers.project_status_css_class(status_code)
-        content << content_tag(:span, "", class: "project-status--bulb -inline #{classes}")
-        content << content_tag(:span, helpers.project_status_name(status_code), class: "project-status--name #{classes}")
-      end
 
-      content
+        capture do
+          concat content_tag(:span, "", class: "project-status--bulb -inline #{classes}")
+          concat content_tag(:span, helpers.project_status_name(status_code), class: "project-status--name #{classes}")
+        end
+      end
     end
 
     def status_explanation
-      return nil unless user_can_view_project?
+      return nil unless user_can_view_project_attributes?
 
       if project.status_explanation.present? && project.status_explanation
         render OpenProject::Common::AttributeComponent.new("dialog-#{project.id}-status-explanation",
@@ -166,7 +217,7 @@ module Projects
     end
 
     def description
-      return nil unless user_can_view_project?
+      return nil unless user_can_view_project_attributes?
 
       if project.description.present?
         render OpenProject::Common::AttributeComponent.new("dialog-#{project.id}-description",
@@ -181,7 +232,7 @@ module Projects
 
     def row_css_class
       classes = %w[basics context-menu--reveal op-project-row-component]
-      classes << project_css_classes
+      classes += project_css_classes
       classes << row_css_level_classes
 
       classes.join(" ")
@@ -200,13 +251,13 @@ module Projects
     end
 
     def project_css_classes
-      s = " project ".html_safe
+      output = ["project"]
 
-      s << " root" if project.root?
-      s << " child" if project.child?
-      s << (project.leaf? ? " leaf" : " parent")
+      output << "root" if project.root?
+      output << "child" if project.child?
+      output << (project.leaf? ? "leaf" : "parent")
 
-      s
+      output
     end
 
     def column_css_class(column)
@@ -215,34 +266,48 @@ module Projects
 
     def additional_css_class(column)
       if column.attribute == :name
-        "project--hierarchy #{project.archived? ? 'archived' : ''}"
-      elsif %i[status_explanation description].include?(column.attribute)
-        "project-long-text-container"
-      elsif column.attribute == :favored
+        "project--hierarchy #{'archived' if project.archived?}"
+      elsif column.attribute == :favorited
         "-w-abs-45"
       elsif custom_field_column?(column)
-        cf = column.custom_field
-        formattable = cf.field_format == "text" ? " project-long-text-container" : ""
-        "format-#{cf.field_format}#{formattable}"
+        "format-#{column.custom_field.field_format}"
       end
     end
 
     def button_links
-      if more_menu_items.empty?
-        []
+      # The action menu is currently only relevant for logged in users
+      # short-circuiting this call for anonymous users, which often hit our projects page.
+      return [] if !User.current.logged? || menu_items&.empty?
+
+      if menu_items
+        [action_menu(items: menu_items)]
       else
-        [action_menu]
+        [action_menu(src: menu_href)]
       end
     end
 
-    def action_menu
-      render(Primer::Alpha::ActionMenu.new(test_selector: "project-list-row--action-menu")) do |menu|
-        menu.with_show_button(scheme: :invisible,
-                              size: :small,
-                              icon: :"kebab-horizontal",
-                              "aria-label": t(:label_open_menu),
-                              tooltip_direction: :w)
-        more_menu_items.each do |action_options|
+    # Subclasses can override inline `menu_items` or `menu_href` in order to control
+    # what is displayed in the action menu.
+    def menu_items = nil
+    def menu_href = list_row_menu_project_path(project, status: params[:status])
+
+    def action_menu(src: nil, items: nil)
+      raise ArgumentError, "provide either src: or items:, not both" if src && items
+      raise ArgumentError, "provide either src: or items:" unless src || items
+
+      render(Primer::Alpha::ActionMenu.new(
+               menu_id: Projects::RowActionsComponent.menu_id(project),
+               test_selector: "project-list-row--action-menu",
+               src:
+             )) do |menu|
+        menu.with_show_button(
+          scheme: :invisible,
+          size: :small,
+          icon: :"kebab-horizontal",
+          "aria-label": t(:label_open_menu),
+          tooltip_direction: :w
+        )
+        items&.each do |action_options|
           action_options => { scheme:, label:, icon:, **button_options }
           menu.with_item(scheme:,
                          label:,
@@ -254,133 +319,7 @@ module Projects
       end
     end
 
-    def more_menu_items
-      @more_menu_items ||= [more_menu_subproject_item,
-                            more_menu_settings_item,
-                            more_menu_activity_item,
-                            more_menu_favorite_item,
-                            more_menu_unfavorite_item,
-                            more_menu_archive_item,
-                            more_menu_unarchive_item,
-                            more_menu_copy_item,
-                            more_menu_delete_item].compact
-    end
-
-    def more_menu_favorite_item
-      return if currently_favored?
-
-      {
-        scheme: :default,
-        icon: "star",
-        href: helpers.build_favorite_path(project, format: :html),
-        data: { "turbo-method": :post },
-        label: I18n.t(:button_favorite),
-        aria: { label: I18n.t(:button_favorite) }
-      }
-    end
-
-    def more_menu_unfavorite_item
-      return unless currently_favored?
-
-      {
-        scheme: :default,
-        icon: "star-fill",
-        size: :medium,
-        href: helpers.build_favorite_path(project, format: :html),
-        data: { "turbo-method": :delete },
-        classes: "op-primer--star-icon",
-        label: I18n.t(:button_unfavorite),
-        aria: { label: I18n.t(:button_unfavorite) }
-      }
-    end
-
-    def more_menu_subproject_item
-      if User.current.allowed_in_project?(:add_subprojects, project)
-        {
-          scheme: :default,
-          icon: :plus,
-          label: I18n.t(:label_subproject_new),
-          href: new_project_path(parent_id: project.id)
-        }
-      end
-    end
-
-    def more_menu_settings_item
-      if User.current.allowed_in_project?({ controller: "/projects/settings/general", action: "show", project_id: project.id },
-                                          project)
-        {
-          scheme: :default,
-          icon: :gear,
-          label: I18n.t(:label_project_settings),
-          href: project_settings_general_path(project),
-          data: { turbo: false }
-        }
-      end
-    end
-
-    def more_menu_activity_item
-      if User.current.allowed_in_project?(:view_project_activity, project)
-        {
-          scheme: :default,
-          icon: :check,
-          label: I18n.t(:label_project_activity),
-          href: project_activity_index_path(project, event_types: ["project_details"])
-        }
-      end
-    end
-
-    def more_menu_archive_item
-      if User.current.allowed_in_project?(:archive_project, project) && project.active?
-        {
-          scheme: :default,
-          icon: :lock,
-          label: I18n.t(:button_archive),
-          href: project_archive_path(project, status: params[:status]),
-          data: {
-            confirm: t("project.archive.are_you_sure", name: project.name),
-            method: :post
-          }
-        }
-      end
-    end
-
-    def more_menu_unarchive_item
-      if User.current.admin? && project.archived? && (project.parent.nil? || project.parent.active?)
-        {
-          scheme: :default,
-          icon: :unlock,
-          label: I18n.t(:button_unarchive),
-          href: project_archive_path(project, status: params[:status]),
-          data: { method: :delete }
-        }
-      end
-    end
-
-    def more_menu_copy_item
-      if User.current.allowed_in_project?(:copy_projects, project) && !project.archived?
-        {
-          scheme: :default,
-          icon: :copy,
-          label: I18n.t(:button_copy),
-          href: copy_project_path(project),
-          data: { turbo: false }
-        }
-      end
-    end
-
-    def more_menu_delete_item
-      if User.current.admin
-        {
-          scheme: :danger,
-          icon: :trash,
-          label: I18n.t(:button_delete),
-          href: confirm_destroy_project_path(project),
-          data: { turbo: false }
-        }
-      end
-    end
-
-    def user_can_view_project?
+    def user_can_view_project_attributes?
       User.current.allowed_in_project?(:view_project_attributes, project)
     end
 
@@ -388,8 +327,31 @@ module Projects
       User.current.allowed_in_project?(:view_project_phases, project)
     end
 
+    def custom_field_column_subject
+      project
+    end
+
+    def format_custom_field_value(cf, custom_value)
+      if cf.field_format == "text" && custom_value.present?
+        render OpenProject::Common::AttributeComponent.new(
+          "dialog-#{project.id}-cf-#{cf.id}",
+          cf.name,
+          custom_value,
+          format: false
+        )
+      elsif cf.calculated_value?
+        render_calculated_value(cf, custom_value)
+      else
+        super
+      end
+    end
+
     def custom_field_column?(column)
       column.is_a?(::Queries::Projects::Selects::CustomField)
+    end
+
+    def custom_comment_column?(column)
+      column.is_a?(::Queries::Projects::Selects::CustomComment)
     end
 
     def project_phase_column?(column)

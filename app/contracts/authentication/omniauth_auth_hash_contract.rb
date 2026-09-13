@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -49,7 +51,7 @@ module Authentication
     end
 
     def validate_auth_hash_not_expired
-      return unless auth_hash["timestamp"]
+      return unless auth_hash&.dig("timestamp")
 
       if auth_hash["timestamp"] < Time.now - 30.minutes
         errors.add(:base, I18n.t(:error_omniauth_registration_timed_out))

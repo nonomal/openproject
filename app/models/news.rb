@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -87,9 +89,8 @@ class News < ApplicationRecord
     end
   end
 
-  # table_name shouldn't be needed :(
   def self.newest_first
-    order "#{table_name}.created_at DESC"
+    order(created_at: :desc)
   end
 
   def new_comment(attributes = {})

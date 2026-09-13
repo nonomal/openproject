@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -102,8 +104,7 @@ RSpec.describe ActivitiesController do
 
     describe "with activated activity module" do
       let(:project) do
-        create(:project,
-               enabled_module_names: %w[activity wiki])
+        create(:project, enabled_module_names: %w[activity])
       end
 
       it "renders activity" do
@@ -115,8 +116,7 @@ RSpec.describe ActivitiesController do
 
     describe "without activated activity module" do
       let(:project) do
-        create(:project,
-               enabled_module_names: %w[wiki])
+        create(:project, enabled_module_names: [])
       end
 
       it "renders 403" do

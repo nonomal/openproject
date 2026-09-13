@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -77,8 +79,12 @@ RSpec.describe "OAuth applications management", :js do
     fill_in "application_redirect_uri", with: "urn:ietf:wg:oauth:2.0:oob"
     click_on "Save"
 
+    wait_for_network_idle
+
     # Show application
     click_on "My API application"
+
+    wait_for_network_idle
 
     expect(page).to have_no_css(".attributes-key-value--key", text: "Client secret")
     expect(page).to have_no_css(".attributes-key-value--value code")

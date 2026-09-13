@@ -28,7 +28,7 @@
 
 require "spec_helper"
 
-RSpec.describe "Time entry activity" do
+RSpec.describe "Time entry activity", :js do
   shared_let(:admin) { create(:admin) }
   let(:project) { create(:project) }
 
@@ -62,7 +62,7 @@ RSpec.describe "Time entry activity" do
 
     visit project_settings_general_path(project)
 
-    click_on "Time tracking activities"
+    click_on "Time and costs"
 
     expect(page).to have_field("Development", checked: true)
 

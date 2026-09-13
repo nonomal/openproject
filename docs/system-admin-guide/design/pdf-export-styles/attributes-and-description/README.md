@@ -1,7 +1,11 @@
+---
+sidebar_navigation:
+  title: Work package PDF Styling
+---
 
 # Attributes and description PDF
 
-This document describes the style settings format for the [PDF Export styling file](https://github.com/opf/openproject/blob/dev/app/models/work_package/pdf_export/wp/standard.yml)
+This document describes the style settings format for the [PDF Export styling file](https://github.com/opf/openproject/blob/dev/app/models/work_package/pdf_export/wp/standard.yml).
 
 | Key | Description | Data type |
 | - | - | - |
@@ -22,6 +26,7 @@ Styling to denote a quote as alert box
 Key: `alert`
 
 Example:
+
 ```yml
 ALERT:
   alert_color: f4f9ff
@@ -61,6 +66,7 @@ Properties to set borders
 Key: `border`
 
 Example:
+
 ```yml
 border_color: F000FF
 border_color_top: 000FFF
@@ -90,6 +96,24 @@ border_width_right: 0.5mm
 | `no_border_right` | **Disable border right**<br/>Turn off border on the right sides | boolean |
 | `no_border_bottom` | **Disable border bottom**<br/>Turn off border on the bottom sides | boolean |
 
+## Cell alignment properties
+
+Properties to set vertical and horizontal alignment of table cells
+
+Key: `cell_alignment`
+
+Example:
+
+```yml
+align: center
+valign: middle
+```
+
+| Key | Description | Data type |
+| - | - | - |
+| `align` | **Horizontal alignment**<br/>Set the horizontal alignment of the content in a cell<br/>Example: `center`<br/>Valid values:<br/>`left`, `center`, `right` | string |
+| `valign` | **Vertical alignment**<br/>Border width only on the left side<br/>Example: `middle`<br/>Valid values:<br/>`top`, `center`, `middle`, `bottom` | string |
+
 ## Font properties
 
 Styling for inline error messages
@@ -97,6 +121,7 @@ Styling for inline error messages
 Key: `inline_error`
 
 Example:
+
 ```yml
 font: OpenSans
 size: 10
@@ -120,6 +145,7 @@ leading: 2
 Key: `html_table`
 
 Example:
+
 ```yml
 table:
   auto_width: true
@@ -145,6 +171,7 @@ table:
 Key: `hr`
 
 Example:
+
 ```yml
 border:
   color: d3dee3
@@ -175,6 +202,7 @@ Properties to set margins
 Key: `margin`
 
 Example:
+
 ```yml
 margin: 10mm
 margin_top: 15mm
@@ -195,6 +223,7 @@ Styling a clickable link
 Key: `link`
 
 Example:
+
 ```yml
 link:
   color: '000088'
@@ -211,6 +240,7 @@ Styling for content of work package description and long text custom fields
 Key: `markdown`
 
 Example:
+
 ```yml
 markdown:
   font: {}
@@ -266,6 +296,7 @@ Styling to denote a paragraph as quote
 Key: `blockquote`
 
 Example:
+
 ```yml
 blockquote:
   background_color: f4f9ff
@@ -296,6 +327,7 @@ Styling to denote a word or phrase as code
 Key: `code`
 
 Example:
+
 ```yml
 code:
   font: Consolas
@@ -313,6 +345,7 @@ Styling to denote a paragraph as code
 Key: `codeblock`
 
 Example:
+
 ```yml
 codeblock:
   background_color: F5F5F5
@@ -336,6 +369,7 @@ codeblock:
 Key: `header`
 
 Example:
+
 ```yml
 header:
   styles:
@@ -365,6 +399,7 @@ Tables without or empty header rows can be styled differently.
 Key: `headless_table`
 
 Example:
+
 ```yml
 headless_table:
   auto_width: true
@@ -387,6 +422,7 @@ Styling for horizontal lines
 Key: `hrule`
 
 Example:
+
 ```yml
 hrule:
   line_width: 1
@@ -404,6 +440,7 @@ Styling of images
 Key: `image`
 
 Example:
+
 ```yml
 image:
   max_width: 50mm
@@ -427,6 +464,7 @@ image:
 Key: `ordered_list`
 
 Example:
+
 ```yml
 ordered_list:
   spacing: 2mm
@@ -445,6 +483,7 @@ ordered_list:
 Key: `ordered_list_point`
 
 Example:
+
 ```yml
 ordered_list_point:
   template: "<number>."
@@ -469,6 +508,7 @@ A block of text
 Key: `paragraph`
 
 Example:
+
 ```yml
 paragraph:
   align: justify
@@ -486,6 +526,7 @@ paragraph:
 Key: `table`
 
 Example:
+
 ```yml
 table:
   auto_width: true
@@ -511,6 +552,7 @@ table:
 Key: `task_list_point`
 
 Example:
+
 ```yml
 task_list_point:
   checked: "☑"
@@ -530,6 +572,7 @@ task_list_point:
 Key: `unordered_list`
 
 Example:
+
 ```yml
 unordered_list:
   spacing: 1.5mm
@@ -548,6 +591,7 @@ unordered_list:
 Key: `unordered_list_point`
 
 Example:
+
 ```yml
 unordered_list_point:
   sign: "•"
@@ -567,6 +611,7 @@ Styling for the group label if grouping is activated
 Key: `group_heading`
 
 Example:
+
 ```yml
 group_heading:
   size: 11
@@ -585,6 +630,7 @@ group_heading:
 Key: `table`
 
 Example:
+
 ```yml
 table:
   subject_indent: 0
@@ -618,6 +664,7 @@ Properties to set paddings
 Key: `padding`
 
 Example:
+
 ```yml
 padding: 10mm
 padding_top: 15mm
@@ -636,6 +683,7 @@ padding_top: 15mm
 Key: `page_footer`
 
 Example:
+
 ```yml
 page_footer:
   offset: -30
@@ -653,6 +701,7 @@ page_footer:
 Key: `page_header`
 
 Example:
+
 ```yml
 page_header:
   align: left
@@ -673,6 +722,7 @@ The main page title heading
 Key: `page_heading`
 
 Example:
+
 ```yml
 page_heading:
   size: 14
@@ -693,6 +743,7 @@ Styling for logo image in the page header.
 Key: `page_logo`
 
 Example:
+
 ```yml
 page_logo:
   height: 20
@@ -712,6 +763,7 @@ Properties to set the basic page settings
 Key: `page`
 
 Example:
+
 ```yml
 page:
   page_size: EXECUTIVE
@@ -739,6 +791,7 @@ Styling for a table cell
 Key: `table_cell`
 
 Example:
+
 ```yml
 table_cell:
   size: 9
@@ -752,6 +805,7 @@ table_cell:
 | … | See [Font properties](#font-properties) |  |
 | … | See [Padding Properties](#padding-properties) |  |
 | … | See [Border Properties](#border-properties) |  |
+| … | See [Cell alignment properties](#cell-alignment-properties) |  |
 
 ## Table header cell
 
@@ -760,6 +814,7 @@ Styling for a table header cell
 Key: `table_header`
 
 Example:
+
 ```yml
 table_header:
   size: 9
@@ -774,6 +829,7 @@ table_header:
 | … | See [Font properties](#font-properties) |  |
 | … | See [Padding Properties](#padding-properties) |  |
 | … | See [Border Properties](#border-properties) |  |
+| … | See [Cell alignment properties](#cell-alignment-properties) |  |
 
 ## Work package
 
@@ -782,6 +838,7 @@ Styling for the Work package section
 Key: `work_package`
 
 Example:
+
 ```yml
 work_package:
   margin_bottom: 20
@@ -813,6 +870,7 @@ Styling for the Work package attributes table
 Key: `attributes_table`
 
 Example:
+
 ```yml
 attributes_table:
   margin_bottom: 10
@@ -843,6 +901,7 @@ Label headline for a work package attributes group
 Key: `attributes_group`
 
 Example:
+
 ```yml
 attributes_group:
   size: 12
@@ -865,6 +924,7 @@ Label headline for work package description and long text custom fields
 Key: `markdown_label`
 
 Example:
+
 ```yml
 markdown_label:
   size: 12
@@ -886,6 +946,7 @@ Margins for work package description and long text custom fields
 Key: `markdown_margin`
 
 Example:
+
 ```yml
 markdown_margin:
   margin_bottom: 16
@@ -902,6 +963,7 @@ Styling for the Work package subject headline
 Key: `subject`
 
 Example:
+
 ```yml
 subject:
   size: 10
@@ -920,6 +982,7 @@ subject:
 Key: `subject_level_x`
 
 Example:
+
 ```yml
 subject_level_1:
   size: 14
@@ -947,6 +1010,7 @@ Styling for the related tables (Form configuration)
 Key: `wp_table`
 
 Example:
+
 ```yml
 overview:
   group_heading: {}

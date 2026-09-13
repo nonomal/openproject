@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,35 +30,39 @@
 
 require "spec_helper"
 
-RSpec.describe "Document categories" do
+RSpec.describe "Document categories", :js do
+  include Rails.application.routes.url_helpers
+
   shared_let(:admin) { create(:admin) }
 
   before do
     login_as(admin)
   end
 
-  it "allows creating new document categories" do
+  it "renders a deprecation notice" do
     visit admin_settings_document_categories_path
 
-    page.find_test_selector("add-enumeration-button").click
+    expect(page).to have_heading("File categories are now called 'Document types'")
+    expect(page).to have_content("Your existing file categories have been converted to document types " \
+                                 "with the introduction of the new Documents module. " \
+                                 "All existing documents have also been migrated to these new types.")
 
-    fill_in "Name", with: "Documentation"
-    click_on("Save")
+    expect(page).to have_link("Configure document types", href: admin_settings_document_types_path)
+    expect(page).to have_link("Learn more about the Documents module",
+                              href: "https://www.openproject.org/docs/user-guide/documents/?go_to_locale=en")
+  end
 
-    # we are redirected back to the index page
-    expect(page).to have_current_path(admin_settings_document_categories_path)
-    expect(page).to have_content("Documentation")
+  context "as non-admin" do
+    shared_let(:non_admin) { create(:user) }
 
-    # It allows editing (Regression #62459)
-    click_link "Documentation"
+    before do
+      login_as(non_admin)
+    end
 
-    fill_in "Name", with: "Specification"
-    click_on("Save")
+    it "denies access" do
+      visit admin_settings_document_categories_path
 
-    expect(page).to have_current_path(admin_settings_document_categories_path)
-    expect(page).to have_content("Specification")
-
-    expect(DocumentCategory).to exist(name: "Specification")
-    expect(DocumentCategory).not_to exist(name: "Documentation")
+      expect(page).to have_content("You are not authorized to access this page.")
+    end
   end
 end

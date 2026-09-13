@@ -14,9 +14,9 @@ This guide will provide some insights in how to develop and test integrations wi
 
 The packager.io website observes changes in the repository through webhooks and will automatically triggers builds for these branches:
 
-- `dev`: https://packager.io/gh/opf/openproject
-- `release/*` (e.g.,) https://packager.io/gh/opf/openproject/refs/release/13.0
-- `stable/*` (e.g.,) https://packager.io/gh/opf/openproject/refs/stable/15
+- `dev`: `https://packager.io/gh/opf/openproject`
+- `release/*` (e.g.,) `https://packager.io/gh/opf/openproject/refs/release/16.0`
+- `stable/*` (e.g.,) `https://packager.io/gh/opf/openproject/refs/stable/17`
 - `packaging/*`
 
 To see the status of a build, simply follow one of the links and choose a distribution whose logs you want to look at.
@@ -37,8 +37,8 @@ In an installed installations, these are the paths you have to look for:
 
 If you need a package of your changes before they are being merged, simply create a branch with the prefix `packaging/` to allow it being build.
 
-Then, trigger its builds using this URL: `https://packager.io/gh/opf/openproject/refs/BRANCH-NAME`. For example: https://packager.io/gh/opf/openproject/refs/packaging/custom-plugin-frozen
+Then, trigger its builds using this URL: `https://packager.io/gh/opf/openproject/refs/BRANCH-NAME`. For example: `https://packager.io/gh/opf/openproject/refs/packaging/custom-plugin-frozen`
 
-If you're pushing multiple commits and want faster turnover times, reduce the number of available distributions in the `.pkgr.yml` to only the ones you want to test here: https://github.com/opf/openproject/blob/dev/.pkgr.yml
+If you're pushing multiple commits and want faster turnover times, reduce the number of available distributions in the `.pkgr.yml` to only the ones you want to test [here](https://github.com/opf/openproject/blob/dev/.pkgr.yml).
 
 **Important:** Remember to remove those changes before merging!

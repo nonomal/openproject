@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # -- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -56,21 +58,9 @@ RSpec.describe ProjectQueries::SetAttributesService, type: :model do
   let(:params) { {} }
   let!(:custom_field) do
     build_stubbed(:project_custom_field, id: 1) do |cf|
-      scope = instance_double(ActiveRecord::Relation)
-
       allow(ProjectCustomField)
         .to receive(:visible)
-              .and_return(scope)
-
-      allow(scope)
-        .to receive(:find_by)
-              .with(id: cf.id.to_s)
-              .and_return(cf)
-
-      allow(scope)
-        .to receive(:pluck)
-              .with(:id)
-              .and_return([cf.id])
+              .and_return([cf])
     end
   end
 
@@ -173,15 +163,15 @@ RSpec.describe ProjectQueries::SetAttributesService, type: :model do
 
     # rubocop:disable Naming/VariableNumber
     it "assigns default selects for non admin",
-       with_settings: { enabled_projects_columns: %w[name created_at cf_1] } do
+       with_settings: { enabled_projects_columns: %w[name latest_activity_at cf_1] } do
       subject
 
       expect(model_instance.selects.map(&:attribute))
-        .to eql %i[favored name cf_1]
+        .to eql %i[favorited name cf_1]
     end
 
     it "assigns default selects for admin",
-       with_settings: { enabled_projects_columns: %w[name created_at cf_1] } do
+       with_settings: { enabled_projects_columns: %w[name latest_activity_at cf_1] } do
       allow(User.current)
         .to receive(:admin?)
               .and_return(true)
@@ -189,7 +179,7 @@ RSpec.describe ProjectQueries::SetAttributesService, type: :model do
       subject
 
       expect(model_instance.selects.map(&:attribute))
-        .to eql %i[favored name created_at cf_1]
+        .to eql %i[favorited name latest_activity_at cf_1]
     end
     # rubocop:enable Naming/VariableNumber
   end

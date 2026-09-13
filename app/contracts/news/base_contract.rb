@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -35,7 +37,6 @@ class News::BaseContract < ModelContract
     News
   end
 
-  attribute :project
   attribute :title
   attribute :summary
   attribute :description

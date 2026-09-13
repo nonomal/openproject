@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 require "features/page_objects/notification"
 
@@ -195,13 +197,13 @@ RSpec.describe "Notification center date alerts", :js, with_settings: { journal_
       side_menu.click_item "Date alert"
 
       expect(page).to have_current_path(/notifications\/date_alerts/)
-      expect(page).to have_enterprise_upsell_page(:basic)
+      expect(page).to have_enterprise_banner(:basic)
 
       # It does not allows direct url access
       visit notifications_center_path(filter: "reason", name: "dateAlert")
 
       expect(page).to have_current_path(/notifications\/date_alerts/)
-      expect(page).to have_enterprise_upsell_page(:basic)
+      expect(page).to have_enterprise_banner(:basic)
     end
   end
 
@@ -210,10 +212,10 @@ RSpec.describe "Notification center date alerts", :js, with_settings: { journal_
       center.expect_item(notification_wp_start_past, "Start date was 1 day ago.")
       center.expect_item(notification_wp_start_future, "Start date is in 7 days.")
 
-      center.expect_item(notification_wp_due_past, "Overdue since 3 days.")
+      center.expect_item(notification_wp_due_past, "Overdue for 3 days.")
       center.expect_item(notification_wp_due_future, "Finish date is in 3 days.")
 
-      center.expect_item(notification_milestone_past, "Overdue since 2 days.")
+      center.expect_item(notification_milestone_past, "Overdue for 2 days.")
       center.expect_item(notification_milestone_future, "Milestone date is in 1 day.")
 
       center.expect_item(notification_wp_unset_date, "Finish date is deleted.")

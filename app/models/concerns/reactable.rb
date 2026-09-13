@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,67 +33,5 @@ module Reactable
 
   included do
     has_many :emoji_reactions, as: :reactable, dependent: :destroy
-  end
-
-  class_methods do
-    def grouped_journal_emoji_reactions(journal)
-      grouped_emoji_reactions_by_reactable(reactable_id: journal.id, reactable_type: "Journal")
-    end
-
-    def grouped_work_package_journals_emoji_reactions(work_package)
-      grouped_emoji_reactions_by_reactable(reactable_id: work_package.journal_ids, reactable_type: "Journal")
-    end
-
-    def grouped_emoji_reactions_by_reactable(reactable_id:, reactable_type:)
-      grouped_emoji_reactions(reactable_id:, reactable_type:).each_with_object({}) do |row, hash|
-        hash[row.reactable_id] ||= {}
-        hash[row.reactable_id][row.reaction.to_sym] = {
-          count: row.reactions_count,
-          users: row.reacting_users.map { |(id, name)| { id:, name: } }
-        }
-      end
-    end
-
-    def grouped_emoji_reactions(reactable_id:, reactable_type:)
-      EmojiReaction
-        .select(emoji_reactions_group_selection_sql)
-        .joins(:user)
-        .where(reactable_id:, reactable_type:)
-        .group("emoji_reactions.reactable_id, emoji_reactions.reaction")
-        .order("first_created_at ASC")
-    end
-
-    private
-
-    def emoji_reactions_group_selection_sql
-      <<~SQL.squish
-        emoji_reactions.reactable_id, emoji_reactions.reaction,
-        COUNT(emoji_reactions.id) as reactions_count,
-        json_agg(
-          json_build_array(users.id, #{user_name_concat_format_sql})
-          ORDER BY emoji_reactions.created_at
-        ) as reacting_users,
-        MIN(emoji_reactions.created_at) as first_created_at
-      SQL
-    end
-
-    def user_name_concat_format_sql
-      case Setting.user_format
-      when :firstname_lastname
-        "concat_ws(' ', users.firstname, users.lastname)"
-      when :firstname
-        "users.firstname"
-      when :lastname_firstname
-        "concat_ws(' ', users.lastname, users.firstname)"
-      when :lastname_comma_firstname
-        "concat_ws(', ', users.lastname, users.firstname)"
-      when :lastname_n_firstname
-        "concat_ws('', users.lastname, users.firstname)"
-      when :username
-        "users.login"
-      else
-        raise ArgumentError, "Unsupported user format: #{Setting.user_format}"
-      end
-    end
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -39,7 +41,7 @@ module Pages::Admin::SystemSettings
     end
 
     def welcome_text_selector
-      'opce-ckeditor-augmented-textarea[data-textarea-selector="\"#settings_welcome_text\""]'
+      'opce-ckeditor-augmented-textarea[data-text-area-id="\"settings_welcome_text\""]'
     end
   end
 end

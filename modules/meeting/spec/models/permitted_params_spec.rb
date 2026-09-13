@@ -34,7 +34,7 @@ RSpec.describe PermittedParams do
 
   describe "#search" do
     it "permits its whitelisted params" do
-      acceptable_params = { messages: 1 }
+      acceptable_params = { filter: :messages }
 
       permitted = ActionController::Parameters.new(acceptable_params).permit!
       params = ActionController::Parameters.new(acceptable_params)

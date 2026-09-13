@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,14 +31,10 @@
 require_relative "base"
 
 class Tables::ChangesetsWorkPackages < Tables::Base
-  def self.id_options
-    { id: false }
-  end
-
   def self.table(migration)
-    create_table migration do |t|
-      t.integer :changeset_id, null: false
-      t.integer :work_package_id, null: false
+    create_table migration, id: false do |t|
+      t.bigint :changeset_id, null: false
+      t.bigint :work_package_id, null: false
 
       t.index %i[changeset_id work_package_id],
               unique: true,

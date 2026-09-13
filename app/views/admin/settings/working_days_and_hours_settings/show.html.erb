@@ -34,16 +34,16 @@ See COPYRIGHT and LICENSE files for more details.
     header.with_title(test_selector: "op-working-days-admin-settings--title") { t(:label_working_days_and_hours) }
     header.with_breadcrumbs(
       [{ href: admin_index_path, text: t("label_administration") },
-       { href: admin_settings_working_days_and_hours_path, text: t(:label_calendars_and_dates) },
+       { href: admin_settings_working_days_and_hours_path, text: t(:label_calendars_and_dates), skip_for_mobile: true },
        t(:label_working_days_and_hours)]
     )
   end
 %>
 
 <%= styled_form_tag(
-      admin_settings_working_days_and_hours_path,
-      method: :patch,
-      class: "op-working-days-admin-settings"
+      confirm_changes_admin_settings_working_days_and_hours_path,
+      class: "op-working-days-admin-settings",
+      data: { turbo_stream: true }
     ) do %>
 
   <section class="form--section">

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,6 +33,8 @@ module Users
     include ApplicationHelper
     include AvatarHelper
     include OpPrimer::ComponentHelpers
+
+    with_collection_parameter :user
 
     def initialize(user:, show_name: true, link: true, size: "default", classes: "", title: nil, name_classes: "",
                    hover_card: { active: true })

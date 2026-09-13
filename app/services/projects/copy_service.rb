@@ -43,6 +43,7 @@ module Projects
         ::Projects::Copy::QueriesDependentService,
         ::Projects::Copy::BoardsDependentService,
         ::Projects::Copy::OverviewDependentService,
+        ::Projects::Copy::PhasesDependentService,
         ::Projects::Copy::StoragesDependentService
       ]
     end
@@ -59,6 +60,10 @@ module Projects
                  count_source: ->(source, _) { source.work_packages.joins(:file_links).count("file_links.id") } }]
     end
 
+    def initialize(contract_options: {}, **)
+      super(contract_options: contract_options.reverse_merge(validate_model: true), **)
+    end
+
     protected
 
     ##
@@ -72,16 +77,21 @@ module Projects
       attributes = source_attributes.merge(
         # Clear enabled modules
         enabled_module_names: source_enabled_modules,
-        types: source_types,
-        work_package_custom_fields: source_custom_fields
+        work_package_custom_fields: source_custom_fields,
+
+        # clear PIR settings
+        project_creation_wizard_artifact_work_package_id: nil
       )
+
+      clean_settings_attributes!(attributes[:settings])
 
       only_allowed_parent_id(attributes)
         .merge(source_custom_field_attributes)
+        .merge(source_project_types_attribute)
         .merge(target_project_params)
     end
 
-    def before_perform(params, service_call)
+    def before_perform(service_call)
       super.tap do |super_call|
         # Retain values after the set attributes service
         retain_attributes(source, super_call.result)
@@ -95,15 +105,32 @@ module Projects
     def after_perform(call)
       super.tap do |super_call|
         copy_activated_custom_fields(super_call)
+        copy_creation_wizard_flags(super_call.result)
+        update_calculated_value_custom_fields(super_call.result)
       end
+    end
+
+    def clean_settings_attributes!(settings)
+      # We want to remove the PIR work package as that should be reset on copy
+      settings.delete("project_creation_wizard_artifact_work_package_id")
     end
 
     def copy_activated_custom_fields(call)
       call.result.project_custom_field_ids = source.project_custom_field_ids
     end
 
-    def contract_options
-      { copy_source: source, validate_model: true }
+    # Activating a custom field on the copy must not silently enable it for
+    # the creation wizard (PIR) - unless the source project already had it
+    # enabled, in which case we want to preserve that setting on the copy.
+    # This has to run after copy_activated_custom_fields, since that is what
+    # actually creates most of the mappings being adjusted here.
+    def copy_creation_wizard_flags(project)
+      source_flags = source.project_custom_field_project_mappings.pluck(:custom_field_id, :creation_wizard).to_h
+
+      project.project_custom_field_project_mappings.find_each do |mapping|
+        creation_wizard = source_flags[mapping.custom_field_id]
+        mapping.update_column(:creation_wizard, creation_wizard) unless creation_wizard.nil?
+      end
     end
 
     def retain_attributes(source, target)
@@ -114,7 +141,7 @@ module Projects
     end
 
     def skipped_attributes
-      %w[id created_at updated_at name identifier active templated lft rgt]
+      %w[id created_at updated_at name identifier active templated lft rgt wp_sequence_counter]
     end
 
     def source_attributes
@@ -129,8 +156,8 @@ module Projects
       source.status&.attributes
     end
 
-    def source_types
-      source.types
+    def source_project_types_attribute
+      { project_types: source.project_types.map(&:dup) }
     end
 
     def source_custom_fields

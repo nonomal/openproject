@@ -39,6 +39,16 @@ module API
             nil
           end
 
+          # The type to read configuration from: #type is the family's root, while the project
+          # may resolve the family to a variant configured differently.
+          def type_variant
+            project&.type_variant(type)
+          end
+
+          def custom_field_required?(custom_field_id)
+            type_variant&.required_custom_field_ids&.include?(custom_field_id) || false
+          end
+
           def assignable_values(_property, _current_user)
             nil
           end
@@ -51,9 +61,11 @@ module API
             []
           end
 
+          delegate :assignable_project_phases,
+                   to: :contract
+
           def writable?(property)
             property = property.to_s
-            return false if property == "subject" && type&.replacement_pattern_defined_for?(:subject)
 
             # Special case for milestones + date property
             property = "start_date" if property == "date" && milestone?
@@ -78,7 +90,7 @@ module API
           private
 
           def contract
-            raise NotImplementedError
+            raise SubclassResponsibilityError
           end
         end
       end

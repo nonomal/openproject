@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -184,8 +186,46 @@ RSpec.describe GroupsController do
 
     it "shows" do
       get :show, params: { id: group.id }
-      expect(response).to be_successful
-      expect(response).to render_template "show"
+      expect(response).not_to be_successful
+      expect(response).to have_http_status :not_found
+    end
+
+    context "when having view_members permission in a project the group belongs to" do
+      let(:project) { create(:project) }
+      let(:user) { create(:user, member_with_permissions: { project => [:view_members] }) }
+      let(:group_members) { create_list(:user, 2) }
+
+      before do
+        create(:member, project:, principal: group, roles: [create(:project_role)])
+      end
+
+      it "shows" do
+        get :show, params: { id: group.id }
+        expect(response).to be_successful
+      end
+
+      it "shows members" do
+        get :show, params: { id: group.id }
+        expect(assigns(:group_users)).to match_array(group_members)
+      end
+    end
+
+    context "when having view_members permission in a project the group does not belong to" do
+      let(:project) { create(:project) }
+      let(:other_project) { create(:project) }
+      let(:user) { create(:user, member_with_permissions: { other_project => [:view_members] }) }
+      let(:group_members) { create_list(:user, 2) }
+
+      before do
+        create(:member, project:, principal: group, roles: [create(:project_role)])
+      end
+
+      it "does not show members" do
+        get :show, params: { id: group.id }
+
+        expect(response).to have_http_status :not_found
+        expect(assigns(:group_users)).to be_blank
+      end
     end
 
     it "forbids new" do

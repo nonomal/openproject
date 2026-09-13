@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module OpenProject
   module TwoFactorAuthentication
     require "open_project/two_factor_authentication/engine"

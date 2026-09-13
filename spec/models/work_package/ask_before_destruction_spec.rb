@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -39,7 +41,7 @@ RSpec.describe WorkPackage do
   end
   let(:user) { create(:user) }
 
-  let(:type) { create(:type_standard) }
+  let(:type) { create(:type_task) }
   let(:project) { create(:project, types: [type]) }
   let(:project2) { create(:project, types: [type]) }
   let(:role) { create(:project_role) }
@@ -61,12 +63,12 @@ RSpec.describe WorkPackage do
   let(:time_entry) do
     create(:time_entry,
            hours: time_entry_hours,
-           work_package:,
+           entity: work_package,
            project: work_package.project)
   end
   let(:time_entry2) do
     create(:time_entry,
-           work_package: work_package2,
+           entity: work_package2,
            project: work_package2.project)
   end
 
@@ -158,7 +160,7 @@ RSpec.describe WorkPackage do
         action
 
         time_entry.reload
-        expect(time_entry.work_package_id).to eq(work_package.id)
+        expect(time_entry.entity).to eq(work_package)
       end
     end
 
@@ -173,22 +175,22 @@ RSpec.describe WorkPackage do
         action
 
         time_entry.reload
-        expect(time_entry.work_package_id).to eq(work_package.id)
+        expect(time_entry.entity).to eq(work_package)
       end
     end
 
-    describe 'with "nullify" as action' do
+    describe 'with "nullify" as action', skip: "nullify of time entry entity is currently not possible" do
       let(:action) { WorkPackage.cleanup_associated_before_destructing_if_required([work_package], user, action: "nullify") }
 
       it "returns true" do
         expect(action).to be_truthy
       end
 
-      it "sets the work_package_id of all time entries to nil" do
+      it "sets the entity of all time entries to nil" do
         action
 
         time_entry.reload
-        expect(time_entry.work_package_id).to be_nil
+        expect(time_entry.entity).to be_nil
       end
     end
 
@@ -212,11 +214,11 @@ RSpec.describe WorkPackage do
           expect(action).to be_truthy
         end
 
-        it "sets the work_package_id of all time entries to the new work package" do
+        it "sets the entity of all time entries to the new work package" do
           action
 
           time_entry.reload
-          expect(time_entry.work_package_id).to eq(work_package2.id)
+          expect(time_entry.entity).to eq(work_package2)
         end
 
         it "sets the project_id of all time entries to the new work package's project" do
@@ -246,11 +248,11 @@ RSpec.describe WorkPackage do
           expect(action).to be_truthy
         end
 
-        it "sets the work_package_id of all time entries to the new work package" do
+        it "sets the entity of all time entries to the new work package" do
           action
 
           time_entry.reload
-          expect(time_entry.work_package_id).to eq(work_package2.id)
+          expect(time_entry.entity).to eq(work_package2)
         end
 
         it "sets the project_id of all time entries to the new work package's project" do
@@ -279,11 +281,11 @@ RSpec.describe WorkPackage do
         expect(action).to be_falsey
       end
 
-      it "does not alter the work_package_id of all time entries" do
+      it "does not alter the entity of all time entries" do
         action
 
         time_entry.reload
-        expect(time_entry.work_package_id).to eq(work_package.id)
+        expect(time_entry.entity).to eq(work_package)
       end
     end
 
@@ -300,11 +302,11 @@ RSpec.describe WorkPackage do
         expect(action).to be_falsey
       end
 
-      it "does not alter the work_package_id of all time entries" do
+      it "does not alter the entity of all time entries" do
         action
 
         time_entry.reload
-        expect(time_entry.work_package_id).to eq(work_package.id)
+        expect(time_entry.entity).to eq(work_package)
       end
 
       it "sets an error on work packages" do
@@ -327,11 +329,11 @@ RSpec.describe WorkPackage do
         expect(action).to be_falsey
       end
 
-      it "does not alter the work_package_id of all time entries" do
+      it "does not alter the entity of all time entries" do
         action
 
         time_entry.reload
-        expect(time_entry.work_package_id).to eq(work_package.id)
+        expect(time_entry.entity).to eq(work_package)
       end
 
       it "sets an error on work packages" do

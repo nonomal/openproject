@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -34,7 +34,25 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   host: { class: 'work-packages-page--ui-view' },
   templateUrl: './wp-new-full-view.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: false,
 })
 export class WorkPackageNewFullViewComponent extends WorkPackageCreateComponent {
-  public successState = this.$state.current.data.successState as string;
+  public successState = (this.$state?.current?.data?.successState as string) || '';
+
+  breadcrumbItems() {
+    const items = [];
+    if (this.currentProjectService?.identifier) {
+      items.push({
+        href: this.pathHelper.projectPath(this.currentProjectService.identifier),
+        text: this.currentProjectService.name,
+      });
+    }
+    items.push({
+      href: this.pathHelper.workPackagesPath(this.currentProjectService.identifier),
+      text: this.I18n.t('js.label_work_package_plural'),
+    });
+    items.push(I18n.t('js.label_create_work_package'));
+
+    return items;
+  }
 }

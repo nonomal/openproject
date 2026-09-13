@@ -36,17 +36,20 @@ module My
               :date
 
       def call
-        render(Primer::Alpha::SegmentedControl.new("aria-label": I18n.t(:label_meeting_date_time))) do |control|
-          %i[day week month].each do |mode|
-            control.with_item(
-              tag: :a,
-              href: my_time_tracking_path(date:, view_mode:, mode:),
-              icon: icon_for_mode(mode),
-              label: t("label_#{mode}"),
-              title: t("label_#{mode}"),
-              selected: (current_mode == mode)
-            )
+        render(Primer::Alpha::ActionMenu.new(menu_id: "my-time-tracking-mode-switch")) do |menu|
+          menu.with_show_button do |button|
+            button.with_leading_visual_icon(icon: icon_for_mode(current_mode))
+            button.with_trailing_action_icon(icon: :"triangle-down")
+            t("label_#{current_mode}")
           end
+
+          %i[day workweek week month].each { menu_item_for_mode(menu, it) }
+        end
+      end
+
+      def menu_item_for_mode(menu, mode)
+        menu.with_item(tag: :a, href: my_time_tracking_path(date:, view_mode:, mode:), label: t("label_#{mode}")) do |item|
+          item.with_leading_visual_icon(icon: icon_for_mode(mode))
         end
       end
 
@@ -56,6 +59,8 @@ module My
           "op-calendar-day"
         when :week
           "op-calendar-week"
+        when :workweek
+          "briefcase"
         else
           "calendar"
         end

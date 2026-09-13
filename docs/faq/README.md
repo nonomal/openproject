@@ -23,17 +23,17 @@ Welcome to the central overview of frequently asked questions for OpenProject.
 
 ### How do I get access to the OpenProject Enterprise add-ons?
 
-We offer the Enterprise add-ons of OpenProject (incl. boards) for two different OpenProject variants:
+We offer the Enterprise add-ons of OpenProject for two different OpenProject variants:
 
-* For the OpenProject Enterprise cloud edition (hosted by us),
-* For the self-hosted (on-premises) OpenProject Enterprise on-premises edition
+- For the OpenProject Enterprise cloud edition (hosted by us),
+- For the self-hosted (on-premises) OpenProject Enterprise on-premises edition
 
 If you want to run OpenProject on your own server, the OpenProject Enterprise on-premises edition is the right option.
 Have you already installed the [OpenProject Community edition](https://www.openproject.org/download-and-installation/)? If yes, you can request a trial license for the OpenProject Enterprise on-premises edition by clicking on the button "Free trial license" [here](https://www.openproject.org/de/enterprise-edition/) and test the Enterprise on-premises edition for 14 days for free.
 
 ### Can I have some users with Enterprise add-ons and some without?
 
-As the Enterprise Enterprise add-ons affect the whole instance (e.g. with Agile Boards and project custom fields) it's not possible to upgrade only some users.
+As the Enterprise Enterprise add-ons affect the whole instance (e.g. with project custom fields) it's not possible to upgrade only some users.
 
 ### What are the system requirements?
 
@@ -80,7 +80,7 @@ The (on-premise) OpenProject Community edition is completely free. The Enterpris
 
 ### Can I have both users with the Enterprise cloud and others with the Enterprise on-premises edition?
 
-This is only possible if you book two different plans for OpenProject. The users won't be able to work together directly. We strongly recommend using either Enterprise cloud *or* Enterprise on-premises, if you want to collaborate with all colleagues.
+This is only possible if you book two different plans for OpenProject. The users won't be able to work together directly. We strongly recommend using either Enterprise cloud _or_ Enterprise on-premises, if you want to collaborate with all colleagues.
 
 ### How are users in OpenProject counted? How many licenses do I need for Enterprise on-premises or Enterprise cloud?
 
@@ -120,7 +120,7 @@ If you are the system administrator of an on-premises installation (Enterprise o
 
 This is not possible per se, there's no Ctrl+Z option or anything similar.
 
-Please use these resources to find out about the latest changes and re-do them manually: The [work package activity](../getting-started/work-packages-introduction/#activity-of-work-packages), the [history of the wiki page](../user-guide/wiki/more-wiki-functions/#show-wiki-page-history) or the [Activities module](../user-guide/activity).
+Please use these resources to find out about the latest changes and re-do them manually: The [work package activity](../getting-started/work-packages-introduction/#activity-of-work-packages), the [history of the wiki page](../user-guide/wiki/create-edit-wiki/#show-wiki-page-history) or the [Activities module](../user-guide/activity).
 
 ### How can I increase or decrease the number of users in OpenProject?
 
@@ -129,7 +129,7 @@ You can invite new users in the system administration as long as you have enough
 For the Community edition you can have as many users as you need for free.
 If you are using Enterprise on-premises, please write an email to sales @ openproject.com.
 
-If you are using the Enterprise cloud, you can easily upgrade or downgrade the number of users by navigating to *Administration -> Billing -> Manage subscription* and choosing the new amount of users which you need in your system. Find out more [here](../enterprise-guide/enterprise-cloud-guide/manage-cloud-subscription).
+If you are using the Enterprise cloud, you can easily upgrade or downgrade the number of users by navigating to _Administration -> Billing -> Manage subscription_ and choosing the new amount of users which you need in your system. Find out more [here](../enterprise-guide/enterprise-cloud-guide/manage-cloud-subscription).
 
 ### How can I change the day my week starts with, etc.?
 
@@ -137,7 +137,7 @@ You can do this as a system administrator in the [System settings](../system-adm
 
 ### How can I add a RACI matrix in OpenProject?
 
-You can add [project custom fields](../system-admin-guide/custom-fields/custom-fields-projects/) of the type "user" to your projects and track the respective persons there.
+You can add [project custom fields](../system-admin-guide/custom-fields/#add-a-custom-field-to-one-or-multiple-projects) of the type "user" to your projects and track the respective persons there.
 
 On a work package level you could use "Assignee" for "Responsible", "Accountable" for "Accountable" and [add custom fields](../system-admin-guide/custom-fields/) for "Consulted" and "Informed". For the latter one you could also just set the person as watcher instead.
 
@@ -161,11 +161,13 @@ Please find information on the features of OpenProject [here](https://www.openpr
 ### Is it possible to use multiple languages in OpenProject?
 
 Yes, it is possible to use OpenProject in multiple languages. We support English, German, French and a number of additional languages. Each user can select their own preferred language by signing into OpenProject, clicking on the user avatar on the upper right side and selecting "Account settings" from the dropdown menu.
-You can then select "Settings" from the side menu on the left side and [change the language](../user-guide/account-settings/#change-your-language).
+You can then select "Settings" from the side menu on the left side and [change the language](../user-guide/account-settings/language-and-region/#change-your-language).
 
 ### Is there an OpenProject app?
 
-There is no native iOS or Android app for OpenProject, but OpenProject is responsive - so it displays well on smaller screens.
+OpenProject is responsive - so it displays well on smaller screens.
+
+In addition, there is an iOS and an Android app for OpenProject. [Read more](../mobile-app-guide).
 
 ### Is it possible to connect MS Project and OpenProject or to migrate from MS Project to OpenProject?
 
@@ -195,9 +197,7 @@ Yes, you can. Starting with OpenProject 12.4 we implemented date alerts and emai
 
 ### Does OpenProject offer resource management?
 
-You can [set up budgets](../user-guide/budgets), [set the estimated time in  the **Work** field](../user-guide/work-packages/edit-work-package/) of a work package and use the [Assignee board](../user-guide/agile-boards/#choose-between-board-types) to find out how many work packages are assigned to a person at the moment.
-Additional resource management features will be added within the next years. You can find the roadmap for future releases [here](https://community.openproject.org/projects/openproject/work_packages?query_id=1993).
-More information regarding resource management in OpenProject can be found in the [Use Cases](../use-cases/resource-management) section.
+Yes. The Resource management module enables project managers to plan capacity, allocate work and staff projects based on team members' availability and skills. For details, see the [Resource management user guide](../user-guide/resource-management/).
 
 ### Does OpenProject offer portfolio management?
 
@@ -270,21 +270,13 @@ You can use the first two steps of [this instruction](../installation-and-operat
 
 To migrate from Bitnami **to Enterprise on-premises** please use [this instruction](../installation-and-operations/installation-faq/#how-can-i-migrate-from-bitnami-to-the-official-openproject-installation-packages). We offer (paid) installation support to help you migrate to OpenProject (for the Enterprise on-premises edition). Please contact us to request it.
 
-### How can I migrate from Jira/Confluence to OpenProject?
+### How can I migrate from JIRA/Confluence to OpenProject?
 
-At the moment there are these ways to migrate:
-
-- our [API](../api/)
-- our [Excel sync](../system-admin-guide/integrations/excel-synchronization)
-- Using a [Markdown export app](https://marketplace.atlassian.com/apps/1221351/markdown-exporter-for-confluence) you can export pages from Confluence and paste them (via copy & paste) into OpenProject in e.g. the wiki. This should preserve at least most of the layout. Attachments would then have to be added manually.
-
-Our partners at [ALMToolbox](https://www.almtoolbox.com/)  are happy to support you with Jira or Confluence migration. 
-
-For more information please contact us.
+Please consult [JIRA migration overview page](../installation-and-operations/jira-migration/) for an overview of all existing options.
 
 ### How can I migrate from Community edition or Enterprise on-premises to Enterprise cloud?
 
-We will need a [backup](../system-admin-guide/backup) of your OpenProject Installation which we will restore to your new Enterprise cloud. Please calculate with a downtime of approximately 60 minutes in regular cases. Please contact us to plan the migration and get more instructions.
+We will need a [backup](../system-admin-guide/backup) of your OpenProject Installation which we will restore to your new Enterprise cloud. Please calculate with a downtime of approximately 60 minutes in regular cases. Please keep in mind that this is a paid service. Contact us to plan the migration and get more instructions.
 
 ### How can I migrate from Enterprise cloud to Enterprise on-premises?
 
@@ -314,7 +306,7 @@ If in doubt on how you should start, you can also just [contact us](https://www.
 
 ### How can I receive support?
 
-We offer our Professional Support for Enterprise on-premises users and Enterprise cloud users. Please write an email to support@openproject.com.
+We offer our Professional Support for Enterprise on-premises users and Enterprise cloud users. Please write an email to [support@openproject.com](mailto:support@openproject.com).
 
 If you use the Community edition please feel free to use our [forums](https://community.openproject.org/projects/openproject/forums) for exchange with other users.
 
@@ -327,7 +319,7 @@ Yes, we do.
 ### Is there a limitation of participants for the trainings?
 
 No, you can join with as many people from your organization as you like. However, we recommend not more than 20-25 people so there's enough opportunity for everyone to ask questions.
-*This answer only refers to e.g. Getting Started training and custom trainings, not to the OpenProject certification!*
+_This answer only refers to e.g. Getting Started training and custom trainings, not to the OpenProject certification!_
 
 ### Can trainings be conducted remotely, too (e.g. the Custom training)?
 

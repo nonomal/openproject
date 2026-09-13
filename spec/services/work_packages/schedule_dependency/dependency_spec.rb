@@ -51,7 +51,7 @@ RSpec.describe WorkPackages::ScheduleDependency::Dependency do
   def checked_dependency_for(work_package)
     dependency_for(work_package).tap do |dependency|
       if dependency.nil?
-        available = schedule_dependency.dependencies.keys.map { _1.subject.inspect }.to_sentence
+        available = schedule_dependency.dependencies.keys.map { it.subject.inspect }.to_sentence
         raise ArgumentError, "Unable to find dependency for work package #{work_package.subject.inspect}; " \
                              "ScheduleDependency instance has dependencies for work packages #{available}"
       end

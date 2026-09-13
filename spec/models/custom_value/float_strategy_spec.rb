@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,27 +32,24 @@ require "spec_helper"
 
 RSpec.describe CustomValue::FloatStrategy do
   let(:instance) { described_class.new(custom_value) }
-  let(:custom_value) do
-    double("CustomValue",
-           value:)
-  end
+  let(:custom_value) { instance_double(CustomValue, value:) }
 
   describe "#typed_value" do
     subject { instance.typed_value }
 
-    context "value is some float string" do
+    context "when value is a float string" do
       let(:value) { "3.14" }
 
       it { is_expected.to be(3.14) }
     end
 
-    context "value is blank" do
+    context "when value is blank" do
       let(:value) { "" }
 
       it { is_expected.to be_nil }
     end
 
-    context "value is nil" do
+    context "when value is nil" do
       let(:value) { nil }
 
       it { is_expected.to be_nil }
@@ -60,7 +59,7 @@ RSpec.describe CustomValue::FloatStrategy do
   describe "#formatted_value" do
     subject { instance.formatted_value }
 
-    context "value is some float string" do
+    context "when value is a float string" do
       let(:value) { "3.14" }
 
       it "is the float string" do
@@ -74,7 +73,7 @@ RSpec.describe CustomValue::FloatStrategy do
       end
     end
 
-    context "value is blank" do
+    context "when value is blank" do
       let(:value) { "" }
 
       it "is a blank string" do
@@ -82,7 +81,7 @@ RSpec.describe CustomValue::FloatStrategy do
       end
     end
 
-    context "value is nil" do
+    context "when value is nil" do
       let(:value) { nil }
 
       it "is a blank string" do
@@ -94,7 +93,7 @@ RSpec.describe CustomValue::FloatStrategy do
   describe "#validate_type_of_value" do
     subject { instance.validate_type_of_value }
 
-    context "value is float string in decimal notation" do
+    context "when value is float string in decimal notation" do
       let(:value) { "3.14" }
 
       it "accepts" do
@@ -102,7 +101,7 @@ RSpec.describe CustomValue::FloatStrategy do
       end
     end
 
-    context "value is float string in exp. notation" do
+    context "when value is float string in exp. notation" do
       let(:value) { "5.0e-14" }
 
       it "accepts" do
@@ -110,7 +109,7 @@ RSpec.describe CustomValue::FloatStrategy do
       end
     end
 
-    context "value is not a float string" do
+    context "when value is not a float string" do
       let(:value) { "banana" }
 
       it "rejects" do
@@ -118,7 +117,7 @@ RSpec.describe CustomValue::FloatStrategy do
       end
     end
 
-    context "value is float" do
+    context "when value is float" do
       let(:value) { 3.14 }
 
       it "accepts" do
@@ -126,7 +125,7 @@ RSpec.describe CustomValue::FloatStrategy do
       end
     end
 
-    context "value is int" do
+    context "when value is int" do
       let(:value) { 3 }
 
       it "accepts" do

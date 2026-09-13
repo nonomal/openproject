@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -87,12 +89,14 @@ RSpec.describe "Query menu items", :js do
     it "can be added" do
       visit_index_page(query)
 
-      click_on "More actions"
-      click_on I18n.t("js.toolbar.settings.visibility_settings")
-      check "Favored"
+      wp_table.expect_no_work_package_listed
+      wp_table.click_setting_item I18n.t("js.toolbar.settings.visibility_settings")
+
+      check "Favorited"
       click_on "Save"
 
       notification.expect_success("Successful update")
+      wait_for_network_idle
       expect(page).to have_css(".op-submenu--item", text: query.name)
     end
   end

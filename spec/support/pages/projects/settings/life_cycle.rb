@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # -- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) 2010-2024 the OpenProject GmbH
@@ -105,7 +107,7 @@ module Pages
           visit home_path
 
           expect(page)
-            .to have_css(".PageHeader-title", text: "Home")
+            .to have_css(".PageHeader-title", text: "OpenProject")
 
           visit!
         end

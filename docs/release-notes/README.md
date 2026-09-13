@@ -13,108 +13,208 @@ Stay up to date and get an overview of the new features included in the releases
 <!--- New release notes are generated below. Do not remove comment. -->
 <!--- RELEASE MARKER -->
 
-## 15.5.0
+## 17.8.0
 
-Release date: 2025-04-16
+Release date: 2026-09-02
 
-[Release Notes](15-5-0/)
-
-
-## 15.4.2
-
-Release date: 2025-03-26
-
-[Release Notes](15-4-2/)
+[Release Notes](17-8-0/)
 
 
-## 15.4.1
+## 17.7.2
 
-Release date: 2025-03-20
+Release date: 2026-08-13
 
-[Release Notes](15-4-1/)
-
-
-## 15.4.0
-
-Release date: 2025-03-19
-
-[Release Notes](15-4-0/)
+[Release Notes](17-7-2/)
 
 
-## 15.3.2
+## 17.7.1
 
-Release date: 2025-03-05
+Release date: 2026-08-06
 
-[Release Notes](15-3-2/)
-
-
-## 15.3.1
-
-Release date: 2025-02-25
-
-[Release Notes](15-3-1/)
+[Release Notes](17-7-1/)
 
 
-## 15.3.0
+## 17.7.0
 
-Release date: 2025-02-19
+Release date: 2026-08-05
 
-[Release Notes](15-3-0/)
-
-
-## 15.2.1
-
-Release date: 2025-02-05
-
-[Release Notes](15-2-1/)
+[Release Notes](17-7-0/)
 
 
-## 15.2.0
+## 17.6.0
 
-Release date: 2025-01-22
+Release date: 2026-07-08
 
-[Release Notes](15-2-0/)
+[Release Notes](17-6-0/)
 
+## 17.5.1
 
-## 15.1.1
+Release date: 2026-06-15
 
-Release date: 2025-01-13
+[Release Notes](17-5-1/)
 
-[Release Notes](15-1-1/)
+## 17.5.0
 
+Release date: 2026-06-10
 
-## 15.1.0
+[Release Notes](17-5-0/)
 
-Release date: 2024-12-11
+## 17.3.4
 
-[Release Notes](15-1-0/)
+Release date: 2026-06-08
 
+[Release Notes](17-3-4/)
 
-## 15.0.2
+## 17.4.1
 
-Release date: 2024-11-20
+Release date: 2026-06-08
 
-[Release Notes](15-0-2/)
+[Release Notes](17-4-1/)
 
+## 17.3.3
 
-## 15.0.1
+Release date: 2026-06-08
 
-Release date: 2024-11-13
+[Release Notes](17-3-3/)
 
-[Release Notes](15-0-1/)
+## 17.4.0
 
+Release date: 2026-05-13
 
-## 15.0.0
+[Release Notes](17-4-0/)
 
-Release date: 2024-11-13
+## 17.3.2
 
-[Release Notes](15-0-0/)
+Release date: 2026-05-13
 
+[Release Notes](17-3-2/)
+
+## 17.2.4
+
+Release date: 2026-05-13
+
+[Release Notes](17-2-4/)
+
+## 17.3.1
+
+Release date: 2026-04-20
+
+[Release Notes](17-3-1/)
+
+## 17.3.0
+
+Release date: 2026-04-15
+
+[Release Notes](17-3-0/)
+
+## 17.2.3
+
+Release date: 2026-03-31
+
+[Release Notes](17-2-3/)
+
+## 17.1.4
+
+Release date: 2026-03-31
+
+[Release Notes](17-1-4/)
+
+## 17.0.7
+
+Release date: 2026-03-31
+
+[Release Notes](17-0-7/)
+
+## 17.2.2
+
+Release date: 2026-03-17
+
+[Release Notes](17-2-2/)
+
+## 17.2.1
+
+Release date: 2026-03-16
+
+[Release Notes](17-2-1/)
+
+## 17.1.3
+
+Release date: 2026-03-16
+
+[Release Notes](17-1-3/)
+
+## 17.2.0
+
+Release date: 2026-03-11
+
+[Release Notes](17-2-0/)
+
+## 17.1.2
+
+Release date: 2026-02-26
+
+[Release Notes](17-1-2/)
+
+## 17.0.6
+
+Release date: 2026-03-16
+
+[Release Notes](17-0-6/)
+
+## 17.0.5
+
+Release date: 2026-02-26
+
+[Release Notes](17-0-5/)
+
+## 17.1.1
+
+Release date: 2026-02-18
+
+[Release Notes](17-1-1/)
+
+## 17.1.0
+
+Release date: 2026-02-11
+
+[Release Notes](17-1-0/)
+
+## 17.0.4
+
+Release date: 2026-02-18
+
+[Release Notes](17-0-4/)
+
+## 17.0.3
+
+Release date: 2026-02-06
+
+[Release Notes](17-0-3/)
+
+## 17.0.2
+
+Release date: 2026-01-27
+
+[Release Notes](17-0-2/)
+
+## 17.0.1
+
+Release date: 2026-01-16
+
+[Release Notes](17-0-1/)
+
+## 17.0.0
+
+Release date: 2026-01-14
+
+[Release Notes](17-0-0/)
 
 ## Older versions
 
 | Version     | Years              |
 |-------------|--------------------|
+| [16.x](16/) | 2025 / 2026        |
+| [15.x](15/) | 2024 / 2025        |
 | [14.x](14/) | 2024               |
 | [13.x](13/) | 2023 / 2024        |
 | [12.x](12/) | 2021 / 2022 / 2023 |

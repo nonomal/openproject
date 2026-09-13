@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -35,7 +37,32 @@ RSpec.describe MyController do
     login_as(user)
   end
 
+  describe "DELETE destroy_project_settings" do
+    let(:project) { create(:project) }
+    let!(:notification_setting) { create(:notification_setting, user:, project:) }
+
+    it "deletes the setting and redirects with see other" do
+      delete :destroy_project_settings, params: { project_id: project.id }
+
+      expect(response).to redirect_to(my_notifications_path)
+      expect(response).to have_http_status(:see_other)
+      expect { notification_setting.reload }.to raise_error(ActiveRecord::RecordNotFound)
+    end
+  end
+
   describe "password change" do
+    describe "security" do
+      render_views
+
+      before do
+        get :security
+      end
+
+      it "does render 'Change password' section" do
+        expect(response.body).to have_css(".Subhead-heading", text: "Change password")
+      end
+    end
+
     describe "#password" do
       before do
         get :password
@@ -43,13 +70,12 @@ RSpec.describe MyController do
 
       it "renders the password template" do
         assert_template "password"
-        assert_response :success
+        expect(response).to have_http_status(:success)
       end
     end
 
-    describe "with disabled password login" do
+    describe "with disabled password login", with_settings: { password_login: "none" } do
       before do
-        allow(OpenProject::Configuration).to receive(:disable_password_login?).and_return(true)
         post :change_password
       end
 
@@ -69,8 +95,7 @@ RSpec.describe MyController do
       end
 
       it "shows an error message" do
-        expect(response).to have_http_status :unprocessable_entity
-        assert_template "password"
+        expect(response).to redirect_to action: "security"
         expect(user.errors.attribute_names).to eq([:password_confirmation])
         expect(user.errors.map(&:message).flatten)
           .to contain_exactly("Password confirmation does not match password.")
@@ -78,7 +103,6 @@ RSpec.describe MyController do
     end
 
     describe "with wrong password" do
-      render_views
       before do
         @current_password = user.current_password.id
         post :change_password,
@@ -90,8 +114,7 @@ RSpec.describe MyController do
       end
 
       it "shows an error message" do
-        expect(response).to have_http_status :unprocessable_entity
-        assert_template "password"
+        expect(response).to redirect_to action: "security"
         expect(flash[:error]).to eq("Wrong password")
       end
 
@@ -110,12 +133,93 @@ RSpec.describe MyController do
              }
       end
 
-      it "redirects to the my password page" do
-        expect(response).to redirect_to("/my/password")
+      it "redirects to the security page" do
+        expect(response).to redirect_to(my_security_path)
       end
 
       it "allows the user to login with the new password" do
         assert User.try_to_login(user.login, "adminADMIN!New")
+      end
+    end
+
+    describe "with brute force protection",
+             with_settings: { brute_force_block_minutes: 30, brute_force_block_after_failed_logins: 20 } do
+      describe "blocks password change attempts after too many failures" do
+        before do
+          user.update_columns(
+            failed_login_count: 20,
+            last_failed_login_on: 1.minute.ago
+          )
+
+          post :change_password,
+               params: {
+                 password: "adminADMIN!",
+                 new_password: "adminADMIN!New",
+                 new_password_confirmation: "adminADMIN!New"
+               }
+        end
+
+        it "blocks the attempt even with correct password" do
+          expect(response).to redirect_to action: "security"
+        end
+
+        it "does not change the password" do
+          user.reload
+          expect(user.check_password?("adminADMIN!")).to be true
+          expect(user.check_password?("adminADMIN!New")).to be false
+        end
+      end
+
+      describe "logs failed password attempts" do
+        before do
+          user.update_columns(
+            failed_login_count: 0,
+            last_failed_login_on: nil
+          )
+
+          post :change_password,
+               params: {
+                 password: "WrongPassword!",
+                 new_password: "adminADMIN!New",
+                 new_password_confirmation: "adminADMIN!New"
+               }
+        end
+
+        it "increments failed login count" do
+          user.reload
+          expect(user.failed_login_count).to eq(1)
+        end
+
+        it "updates last failed login timestamp" do
+          user.reload
+          expect(user.last_failed_login_on).to be_within(1.second).of(Time.zone.now)
+        end
+      end
+
+      describe "resets failed login count on successful password change" do
+        before do
+          user.update_columns(
+            failed_login_count: 5,
+            last_failed_login_on: 1.minute.ago
+          )
+
+          post :change_password,
+               params: {
+                 password: "adminADMIN!",
+                 new_password: "adminADMIN!New",
+                 new_password_confirmation: "adminADMIN!New"
+               }
+        end
+
+        it "resets the failed login count to zero" do
+          user.reload
+          expect(user.failed_login_count).to eq(0)
+        end
+
+        it "changes the password successfully" do
+          user.reload
+          expect(user.check_password?("adminADMIN!New")).to be true
+        end
       end
     end
   end
@@ -147,10 +251,17 @@ RSpec.describe MyController do
       it "renders editable custom fields" do
         expect(response.body).to have_content(custom_field.name)
       end
+    end
+  end
 
-      it "renders the 'Change password' menu entry" do
-        expect(response.body).to have_css("#menu-sidebar li a", text: "Change password")
+  describe "locale" do
+    it "renders the locale template" do
+      as_logged_in_user user do
+        get :locale
       end
+
+      expect(response).to be_successful
+      expect(response).to render_template "locale"
     end
   end
 
@@ -206,6 +317,23 @@ RSpec.describe MyController do
     end
   end
 
+  describe "updating custom field values" do
+    let!(:editable_cf) { create(:user_custom_field, :string, editable: true) }
+    let!(:readonly_cf) { create(:user_custom_field, :string, editable: false) }
+
+    it "persists editable custom fields but ignores non-editable ones" do
+      as_logged_in_user user do
+        patch :update_settings, params: {
+          user: { custom_field_values: { editable_cf.id.to_s => "ok",
+                                         readonly_cf.id.to_s => "tampered" } }
+        }
+      end
+
+      expect(user.reload.custom_value_for(editable_cf)&.value).to eq "ok"
+      expect(user.custom_value_for(readonly_cf)&.value).to be_blank
+    end
+  end
+
   describe "changing changing mail" do
     let!(:recovery_token) { create(:recovery_token, user:) }
     let!(:plain_session) { create(:user_session, user:, session_id: "internal_foobar") }
@@ -228,17 +356,17 @@ RSpec.describe MyController do
     end
   end
 
-  describe "settings:auto_hide_popups" do
+  describe "interface:auto_hide_popups" do
     context "with render_views" do
       before do
         as_logged_in_user user do
-          get :settings
+          get :interface
         end
       end
 
       render_views
       it "renders auto hide popups checkbox" do
-        expect(response.body).to have_css("#my_account_form #pref_auto_hide_popups")
+        expect(response.body).to have_css("form #auto_hide_popups")
       end
     end
 
@@ -253,146 +381,39 @@ RSpec.describe MyController do
     end
   end
 
-  describe "account with disabled password login" do
+  describe "account with disabled password login", with_settings: { password_login: "none" } do
     before do
-      allow(OpenProject::Configuration).to receive(:disable_password_login?).and_return(true)
       as_logged_in_user user do
-        get :account
+        get :security
       end
     end
 
     render_views
 
-    it "does not render 'Change password' menu entry" do
-      expect(response.body).to have_no_css("#menu-sidebar li a", text: "Change password")
+    it "does not render 'Change password' section" do
+      expect(response.body).to have_no_css(".Subhead-heading", text: "Change password")
     end
   end
 
-  describe "access_tokens" do
-    describe "rss" do
-      it "creates a key" do
-        expect(user.rss_token).to be_nil
+  describe "#working_times" do
+    let!(:user_working_hours) { create(:user_working_hours, valid_from: 1.week.ago, user:) }
 
-        post :generate_rss_key
-        expect(user.reload.rss_token).to be_present
-        expect(flash[:info]).to be_present
-        expect(flash[:error]).not_to be_present
+    subject { get :working_hours }
 
-        expect(response).to redirect_to action: :access_token
-      end
-
-      context "with existing key" do
-        let!(:key) { Token::RSS.create user: }
-
-        it "replaces the key" do
-          expect(user.rss_token).to eq(key)
-
-          post :generate_rss_key
-          new_token = user.reload.rss_token
-          expect(new_token).not_to eq(key)
-          expect(new_token.value).not_to eq(key.value)
-          expect(new_token.value).to eq(user.rss_key)
-
-          expect(flash[:info]).to be_present
-          expect(flash[:error]).not_to be_present
-          expect(response).to redirect_to action: :access_token
-        end
-      end
+    it "responds with success" do
+      subject
+      expect(response).to be_successful
     end
 
-    describe "api" do
-      context "with no existing key" do
-        it "creates a key" do
-          expect(user.api_tokens).to be_empty
-
-          post :generate_api_key, params: { token_api: { token_name: "One heck of a token" } }, format: :turbo_stream
-          new_token = user.reload.api_tokens.last
-          expect(new_token).to be_present
-
-          expect(response).to be_successful
-          expect(response.body).to include(new_token.token_name)
-        end
-      end
-
-      context "with existing key" do
-        let!(:key) { Token::API.create(user:, data: { name: "One heck of a token" }) }
-
-        it "must add the new key" do
-          expect(user.reload.api_tokens.last).to eq(key)
-
-          post :generate_api_key, params: { token_api: { token_name: "Two heck of a token" } }, format: :turbo_stream
-
-          new_token = user.reload.api_tokens.last
-          expect(new_token).not_to eq(key)
-          expect(new_token.value).not_to eq(key.value)
-
-          expect(response).to be_successful
-          expect(response.body).to include("Two heck of a token")
-        end
-      end
+    it "renders the working_hours template" do
+      subject
+      expect(response).to render_template "working_hours"
     end
 
-    describe "ical" do
-      # unlike with the other tokens, creating new ical tokens is not done in this context
-      # ical tokens are generated whenever the user requests a new ical url
-      # a user can have N ical tokens
-      #
-      # in this context a specific ical token of a user should be reverted
-      # this invalidates the previously generated ical url
-      context "with existing keys" do
-        let(:user) { create(:user) }
-        let(:project) { create(:project) }
-        let(:query) { create(:query, project:) }
-        let(:another_query) { create(:query, project:) }
-        let!(:ical_token_for_query) { create(:ical_token, user:, query:, name: "Some Token Name") }
-        let!(:another_ical_token_for_query) { create(:ical_token, user:, query:, name: "Some Other Token Name") }
-        let!(:ical_token_for_another_query) { create(:ical_token, user:, query: another_query, name: "Some Token Name") }
-
-        it "revoke specific ical tokens" do
-          expect(user.ical_tokens).to contain_exactly(
-            ical_token_for_query, another_ical_token_for_query, ical_token_for_another_query
-          )
-
-          delete :revoke_ical_token, params: { id: another_ical_token_for_query.id }
-
-          expect(user.ical_tokens.reload).to contain_exactly(
-            ical_token_for_query, ical_token_for_another_query
-          )
-
-          expect(user.ical_tokens.reload).not_to contain_exactly(
-            ical_token_for_another_query
-          )
-
-          expect(flash[:info]).to be_present
-          expect(flash[:error]).not_to be_present
-
-          expect(response).to redirect_to action: :access_token
-        end
-      end
-    end
-
-    describe "file storage" do
-      let(:client) { create(:oauth_client, integration: create(:nextcloud_storage)) }
-      let(:token) { create(:oauth_client_token, oauth_client: client, scope: nil, user:, expires_in: 3_600) }
-
-      render_views
-
-      before { token }
-
-      it "list the tokens" do
-        get :access_token
-        expect(response.body).to have_css("#storage-oauth-token-#{token.id}")
-      end
-
-      it "can remove the token" do
-        expect do
-          delete :delete_storage_token, params: { id: token.id }
-        end.to change(OAuthClientToken, :count).by(-1)
-
-        expect(flash[:info]).to be_present
-        expect(flash[:error]).not_to be_present
-        expect(response).to redirect_to(action: :access_token)
-      end
+    it "assigns @current_working_hours and @past_working_hours" do
+      subject
+      expect(assigns(:current_working_hours)).to eq(user_working_hours)
+      expect(assigns(:past_working_hours)).to eq([user_working_hours])
     end
   end
 end

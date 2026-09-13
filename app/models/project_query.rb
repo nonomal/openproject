@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -34,7 +36,7 @@ class ProjectQuery < ApplicationRecord
 
   belongs_to :user
 
-  acts_as_favorable
+  acts_as_favoritable
 
   serialize :filters, coder: Queries::Serialization::Filters.new(self)
   serialize :orders, coder: Queries::Serialization::Orders.new(self)

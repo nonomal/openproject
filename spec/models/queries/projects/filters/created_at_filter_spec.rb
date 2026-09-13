@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -55,9 +57,9 @@ RSpec.describe Queries::Projects::Filters::CreatedAtFilter do
           login_as user
         end
 
-        it "is false" do
+        it "is true" do
           expect(instance)
-            .not_to be_available
+            .to be_available
         end
       end
     end

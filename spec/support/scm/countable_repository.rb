@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "open3"
 RSpec.shared_examples_for "is a countable repository" do
   let(:cache_time) { 720 }

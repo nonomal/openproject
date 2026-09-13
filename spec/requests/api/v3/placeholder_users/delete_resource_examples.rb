@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,16 +32,13 @@ RSpec.shared_examples "deletion allowed" do
     expect(last_response).to have_http_status :accepted
   end
 
-  it "locks the account and mark for deletion" do
-    expect(Principals::DeleteJob)
-      .to have_been_enqueued
-            .with(placeholder)
-
-    expect(placeholder.reload).to be_locked
+  it "marks user as deleted and enqueues a deletion job" do
+    expect(Principals::DeleteJob).to have_been_enqueued.with(placeholder)
+    expect(placeholder.reload).to be_deleted
   end
 
   context "with a non-existent user" do
-    let(:path) { api_v3_paths.placeholder_user 1337 }
+    let(:path) { api_v3_paths.placeholder_user(not_existing_id(PlaceholderUser)) }
 
     it_behaves_like "not found"
   end

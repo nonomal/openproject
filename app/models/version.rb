@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,7 +33,13 @@ class Version < ApplicationRecord
   include ::Scopes::Scoped
 
   belongs_to :project
-  has_many :work_packages, dependent: :nullify
+  has_many :work_package_versions, dependent: :delete_all
+  has_many :targeted_work_packages,
+           -> { where(work_package_versions: { kind: "target" }) },
+           through: :work_package_versions, source: :work_package
+  has_many :observed_in_work_packages,
+           -> { where(work_package_versions: { kind: "observed_in" }) },
+           through: :work_package_versions, source: :work_package
   acts_as_customizable
 
   VERSION_STATUSES = %w(open locked closed).freeze
@@ -46,17 +54,30 @@ class Version < ApplicationRecord
   validates :status, inclusion: { in: VERSION_STATUSES }
   validate :validate_start_date_before_effective_date
 
-  scopes :order_by_semver_name,
-         :rolled_up,
+  scopes :rolled_up,
          :shared_with
 
+  # Returns versions that are either:
+  # - from projects the user can see (via :view_work_packages)
+  # - systemwide versions
+  # - or referenced by a work package visible to the user (e.g., via sharing)
   scope :visible, ->(*args) {
+    user = args.first || User.current
     joins(:project)
-      .merge(Project.allowed_to(args.first || User.current, :view_work_packages))
+      .merge(Project.allowed_to(user, :view_work_packages))
+      .or(Project.allowed_to(user, :manage_versions))
       .or(Version.systemwide)
+      .or(Version.shared_via_work_packages(user))
   }
 
   scope :systemwide, -> { where(sharing: "system") }
+
+  scope :shared_via_work_packages, ->(*args) {
+    user = args.first || User.current
+    where(id: WorkPackageVersion.where(kind: "target")
+                                .where(work_package_id: WorkPackage.visible(user).select(:id))
+                                .select(:version_id))
+  }
 
   def self.with_status_open
     where(status: "open")
@@ -64,7 +85,10 @@ class Version < ApplicationRecord
 
   # Returns true if +user+ or current user is allowed to view the version
   def visible?(user = User.current)
-    user.allowed_in_project?(:view_work_packages, project)
+    systemwide? ||
+      user.allowed_in_project?(:view_work_packages, project) ||
+      user.allowed_in_project?(:manage_versions, project) ||
+      targeted_work_packages.visible(user).exists?
   end
 
   def due_date
@@ -74,15 +98,14 @@ class Version < ApplicationRecord
   # Returns the total estimated time for this version
   # (sum of leaves estimated_hours)
   def estimated_hours
-    @estimated_hours ||= work_packages.leaves.sum(:estimated_hours).to_f
+    @estimated_hours ||= targeted_work_packages.leaves.sum(:estimated_hours).to_f
   end
 
   # Returns the total reported time for this version
   def spent_hours
     @spent_hours ||= TimeEntry
       .not_ongoing
-      .includes(:work_package)
-      .where(work_packages: { version_id: id })
+      .where(entity_type: "WorkPackage", entity_id: targeted_work_packages.select(:id))
       .sum(:hours)
       .to_f
   end
@@ -132,17 +155,17 @@ class Version < ApplicationRecord
 
   # Returns assigned issues count
   def issues_count
-    @issue_count ||= work_packages.count
+    @issues_count ||= targeted_work_packages.count
   end
 
   # Returns the total amount of open issues for this version.
   def open_issues_count
-    @open_issues_count ||= work_packages.merge(WorkPackage.with_status_open).size
+    @open_issues_count ||= targeted_work_packages.merge(WorkPackage.with_status_open).size
   end
 
   # Returns the total amount of closed issues for this version.
   def closed_issues_count
-    @closed_issues_count ||= work_packages.merge(WorkPackage.with_status_closed).size
+    @closed_issues_count ||= targeted_work_packages.merge(WorkPackage.with_status_closed).size
   end
 
   def wiki_page
@@ -191,7 +214,7 @@ class Version < ApplicationRecord
   # Used to weight unestimated issues in progress calculation
   def estimated_average
     if @estimated_average.nil?
-      average = work_packages.average(:estimated_hours).to_f
+      average = targeted_work_packages.average(:estimated_hours).to_f
       if average.zero?
         average = 1
       end
@@ -206,18 +229,18 @@ class Version < ApplicationRecord
   # Examples:
   # issues_progress(true)   => returns the progress percentage for open issues.
   # issues_progress(false)  => returns the progress percentage for closed issues.
-  def issues_progress(open)
+  def issues_progress(open) # rubocop:disable Metrics/AbcSize
     @issues_progress ||= {}
     @issues_progress[open] ||= begin
       progress = 0
 
       if issues_count > 0
         ratio = open ? "done_ratio" : 100
-        sum_sql = self.class.sanitize_sql_array(
-          ["COALESCE(#{WorkPackage.table_name}.estimated_hours, ?) * #{ratio}", estimated_average]
+        sum_sql = OpenProject::SqlSanitization.sanitize(
+          "COALESCE(#{WorkPackage.table_name}.estimated_hours, ?) * #{ratio}", estimated_average
         )
 
-        done = work_packages
+        done = targeted_work_packages
           .where(statuses: { is_closed: !open })
           .includes(:status)
           .sum(sum_sql)

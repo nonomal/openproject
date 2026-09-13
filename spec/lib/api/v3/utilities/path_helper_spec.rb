@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,84 +29,10 @@
 #++
 
 require "spec_helper"
+require_relative "path_helper_examples"
 
 RSpec.describe API::V3::Utilities::PathHelper do
-  let(:helper) { Class.new.tap { |c| c.extend(API::V3::Utilities::PathHelper) }.api_v3_paths }
-
-  shared_examples_for "path" do |url|
-    it "provides the path" do
-      expect(subject).to match(url)
-    end
-
-    it "prepends the sub uri if configured" do
-      allow(OpenProject::Configuration).to receive(:rails_relative_url_root)
-        .and_return("/open_project")
-
-      expect(subject).to match("/open_project#{url}")
-    end
-  end
-
-  before do
-    RequestStore.store[:cached_root_path] = nil
-  end
-
-  after do
-    RequestStore.clear!
-  end
-
-  shared_examples_for "api v3 path" do |url|
-    it_behaves_like "path", "/api/v3#{url}"
-  end
-
-  shared_examples_for "index" do |name|
-    plural_name = name.to_s.pluralize
-
-    describe "##{plural_name}" do
-      subject { helper.send(plural_name) }
-
-      it_behaves_like "api v3 path", "/#{plural_name}"
-    end
-  end
-
-  shared_examples_for "show" do |name|
-    describe "##{name}" do
-      subject { helper.send(:"#{name}", 42) }
-
-      it_behaves_like "api v3 path", "/#{name.to_s.pluralize}/42"
-    end
-  end
-
-  shared_examples_for "create form" do |name|
-    describe "#create_#{name}_form" do
-      subject { helper.send(:"create_#{name}_form") }
-
-      it_behaves_like "api v3 path", "/#{name.to_s.pluralize}/form"
-    end
-  end
-
-  shared_examples_for "update form" do |name|
-    describe "##{name}_form" do
-      subject { helper.send(:"#{name}_form", 42) }
-
-      it_behaves_like "api v3 path", "/#{name.to_s.pluralize}/42/form"
-    end
-  end
-
-  shared_examples_for "schema" do |name|
-    describe "##{name}_schema" do
-      subject { helper.send(:"#{name}_schema") }
-
-      it_behaves_like "api v3 path", "/#{name.to_s.pluralize}/schema"
-    end
-  end
-
-  shared_examples_for "resource" do |name, except: []|
-    it_behaves_like("index", name) unless except.include?(:index)
-    it_behaves_like("show", name) unless except.include?(:show)
-    it_behaves_like("update form", name) unless except.include?(:update_form)
-    it_behaves_like("create form", name) unless except.include?(:create_form)
-    it_behaves_like("schema", name) unless except.include?(:schema)
-  end
+  include_context "on api v3 paths"
 
   describe "#root" do
     subject { helper.root }
@@ -159,6 +87,12 @@ RSpec.describe API::V3::Utilities::PathHelper do
       subject { helper.categories_by_project 42 }
 
       it_behaves_like "api v3 path", "/projects/42/categories"
+    end
+
+    describe "#categories_by_workspace" do
+      subject { helper.categories_by_workspace 42 }
+
+      it_behaves_like "api v3 path", "/workspaces/42/categories"
     end
   end
 
@@ -272,6 +206,12 @@ RSpec.describe API::V3::Utilities::PathHelper do
     it_behaves_like "show", :placeholder_user
   end
 
+  describe "portfolios paths" do
+    it_behaves_like "index", :portfolio
+    it_behaves_like "show", :portfolio
+    it_behaves_like "update form", :portfolio
+  end
+
   describe "posts paths" do
     it_behaves_like "index", :post
     it_behaves_like "show", :post
@@ -286,6 +226,12 @@ RSpec.describe API::V3::Utilities::PathHelper do
     it_behaves_like "show", :priority
   end
 
+  describe "programs paths" do
+    it_behaves_like "index", :program
+    it_behaves_like "show", :program
+    it_behaves_like "update form", :program
+  end
+
   describe "projects paths" do
     it_behaves_like "resource", :project
 
@@ -294,6 +240,27 @@ RSpec.describe API::V3::Utilities::PathHelper do
 
       it_behaves_like "api v3 path", "/projects/available_parent_projects"
     end
+
+    describe "#projects_available_parents with of parameter" do
+      subject { helper.projects_available_parents(of: 42) }
+
+      it_behaves_like "api v3 path", "/projects/available_parent_projects?of=42"
+    end
+
+    describe "#projects_available_parents with workspace_type parameter" do
+      subject { helper.projects_available_parents(workspace_type: :special) }
+
+      it_behaves_like "api v3 path", "/projects/available_parent_projects?workspace_type=special"
+    end
+  end
+
+  describe "project phase paths" do
+    it_behaves_like "show", :project_phase
+  end
+
+  describe "project phase definition paths" do
+    it_behaves_like "index", :project_phase_definition
+    it_behaves_like "show", :project_phase_definition
   end
 
   describe "project status paths" do
@@ -313,6 +280,12 @@ RSpec.describe API::V3::Utilities::PathHelper do
       subject { helper.query_project_default(42) }
 
       it_behaves_like "api v3 path", "/projects/42/queries/default"
+    end
+
+    describe "#query_workspace_default" do
+      subject { helper.query_workspace_default(42) }
+
+      it_behaves_like "api v3 path", "/workspaces/42/queries/default"
     end
 
     describe "#query_star" do
@@ -375,6 +348,12 @@ RSpec.describe API::V3::Utilities::PathHelper do
       it_behaves_like "api v3 path", "/projects/42/queries/filter_instance_schemas"
     end
 
+    describe "#query_workspace_filter_instance_schemas" do
+      subject { helper.query_workspace_filter_instance_schemas(42) }
+
+      it_behaves_like "api v3 path", "/workspaces/42/queries/filter_instance_schemas"
+    end
+
     describe "#query_operator" do
       subject { helper.query_operator "=" }
 
@@ -385,6 +364,12 @@ RSpec.describe API::V3::Utilities::PathHelper do
       subject { helper.query_project_schema("42") }
 
       it_behaves_like "api v3 path", "/projects/42/queries/schema"
+    end
+
+    describe "#query_workspace_schema" do
+      subject { helper.query_workspace_schema("42") }
+
+      it_behaves_like "api v3 path", "/workspaces/42/queries/schema"
     end
 
     describe "#query_available_projects" do
@@ -465,6 +450,12 @@ RSpec.describe API::V3::Utilities::PathHelper do
 
       it_behaves_like "api v3 path", "/projects/12/types"
     end
+
+    describe "#types_by_workspace" do
+      subject { helper.types_by_workspace 12 }
+
+      it_behaves_like "api v3 path", "/workspaces/12/types"
+    end
   end
 
   describe "users paths" do
@@ -506,10 +497,22 @@ RSpec.describe API::V3::Utilities::PathHelper do
       it_behaves_like "api v3 path", "/projects/42/versions"
     end
 
+    describe "#versions_by_workspace" do
+      subject { helper.versions_by_workspace 42 }
+
+      it_behaves_like "api v3 path", "/workspaces/42/versions"
+    end
+
     describe "#projects_by_version" do
       subject { helper.projects_by_version 42 }
 
       it_behaves_like "api v3 path", "/versions/42/projects"
+    end
+
+    describe "#workspaces_by_version" do
+      subject { helper.workspaces_by_version 42 }
+
+      it_behaves_like "api v3 path", "/versions/42/workspaces"
     end
   end
 
@@ -580,10 +583,22 @@ RSpec.describe API::V3::Utilities::PathHelper do
       it_behaves_like "api v3 path", "/projects/42/work_packages"
     end
 
+    describe "#work_packages_by_workspace" do
+      subject { helper.work_packages_by_workspace 42 }
+
+      it_behaves_like "api v3 path", "/workspaces/42/work_packages"
+    end
+
     describe "#create_project_work_package_form" do
       subject { helper.create_project_work_package_form 42 }
 
       it_behaves_like "api v3 path", "/projects/42/work_packages/form"
+    end
+
+    describe "#create_workspace_work_package_form" do
+      subject { helper.create_workspace_work_package_form 42 }
+
+      it_behaves_like "api v3 path", "/workspaces/42/work_packages/form"
     end
 
     describe "#watcher" do
@@ -597,6 +612,12 @@ RSpec.describe API::V3::Utilities::PathHelper do
         subject { helper.available_assignees_in_project 42 }
 
         it_behaves_like "api v3 path", "/projects/42/available_assignees"
+      end
+
+      describe "#available_assignees_in_workspace" do
+        subject { helper.available_assignees_in_workspace 42 }
+
+        it_behaves_like "api v3 path", "/workspaces/42/available_assignees"
       end
 
       describe "#available_assignees_in_work_package" do
@@ -656,6 +677,16 @@ RSpec.describe API::V3::Utilities::PathHelper do
     end
   end
 
+  describe "workspace paths" do
+    it_behaves_like "resource", :workspace, except: %i[create_form show]
+
+    describe "#favor_workspace" do
+      subject { helper.favor_workspace 42 }
+
+      it_behaves_like "api v3 path", "/workspaces/42/favorite"
+    end
+  end
+
   describe ".timestamps_to_param_value" do
     subject { helper.timestamps_to_param_value(timestamps) }
 
@@ -698,6 +729,53 @@ RSpec.describe API::V3::Utilities::PathHelper do
           expect(subject)
             .to eql "2023-01-31T21:34:11Z,2022-04-30T21:34:11Z,#{Time.current.iso8601}"
         end
+      end
+    end
+  end
+
+  describe ".path_for_object" do
+    context "for a portfolio" do
+      let(:object) { build_stubbed(:portfolio) }
+
+      it "returns the path to the portfolio" do
+        expect(helper.path_for_object(object))
+          .to eql "/api/v3/portfolios/#{object.id}"
+      end
+    end
+
+    context "for a program" do
+      let(:object) { build_stubbed(:program) }
+
+      it "returns the path to the program" do
+        expect(helper.path_for_object(object))
+          .to eql "/api/v3/programs/#{object.id}"
+      end
+    end
+
+    context "for a project" do
+      let(:object) { build_stubbed(:project) }
+
+      it "returns the path to the project" do
+        expect(helper.path_for_object(object))
+          .to eql "/api/v3/projects/#{object.id}"
+      end
+    end
+
+    context "for a work_package" do
+      let(:object) { build_stubbed(:work_package) }
+
+      it "returns the path to the work_packages" do
+        expect(helper.path_for_object(object))
+          .to eql "/api/v3/work_packages/#{object.id}"
+      end
+    end
+
+    context "for a user" do
+      let(:object) { build_stubbed(:user) }
+
+      it "returns the path to the user" do
+        expect(helper.path_for_object(object))
+          .to eql "/api/v3/users/#{object.id}"
       end
     end
   end

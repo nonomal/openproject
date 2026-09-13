@@ -106,7 +106,7 @@ class CldrTranslations
   end
 
   def available_locales
-    @available_locales ||= Set.new(Cldr::Export::Data.locales.map { _1.tr("_", "-") })
+    @available_locales ||= Set.new(Cldr::Export::Data.locales.map { it.tr("_", "-") })
   end
 
   def ensure_cldr_database_is_downloaded

@@ -1,3 +1,30 @@
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
 
 /*
  * NOTE:
@@ -40,6 +67,7 @@ import {
   parseChronicDuration,
   outputChronicDuration,
   DurationParseError,
+  type DurationFormat,
 } from './chronic_duration';
 
 
@@ -73,8 +101,9 @@ describe('parseChronicDuration', () => {
     '2 months': 3600 * 24 * 30 * 2,
     '18 months': 3600 * 24 * 30 * 18,
     '1 year 6 months': 3600 * 24 * (365.25 + 6 * 30),
-    day: 3600 * 24,
+    'day': 3600 * 24,
     'minute 30s': 90,
+    '5d 2 3 9': (5 * 24 * 3600) + (2 * 3600) + (3 * 60) + 9, // 5 days, 2 hours, 3 minutes, 9 seconds
   };
 
   describe("when string can't be parsed", () => {
@@ -115,6 +144,11 @@ describe('parseChronicDuration', () => {
     expect(parseChronicDuration('5', { defaultUnit: 'minutes' })).toBe(300);
   });
 
+  /* The cecile case */
+  it('parses 2h15 correctly to 2h 15 minutes even when the default unit is hours', () => {
+    expect(parseChronicDuration('2h15', { defaultUnit: 'hours' })).toBe(2 * 3600 + 15 * 60);
+  });
+
   Object.entries(EXEMPLARS).forEach(([k, v]) => {
     it(`parses a duration like ${k}`, () => {
       expect(parseChronicDuration(k)).toBe(v);
@@ -139,6 +173,7 @@ describe('parseChronicDuration', () => {
       expect(parseChronicDuration('1mo', { daysPerMonth: 30, hoursPerDay: 24 })).toBe(
         30 * 24 * 60 * 60,
       );
+
       expect(parseChronicDuration('1mo', { daysPerMonth: 20, hoursPerDay: 8 })).toBe(
         20 * 8 * 60 * 60,
       );
@@ -146,15 +181,16 @@ describe('parseChronicDuration', () => {
       expect(parseChronicDuration('1w', { daysPerMonth: 30, hoursPerDay: 24 })).toBe(
         7 * 24 * 60 * 60,
       );
+
       expect(parseChronicDuration('1w', { daysPerMonth: 20, hoursPerDay: 8 })).toBe(
         5 * 8 * 60 * 60,
       );
     });
   });
 
-  describe('with .ignoreSecondsWhenColonSeperated param', () => {
+  describe('with .ignoreSecondsWhenColonSeparated param', () => {
     it('parses 8:15 to 8 hours 15 minutes when seconds are ignored', () => {
-      expect(parseChronicDuration('8:15', { ignoreSecondsWhenColonSeperated: true })).toBe(8 * 3600 + 15 * 60);
+      expect(parseChronicDuration('8:15', { ignoreSecondsWhenColonSeparated: true })).toBe(8 * 3600 + 15 * 60);
     });
 
     it('parses 8:15 to 8 minutes 15 seconds when seconds are not ignored', () => {
@@ -265,18 +301,19 @@ describe('outputChronicDuration', () => {
       hours_only: '12960h',
       chrono: '18:00:00:00:00',
     },
-  };
+  } as const;
 
   Object.entries(EXEMPLARS).forEach(([k, v]) => {
     const kf = parseFloat(k);
-    Object.entries(v).forEach(([key, val]) => {
+    (Object.keys(v) as DurationFormat[]).forEach((key) => {
+      const val = v[key];
       it(`properly outputs a duration of ${kf} seconds as ${val} using the ${key} format option`, () => {
         expect(outputChronicDuration(kf, { format: key })).toBe(val);
       });
     });
   });
 
-  const KEEP_ZERO_EXEMPLARS = {
+  const KEEP_ZERO_EXEMPLARS:Record<string, Partial<Record<DurationFormat, string|null>>> = {
     true: {
       micro: '0s',
       short: '0s',
@@ -295,7 +332,8 @@ describe('outputChronicDuration', () => {
 
   Object.entries(KEEP_ZERO_EXEMPLARS).forEach(([k, v]) => {
     const kb = Boolean(k);
-    Object.entries(v).forEach(([key, val]) => {
+    (Object.keys(v) as Partial<DurationFormat>[]).forEach((key) => {
+      const val = v[key] ?? null;
       it(`should properly output a duration of 0 seconds as ${val} using the ${key} format option, if the .keepZero option is ${kb}`, () => {
         expect(outputChronicDuration(0, { format: key, keepZero: kb })).toBe(val);
       });
@@ -322,6 +360,7 @@ describe('outputChronicDuration', () => {
       expect(outputChronicDuration(7 * 24 * 60 * 60, { weeks: true, daysPerMonth: 30 })).toBe(
         '1 wk',
       );
+
       expect(outputChronicDuration(7 * 24 * 60 * 60, { weeks: true, daysPerMonth: 20 })).toBe(
         '1 wk 2 days',
       );
@@ -331,6 +370,7 @@ describe('outputChronicDuration', () => {
       expect(
         outputChronicDuration(7 * 24 * 60 * 60, { weeks: true, daysPerMonth: 30, hoursPerDay: 24 }),
       ).toBe('1 wk');
+
       expect(
         outputChronicDuration(5 * 8 * 60 * 60, { weeks: true, daysPerMonth: 20, hoursPerDay: 8 }),
       ).toBe('1 wk');
@@ -340,6 +380,7 @@ describe('outputChronicDuration', () => {
       expect(outputChronicDuration(30 * 24 * 60 * 60, { daysPerMonth: 30, hoursPerDay: 24 })).toBe(
         '1 mo',
       );
+
       expect(
         outputChronicDuration(30 * 24 * 60 * 60, {
           daysPerMonth: 30,
@@ -351,6 +392,7 @@ describe('outputChronicDuration', () => {
       expect(outputChronicDuration(20 * 8 * 60 * 60, { daysPerMonth: 20, hoursPerDay: 8 })).toBe(
         '1 mo',
       );
+
       expect(
         outputChronicDuration(20 * 8 * 60 * 60, { daysPerMonth: 20, hoursPerDay: 8, weeks: true }),
       ).toBe('1 mo');
@@ -367,6 +409,12 @@ describe('outputChronicDuration', () => {
     ).toBe('6 months 1 day 1 hour');
   });
 
+  it('returns hours only if hoursOnly option specified', () => {
+    expect(outputChronicDuration(60 * 60 * 24 * 3 + 60 * 60 * 3, { hoursOnly: true })).toBe('75h');
+    expect(outputChronicDuration(4 * 3600 + 45 * 60, { hoursOnly: true })).toBe('4h 45m');
+    expect(outputChronicDuration(5 * 3600, { hoursOnly: true })).toBe('5h');
+  });
+
   describe('when the format is not specified', () => {
     it('uses the default format', () => {
       expect(outputChronicDuration(2 * 3600 + 20 * 60)).toBe('2 hrs 20 mins');
@@ -375,11 +423,11 @@ describe('outputChronicDuration', () => {
 
   Object.entries(EXEMPLARS).forEach(([seconds, formatSpec]) => {
     const secondsF = parseFloat(seconds);
-    Object.keys(formatSpec).forEach((format) => {
+    (Object.keys(formatSpec) as DurationFormat[]).forEach((format) => {
       if (format === 'days_and_hours' || format === 'hours_only') return;
 
       it(`outputs a duration for ${seconds} that parses back to the same thing when using the ${format} format`, () => {
-        expect(parseChronicDuration(outputChronicDuration(secondsF, { format }))).toBe(secondsF);
+        expect(parseChronicDuration(outputChronicDuration(secondsF, { format })!)).toBe(secondsF);
       });
     });
   });
@@ -392,6 +440,7 @@ describe('outputChronicDuration', () => {
 describe('work week', () => {
   it('should parse knowing the work week', () => {
     const week = parseChronicDuration('5d', { hoursPerDay: 8, daysPerMonth: 20 });
+
     expect(parseChronicDuration('40h', { hoursPerDay: 8, daysPerMonth: 20 })).toBe(week);
     expect(parseChronicDuration('1w', { hoursPerDay: 8, daysPerMonth: 20 })).toBe(week);
   });

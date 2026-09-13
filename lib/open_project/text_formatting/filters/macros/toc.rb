@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,7 +30,7 @@
 
 module OpenProject::TextFormatting::Filters::Macros
   module Toc
-    HTML_CLASS = "toc".freeze
+    HTML_CLASS = "toc"
 
     module_function
 

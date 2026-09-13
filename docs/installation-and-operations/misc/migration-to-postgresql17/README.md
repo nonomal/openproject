@@ -1,244 +1,313 @@
 # Migrating your OpenProject installation to PostgreSQL 17
 
-OpenProject version 16+ will default to PostgreSQL 17. If you have an existing OpenProject installation, please follow the guide below to upgrade your PostgreSQL version.
+OpenProject version 16+ will default to PostgreSQL 17. If you have an existing OpenProject installation, please follow the guide below to upgrade your PostgreSQL version.  
+For the time being, using an older Postgres version is still possible, but not recommended.  
+This documentation shows how to upgrade PostgreSQL via a SQL dump.  
+If you prefer doing the upgrade using the [in-place method](https://www.postgresql.org/docs/current/pgupgrade.html), you are free to do so.
 
-## Package-based installation
+## Docker Compose
 
-> Please follow this section only if you have installed OpenProject using [this procedure](../../installation/packaged/).
-> Before attempting the upgrade, please ensure you have performed a backup of your installation by following the [backup guide](../../operation/backing-up/).
-
-Please first check whether this guide applies to you at all. Only PostgreSQL installations that were installed by the OpenProject package are applicable to this guide.
-
-To do that, please run the following command:
-
-```shell
-sudo cat /etc/openproject/installer.dat | grep postgres/autoinstall
-```
-
-And verify that it outputs: postgres/autoinstall **install**.
-
-If that is not the case, you are likely using a self-provisioned database or a remote database. In this case, please follow the instructions from your provider or use generic PostgreSQL upgrade guides. A guide we can recommend for Debian/Ubuntu based servers is [this one](https://gorails.com/guides/upgrading-postgresql-version-on-ubuntu-server). Please adapt that guide or the following steps to your distribution.
-
-In the following, we assume that you initially let OpenProject setup your PostgreSQL installation, using a local database.
-
-NOTE: RedHat and CentOS are slightly different, depending on which PostgreSQL package/repository will be used.
-For the documentation parts titled RedHat/CentOS RedHat Enterprise Linux 8 was used.
-
-1. First, connect to your server and make sure your local version is PostgreSQL v13:
-
-For Debian/Ubuntu:
-
-```shell
-sudo cat /var/lib/postgresql/13/main/PG_VERSION
-13
-```
-
-For RedHat/CentOS:
-
-```shell
-sudo cat /var/lib/pgsql/13/data/PG_VERSION 
-13
-```
-
-2. Install the new version of PostgreSQL:
-
-For Debian/Ubuntu:
-
-```shell
-sudo apt-get update
-sudo apt-get install postgresql-17
-sudo pg_createcluster 17 main --start
-```
-
-For RedHat/CentOS:
-
-```shell
-sudo yum install pgsql17
-sudo /usr/bin/postgresql-17-setup initdb
-```
-
-3. Stop the PostgreSQL servers:
-
-For Debian/Ubuntu:
-
-```shell
-sudo su - postgres -c "/usr/lib/postgresql/13/bin/pg_ctl stop --wait --pgdata=/var/lib/postgresql/13/main"
-sudo su - postgres -c "/usr/lib/postgresql/17/bin/pg_ctl stop --wait --pgdata=/var/lib/postgresql/17/main"
-```
-
-For RedHat/CentOS:
-
-```shell
-sudo su - postgres -c "/usr/pgsql-13/bin/pg_ctl stop --wait --pgdata=/var/lib/pgsql/13/data"
-sudo su - postgres -c "/usr/pgsql-17/bin/pg_ctl stop --wait --pgdata=/var/lib/pgsql/17/data"
-```
-
-4. Migrate your data to PostgreSQL 17:
-
-For Debian/Ubuntu:
-
-```shell
-sudo su - postgres <<CMD
-/usr/lib/postgresql/17/bin/pg_upgrade \
-  --old-bindir=/usr/lib/postgresql/13/bin \
-  --new-bindir=/usr/lib/postgresql/17/bin \
-  --old-datadir=/var/lib/postgresql/13/main \
-  --new-datadir=/var/lib/postgresql/17/main \
-  --old-options '-c config_file=/etc/postgresql/13/main/postgresql.conf' \
-  --new-options '-c config_file=/etc/postgresql/17/main/postgresql.conf'
-CMD
-```
-
-For RedHat/CentOS:
-
-```shell
-sudo su - postgres <<CMD
-/usr/pgsql-17/bin/pg_upgrade \
-  --old-bindir=/usr/pgsql-13/bin \
-  --new-bindir=/usr/pgsql-17/bin \
-  --old-datadir=/var/lib/pgsql/13/data \
-  --new-datadir=/var/lib/pgsql/17/data \
-  --old-options '-c config_file=/var/lib/pgsql/13/data/postgresql.conf' \
-  --new-options '-c config_file=/var/lib/pgsql/17/data/postgresql.conf'
-CMD
-```
-
-5. Make PostgreSQL v17 the new default server to run on port 45432:
-
-For Debian/Ubuntu:
-
-```shell
-sudo su - postgres -c "cp /etc/postgresql/{13,17}/main/conf.d/custom.conf"
-sudo su - postgres -c "sed -i 's|45432|45433|' /etc/postgresql/13/main/conf.d/custom.conf"
-sudo su - postgres -c "cp /etc/postgresql/13/main/pg_hba.conf /etc/postgresql/17/main/pg_hba.conf"
-sudo su - postgres -c "/usr/lib/postgresql/17/bin/pg_ctl start --wait --pgdata=/var/lib/postgresql/17/main -o '-c config_file=/etc/postgresql/17/main/postgresql.conf'"
-```
-
-For RedHat/CentOS:
-
-```shell
-sudo su - postgres -c "mkdir -p /var/lib/pgsql/17/data/conf.d"
-
-sudo su - postgres -c "vi /var/lib/pgsql/17/data/postgresql.conf"
-# at the section CONFIG FILE INCLUDES, please add the include directory conf.d
-include_dir = 'conf.d'
-
-sudo su - postgres -c "cp -p /var/lib/pgsql/13/data/conf.d/custom.conf /var/lib/pgsql/17/data/conf.d/custom.conf"
-sudo su - postgres -c "sed -i 's|45432|45433|' /var/lib/pgsql/13/data/conf.d/custom.conf"
-sudo su - postgres -c "/usr/pgsql-17/bin/pg_ctl start --wait --pgdata=/var/lib/pgsql/17/data -o '-c config_file=/etc/postgresql/17/main/postgresql.conf'"
-
-# Getting the password for the PostgreSQL database from the configuration
-sudo openproject config:get DATABASE_URL
-postgres://openproject:[CRYPTICAL-PASSWORD-STRING]@127.0.0.1:45432/openproject
-
-# Alter the password for user openproject in pgsql17
-[root@openproject ~]# su - postgres
-[postgres@openproject ~]$ psql --port 45432
-psql (17.6)
-Type "help" for help.
-postgres=# ALTER USER openproject WITH PASSWORD '[CRYPTICAL-PASSWORD-STRING]';
-ALTER ROLE
-postgres=# \q
-[postgres@openproject ~]$ logout
-```
-
-6. Check your OpenProject installation on the GUI. A version higher than `17.0` should be displayed for `PostgreSQL version` in the "Administration > Information" section.
-
-7. If everything is fine, you can then remove your older PostgreSQL installation:
-
-For Debian/Ubuntu:
-
-```shell
-sudo rm -rf /var/lib/postgresql/13/main
-sudo apt-get purge postgresql-13
-```
-
-For RedHat/CentOS:
-
-```shell
-sudo rm -rf /var/lib/pgsql/13/data
-sudo yum remove pgsql13
-```
-
-## Compose-based docker installation
-
+> [!IMPORTANT]
 > Please follow this section only if you have installed OpenProject using [this procedure](../../installation/docker/).
 > Before attempting the upgrade, please ensure you have performed a backup of your installation by following the [backup guide](../../operation/backing-up/).
 
-You can find the upgrade instructions for your docker-compose setup in the [openproject-deploy](https://github.com/opf/openproject-deploy/blob/stable/15/compose/control/README.md#upgrade) repository.
+### 1. Backup the Current PostgreSQL Database
 
-Remember that you need to have checked out that repository and work in the `compose` directory for the instructions to work.
+Create a backup of your current PostgreSQL database. Run the following command from your OpenProject project directory:
 
-## All-in-one docker installation
+```shell
+docker compose exec -it -u postgres db pg_dump -d openproject -x -O > openproject.sql
+```
 
+This creates a backup named `openproject.sql`. 
+
+### 2. Stop OpenProject Services
+
+Shut down all running containers:
+
+```shell
+docker compose down
+```
+
+### 3. Prepare for PostgreSQL 17
+
+To upgrade to PostgreSQL 17, you need to override the default database image.
+
+#### Create `docker-compose.override.yml`
+
+Create a file named `docker-compose.override.yml` in the docker compose directory. 
+Replace the default PostgreSQL version with 17. 
+Also, define a new volume for the upgraded database to avoid overwriting the existing one.
+
+Here’s an example configuration:
+
+```yaml
+volumes:
+  pgdata17:
+
+services:
+  db:
+    image: postgres:17
+    volumes:
+      - pgdata17:/var/lib/postgresql/data
+
+```
+
+### 4. Start the New Database Container
+
+With your override file in place, start only the database container:
+
+```shell
+docker compose up db -d
+```
+
+This starts a clean PostgreSQL 17 container with an empty data directory.
+
+### 5. Restore the Backup to PostgreSQL 17
+
+Now that the new database is running, restore your backup:
+
+```shell
+docker compose exec -T -u postgres db psql -d openproject < openproject.sql
+```
+
+This will import your data into the new PostgreSQL 17 container.
+
+### 6. Start the Full OpenProject Stack
+
+With your data restored, bring up the rest of the OpenProject services:
+
+```shell
+docker compose up -d
+```
+
+### Confirmation
+
+You now have OpenProject running with PostgreSQL 17. 
+Verify everything works correctly by visiting your OpenProject instance in the browser.
+
+## Docker All-in-One
+
+> [!IMPORTANT]
 > Please follow this section only if you have installed OpenProject using [this procedure](../../installation/docker/#all-in-one-container).
 > Before attempting the upgrade, please ensure you have performed a backup of your installation by following the [backup guide](../../operation/backing-up/).
 
-The newer version of OpenProject includes an utility to automatically perform the upgrade for you. Assuming you followed the standard installation procedure, the folder (within the docker container) containing your PostgreSQL data will be located at `/var/openproject/pgdata`.
+This only works if you are using OpenProject >= 16.2 because older versions have PostgreSQL 13 as the default database.
 
-Then the goal is to take this folder, and apply `pg_upgrade` on it. This will generate an upgraded cluster in another folder. We can finally switch the old postgres folder with the upgraded one and restart the container.
+### 1. Backup the Existing Database
 
-First, ensure that you have stopped your container:
-
-```shell
-docker stop openproject
-```
-
-Once the docker has stopped, you are ready to run the upgrade command. In this case, we assume that your existing PostgreSQL data is stored on the host at `/var/lib/openproject/pgdata`. We will also map a local folder named `/var/lib/openproject/pgdata-next` to a special volume in the container, named `/var/openproject/pgdata-next`. This volume will contain the upgraded cluster:
+Create a PostgreSQL dump using:
 
 ```shell
-docker run --rm -it \
-  -v /var/lib/openproject/pgdata:/var/openproject/pgdata \
-  -v /var/lib/openproject/pgdata-next:/var/openproject/pgdata-next \
-  openproject/openproject:15 root ./docker/prod/postgres-db-upgrade
+docker exec -it $OP_CONTAINER_NAME su - postgres -c 'pg_dump -d openproject -x -O' > openproject.sql
 ```
 
-If everything goes well, the process should end with a message as follows:
+This command connects to the running container and exports the database into a SQL file on your host machine.
 
-```text
-Upgrade Complete                                              
-----------------                                              
-Optimizer statistics are not transferred by pg_upgrade so,                  
-once you start the new server, consider running:
-    ./analyze_new_cluster.sh                                
-                                         
-Running this script will delete the old cluster's data files:
-    ./delete_old_cluster.sh            
-```
-
-You can then perform the following operation to switch the upgraded PostgreSQL with the older version:
+### 2. Stop the OpenProject container
 
 ```shell
-sudo mv /var/lib/openproject/pgdata /var/lib/openproject/pgdata-prev
-sudo mv /var/lib/openproject/pgdata-next /var/lib/openproject/pgdata
+docker stop $OP_CONTAINER_NAME
 ```
 
-Finally, you can restart OpenProject with the same command that you used before. For instance:
+### 3. Start a New PostgreSQL 17 Container
 
-docker run -d -p 8080:80 --name openproject -e SECRET_KEY_BASE=secret \
-  -v /var/lib/openproject/pgdata:/var/openproject/pgdata \
+Run a fresh PostgreSQL 17 container using a new volume:
+
+```shell
+docker run --rm -d --name postgres \
+-e POSTGRES_PASSWORD=postgres \
+-e LANG=C.UTF-8 \
+-e LC_ALL=C.UTF-8 \
+-v /var/lib/openproject/pgdata17:/var/lib/postgresql/data \
+postgres:17
+```
+
+### 4. Create OpenProject user
+
+Connect to the new PostgreSQL 17 container and drop the `openproject` database:
+
+```shell
+echo "CREATE USER openproject WITH PASSWORD 'openproject';" | docker exec -i postgres psql -U postgres
+```
+
+### 5. Create a New Database
+
+Now create a fresh `openproject` database:
+
+```shell
+echo "CREATE DATABASE openproject OWNER openproject;" | docker exec -i postgres psql -U postgres
+```
+
+### 6. Restore the Database from the Dump
+
+Restore your data:
+
+```shell
+docker exec -i postgres psql -U openproject -d openproject < openproject.sql
+```
+
+This imports your backup into the newly created database.
+
+### 7. Stop PostgreSQL container
+
+```shell
+docker stop postgres
+```
+
+### 8. Relaunch OpenProject with PostgreSQL 17
+
+You can now run a new OpenProject container connected to your upgraded PostgreSQL 17 data volume:
+
+```shell
+docker run -d -p 8080:80 --name openproject \
+  -e OPENPROJECT_HOST__NAME=openproject.example.com \
+  -e SECRET_KEY_BASE=<your-secret-key-base> \
+  -v /var/lib/openproject/pgdata17:/var/openproject/pgdata \
   -v /var/lib/openproject/assets:/var/openproject/assets \
-  [...]
-  openproject/openproject:15
-
-If your new installation looks fine, you can then choose to remove `/var/lib/openproject/pgdata-prev`:
-
-```shell
-sudo rm -rf /var/lib/openproject/pgdata-prev
+  openproject/openproject:17
 ```
 
-If you encounter an issue, you can switch back to the previous PostgreSQL folder by reverting the folder switch:
+Make sure the environment variables and version match your setup.
+
+### Confirmation
+
+Visit your OpenProject instance to confirm everything works as expected.
+
+## Package-Based Installation
+
+> [!IMPORTANT]
+> Please follow this section only if you have installed OpenProject using [this procedure](../../installation/packaged/).
+> Before attempting the upgrade, please ensure you have performed a backup of your installation by following the [backup guide](../../operation/backing-up/).
+
+### 1. Stop OpenProject
 
 ```shell
-sudo mv /var/lib/openproject/pgdata /var/lib/openproject/pgdata-next
-sudo mv /var/lib/openproject/pgdata-prev /var/lib/openproject/pgdata
+sudo service openproject stop
 ```
 
-And then restart OpenProject.
+### 2. Backup the Database
+
+```shell
+pg_dump $(sudo openproject config:get DATABASE_URL) -x -O > openproject.sql
+```
+
+### 3. Stop Existing PostgreSQL
+
+#### On Debian/Ubuntu
+
+```shell
+sudo pg_ctlcluster 13 main stop
+```
+
+#### On CentOS/RHEL and SLES
+
+```shell
+sudo systemctl stop postgresql-13
+```
+
+### 4. Install PostgreSQL 17
+
+#### On Debian/Ubuntu
+
+```shell
+sudo apt update
+sudo apt install postgresql-17
+sudo pg_createcluster 17 main --start
+```
+
+#### On CentOS/RHEL
+
+```shell
+sudo dnf install -y postgresql17-server postgresql17-contrib
+sudo /usr/pgsql-17/bin/postgresql-17-setup initdb
+sudo systemctl enable --now postgresql-17
+```
+
+#### On SLES
+
+```shell
+TODO: sudo zypper addrepo https://download.postgresql.org/pub/repos/zypp/17/suse/sles-15.5-x86_64/ openSUSE-PostgreSQL-17
+TODO: sudo zypper install --repo openSUSE-PostgreSQL-17 postgresql17 postgresql17-server  postgresql17-libs postgresql17-contrib
+#TODO:? sudo su - postgres -c '/usr/lib/postgresql17/bin/initdb -D /var/lib/pgsql/17/data'
+sudo systemctl enable postgresql
+sudo systemctl start postgresql
+```
+
+### 5. Copy Configuration Files
+
+#### On Debian/Ubuntu
+
+```shell
+sudo su - postgres -c "cp /etc/postgresql/13/main/pg_hba.conf /etc/postgresql/17/main/pg_hba.conf"
+sudo su - postgres -c "cp /etc/postgresql/13/main/conf.d/custom.conf /etc/postgresql/17/main/conf.d/custom.conf"
+sudo pg_ctlcluster 17 main restart
+```
+
+#### On CentOS/RHEL
+
+```shell
+sudo su - postgres -c "cp /var/lib/pgsql/13/data/pg_hba.conf /var/lib/pgsql/17/data/pg_hba.conf"
+sudo su - postgres -c "cp -r /var/lib/pgsql/13/data/conf.d /var/lib/pgsql/17/data/"
+sudo su - postgres -c "cp -r /var/lib/pgsql/13/data/postgresql.conf /var/lib/pgsql/17/data/postgresql.conf"
+sudo service postgresql-17 restart
+```
+
+#### On SLES
+
+```shell
+sudo su - postgres -c "cp /var/lib/pgsql/13/data/pg_hba.conf /var/lib/pgsql/data/pg_hba.conf"
+sudo su - postgres -c "cp -r /var/lib/pgsql/13/data/conf.d /var/lib/pgsql/data/"
+sudo su - postgres -c "cp -r /var/lib/pgsql/13/data/postgresql.conf /var/lib/pgsql/data/postgresql.conf"
+sudo systemctl restart postgresql
+```
+
+### 6. Remove Old PostgreSQL 
+
+#### On Debian/Ubuntu
+
+```shell
+sudo apt remove --purge postgresql-13
+```
+
+#### On CentOS/RHEL
+
+```shell
+sudo dnf remove postgresql13-server
+```
+
+#### On SLES
+
+```shell
+sudo zypper remove postgresql13-server
+```
+
+### 7. Recreate the OpenProject User and Database
+
+```shell
+sudo su - postgres -c "psql -p 45432 -c \"create user openproject with password '$(sudo openproject config:get DATABASE_URL | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')'\""
+sudo su - postgres -c "psql -p 45432 -c 'create database openproject owner openproject'"
+```
+
+### 8. Restore the Database
+
+```shell
+psql $(sudo openproject config:get DATABASE_URL) < openproject.sql
+```
+
+### 9. Restart OpenProject
+
+```shell
+sudo openproject restart
+```
+
+### Confirmation
+
+Visit your OpenProject instance in the browser to confirm everything works as expected.
 
 ## Helm Chart installation
 
-> Please follow this section only if you have installed OpenProject using [this procedure](https://www.openproject.org/docs/installation-and-operations/installation/helm-chart/).
+> Please follow this section only if you have installed OpenProject using [this procedure](../../installation/helm-chart/).
 > Before attempting the upgrade, please ensure you have performed a backup of your installation by following the [backup guide](../../operation/backing-up/).
 
 1. Stop your frontend or scale it down to 0 to prevent frontend changes.
@@ -252,7 +321,7 @@ kubectl exec -it <postgresql-pod-name> -- bash
 Create a PostgreSQL dump of the database and save it to the persistent directory:
 
 ```shell
-pg_dumpall -U postgres > /bitnami/postgresql/backup.sql
+PGPASSWORD=$(cat "${POSTGRES_POSTGRES_PASSWORD_FILE:-/dev/null}" && echo "$POSTGRES_POSTGRES_PASSWORD") pg_dumpall -U postgres > /bitnami/postgresql/backup.sql
 ```
 
 3. Prepare the Upgrade by renaming the current PostgreSQL data directory to ensure it is preserved in case of issues after the upgrade:
@@ -261,7 +330,13 @@ pg_dumpall -U postgres > /bitnami/postgresql/backup.sql
 mv /bitnami/postgresql/data /bitnami/postgresql/data-old
 ```
 
-4. Upgrade the Bitnami PostgreSQL chart to the desired version.
+4. Change the Bitnami PostgreSQL version by adding the following lines to you values.yaml.
+
+```yaml
+postgresql:
+  image:
+    tag: 17.5.0-debian-12-r16
+```
 
 5. Restore the Database:
 
@@ -274,15 +349,15 @@ kubectl exec -it <new-postgresql-pod-name> -- bash
 Restore the backup by running the following command:
 
 ```shell
-psql -U postgres -h localhost -f /bitnami/postgresql/backup.sql
+PGPASSWORD=$(cat "${POSTGRES_POSTGRES_PASSWORD_FILE:-/dev/null}" && echo "$POSTGRES_POSTGRES_PASSWORD") psql -U postgres -h localhost -f /bitnami/postgresql/backup.sql
 ```
 
-6. Restore Frontend Availability by starting the frontent or scaling it up again.
+6. Restore Frontend Availability by starting the frontend or scaling it up again.
 
 7. Verify the Upgrade by ensuring everything is working as expected by checking that the PostgreSQL instance is running correctly and the frontend is accessible.
 
 8. Remove Backup Files:
-    
+
 Once verified, enter the shell of the PostgreSQL pod again and remove the backup files to clean up:
 
 ```shell

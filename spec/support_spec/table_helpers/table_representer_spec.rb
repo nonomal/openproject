@@ -235,5 +235,102 @@ module TableHelpers
         end
       end
     end
+
+    describe "hierarchy column" do
+      let(:table) do
+        <<~TABLE
+          | hierarchy        |
+          | wp1              |
+          | parent           |
+          |   child1         |
+          |     grandchild11 |
+          |     grandchild12 |
+          |   child2         |
+          |   child3         |
+          |     grandchild31 |
+          |     grandchild32 |
+          | wp3              |
+        TABLE
+      end
+      let(:columns) { [Column.for("hierarchy")] }
+
+      it "is rendered as a hierarchy" do
+        expect(representer.render(table_data)).to eq <<~TABLE
+          | hierarchy        |
+          | wp1              |
+          | parent           |
+          |   child1         |
+          |     grandchild11 |
+          |     grandchild12 |
+          |   child2         |
+          |   child3         |
+          |     grandchild31 |
+          |     grandchild32 |
+          | wp3              |
+        TABLE
+      end
+
+      context "when there are no work packages" do
+        let(:table_data) do
+          TableData.from_work_packages([], columns)
+        end
+
+        it "renders no rows" do
+          expect(representer.render(table_data)).to eq <<~TABLE
+            | hierarchy |
+          TABLE
+        end
+      end
+
+      context "when using a second table for the column size" do
+        let(:twin_table) do
+          <<~TABLE
+            | hierarchy                |
+            | wp1                      |
+            | wp3                      |
+            | parent                   |
+            |   child2                 |
+            |     grandchild21         |
+            |   child1                 |
+            |     grandchild13         |
+            |     grandchild12         |
+            |       grandgrandchild121 |
+            |   child3                 |
+          TABLE
+        end
+        let(:twin_table_data) { TableData.for(twin_table) }
+
+        let(:tables_data) { [table_data, twin_table_data] }
+
+        it "adapts the column size to the largest of both tables so they are diffable" do # rubocop:disable RSpec/ExampleLength
+          expect(representer.render(table_data)).to eq <<~TABLE
+            | hierarchy                |
+            | wp1                      |
+            | parent                   |
+            |   child1                 |
+            |     grandchild11         |
+            |     grandchild12         |
+            |   child2                 |
+            |   child3                 |
+            |     grandchild31         |
+            |     grandchild32         |
+            | wp3                      |
+          TABLE
+          expect(representer.render(twin_table_data)).to eq <<~TABLE
+            | hierarchy                |
+            | wp1                      |
+            | wp3                      |
+            | parent                   |
+            |   child2                 |
+            |     grandchild21         |
+            |   child1                 |
+            |     grandchild13         |
+            |     grandchild12         |
+            |       grandgrandchild121 |
+            |   child3                 |
+          TABLE
+        end
+      end
+    end
   end
 end

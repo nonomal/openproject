@@ -45,7 +45,6 @@ class Queries::Projects::Orders::ProjectPhaseOrder < Queries::Orders::Base
 
   def available?
     project_phase_definition.present? &&
-      OpenProject::FeatureDecisions.stages_and_gates_active? &&
       User.current.allowed_in_any_project?(:view_project_phases)
   end
 

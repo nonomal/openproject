@@ -35,7 +35,6 @@ module API
   module V3
     module Projects
       class ProjectCollectionRepresenter < ::API::Decorators::OffsetPaginatedCollection
-        self.to_eager_load = ::API::V3::Projects::ProjectRepresenter.to_eager_load
         self.checked_permissions = ::API::V3::Projects::ProjectRepresenter.checked_permissions
 
         links :representations do
@@ -66,8 +65,8 @@ module API
                                 mime_type: "text/csv"
         end
 
-        def paged_models(models)
-          ::API::V3::Projects::ProjectEagerLoadingWrapper.wrap(super)
+        def eager_loaded_paged_models(models)
+          ::API::V3::Projects::ProjectEagerLoadingWrapper.wrap(models)
         end
       end
     end

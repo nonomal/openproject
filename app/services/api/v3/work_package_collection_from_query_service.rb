@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -192,7 +194,7 @@ module API
 
       def self_link(project)
         if project
-          api_v3_paths.work_packages_by_project(project.id)
+          api_v3_paths.work_packages_by_workspace(project.id)
         else
           api_v3_paths.work_packages
         end

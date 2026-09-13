@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,6 +34,33 @@ RSpec.describe "Working Days", :js do
   create_shared_association_defaults_for_work_package_factory
 
   shared_let(:week_days) { week_with_saturday_and_sunday_as_weekend }
+
+  shared_let(:project) { create(:project) }
+  shared_let(:phase_definition1) { create(:project_phase_definition) }
+  shared_let(:phase_definition2) { create(:project_phase_definition) }
+  shared_let(:phase1_start_date) { Date.new(2026, 10, 5) } # A Monday
+  shared_let(:phase1_end_date) { Date.new(2026, 10, 8) }   # A Thursday
+  shared_let(:phase2_start_date) { Date.new(2026, 10, 9) } # A Friday
+  shared_let(:phase2_end_date) { Date.new(2026, 10, 13) }  # A Tuesday
+
+  # Create consecutive phases with fixed dates
+  shared_let(:phase1) do
+    create(:project_phase,
+           :calculate_duration,
+           project:,
+           definition: phase_definition1,
+           start_date: phase1_start_date,
+           finish_date: phase1_end_date)
+  end
+
+  shared_let(:phase2) do
+    create(:project_phase,
+           :calculate_duration,
+           project:,
+           definition: phase_definition2,
+           start_date: phase2_start_date,
+           finish_date: phase2_end_date)
+  end
   shared_let(:admin) { create(:admin) }
 
   let_work_packages(<<~TABLE)
@@ -41,8 +70,8 @@ RSpec.describe "Working Days", :js do
     follower              |          XXX   | automatic       | follows earliest_work_package, follows second_work_package
   TABLE
 
-  let(:dialog) { Components::ConfirmationDialog.new }
   let(:datepicker) { Components::DatepickerModal.new }
+  let(:project_activity_page) { Pages::Projects::Activity.new(project) }
 
   current_user { admin }
 
@@ -76,7 +105,7 @@ RSpec.describe "Working Days", :js do
       click_on "Apply changes"
 
       perform_enqueued_jobs do
-        dialog.cancel
+        within_dialog("Change working days") { click_button "Cancel" }
       end
 
       expect(page).to have_no_css(".op-toast.-success")
@@ -100,7 +129,7 @@ RSpec.describe "Working Days", :js do
       click_on "Apply changes"
 
       perform_enqueued_jobs do
-        dialog.confirm
+        within_dialog("Change working days") { click_button "Save and reschedule" }
       end
 
       expect_flash(message: "Successful update.")
@@ -141,7 +170,7 @@ RSpec.describe "Working Days", :js do
       click_on "Apply changes"
 
       perform_enqueued_jobs do
-        dialog.confirm
+        within_dialog("Change working days") { click_button "Save and reschedule" }
       end
 
       expect_flash(type: :error, message: "At least one day of the week must be defined as a working day.")
@@ -172,10 +201,57 @@ RSpec.describe "Working Days", :js do
       click_on "Apply changes"
 
       # Not executing the background jobs
-      dialog.confirm
+      within_dialog("Change working days") { click_button "Save and reschedule" }
 
       expect_flash(type: :error,
                    message: "The previous changes to the working days configuration have not been applied yet.")
+    end
+
+    it "updates project phase date ranges when working days change" do
+      # Project phases layout before changes
+      #
+      #  | name             | MTWTFSSmtwtfssmt | duration |
+      #  | Planning         | XXXX             | 4 days   |
+      #  | Implementation   |     X..XX        | 3 days   |
+      expect(working_days_setting).to eq([1, 2, 3, 4, 5])
+
+      # Change working days configuration
+      uncheck "Monday"
+      uncheck "Friday"
+
+      click_on "Apply changes"
+
+      perform_enqueued_jobs do
+        within_dialog("Change working days") { click_button "Save and reschedule" }
+      end
+
+      expect_flash(message: "Successful update.")
+
+      # Expected phase layout after changes
+      #
+      #  | name             | MTWTFSSmtwtfssmt | duration |
+      #  | Planning         |  XXX....X        | 4 days   |
+      #  | Implementation   |          XX....X | 3 days   |
+      phase1.reload
+      phase2.reload
+
+      # Verify phases have been adjusted for the new working days
+      # Monday is now non-working so the start date should have moved to Tuesday
+      expect(phase1.start_date).to eq(Date.new(2026, 10, 6)) # Tuesday
+      # The end date should be adjusted to maintain the same duration in working days
+      expect(phase1.finish_date).to eq(Date.new(2026, 10, 13)) # Tuesday
+
+      # Second phase should also be adjusted and remain consecutive with phase1
+      expect(phase2.start_date).to eq(Date.new(2026, 10, 14)) # Wednesday
+      expect(phase2.finish_date).to eq(Date.new(2026, 10, 20)) # Tuesday
+
+      # Check the journal entries for the phases
+      project_activity_page.visit!
+
+      project_activity_page.show_details
+
+      project_activity_page
+        .expect_activity("Dates changed by changes to working days (Monday is now non-working, Friday is now non-working)")
     end
   end
 
@@ -274,7 +350,7 @@ RSpec.describe "Working Days", :js do
 
       click_on "Apply changes"
 
-      dialog.confirm
+      within_dialog("Change working days") { click_button "Save and reschedule" }
 
       # Remove the first date
       expect(page).to have_no_css("tr", text: non_working_days.first.date.strftime("%B %-d, %Y"))
@@ -296,7 +372,7 @@ RSpec.describe "Working Days", :js do
 
       click_on "Apply changes"
 
-      dialog.confirm
+      within_dialog("Change working days") { click_button "Save and reschedule" }
 
       # Keep the second date hidden
       expect(page).to have_no_css("tr", text: non_working_days.second.date.strftime("%B %-d, %Y"))

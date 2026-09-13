@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -66,7 +68,11 @@ RSpec.describe "Quick-add menu", :js do
         quick_add.click_link "Project"
         expect(page).to have_current_path new_project_path(parent_id: project.id)
 
-        field.expect_selected project.name
+        # Step 1: Select workspace type (blank project)
+        click_on "Continue"
+
+        # Step 2: Project details - Parent field is not visible here
+        field.expect_not_visible
       end
     end
   end
@@ -146,7 +152,7 @@ RSpec.describe "Quick-add menu", :js do
       quick_add.expect_work_package_type other_project_type.name
 
       quick_add.click_link other_project_type.name
-      expect(page).to have_current_path new_work_packages_path(type: other_project_type.id)
+      expect(page).to have_current_path new_work_package_path(type: other_project_type.id)
     end
   end
 
@@ -168,6 +174,26 @@ RSpec.describe "Quick-add menu", :js do
     it "does not show the quick add menu on the home screen" do
       visit signin_path
       quick_add.expect_invisible
+    end
+  end
+
+  context "with a project that has a variant enabled" do
+    let!(:root_type) { create(:type, name: "Task") }
+    let!(:variant) { create(:type_variant, type: root_type, variant_name: "Bug") }
+    let!(:add_role) { create(:project_role, permissions: %i[add_work_packages]) }
+    let!(:project) do
+      create(:project, types: [variant], members: { current_user => add_role })
+    end
+
+    current_user { create(:user) }
+
+    it "labels the quick-add entry with the type's name, not the variant's" do
+      visit project_path(project)
+
+      quick_add.expect_visible
+      quick_add.toggle
+      quick_add.expect_work_package_type root_type.name
+      quick_add.expect_work_package_type variant.variant_name, present: false
     end
   end
 end

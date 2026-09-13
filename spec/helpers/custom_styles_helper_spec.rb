@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -122,5 +124,33 @@ RSpec.describe CustomStylesHelper do
     subject { helper.apply_custom_touch_icon? }
 
     it_behaves_like "apply when ee present"
+  end
+
+  describe ".export_fonts_fields" do
+    let(:style) { create(:custom_style_with_export_font_regular) }
+
+    it "returns entries for all four variants with correct delete paths and filename" do
+      fields = helper.export_fonts_fields(style)
+      expect(fields.size).to eq(4)
+
+      names = fields.pluck(:field)
+      expect(names).to contain_exactly(:export_font_regular, :export_font_bold, :export_font_italic, :export_font_bold_italic)
+
+      regular = fields.find { |f| f[:field] == :export_font_regular }
+      expect(regular[:present]).to be_truthy
+      expect(regular[:filename]).to be_present
+      expect(regular[:delete_path]).to eq(custom_style_export_font_regular_delete_path)
+
+      bold = fields.find { |f| f[:field] == :export_font_bold }
+      expect(bold[:present]).to be_falsey
+      expect(bold[:filename]).to be_nil
+      expect(bold[:delete_path]).to eq(custom_style_export_font_bold_delete_path)
+
+      italic = fields.find { |f| f[:field] == :export_font_italic }
+      expect(italic[:delete_path]).to eq(custom_style_export_font_italic_delete_path)
+
+      bold_italic = fields.find { |f| f[:field] == :export_font_bold_italic }
+      expect(bold_italic[:delete_path]).to eq(custom_style_export_font_bold_italic_delete_path)
+    end
   end
 end

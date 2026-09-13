@@ -11,14 +11,14 @@ RSpec.describe "Cost report showing my own times", :js do
   let!(:time_entry1) do
     create(:time_entry,
            user:,
-           work_package:,
+           entity: work_package,
            project:,
            hours: 10)
   end
 
   before do
     login_as(current_user)
-    visit cost_reports_path(project)
+    visit project_reporting_cost_reports_path(project)
   end
 
   context "as user with logged time" do

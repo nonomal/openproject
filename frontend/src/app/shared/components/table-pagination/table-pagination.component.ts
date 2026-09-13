@@ -21,20 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import {
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-  EventEmitter,
-  Input,
-  OnInit,
-  Output,
-} from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import { UntilDestroyedMixin } from 'core-app/shared/helpers/angular/until-destroyed.mixin';
 import { PaginationInstance } from 'core-app/shared/components/table-pagination/pagination-instance';
@@ -44,8 +36,13 @@ import { PaginationService } from 'core-app/shared/components/table-pagination/p
   selector: '[tablePagination]',
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './table-pagination.component.html',
+  standalone: false,
 })
 export class TablePaginationComponent extends UntilDestroyedMixin implements OnInit {
+  protected paginationService = inject(PaginationService);
+  protected cdRef = inject(ChangeDetectorRef);
+  protected I18n = inject(I18nService);
+
   @Input() totalEntries:string;
 
   @Input() hideForSinglePageResults = false;
@@ -61,10 +58,15 @@ export class TablePaginationComponent extends UntilDestroyedMixin implements OnI
   public pagination:PaginationInstance;
 
   public text = {
-    label_previous: this.I18n.t('js.pagination.pages.previous'),
-    label_next: this.I18n.t('js.pagination.pages.next'),
+    label_previous: this.I18n.t('js.label_previous'),
+    label_next: this.I18n.t('js.label_next'),
     per_page: this.I18n.t('js.label_per_page'),
     no_other_page: this.I18n.t('js.pagination.no_other_page'),
+    pages_skipped: this.I18n.t('js.pagination.pages_skipped'),
+    page_navigation: this.I18n.t('js.pagination.page_navigation'),
+    per_page_navigation: this.I18n.t('js.pagination.per_page_navigation'),
+    page_number: (num:number) => this.I18n.t('js.pagination.pages.page_number', { number: num }),
+    show_per_page: (num:number) => this.I18n.t('js.pagination.pages.show_per_page', { number: num }),
   };
 
   public currentRange = '';
@@ -76,14 +78,6 @@ export class TablePaginationComponent extends UntilDestroyedMixin implements OnI
   public prePageNumbers:number[] = [];
 
   public perPageOptions:number[] = [];
-
-  constructor(
-    protected paginationService:PaginationService,
-    protected cdRef:ChangeDetectorRef,
-    protected I18n:I18nService,
-  ) {
-    super();
-  }
 
   ngOnInit():void {
     const paginationOptions = this.paginationService.getPaginationOptions();
@@ -132,7 +126,7 @@ export class TablePaginationComponent extends UntilDestroyedMixin implements OnI
       const lowerBound = this.pagination.getLowerPageBound();
       const upperBound = this.pagination.getUpperPageBound(this.pagination.total);
 
-      this.currentRange = `(${lowerBound} - ${upperBound}/${totalItems})`;
+      this.currentRange = `(${lowerBound} - ${upperBound}/${totalItems})`;
     } else {
       this.currentRange = '(0 - 0/0)';
     }

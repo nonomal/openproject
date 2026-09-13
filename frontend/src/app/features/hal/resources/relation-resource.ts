@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -110,7 +110,7 @@ export class RelationResource extends HalResource {
    * @return {boolean}
    */
   public isInvolved(wpId:string) {
-    return _.values(this.ids).indexOf(wpId.toString()) >= 0;
+    return Object.values(this.ids).includes(wpId.toString());
   }
 
   /**
@@ -118,8 +118,8 @@ export class RelationResource extends HalResource {
    */
   public get ids() {
     return {
-      from: idFromLink(this.from.href!),
-      to: idFromLink(this.to.href!),
+      from: idFromLink(this.from.href),
+      to: idFromLink(this.to.href),
     };
   }
 

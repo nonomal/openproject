@@ -45,6 +45,7 @@ module My
     def index
       case mode
       when :day then load_time_entries(date)
+      when :workweek then load_time_entries(workweek)
       when :week then load_time_entries(date.all_week)
       when :month then load_time_entries(date.all_month)
       end
@@ -73,12 +74,21 @@ module My
       @date ||= parsed_date || current_date
     end
 
+    def workweek
+      workdays_normalized = Setting.working_days.map { |day| day % 7 }.sort
+      date.all_week(week_start_day).select { |d| workdays_normalized.include?(d.wday) }
+    end
+
     def parsed_date
       if params[:date].present?
-        begin
-          Date.iso8601(params[:date])
-        rescue StandardError
-          nil
+        if params[:date] == "today"
+          current_date
+        else
+          begin
+            Date.iso8601(params[:date])
+          rescue StandardError
+            nil
+          end
         end
       end
     end
@@ -87,7 +97,7 @@ module My
       if mobile?
         "day"
       else
-        "week"
+        "workweek"
       end
     end
 
@@ -108,16 +118,12 @@ module My
     end
 
     def current_date
-      case mode
-      when :day then Time.zone.today
-      when :week then Time.zone.today.beginning_of_week
-      when :month then Time.zone.today.beginning_of_month
-      end
+      Time.zone.today
     end
 
     def load_time_entries(time_scope)
       @time_entries = TimeEntry
-        .includes(:project, :activity, { work_package: :status })
+        .preload(:project, :activity, :entity)
         .where(project_id: Project.visible.select(:id))
         .where(user: User.current, spent_on: time_scope)
         .order(:spent_on, :start_time, :hours)
@@ -136,6 +142,14 @@ module My
           mode: mode,
           date: date
         )
+      end
+    end
+
+    def week_start_day
+      case Setting.start_of_week
+      when 6 then :saturday
+      when 7 then :sunday
+      else :monday
       end
     end
 

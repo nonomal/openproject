@@ -41,12 +41,25 @@ module RecurringMeetings
       @project = meeting.project
     end
 
-    def render_create_button?
+    def edit_meeting?
       if @project
-        User.current.allowed_in_project?(:create_meetings, @project)
+        User.current.allowed_in_project?(:edit_meetings, @project)
       else
-        User.current.allowed_in_any_project?(:create_meetings)
+        User.current.allowed_in_any_project?(:edit_meetings)
       end
+    end
+
+    def end_meeting?
+      !@meeting.has_ended? && @meeting.start_time.to_date < Time.zone.today && edit_meeting?
+    end
+
+    def delete_meeting?
+      User.current.allowed_in_project?(:delete_meetings, @project)
+    end
+
+    def send_emails?
+      @meeting.notify? &&
+        User.current.allowed_in_project?(:send_meeting_invites_and_outcomes, @meeting.project)
     end
 
     def dynamic_path
@@ -62,20 +75,16 @@ module RecurringMeetings
     end
 
     def label_text
-      I18n.t(:label_recurring_meeting)
+      RecurringMeeting.model_name.human
     end
 
-    def page_title(breadcrumb = nil)
-      @meeting.present? ? meeting_series_title(breadcrumb).to_s : I18n.t(:label_recurring_meeting_plural)
+    def page_title
+      @meeting.present? ? meeting_series_title.to_s : I18n.t(:label_recurring_meeting_plural)
     end
 
-    def meeting_series_title(breadcrumb)
+    def meeting_series_title
       concat @meeting.title
-      if breadcrumb
-        concat render(Primer::Beta::Text.new) { " (#{I18n.t(:label_meeting_series)})" }
-      else
-        concat render(Primer::Beta::Text.new(color: :muted)) { " (#{I18n.t(:label_meeting_series)})" }
-      end
+      concat render(Primer::Beta::Text.new(color: :muted)) { " (#{I18n.t(:label_meeting_series)})" }
     end
 
     def page_description
@@ -83,18 +92,12 @@ module RecurringMeetings
     end
 
     def breadcrumb_items
-      [parent_element,
-       { href: @project.present? ? project_meetings_path(@project.id) : meetings_path,
-         text: I18n.t(:label_meeting_plural) },
-       page_title(true)]
-    end
-
-    def parent_element
-      if @project.present?
-        { href: project_overview_path(@project.id), text: @project.name }
-      else
-        { href: home_path, text: I18n.t(:label_home) }
-      end
+      [
+        ({ href: project_overview_path(@project.id), text: @project.name } if @project.present?),
+        { href: @project.present? ? project_meetings_path(@project.id) : meetings_path,
+          text: I18n.t(:label_meeting_plural) },
+        helpers.nested_breadcrumb_element(I18n.t(:label_meeting_series), @meeting.title)
+      ].compact
     end
   end
 end

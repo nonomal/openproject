@@ -46,7 +46,7 @@ module TableHelpers
           attrs.merge!(column.attributes_for_work_package(work_package))
         end
         row = columns.to_h { [it.title, nil] }
-        identifier = to_identifier(work_package.subject)
+        identifier = Registry.find_identifier(work_package) || to_identifier(work_package.subject)
         {
           attributes:,
           row:,
@@ -82,16 +82,72 @@ module TableHelpers
 
     def create_work_packages
       work_packages_by_identifier, relations = Factory.new(self).create
+      Registry.store(work_packages_by_identifier)
       Table.new(work_packages_by_identifier, relations)
     end
 
+    def hierarchy_levels
+      identifiers = work_packages_data.pluck(:identifier)
+      parents = work_packages_data.pluck(:attributes).pluck(:parent)
+      identifier_parent_tuples = identifiers.zip(parents)
+      levels = {}
+      iterations = 0
+      while identifier_parent_tuples.any? && iterations < identifier_parent_tuples.size
+        identifier, parent = identifier_parent_tuples.shift
+        if parent.nil?
+          levels[identifier] = 0
+          iterations = 0
+        elsif levels.has_key?(parent)
+          levels[identifier] = levels[parent] + 1
+          iterations = 0
+        else
+          identifier_parent_tuples.push([identifier, parent])
+          iterations += 1
+        end
+      end
+      levels
+    end
+
+    def children_by_parent(parent_identifier)
+      work_packages_data
+        .filter { it.dig(:attributes, :parent) == parent_identifier }
+        .pluck(:identifier)
+    end
+
     def order_like!(other_table)
-      ordered_identifiers = other_table.work_package_identifiers
-      extra_identifiers = work_package_identifiers - ordered_identifiers
       @work_packages_data = work_packages_data
         .index_by { it[:identifier] }
-        .values_at(*(ordered_identifiers + extra_identifiers))
+        .values_at(*identifiers_ordered_like(other_table))
         .compact
+    end
+
+    def identifiers_ordered_like(other_table, parent_identifier = nil, acc = [])
+      other_children = other_table.children_by_parent(parent_identifier)
+      own_children = children_by_parent(parent_identifier)
+      ordered_children = other_children.intersection(own_children) + own_children.difference(other_children)
+      ordered_children.each do |identifier|
+        acc << identifier
+        identifiers_ordered_like(other_table, identifier, acc)
+      end
+      acc
+    end
+
+    class Registry
+      class << self
+        def store(work_packages_by_identifier)
+          work_packages_by_identifier.each do |identifier, work_package|
+            identifiers_by_work_package_id[work_package.id] = identifier
+          end
+        end
+
+        def find_identifier(work_package)
+          identifiers_by_work_package_id[work_package.id]
+        end
+
+        def identifiers_by_work_package_id
+          @identifiers_by_work_package_id ||= {}
+        end
+      end
     end
 
     class Factory
@@ -106,6 +162,7 @@ module TableHelpers
       end
 
       def create
+        warn_for_existing_work_packages_with_same_identifier
         table_data.work_package_identifiers.each do |identifier|
           create_work_package(identifier)
         end
@@ -114,6 +171,18 @@ module TableHelpers
           create_relations(identifier)
         end
         [work_packages_by_identifier, relations]
+      end
+
+      def warn_for_existing_work_packages_with_same_identifier
+        existing_identifiers = WorkPackage.pluck(:subject).map { |subject| to_identifier(subject) }
+        identical_identifiers = existing_identifiers & table_data.work_package_identifiers
+        if identical_identifiers.any?
+          puts <<~MESSAGE
+            [let_work_packages] Warning: existing work packages with identical identifiers found: #{identical_identifiers.map(&:inspect).join(', ')}
+            [let_work_packages] This can cause failures when checking work package with `expect_work_packages(WorkPackage.all)`"
+          MESSAGE
+          puts "[let_work_packages] Current example is #{RSpec.current_example.location}" if RSpec.current_example
+        end
       end
 
       def create_work_package(identifier)

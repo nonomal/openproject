@@ -65,7 +65,14 @@ module API
                render_nil: false,
                writable: false
 
+      # List of associations that shall be eager_load'ed when rendering entities represented by this decorator.
+      # This is a hint for renderers of this representer.
       class_attribute :to_eager_load
+
+      # List of associations that shall be preload'ed when rendering entities represented by this decorator.
+      # This is a hint for renderers of this representer.
+      class_attribute :to_preload
+
       class_attribute :checked_permissions
 
       # Override in subclasses to specify the JSON indicated "_type" of this representer
@@ -84,6 +91,17 @@ module API
           instance_exec(&callable_or_value)
         else
           callable_or_value
+        end
+      end
+
+      def embed_link?(name)
+        case embed_links
+        when true
+          true
+        when false, nil
+          false
+        else
+          embed_links.include?(name)
         end
       end
 

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -45,5 +47,7 @@ class CustomValue::LinkStrategy < CustomValue::FormatStrategy
 
   def parsed_url(val)
     Addressable::URI.heuristic_parse(val, scheme: "http")
+  rescue Addressable::URI::InvalidURIError
+    nil
   end
 end

@@ -44,7 +44,7 @@ RSpec.describe "Custom fields reporting", :js do
   let!(:time_entry1) do
     create(:time_entry,
            user:,
-           work_package:,
+           entity: work_package,
            project:,
            hours: 10)
   end
@@ -52,7 +52,7 @@ RSpec.describe "Custom fields reporting", :js do
   let!(:time_entry2) do
     create(:time_entry,
            user:,
-           work_package:,
+           entity: work_package,
            project:,
            hours: 2.50)
   end
@@ -85,7 +85,7 @@ RSpec.describe "Custom fields reporting", :js do
     end
 
     before do
-      visit "/cost_reports"
+      visit reporting_cost_reports_path
       sleep(0.1)
     end
 
@@ -167,7 +167,7 @@ RSpec.describe "Custom fields reporting", :js do
       let!(:time_entry1) do
         create(:time_entry,
                user:,
-               work_package: work_package2,
+               entity: work_package2,
                project:,
                hours: 10)
       end
@@ -176,7 +176,7 @@ RSpec.describe "Custom fields reporting", :js do
         CustomValue.find_by(customized_id: work_package2.id).update_columns(value: "invalid")
         work_package2.reload
 
-        visit "/cost_reports"
+        visit reporting_cost_reports_path
         sleep(0.1)
       end
 
@@ -212,7 +212,7 @@ RSpec.describe "Custom fields reporting", :js do
     let(:initial_custom_values) { { custom_field.id => "foo" } }
 
     before do
-      visit "/cost_reports"
+      visit reporting_cost_reports_path
       sleep(0.1)
     end
 

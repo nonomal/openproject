@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.configure do |config|
   # Rails 5.1+ safely shares the database connection between the app and test
   # threads. So RSpec thread and Puma thread share the same db connection,

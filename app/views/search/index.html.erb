@@ -27,19 +27,61 @@ See COPYRIGHT and LICENSE files for more details.
 
 ++#%>
 
+<% html_title(t(:label_search)) -%>
 <% content_for :header_tags do %>
   <%= call_hook :search_index_head %>
-
 <% end %>
 
-<opce-global-search-title></opce-global-search-title>
+<%=
+  render(Primer::OpenProject::PageHeader.new) do |header|
+    title =
+      case search_params[:scope]
+      when "all"
+        t("global_search.title.all_projects", search_term: @question)
+      when "current_project"
+        t("global_search.title.current_project", search_term: @question, project_name: @project.name)
+      else
+        if @project
+          t("global_search.title.project_and_subprojects", search_term: @question, project_name: @project.name)
+        else
+          t("global_search.title.all_projects", search_term: @question)
+        end
+      end
 
-<opce-global-search-tabs></opce-global-search-tabs>
+    header.with_title { title }
+    header.with_breadcrumbs(
+      [
+        ({ href: project_overview_path(@project.id), text: @project.name } if @project),
+        title
+      ].compact
+    )
 
-<% if params[:work_packages].present? %>
-  <opce-global-search-work-packages></opce-global-search-work-packages>
+    header.with_tab_nav(label: nil, test_selector: "search-tabs") do |tab_nav|
+      search_types.each do |name|
+        tab_nav.with_tab(
+          test_selector: "search-tab-#{name}",
+          selected: search_params[:filter] == name,
+          href: search_path(project_id: @project, filter: name, q: @question, scope: search_params[:scope])
+        ) { |t| t.with_text { OpenProject::GlobalSearch.tab_name(name) } }
+      end
+
+      tab_nav.with_tab(
+        test_selector: "search-tab-all",
+        selected: search_params[:filter].blank?,
+        href: search_path(project_id: @project, q: @question, scope: search_params[:scope])
+      ) { |t| t.with_text { OpenProject::GlobalSearch.tab_name("all") } }
+    end
+  end
+%>
+
+<% if params[:filter] == "work_packages" %>
+  <%= angular_component_tag "opce-global-search-work-packages",
+                            inputs: {
+                              searchTerm: @question,
+                              scope: search_params[:scope],
+                            } %>
+
 <% else %>
-
   <h3><%= t(:label_result_plural) %> (<%= @results_count&.values&.sum || 0 %>)</h3>
 
   <% if @results.present? %>
@@ -68,9 +110,6 @@ See COPYRIGHT and LICENSE files for more details.
         </dd>
       <% end %>
     </dl>
-
   <% end %>
+  <%= render partial: "pagination", locals: { pagination_previous_date: @pagination_previous_date, pagination_next_date: @pagination_next_date } if params[:work_packages].blank? %>
 <% end %>
-
-<%= render partial: "pagination", locals: { pagination_previous_date: @pagination_previous_date, pagination_next_date: @pagination_next_date } if params[:work_packages].blank? %>
-<% html_title(t(:label_search)) -%>

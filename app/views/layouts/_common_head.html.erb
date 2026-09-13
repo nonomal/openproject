@@ -1,6 +1,7 @@
 <meta http-equiv="content-type" content="text/html; charset=utf-8">
 <meta name="viewport" content="width=device-width">
 <%= output_title_and_meta_tags %>
+<%= canonical_link_tag(work_package: @work_package, project: @project) %>
 <%= appsignal_frontend_tag %>
 
 <% relative_url_root = OpenProject::Configuration["rails_relative_url_root"] || "" %>
@@ -30,9 +31,6 @@
 
 <%= render "common/favicons" %>
 
-<%# Allow gon output when necessary %>
-<%= include_gon(nonce: content_security_policy_script_nonce) %>
-
 <%# Include CLI assets (development) or prod build assets %>
 <%= include_frontend_assets %>
 
@@ -55,3 +53,6 @@
     <% end %>
   <% end %>
 <% end %>
+
+<%# Disable prefetching for now %>
+<meta name="turbo-prefetch" content="false">

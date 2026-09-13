@@ -53,7 +53,7 @@ Available arguments for this rake task that specify the email behavior are
 | `username` | `IMAP_USERNAME` | the name of the user that is used to connect to the email server |
 | `password` | `IMAP_PASSWORD` | the password of the user |
 | `port` | `IMAP_PORT` | the port that is used to connect to the email server |
-| `ssl` | `IMAP_SSL` and ``IMAP_SSL_VERIFICATION` | specifies if SSL should be used when connecting to the email server |
+| `ssl` | `IMAP_SSL` and `IMAP_SSL_VERIFICATION` | specifies if SSL should be used when connecting to the email server |
 | `folder` | `IMAP_FOLDER` | the folder to fetch emails from (default: INBOX) |
 | `move_on_success` | `IMAP_MOVE_ON_SUCCESS` | the folder emails that were successfully parsed are moved to (instead of deleted, example: INBOX.success) |
 | `move_on_failure` | `IMAP_MOVE_ON_FAILURE` | the folder emails that were ignored are moved to (example: INBOX.failed) |
@@ -66,17 +66,19 @@ Available arguments that change how the work packages are handled:
 | `category` | `IMAP_ATTR_CATEGORY` | name of the target category |
 | `priority` | `IMAP_ATTR_PRIORITY` | name of the target priority |
 | `status` | `IMAP_ATTR_STATUS` | name of the target status |
-| `version` | `IMAP_ATTR_VERSION` | name of the target version |
+| `version` | `IMAP_ATTR_VERSION` | name of the target version (deprecated, use `target_versions`) |
+| `target_versions` | `IMAP_ATTR_TARGET_VERSIONS` | name of the target version; separate several with commas (more than one requires the multiple versions feature) |
 | `type` | `IMAP_ATTR_TYPE` | name of the target type |
 | `assigned_to` | `IMAP_ATTR_ASSIGNED_TO` | name of the assigned user |
-| `unknown_user` | `IMAP_UNKNOWN_USER` | ignore: email is ignored (default), accept: accept as anonymous user, create: create a user account |
+| `unknown_user` | `IMAP_UNKNOWN_USER` | ignore: email is ignored (default), accept: accept as anonymous user, create: create a user account <br />Hint: You must also set `IMAP_NO_PERMISSION_CHECK=1` for sending mail by anonymous users to work as expected.|
+| `no_permission_check` | `IMAP_NO_PERMISSION_CHECK` | disable permission checking when receiving the email if set to 1 |
 | `allow_override` | `IMAP_ALLOW_OVERRIDE` | specifies which attributes may be overwritten though specified by previous options. Comma separated list |
 
 **Gmail API**
 
 In order to use the more secure Gmail API method, some extra initial setup in google cloud is required.
 
-1. Go to https://console.cloud.google.com/
+1. Go to the [Google cloud console](https://console.cloud.google.com/)
 2. Create new project
 3. Navigate to Enable APIs and Services
 4. Enable the Gmail API
@@ -85,25 +87,25 @@ In order to use the more secure Gmail API method, some extra initial setup in go
 7. Give the service account editor permissions and click "Done"
 8. Click on the new service account, go to the "Keys" tab, and add a new key.
 9. Save the JSON key file
-    ***Note: Do not give anyone access to this JSON file as it contains the private key to your service account!***
-10. Go to https://admin.google.com
+    _**Note: Do not give anyone access to this JSON file as it contains the private key to your service account!**_
+10. Go to [admin.google.com](https://admin.google.com)
 11. Select Security > Access and Data Control > API Controls
 12. Go to "Domain-Wide Delegation"
 13. Add new API Client
 14. Open JSON key file and copy "client_id" number
 15. Enter `https://www.googleapis.com/auth/gmail.modify` into the scopes
-    ***Note: Modify permissions are necessary here to mark emails as read***
-    ***This is so the service account can access all accounts in your Domain***
+    _**Note: Modify permissions are necessary here to mark emails as read**_
+    _**This is so the service account can access all accounts in your Domain**_
 
 Available arguments for the Gmail API rake task that specify the email behavior are
 
-|key | description|
-|----|------------|
-| `credentials` | Gmail service account credentials file (JSON) |
-| `username` | Gmail email address |
-| `query` | Gmail search query (https://support.google.com/mail/answer/7190?hl=en) |
-| `read_on_failure` | Mark emails as read even on failure (default: true) |
-| `max_emails` | Max emails to process (default: 1000) |
+|key | description                                                             |
+|----|-------------------------------------------------------------------------|
+| `credentials` | Gmail service account credentials file (JSON)                           |
+| `username` | Gmail email address                                                     |
+| `query` | [Gmail search query](https://support.google.com/mail/answer/7190?hl=en) |
+| `read_on_failure` | Mark emails as read even on failure (default: true)                     |
+| `max_emails` | Max emails to process (default: 1000)                                   |
 
 ## Format of the emails
 
@@ -163,7 +165,10 @@ If a matching account is found, the mail handler impersonates the user to create
 If no matching account is found, the mail is rejected. To override this behavior and allow unknown mail address
 to create work packages, set the option `no_permission_check=1` and specify with `unknown_user=accept`
 
-**Note**: This feature only provides a mapping of mail to user account, it does not authenticate the user based on the mail. Since you can easily spoof mail addresses, you should not rely on the authenticity of work packages created that way. At the moment in the OpenProject Enterprise cloud work package generation by emails can only be triggered by registered email addresses.
+> [!CAUTION]
+> This feature only provides a mapping of mail to user account, it does not authenticate the user based on the mail. Since you can easily spoof mail addresses, you should not rely on the authenticity of work packages created that way. At the moment in the OpenProject Enterprise cloud work package generation by emails can only be triggered by registered email addresses.
+>
+> The same is true for `unknown_user=create`. This will effectively allow users to create new accounts in the system, same as with the self registration setting.
 
 **Users with mail suffixes**
 
@@ -188,7 +193,8 @@ Other available keys for the email are as follows. You can always use the intern
 | responsible     | Accountable     | sets the accountable, via user email or login         | responsible:user@example.org     |
 | assigned_to     | Assignee        | sets the assignee. Use the email or login of the user | assignee:test.nutzer@example.org |
 | type            | Type            | sets the type                                         | type:Milestone                   |
-| version         | Version         | sets the version                                      | version:v4.1.0                   |
+| version         | Version         | sets the version (deprecated, use target_versions)    | version:v4.1.0                   |
+| target_versions | Target versions | sets the target versions; separate several with commas (more than one requires the multiple versions feature) | target_versions:v4.1.0, v4.2.0 |
 | start_date      | Start date      | sets the start date                                   | start_date:2015-02-28            |
 | due_date        | Due date        | sets the finish date                                  | due:_date:2015-02-28             |
 | estimated_hours | Estimated hours | sets the estimated hours. Use a number                | estimated_hours:10.5             |

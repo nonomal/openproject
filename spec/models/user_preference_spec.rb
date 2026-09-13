@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -244,5 +246,108 @@ RSpec.describe UserPreference do
         expect(preference).not_to be_time_zone
       end
     end
+  end
+
+  describe "#theme" do
+    context "when none is specified" do
+      it "defaults to light" do
+        expect(subject.theme).to eq("light")
+        expect(subject).to be_a_light_theme
+        expect(subject).to be_a_light_color_mode
+      end
+    end
+
+    context "with a dark theme specified" do
+      let(:settings) { { "theme" => "dark" } }
+
+      it "returns the dark theme" do
+        expect(subject.theme).to eq("dark")
+        expect(subject).to be_a_dark_theme
+        expect(subject).to be_a_dark_color_mode
+      end
+    end
+
+    context "with a light theme and contrast enabled" do
+      let(:settings) { { "theme" => "light", "increase_theme_contrast" => true } }
+
+      it "returns light theme with high contrast detection" do
+        expect(subject.theme).to eq("light")
+        expect(subject).to be_a_light_theme
+        expect(subject).to be_a_light_high_contrast_theme
+        expect(subject).to be_a_light_color_mode
+        expect(subject.increase_theme_contrast?).to be true
+      end
+    end
+
+    context "with a dark theme and contrast enabled" do
+      let(:settings) { { "theme" => "dark", "increase_theme_contrast" => true } }
+
+      it "returns dark theme with high contrast detection" do
+        expect(subject.theme).to eq("dark")
+        expect(subject).to be_a_dark_theme
+        expect(subject).to be_a_dark_high_contrast_theme
+        expect(subject).to be_a_dark_color_mode
+        expect(subject.increase_theme_contrast?).to be true
+      end
+    end
+
+    context "with light theme and contrast disabled" do
+      let(:settings) { { "theme" => "light", "increase_theme_contrast" => false } }
+
+      it "returns light theme without high contrast" do
+        expect(subject.theme).to eq("light")
+        expect(subject).to be_a_light_theme
+        expect(subject).not_to be_a_light_high_contrast_theme
+        expect(subject).to be_a_light_color_mode
+        expect(subject.increase_theme_contrast?).to be false
+      end
+    end
+
+    context "with dark theme and contrast disabled" do
+      let(:settings) { { "theme" => "dark", "increase_theme_contrast" => false } }
+
+      it "returns dark theme without high contrast" do
+        expect(subject.theme).to eq("dark")
+        expect(subject).to be_a_dark_theme
+        expect(subject).not_to be_a_dark_high_contrast_theme
+        expect(subject).to be_a_dark_color_mode
+        expect(subject.increase_theme_contrast?).to be false
+      end
+    end
+
+    context "with system theme specified" do
+      let(:settings) { { "theme" => "sync_with_os" } }
+
+      it "returns the system theme" do
+        expect(subject.theme).to eq("sync_with_os")
+        expect(subject).to be_a_sync_with_os_theme
+      end
+    end
+
+    context "with unset contrast settings" do
+      let(:settings) { { "theme" => "light" } }
+
+      it "defaults contrast settings to false" do
+        expect(subject).not_to be_increase_theme_contrast
+        expect(subject).not_to be_force_light_theme_contrast
+        expect(subject).not_to be_force_dark_theme_contrast
+        expect(subject).not_to be_a_light_high_contrast_theme
+        expect(subject).not_to be_a_dark_high_contrast_theme
+      end
+    end
+  end
+
+  describe "contrast settings" do
+    it_behaves_like "accepts real and false booleans",
+                    :increase_theme_contrast=,
+                    :increase_theme_contrast?
+
+    it_behaves_like "accepts real and false booleans",
+                    :force_light_theme_contrast=,
+                    :force_light_theme_contrast?
+
+    it_behaves_like "accepts real and false booleans",
+                    :force_dark_theme_contrast=,
+                    :force_dark_theme_contrast?
   end
 end

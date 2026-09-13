@@ -21,15 +21,18 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
 import { OpenProjectPluginContext } from 'core-app/features/plugins/plugin-context';
 import { input, InputState } from '@openproject/reactivestates';
-import { getMetaElement, GlobalHelpers } from 'core-app/core/setup/globals/global-helpers';
+import { getMetaContent, getMetaValue } from 'core-app/core/setup/globals/global-helpers';
 import { firstValueFrom } from 'rxjs';
+import { ThemeUtils } from './theme-utils';
+
+export type OpenProjectPageState = 'pristine'|'edited'|'submitted';
 
 /**
  * OpenProject instance methods
@@ -37,36 +40,42 @@ import { firstValueFrom } from 'rxjs';
 export class OpenProject {
   public pluginContext:InputState<OpenProjectPluginContext> = input<OpenProjectPluginContext>();
 
-  public helpers = new GlobalHelpers();
+  /**
+   * Theme utilities for system theme detection and application
+   */
+  public theme = new ThemeUtils();
 
-  /** Globally setable variable whether the page was edited */
-  public pageWasEdited = false;
+  /** Globally setable variable whether the page was edited or submitted */
+  pageState:OpenProjectPageState = 'pristine';
 
-  /** Globally setable variable whether the page form is submitted.
-   * Necessary to avoid a data loss warning on beforeunload */
-  public pageIsSubmitted = false;
+  public get pageWasEdited():boolean {
+    return this.pageState === 'edited';
+  }
 
-  /** Globally setable variable whether any of the EditFormComponent
-   * contain changes.
-   * Necessary to show a data loss warning on beforeunload when clicking
-   * on a link out of the Angular app (ie: main side menu)
-   * */
-  public editFormsContainModelChanges:boolean;
+  public get pageWasSubmitted():boolean {
+    return this.pageState === 'submitted';
+  }
+
+  public get pageHasUnsavedChanges():boolean {
+    return this.pageWasEdited || this.editFormsContainUnsavedChanges();
+  }
+
+  public editFormsContainUnsavedChanges:() => boolean = () => false;
 
   public getPluginContext():Promise<OpenProjectPluginContext> {
     return firstValueFrom(this.pluginContext.values$());
   }
 
   public get urlRoot():string {
-    return getMetaElement('app_base_path')?.content || '';
+    return getMetaContent('app_base_path');
   }
 
   public get environment():string {
-    return getMetaElement('openproject_initializer')?.dataset.environment || '';
+    return getMetaValue('openproject_initializer', 'environment');
   }
 
   public get edition():string {
-    return getMetaElement('openproject_initializer')?.dataset.edition || '';
+    return getMetaValue('openproject_initializer', 'edition');
   }
 
   public get isStandardEdition():boolean {
@@ -93,9 +102,9 @@ export class OpenProject {
         window.localStorage.setItem(key, newValue);
       } else {
         const value = window.localStorage.getItem(key);
-        return value === null ? undefined : value;
+        return value ?? undefined;
       }
-    } catch (e) {
+    } catch {
       console.error('Failed to access your browsers local storage. Is your local database corrupted?');
     }
   }

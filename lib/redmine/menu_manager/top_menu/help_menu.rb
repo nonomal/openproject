@@ -31,127 +31,155 @@
 module Redmine::MenuManager::TopMenu::HelpMenu
   def render_help_top_menu_node(item = help_menu_item)
     cache_key = ["help_top_menu_node",
-                 OpenProject::Static::Links.links,
+                 OpenProject::Static::Links.cache_key,
                  I18n.locale,
                  OpenProject::Static::Links.help_link,
                  EnterpriseToken.active?]
     OpenProject::Cache.fetch(cache_key) do
       if OpenProject::Static::Links.help_link_overridden?
-        content_tag("li",
-                    render_single_menu_node(item, nil, "op-app-menu"),
-                    class: "op-app-menu--item op-app-help op-app-help_overridden")
+        render(Primer::Beta::IconButton.new(icon: item.icon,
+                                            tag: :a,
+                                            href: url_for(item.url),
+                                            classes: "op-app-header--primer-button hidden-for-mobile",
+                                            scheme: :invisible,
+                                            pl: 1,
+                                            test_selector: "header-help-button",
+                                            aria: { label: I18n.t(:label_help) },
+                                            data: { allow_external_link: true },
+                                            **item.html_options))
       else
         render_help_dropdown
       end
     end
   end
 
+  def help_menu_item
+    split_top_menu_into_main_or_more_menus[:help]
+  end
+
   def render_help_dropdown
-    link_to_help_pop_up = link_to "#",
-                                  title: I18n.t(:label_help),
-                                  class: "op-app-menu--item-action",
-                                  aria: { haspopup: "true" } do
-      render(Primer::Beta::Octicon.new(icon: "question", size: :medium))
-    end
+    render Primer::Alpha::ActionMenu.new(classes: "op-app-menu--item",
+                                         menu_id: "op-app-header--help-menu",
+                                         pl: 1,
+                                         anchor_align: :end) do |menu|
+      menu.with_show_button(icon: :question,
+                            scheme: :invisible,
+                            classes: "op-app-header--primer-button hidden-for-mobile",
+                            test_selector: "header-help-button",
+                            "aria-label": I18n.t(:label_help))
 
-    render_menu_dropdown(
-      link_to_help_pop_up,
-      menu_item_class: "op-app-help hidden-for-mobile",
-      drop_down_class: "op-menu"
-    ) do
-      result = "".html_safe
-      render_onboarding result
-      render_help_and_support result
-      render_additional_resources result
-
-      result
+      add_onboarding_item(menu)
+      menu.with_divider
+      add_help_and_support_items(menu)
+      menu.with_divider
+      add_additional_help_items(menu)
     end
   end
 
   private
 
-  def render_onboarding(result)
-    result << content_tag(:li, class: "op-menu--item") do
-      content_tag(:span, I18n.t("top_menu.getting_started"),
-                  class: "op-menu--headline",
-                  title: I18n.t("top_menu.getting_started"))
+  def add_onboarding_item(menu)
+    menu.with_group do |menu_group|
+      menu_group.with_heading(title: I18n.t("top_menu.getting_started"))
+
+      menu_group.with_item(
+        href: onboarding_video_dialog_path,
+        label: t(:label_introduction_video),
+        content_arguments: {
+          target: "_top",
+          data: { controller: "async-dialog" }
+        },
+        test_selector: "op-menu--item-action"
+      )
     end
-    result << render_onboarding_menu_item
-    result << content_tag(:hr, "", class: "op-menu--separator")
   end
 
-  def render_onboarding_menu_item
-    controller.render_to_string(partial: "onboarding/menu_item")
+  def add_help_and_support_items(menu) # rubocop:disable Metrics/AbcSize
+    menu.with_group do |menu_group|
+      menu_group.with_heading(title: I18n.t("top_menu.help_and_support"))
+
+      unless EnterpriseToken.hide_banners? && EnterpriseToken.active?
+        menu_group.with_item(
+          **link_options_for(:upsell,
+                             url_params: {
+                               utm_source: "unknown",
+                               utm_medium: "op-instance",
+                               utm_campaign: "ee-upsell-help-menu"
+                             })
+        )
+      end
+      menu_group.with_item(**link_options_for(:user_guides))
+      menu_group.with_item(href: OpenProject::Configuration.youtube_channel,
+                           label: t(:label_videos),
+                           content_arguments: {
+                             target: "_blank",
+                             rel: "noopener",
+                             data: { allow_external_link: true }
+                           },
+                           test_selector: "op-menu--item-action")
+      menu_group.with_item(**link_options_for(:shortcuts))
+      menu_group.with_item(**link_options_for(:forums))
+      menu_group.with_item(**link_options_for(
+        EnterpriseToken.active? ? :enterprise_support : :enterprise_support_as_community
+      ))
+    end
   end
 
-  def render_help_and_support(result) # rubocop:disable Metrics/AbcSize
-    result << content_tag(:li, class: "op-menu--item") do
-      content_tag :span, I18n.t("top_menu.help_and_support"),
-                  class: "op-menu--headline",
-                  title: I18n.t("top_menu.help_and_support")
+  def add_additional_help_items(menu) # rubocop:disable Metrics/AbcSize
+    menu.with_group do |menu_group|
+      menu_group.with_heading(title: I18n.t("top_menu.additional_resources"))
+
+      if OpenProject::Static::Links.has? :impressum
+        menu_group.with_item(**link_options_for(:impressum))
+      end
+
+      menu_group.with_item(**link_options_for(:data_privacy))
+      menu_group.with_item(**link_options_for(:digital_accessibility))
+      menu_group.with_item(**link_options_for(
+        :website,
+        url_params: {
+          utm_source: "unknown",
+          utm_medium: "op-instance",
+          utm_campaign: "website-help-menu"
+        }
+      ))
+      menu_group.with_item(**link_options_for(
+        :security_alerts,
+        url_params: {
+          utm_source: "unknown",
+          utm_medium: "op-instance",
+          utm_campaign: "security-help-menu"
+        }
+      ))
+      menu_group.with_item(**link_options_for(
+        :newsletter,
+        url_params: {
+          utm_source: "unknown",
+          utm_medium: "op-instance",
+          utm_campaign: "newsletter-help-menu"
+        }
+      ))
+      menu_group.with_item(**link_options_for(:blog))
+      menu_group.with_item(**link_options_for(:release_notes))
+      menu_group.with_item(**link_options_for(:report_bug))
+      menu_group.with_item(**link_options_for(:roadmap))
+      menu_group.with_item(**link_options_for(:crowdin))
+      menu_group.with_item(**link_options_for(:api_docs))
     end
-    unless EnterpriseToken.hide_banners? && EnterpriseToken.active?
-      result << static_link_item(:upsell,
-                                 href_suffix: "/?utm_source=unknown&utm_medium=op-instance&utm_campaign=ee-upsell-help-menu")
-    end
-    result << static_link_item(:user_guides)
-    result << content_tag(:li, class: "op-menu--item") do
-      link_to I18n.t("label_videos"),
-              OpenProject::Configuration.youtube_channel,
-              title: I18n.t("label_videos"),
-              class: "op-menu--item-action",
-              target: "_blank", rel: "noopener"
-    end
-    result << static_link_item(:shortcuts)
-    result << static_link_item(:forums)
-    enterprise_support_link_key = if EnterpriseToken.active?
-                                    :enterprise_support
-                                  else
-                                    :enterprise_support_as_community
-                                  end
-    result << static_link_item(enterprise_support_link_key)
-    result << content_tag(:hr, "", class: "op-menu--separator")
   end
 
-  def render_additional_resources(result) # rubocop:disable Metrics/AbcSize
-    result << content_tag(:li, class: "op-menu--item") do
-      content_tag :span,
-                  I18n.t("top_menu.additional_resources"),
-                  class: "op-menu--headline",
-                  title: I18n.t("top_menu.additional_resources")
-    end
+  def link_options_for(key, options = {})
+    href = OpenProject::Static::Links.url_for(key, url_params: options[:url_params] || {})
+    label = OpenProject::Static::Links.label_for(key)
 
-    if OpenProject::Static::Links.has? :impressum
-      result << static_link_item(:impressum)
-    end
-
-    result << static_link_item(:data_privacy)
-    result << static_link_item(:digital_accessibility)
-    result << static_link_item(
-      :website,
-      href_suffix: "/?utm_source=unknown&utm_medium=op-instance&utm_campaign=website-help-menu"
-    )
-    result << static_link_item(
-      :newsletter,
-      href_suffix: "/?utm_source=unknown&utm_medium=op-instance&utm_campaign=newsletter-help-menu"
-    )
-    result << static_link_item(:blog)
-    result << static_link_item(:release_notes)
-    result << static_link_item(:report_bug)
-    result << static_link_item(:roadmap)
-    result << static_link_item(:crowdin)
-    result << static_link_item(:api_docs)
-  end
-
-  def static_link_item(key, options = {})
-    link = OpenProject::Static::Links.links[key]
-    label = I18n.t(link[:label])
-    content_tag(:li, class: "op-menu--item") do
-      link_to label,
-              "#{link[:href]}#{options[:href_suffix]}",
-              title: label,
-              target: "_blank",
-              class: "op-menu--item-action", rel: "noopener"
-    end
+    {
+      href: href,
+      label: label,
+      content_arguments: {
+        target: "_blank",
+        rel: "noopener",
+        data: { allow_external_link: true }
+      }
+    }
   end
 end

@@ -59,7 +59,7 @@ class GenerateSeederSourceTranslationFiles
 
     def call
       Source::SeedFile.all
-        .group_by { _1.path.dirname }
+        .group_by { it.path.dirname }
         .each do |dir, seed_files|
           create_crowdin_source_file(dir, seed_files)
         end

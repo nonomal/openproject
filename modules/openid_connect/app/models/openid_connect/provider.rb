@@ -33,8 +33,9 @@ module OpenIDConnect
     include HashBuilder
 
     has_many :remote_identities, as: :auth_source, dependent: :destroy
-
-    TOKEN_EXCHANGE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange"
+    has_many :oidc_group_memberships, inverse_of: :auth_provider,
+                                      class_name: "::OpenIDConnect::GroupMembership",
+                                      dependent: :delete_all
 
     OIDC_PROVIDERS = %w[google microsoft_entra custom].freeze
     DISCOVERABLE_STRING_ATTRIBUTES_MANDATORY = %i[authorization_endpoint
@@ -72,6 +73,11 @@ module OpenIDConnect
     store_attribute :options, :claims, :string
     store_attribute :options, :acr_values, :string
 
+    store_attribute :options, :sync_groups, :boolean, default: false
+    store_attribute :options, :groups_claim, :string, default: "groups"
+    store_attribute :options, :group_prefixes, :json, default: []
+    store_attribute :options, :group_regexes, :json, default: []
+
     # azure specific option
     store_attribute :options, :use_graph_api, :boolean
 
@@ -103,6 +109,11 @@ module OpenIDConnect
       end
     end
 
+    def group_regexes
+      # handle legacy data, where group regexes where `nil`.
+      super || []
+    end
+
     def google?
       oidc_provider == "google"
     end
@@ -118,7 +129,7 @@ module OpenIDConnect
     def token_exchange_capable?
       return false if grant_types_supported.blank?
 
-      grant_types_supported.include?(TOKEN_EXCHANGE_GRANT_TYPE)
+      grant_types_supported.include?(OpenProject::OAuth2::TOKEN_EXCHANGE_GRANT_TYPE)
     end
 
     def icon
@@ -130,6 +141,36 @@ module OpenIDConnect
       else
         super.presence || "openid_connect/auth_provider-custom.png"
       end
+    end
+
+    def scopes
+      (scope || "").split
+    end
+
+    def backchannel_logout_url
+      URI.join(auth_url, "backchannel-logout").to_s
+    end
+
+    def group_matchers
+      if group_prefixes.present?
+        group_prefixes.map { |p| Regexp.new("^#{Regexp.escape(p)}(.+)$") }
+      elsif group_regexes.present?
+        group_regexes.map { |r| Regexp.new(r) }
+      else
+        [/(.+)/]
+      end
+    end
+
+    def to_h
+      claims = self.claims.presence || "{}"
+      claims = add_groups_claim(JSON.parse(claims)).to_json
+      super.merge(claims:, acr_values:)
+    end
+
+    def add_groups_claim(claims)
+      claims = { "id_token" => { groups_claim => nil } }.deep_merge(claims) if sync_groups
+
+      claims
     end
   end
 end

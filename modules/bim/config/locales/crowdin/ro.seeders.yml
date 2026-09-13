@@ -13,14 +13,14 @@ ro:
         item_2:
           name: Ridicată
         item_3:
-          name: Critical
+          name: Critic
       statuses:
         item_0:
           name: Nou
         item_1:
           name: În lucru
         item_2:
-          name: Resolved
+          name: Soluționat
         item_3:
           name: Închis
       time_entry_activities:
@@ -40,9 +40,9 @@ ro:
         item_3:
           name: Tichet
         item_4:
-          name: Remark
+          name: Observație
         item_5:
-          name: Request
+          name: Solicitare
         item_6:
           name: Clash
       global_queries:
@@ -52,26 +52,26 @@ ro:
         item_0:
           form_configuration:
             item_0:
-              group_name: Fii
+              group_name: Copii
       groups:
         item_0:
-          name: Architects
+          name: Arhitecţi
         item_1:
-          name: BIM Coordinators
+          name: Coordonatori BIM
         item_2:
-          name: BIM Managers
+          name: Manageri BIM
         item_3:
-          name: BIM Modellers
+          name: Modelatori BIM
         item_4:
-          name: Lead BIM Coordinators
+          name: Coordonatori BIM principali
         item_5:
-          name: MEP Engineers
+          name: Ingineri MEP
         item_6:
-          name: Planners
+          name: Planificatori
         item_7:
-          name: Structural Engineers
+          name: Ingineri structuriști
       welcome:
-        title: Welcome to OpenProject BIM edition!
+        title: Bine ai venit la ediția OpenProject BIM!
         text: |
           Checkout the demo projects to get started with some examples.
 
@@ -87,58 +87,58 @@ ro:
           You can change this welcome text [here]({{opSetting:base_url}}/admin/settings/general).
       projects:
         demo-construction-project:
-          name: "(Demo) Construction project"
-          status_explanation: All tasks and the sub-projects are on schedule. The people involved know their tasks. The system is completely set up.
-          description: This is a short summary of the goals of this demo construction project.
+          name: "(Demo) Proiect de construcție"
+          status_explanation: Toate sarcinile și subproiectele sunt în grafic. Persoanele implicate își cunosc sarcinile. Sistemul este complet configurat.
+          description: Acesta este un rezumat al obiectivelor acestui proiect demonstrativ de construcție.
           news:
             item_0:
-              title: Welcome to your demo project
+              title: Bine ai venit la proiectul demo
               summary: |
-                We are glad you joined.
-                In this module you can communicate project news to your team members.
-              description: The actual news
+                Ne bucurăm că te-ai alăturat.
+                În acest modul poți comunica noutăți despre proiect membrilor echipei.
+              description: Știri de actualitate
           categories:
-            item_0: Category 1 (to be changed in Project settings)
+            item_0: Categoria 1 (de modificat în setările proiectului)
           queries:
             item_0:
-              name: Project plan
+              name: Planul proiectului
             item_1:
               name: Etape
             item_2:
-              name: Tasks
+              name: Sarcini
             item_3:
-              name: Planificator de echipă
+              name: Planificator echipă
           boards:
             bcf:
-              name: Simple drag'n drop workflow
+              name: Flux de lucru simplu cu drag and drop
           project-overview:
             widgets:
               item_0:
                 options:
-                  name: Welcome
+                  name: Bun venit
               item_1:
                 options:
                   name: Începe
                   text: |
-                    We are glad you joined! We suggest to try a few things to get started in OpenProject.
+                    Ne bucurăm că v-ați alăturat! Îți sugerăm să încerci câteva lucruri pentru a începe în OpenProject.
 
-                    But before you jump right into it, you should know that this exemplary project is split up into two different projects:
+                    Dar înainte de a vă arunca direct în el, trebuie să știți că acest proiect exemplar este împărțit în două proiecte diferite:
 
-                    1.  [Construction project]({{opSetting:base_url}}/projects/demo-planning-constructing-project): Here you will find the classical roles, some workflows and work packages for your construction project.
-                    2.  [Creating BIM Model]({{opSetting:base_url}}/projects/demo-bim-project): This project also offers roles, workflows and work packages but especially in the BIM context.
+                    1.  [Proiect de construcție]({{opSetting:base_url}}/projects/demo-planning-constructing-project): Aici veți găsi rolurile clasice, unele fluxuri de lucru și pachete de lucru pentru proiectul de construcție.
+                    2.  [Crearea modelului BIM]({{opSetting:base_url}}/projects/demo-bim-project): Acest proiect oferă de asemenea roluri, fluxuri de lucru și pachete de lucru, dar mai ales în contextul BIM.
 
-                    _Try the following steps:_
+                    Încercați următorii pași:_
 
-                    1.  _Invite new members to your project_: → Go to [Members]({{opSetting:base_url}}/projects/demo-construction-project/members) in the project navigation.
-                    2.  _View the work in your projects_: → Go to [Work packages]({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) in the project navigation.
-                    3.  _Create a new work package_: → Go to [Work packages → Create]({{opSetting:base_url}}/projects/demo-construction-project/work_packages/new?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D&type=11).
-                    4.  _Create and update a Gantt chart_: → Go to [Gantt chart]({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22assignee%22%2C%22responsible%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) in the project navigation.
-                    5.  _Activate further modules_: → Go to [Project settings → Modules]({{opSetting:base_url}}/projects/demo-construction-project/settings/modules).
-                    6.  _Check out the tile view to get an overview of your BCF issues:_ → Go to [Work packages]({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22id%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22card%22%7D)
-                    7.  _Agile working? Check out our brand new boards:_ → Go to [Boards]({{opSetting:base_url}}/projects/demo-construction-project/boards)
+                    1.  _Invitați noi membri în proiectul dvs._: → Accesați [Members]({{opSetting:base_url}}/projects/demo-construction-project/members) în navigarea proiectului.
+                    2.  _Vezi lucrările din proiectele tale_: → Mergi la [Pachete de lucru]({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) în navigarea proiectului.
+                    3.  _Creați un nou pachet de lucru_: → Mergeți la [Pachete de lucru → Creați]({{opSetting:base_url}}/projects/demo-construction-project/work_packages/new?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D&type=11).
+                    4.  _Creați și actualizați un grafic Gantt_: → Accesați [Gantt chart]({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22assignee%22%2C%22responsible%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) în navigarea proiectului.
+                    5.  _Activați alte module_: → Accesați [Setări proiect → Module]({{opSetting:base_url}}/projects/demo-construction-project/settings/modules).
+                    6.  _Check out the tile view to get an overview of your BCF issues:_ → Mergeți la [Work packages]({{opSetting:base_url}}/projects/demo-construction-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22id%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22card%22%7D)
+                    7.  _Agile working? Check out our brand new boards:_ → Mergeți la [Boards]({{opSetting:base_url}}/projects/demo-construction-project/boards)
 
-                    Here you will find our [User Guides](https://www.openproject.org/docs/user-guide/).
-                    Please let us know if you have any questions or need support. Contact us: [support\[at\]openproject.com](mailto:support@openproject.com).
+                    Aici veți găsi [User Guides](https://www.openproject.org/docs/user-guide/).
+                    Vă rugăm să ne anunțați dacă aveți întrebări sau aveți nevoie de asistență. Contactați-ne: [support\[at\]openproject.com](mailto:support@openproject.com).
               item_4:
                 options:
                   name: Membri
@@ -149,51 +149,51 @@ ro:
                 options:
                   name: Etape
         demo-planning-constructing-project:
-          name: "(Demo) Planning & constructing"
-          status_explanation: All tasks are on schedule. The people involved know their tasks. The system is completely set up.
-          description: This is a short summary of the goals of this demo planning and constructing project.
+          name: "(Demo) Planificare și construcție"
+          status_explanation: Toate sarcinile și subproiectele sunt în grafic. Persoanele implicate își cunosc sarcinile. Sistemul este complet configurat.
+          description: Acesta este un rezumat al obiectivelor acestui proiect demonstrativ de construcție.
           news:
             item_0:
-              title: Welcome to your demo project
+              title: Bine ai venit la proiectul demo
               summary: |
-                We are glad you joined.
-                In this module you can communicate project news to your team members.
-              description: The actual news
+                Ne bucurăm că v-ați alăturat.
+                În acest modul poți comunica noutăți despre proiect membrilor echipei.
+              description: Știri de actualitate
           categories:
-            item_0: Category 1 (to be changed in Project settings)
+            item_0: Categoria 1 (de modificat în setările proiectului)
           queries:
             item_0:
-              name: Project plan
+              name: Planul proiectului
             item_1:
               name: Etape
             item_2:
-              name: Tasks
+              name: Sarcini
             item_3:
-              name: Planificator de echipă
+              name: Planificator echipă
           project-overview:
             widgets:
               item_0:
                 options:
-                  name: Welcome
+                  name: Bun venit
               item_1:
                 options:
-                  name: Noţiuni de bază
+                  name: Noțiuni de bază
                   text: |
-                    We are glad you joined! We suggest to try a few things to get started in OpenProject.
+                    Ne bucurăm că v-ați alăturat! Vă sugerăm să încercați câteva lucruri pentru a începe în OpenProject.
 
-                    Here you will find the classical roles, some workflows and work packages for your construction project.
+                    Aici veți găsi rolurile clasice, câteva fluxuri de lucru și pachete de lucru pentru proiectul dvs. de construcție.
 
-                    _Try the following steps:_
+                    _Încercați următorii pași:_
 
-                    1.  _Invite new members to your project:_ → Go to [Members]({{opSetting:base_url}}/projects/demo-planning-constructing-project/members) in the project navigation.
-                    2.  _View the work in your projects:_ → Go to [Work packages]({{opSetting:base_url}}/projects/demo-planning-constructing-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) in the project navigation.
-                    3.  _Create a new work package:_ → Go to [Work packages → Create]({{opSetting:base_url}}/projects/demo-planning-constructing-project/work_packages/new?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D&type=11).
-                    4.  _Create and update a Gantt chart:_ → Go to [Gantt chart]({{opSetting:base_url}}/projects/demo-planning-constructing-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22assignee%22%2C%22responsible%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) in the project navigation.
-                    5.  _Activate further modules:_ → Go to [Project settings → Modules]({{opSetting:base_url}}/projects/demo-planning-constructing-project/settings/modules).
-                    6.  _Working agile? Create a new board:_ → Go to [Boards]({{opSetting:base_url}}/projects/demo-planning-constructing-project/boards)
+                    1.  _Invitați noi membri în proiectul dvs.:_ → Mergeți la [Membri]({{opSetting:base_url}}/projects/demo-planning-constructing-project/members) în navigarea proiectului.
+                    2.  _Vezi lucrările din proiectele tale:_ → Mergi la [Pachete de lucru]({{opSetting:base_url}}/projects/demo-planning-constructing-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) în navigarea proiectului.
+                    3.  _Creați un nou pachet de lucru:_ → Accesați [Pachete de lucru → Creați]({{opSetting:base_url}}/projects/demo-planning-constructing-project/work_packages/new?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D&type=11).
+                    4.  _Creați și actualizați o diagramă Gantt:_ → Accesați [Gantt chart]({{opSetting:base_url}}/projects/demo-planning-constructing-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22assignee%22%2C%22responsible%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) în navigarea proiectului.
+                    5.  _Activați alte module:_ → Accesați [Setări proiect → Module]({{opSetting:base_url}}/projects/demo-planning-constructing-project/settings/modules).
+                    6.  _Lucrați agile? Creați o nouă tablă:_ → Mergeți la [Tabele]({{opSetting:base_url}}/projects/demo-planning-constructing-project/boards)
 
-                    Here you will find our [User Guides](https://www.openproject.org/docs/user-guide/).
-                    Please let us know if you have any questions or need support. Contact us: [support\[at\]openproject.com](mailto:support@openproject.com).
+                    Aici veți găsi [Ghidurile utilizatorului](https://www.openproject.org/docs/user-guide/).
+                    Vă rugăm să ne anunțați dacă aveți întrebări sau aveți nevoie de asistență. Contactați-ne: [support\[at\]openproject.com](mailto:support@openproject.com).
               item_4:
                 options:
                   name: Membri
@@ -205,7 +205,7 @@ ro:
                   name: Etape
           work_packages:
             item_0:
-              subject: Project kick off construction project
+              subject: Lansarea proiectului de construcție
               description: |-
                 The project kick off initializes the start of the project in your company. Everybody being part of this project should be invited to the kick off for a first briefing.
 
@@ -215,7 +215,7 @@ ro:
               description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
               children:
                 item_0:
-                  subject: Gathering first project information
+                  subject: Colectarea primelor informații despre proiect
                   description: |-
                     ## Goal
 
@@ -243,10 +243,10 @@ ro:
                     *   This overview informs all participants about the decisions made
                     *   ...
                 item_2:
-                  subject: End of basic evaluation
+                  subject: Sfârșitul evaluării de bază
                   description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
             item_2:
-              subject: Preliminary planning
+              subject: Planificare preliminară
               description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
               children:
                 item_0:
@@ -289,22 +289,22 @@ ro:
                 item_0:
                   subject: Finishing design
                   description: |-
-                    ## Goal
+                    ## Obiectivul
 
-                    *   Design is done
-                    *   All parties are happy with the results of the design planning phase
+                    * Designul a fost realizat
+                    * Toate părțile sunt mulțumite de rezultatele fazei de planificare de design
 
-                    ## Description
+                    ## Descrierea
 
-                    *   The design of the project will be finished
-                    *   All parties agree on the design
-                    *   The owner is happy with the results
-                    *   ...
+                    * Design-ul proiectului va fi finalizat
+                    * Toate părțile sunt de acord cu design-ul
+                    * Proprietarul este mulțumit de rezultatele
+                    * ...
                 item_1:
                   subject: Design freeze
                   description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
             item_5:
-              subject: Construction phase
+              subject: Fază construcție
               children:
                 item_0:
                   subject: Start constructing
@@ -423,34 +423,34 @@ ro:
             item_2:
               name: Tasks
             item_3:
-              name: Planificator de echipă
+              name: Planificator echipă
           project-overview:
             widgets:
               item_0:
                 options:
-                  name: Welcome
+                  name: Bun venit
               item_1:
                 options:
-                  name: Noţiuni de bază
+                  name: Noțiuni de bază
                   text: |
-                    We are glad you joined! We suggest to try a few things to get started in OpenProject.
+                    Ne bucurăm că v-ați alăturat! Vă sugerăm să încercați câteva lucruri pentru a începe în OpenProject.
 
-                    This demo project offers roles, workflows and work packages that are specialized for BIM.
+                    Acest proiect demo oferă roluri, fluxuri de lucru și pachete de lucru care sunt specializate pentru BIM.
 
-                    _Try the following steps:_
+                    _Tentați următorii pași:_
 
-                    1.  _Invite new members to your project:_ → Go to [Members]({{opSetting:base_url}}/projects/demo-bim-project/members) in the project navigation.
-                    2.  _Upload and view 3D-models in IFC format:_ → Go to [BCF]({{opSetting:base_url}}/projects/demo-bim-project/bcf) in the project navigation.
-                    3.  _Create and manage BCF issues linked directly in the IFC model:_ → Go to [BCF]({{opSetting:base_url}}/projects/demo-bim-project/bcf) → Create.
-                    4.  _View the work in your projects:_ → Go to [Work packages]({{opSetting:base_url}}/projects/demo-bim-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) in the project navigation.
-                    5.  _Create a new work package:_ → Go to [Work packages → Create]({{opSetting:base_url}}/projects/demo-bim-project/work_packages/new?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D&type=11).
-                    6.  _Create and update a Gantt chart:_ → Go to [Gantt chart]({{opSetting:base_url}}/projects/demo-bim-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22assignee%22%2C%22responsible%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) in the project navigation.
-                    7.  _Activate further modules:_ → Go to [Project settings → Modules]({{opSetting:base_url}}/projects/demo-bim-project/settings/modules).
-                    8.  _Check out the tile view to get an overview of your BCF issues:_ → Go to [Work packages]({{opSetting:base_url}}/projects/demo-bim-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22id%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22card%22%7D)
-                    9.  _Working agile? Create a new board:_ → Go to [Boards]({{opSetting:base_url}}/projects/demo-bim-project/boards)
+                    1.  _Invitați noi membri în proiectul dvs.:_ → Mergeți la [Members]({{opSetting:base_url}}/projects/demo-bim-project/members) în navigarea proiectului.
+                    2.  _Încărcați și vizualizați modele 3D în format IFC:_ → Mergeți la [BCF]({{opSetting:base_url}}/projects/demo-bim-project/bcf) în navigarea proiectului.
+                    3.  _Crearea și gestionarea problemelor BCF legate direct în modelul IFC:_ → Accesați [BCF]({{opSetting:base_url}}/projects/demo-bim-project/bcf) → Creați.
+                    4.  _Vezi lucrările din proiectele tale:_ → Mergi la [Pachete de lucru]({{opSetting:base_url}}/projects/demo-bim-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) în navigarea proiectului.
+                    5.  _Creați un nou pachet de lucru:_ → Accesați [Pachete de lucru → Creați]({{opSetting:base_url}}/projects/demo-bim-project/work_packages/new?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22bcfIssueAssociated%22%2C%22o%22%3A%22%3D%22%2C%22v%22%3A%5B%22f%22%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D&type=11).
+                    6.  _Creați și actualizați o diagramă Gantt:_ → Accesați [Gantt chart]({{opSetting:base_url}}/projects/demo-bim-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22assignee%22%2C%22responsible%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22weeks%22%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22list%22%7D) în navigarea proiectului.
+                    7.  _Activați alte module:_ → Accesați [Setări proiect → Module]({{opSetting:base_url}}/projects/demo-bim-project/settings/modules).
+                    8.  _Verificați vizualizarea în formă de țiglă pentru a obține o imagine de ansamblu a problemelor dvs. BCF: _ → Accesați [Pachete de lucru]({{opSetting:base_url}}/projects/demo-bim-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22priority%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22id%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22card%22%7D)
+                    9.  Lucrați agile? Creați o nouă tablă:_ → Mergeți la [Tabele]({{opSetting:base_url}}/projects/demo-bim-project/boards)
 
-                    Here you will find our [User Guides](https://www.openproject.org/docs/user-guide/).
-                    Please let us know if you have any questions or need support. Contact us: [support\[at\]openproject.com](mailto:support@openproject.com).
+                    Aici veți găsi [Ghidurile utilizatorului](https://www.openproject.org/docs/user-guide/).
+                    Vă rugăm să ne anunțați dacă aveți întrebări sau aveți nevoie de asistență. Contactați-ne: [support\[at\]openproject.com](mailto:support@openproject.com).
               item_4:
                 options:
                   name: Membri
@@ -474,21 +474,21 @@ ro:
                 item_0:
                   subject: Gathering the project specific data and information for the BIM model
                   description: |-
-                    ## Goal
+                    ## Obiectiv
 
-                    *   Identify the information strategy for the customer (e.g. by using plain language questions)
-                    *   If provided, analyze the customer information requirements for the BIM model
-                    *   Define an information delivery strategy according to the customers needs
+                    * Identificarea strategiei de informare a clientului (de exemplu, prin utilizarea întrebărilor în limbaj simplu)
+                    * Dacă sunt furnizate, analizarea cerințelor de informare ale clientului pentru modelul BIM
+                    * Definirea unei strategii de furnizare a informațiilor în funcție de nevoile clientului
 
-                    ## Description
+                    ## Descriere
 
-                    *   Analyzing the customers needs and goals for using the BIM methodology
-                    *   Results of this tasks should be:
-                    *   The requirements for the project
-                    *   A strategy for the delivery phase
-                    *   ...
+                    * Analizarea nevoilor și a obiectivelor clienților pentru utilizarea metodologiei BIM
+                    * Rezultatele acestei sarcini ar trebui să fie:
+                    * Cerințele pentru proiect
+                    * O strategie pentru faza de livrare
+                    * ...
                 item_1:
-                  subject: Creating the BIM execution plan
+                  subject: Crearea planului de execuție BIM
                   description: |-
                     # Obiectivul
 
@@ -501,41 +501,41 @@ ro:
                     * Pentru a gestiona interfețele tehnologice, un software topologie va fi definit și analizat și verificat
                     * ...
                 item_2:
-                  subject: Completion of the BIM execution plan
+                  subject: Finalizarea planului de execuție BIM
                   description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
             item_2:
-              subject: End of preparation phase
+              subject: Sfârșit fază pregătire
               description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
             item_3:
               subject: Creating initial BIM model
               description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
               children:
                 item_0:
-                  subject: Modelling initial BIM model
+                  subject: Realizare modelului BIM inițial
                   description: |-
-                    # Goal
+                    # Obiectiv
 
-                    *   Modelling the initial BIM model
-                    *   Creating a BIM model for the whole project team
+                    * Realizarea modelului BIM inițial
+                    * Crearea unui model BIM pentru întreaga echipă de proiect
 
-                    # Description
+                    # Descriere
 
-                    *   According to the gathered data from the customer, the initial model will be modelled
-                    *   The model shall be modelled according to the LOD Matrices and contain the information needed
-                    *   ...
+                    *  Modelul inițial va fi realizat conform datelor colectate de la client
+                    * Modelul va fi realizat în conformitate cu matricele LOD și va conține informațiile necesare
+                    * ...
                 item_1:
                   subject: Initial, internal model check and revising
                   description: |-
-                    # Goal
+                    # Obiectiv
 
-                    *   Submitting a BIM model according to the defined standards
+                    * Trimiterea unui model BIM în conformitate cu standardele definite
 
-                    # Description
+                    # Descriere
 
-                    *   The model shall be checked, according to the defined standards (conventions, LOD, ...) and revised
-                    *   ...
+                    * Modelul va fi verificat, în conformitate cu standardele definite (convenții, LOD, ...) și revizuit
+                    * ...
                 item_2:
-                  subject: Submitting initial BIM model
+                  subject: Trimiterea modelului BIM inițial
                   description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
             item_4:
               subject: Modelling, first cycle
@@ -554,17 +554,17 @@ ro:
                     *   The external model will be referenced in the BIM platform, thus used for modelling the internal model
                     *   ...
                 item_1:
-                  subject: Modelling the BIM model
+                  subject: Realizare modelului BIM inițial
                   description: |-
-                    # Goal
+                    # Obiectiv
 
-                    *   Creating a BIM model for the project
-                    *   Creating a BIM model for the whole project team
+                    * Crearea unui model BIM pentru proiect
+                    * Crearea unui model BIM pentru întreaga echipă de proiect
 
-                    # Description
+                    # Descriere
 
-                    *   The model will be created according to the BIM execution plan
-                    *   ...
+                    * Modelul va fi creat în conformitate cu planul de execuție BIM
+                    * ...
                 item_2:
                   subject: First Cycle, internal model check and revising
                   description: |-
@@ -617,7 +617,7 @@ ro:
               subject: Finishing modelling & coordinating, n-th cycle
               description: This type is hierarchically a parent of the types &quot;Clash&quot; and &quot;Request&quot;, thus represents a general note.
             item_11:
-              subject: Use model for construction phase
+              subject: Utilizează model pentru faza construcție
               children:
                 item_0:
                   subject: Handover model for construction crew
@@ -649,7 +649,7 @@ ro:
                 item_2:
                   subject: Finish construction
             item_12:
-              subject: Issue management, construction phase
+              subject: Gestionare probleme, fază construcție
             item_13:
               subject: Handover for Facility Management
               description: |-
@@ -696,7 +696,7 @@ ro:
             item_6:
               name: Tasks
             item_7:
-              name: Planificator de echipă
+              name: Planificator echipă
           boards:
             bcf:
               name: BCF issues
@@ -704,28 +704,28 @@ ro:
             widgets:
               item_0:
                 options:
-                  name: Welcome
+                  name: Bun venit
               item_1:
                 options:
-                  name: Noţiuni de bază
+                  name: Noțiuni de bază
                   text: |
-                    We are glad you joined! We suggest to try a few things to get started in OpenProject.
+                    Ne bucurăm că v-ați alăturat! Vă sugerăm să încercați câteva lucruri pentru a începe în OpenProject.
 
-                    This demo project shows BCF management functionalities.
+                    Acest proiect demo prezintă funcționalitățile de gestionare a BCF.
 
-                    _Try the following steps:_
+                    _Tentați următorii pași:_
 
-                    1.  _Invite new members to your project:_ → Go to [Members]({{opSetting:base_url}}/projects/demo-bcf-management-project/members?show_add_members=true) in the project navigation.
-                    2.  _Upload and view 3D-models in IFC format:_ → Go to [BCF]({{opSetting:base_url}}/projects/demo-bim-project/bcf) in the project navigation.
-                    3.  _Create and manage BCF issues linked directly in the IFC model:_ → Go to [BCF]({{opSetting:base_url}}/projects/demo-bim-project/bcf) → Create.
-                    4.  _View the BCF files in your project:_ → Go to [BCF]({{opSetting:base_url}}/projects/demo-bcf-management-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22status%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22id%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22card%22%7D) in the project navigation.
-                    5.  _Load your BCF files:_ → Go to [BCF → Import.]({{opSetting:base_url}}/projects/demo-bcf-management-project/issues/upload)
-                    6.  _Create and update a Gantt chart:_ → Go to [Gantt chart]({{opSetting:base_url}}/projects/demo-bcf-management-project/work_packages?query_props=%7B%22c%22%3A%5B%22id%22%2C%22subject%22%2C%22startDate%22%2C%22dueDate%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22days%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22status%22%2C%22o%22%3A%22o%22%2C%22v%22%3A%5B%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%7D) in the project navigation.
-                    7.  _Activate further modules:_ → Go to [Project settings → Modules.]({{opSetting:base_url}}/projects/demo-bcf-management-project/settings/modules)
-                    8.  _You love the agile approach? Create a board:_ → Go to [Boards]({{opSetting:base_url}}/projects/demo-bcf-management-project/boards).
+                    1.  _Invitați noi membri în proiectul dvs.:_ → Accesați [Members]({{opSetting:base_url}}/projects/demo-bcf-management-project/members?show_add_members=true) în navigarea proiectului.
+                    2.  _Încărcați și vizualizați modele 3D în format IFC:_ → Mergeți la [BCF]({{opSetting:base_url}}/projects/demo-bim-project/bcf) în navigarea proiectului.
+                    3.  _Crearea și gestionarea problemelor BCF legate direct în modelul IFC:_ → Accesați [BCF]({{opSetting:base_url}}/projects/demo-bim-project/bcf) → Creați.
+                    4.  _ Vizualizați fișierele BCF din proiect: _ → Accesați [BCF]({{opSetting:base_url}}/projects/demo-bcf-management-project/work_packages?query_props=%7B%22c%22%3A%5B%22type%22%2C%22id%22%2C%22subject%22%2C%22status%22%2C%22assignee%22%2C%22priority%22%5D%2C%22hl%22%3A%22status%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22id%3Aasc%22%2C%22f%22%3A%5B%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%2C%22dr%22%3A%22card%22%7D) în navigarea proiectului.
+                    5.  _Încărcați fișierele BCF:_ → Mergeți la [BCF → Import.]({{opSetting:base_url}}/projects/demo-bcf-management-project/issues/upload)
+                    6.  _Creați și actualizați o diagramă Gantt:_ → Accesați [Gantt chart]({{opSetting:base_url}}/projects/demo-bcf-management-project/work_packages?query_props=%7B%22c%22%3A%5B%22id%22%2C%22subject%22%2C%22startDate%22%2C%22dueDate%22%5D%2C%22tv%22%3Atrue%2C%22tzl%22%3A%22days%22%2C%22hi%22%3Atrue%2C%22g%22%3A%22%22%2C%22t%22%3A%22startDate%3Aasc%22%2C%22f%22%3A%5B%7B%22n%22%3A%22status%22%2C%22o%22%3A%22o%22%2C%22v%22%3A%5B%5D%7D%5D%2C%22pa%22%3A1%2C%22pp%22%3A100%7D) în navigarea proiectului.
+                    7.  _Activați alte module:_ → Accesați [Setări proiect → Module.]({{opSetting:base_url}}/projects/demo-bcf-management-project/settings/modules)
+                    8.  _Îți place abordarea agilă? Creați un board:_ → Accesați [Boards]({{opSetting:base_url}}/projects/demo-bcf-management-project/boards).
 
-                    Here you will find our [User Guides](https://www.openproject.org/docs/user-guide/).
-                    Please let us know if you have any questions or need support. Contact us: [support\[at\]openproject.com](mailto:support@openproject.com).
+                    Aici veți găsi [Ghidurile utilizatorului](https://www.openproject.org/docs/user-guide/).
+                    Vă rugăm să ne anunțați dacă aveți întrebări sau aveți nevoie de asistență. Contactați-ne: [support\[at\]openproject.com](mailto:support@openproject.com).
               item_4:
                 options:
                   name: Membri

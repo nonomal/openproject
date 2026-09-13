@@ -34,7 +34,7 @@
 # Loads spec_helper from OpenProject core
 # This will include any support file from OpenProject core
 require "spec_helper"
-require "dry/container/stub"
+require "dry/core/container/stub"
 
 STORAGES_CASSETTE_LIBRARY_DIR = "modules/storages/spec/support/fixtures/vcr_cassettes"
 
@@ -45,6 +45,12 @@ VCR.configure do |config|
   end
   config.filter_sensitive_data("<ACCESS_TOKEN>") do
     ENV.fetch("NEXTCLOUD_LOCAL_OAUTH_CLIENT_ACCESS_TOKEN", "MISSING_NEXTCLOUD_LOCAL_OAUTH_CLIENT_ACCESS_TOKEN")
+  end
+  config.filter_sensitive_data("<SHAREPOINT_CLIENT_SECRET>") do
+    ENV.fetch("SHAREPOINT_TEST_OAUTH_CLIENT_SECRET", "MISSING_SHARE_POINT_TEST_OAUTH_CLIENT_SECRET")
+  end
+  config.filter_sensitive_data("<SHAREPOINT_CLIENT_ID>") do
+    ENV.fetch("SHAREPOINT_TEST_OAUTH_CLIENT_ID", "MISSING_SHARE_POINT_TEST_OAUTH_CLIENT_ID")
   end
 end
 
@@ -62,8 +68,14 @@ end
 Dir[File.join(File.dirname(__FILE__), "support/**/*.rb")].each { |f| require f }
 
 RSpec.configure do |config|
-  config.prepend_before { Storages::Peripherals::Registry.enable_stubs! }
-  config.append_after { Storages::Peripherals::Registry.unstub }
+  config.include Dry::Monads[:result]
+
+  config.prepend_before do
+    Storages::Adapters::Registry.enable_stubs!
+  end
+  config.append_after do
+    Storages::Adapters::Registry.unstub
+  end
 
   config.define_derived_metadata(file_path: %r{/modules/storages/spec}) do |metadata|
     metadata[:vcr_cassette_library_dir] = STORAGES_CASSETTE_LIBRARY_DIR

@@ -31,82 +31,82 @@
 require "spec_helper"
 require_module_spec_helper
 
-RSpec.describe Storages::CreateFolderService do
-  subject(:service) { described_class.call(storage:, user:, name:, parent_id:) }
-
-  let(:user) { create(:admin) }
-  let(:name) { "TestFolderName" }
-
-  context "when storage is nextcloud" do
-    let(:storage) { create(:nextcloud_storage_configured) }
-    let(:parent_id) { file_info.id }
-
-    let(:file_info) do
-      Storages::StorageFileInfo.new(
+module Storages
+  RSpec.describe CreateFolderService do
+    let(:user) { create(:admin) }
+    let(:parent_file_info) do
+      Adapters::Results::StorageFileInfo.build(
         status: "OK",
         status_code: 200,
         id: SecureRandom.hex,
         name: "/",
         location: "/Path/To/Parent/Next"
-      )
+      ).value!
     end
 
-    let(:create_folder_command) { class_double(Storages::Peripherals::StorageInteraction::Nextcloud::CreateFolderCommand) }
+    let(:folder_name) { "TestFolderName" }
+    let(:parent_id) { parent_file_info.id }
+    let(:auth_strategy) { Adapters::Registry["#{storage}.authentication.user_bound"].call(user, storage) }
+
+    let(:create_folder_input) do
+      Adapters::Input::CreateFolder.build(folder_name:, parent_location: parent_file_info.id).value!
+    end
+
+    subject(:service) { described_class.new(storage) }
 
     before do
-      file_info_mock = class_double(Storages::Peripherals::StorageInteraction::Nextcloud::FileInfoQuery)
-      allow(file_info_mock).to receive(:call).with(
-        storage: storage,
-        auth_strategy: instance_of(Storages::Peripherals::StorageInteraction::AuthenticationStrategies::Strategy),
-        file_id: file_info.id
-      ).and_return(ServiceResult.success(result: file_info))
-      Storages::Peripherals::Registry.stub("nextcloud.queries.file_info", file_info_mock)
-
-      allow(create_folder_command).to receive(:call).and_return(ServiceResult.success)
-      Storages::Peripherals::Registry.stub("nextcloud.commands.create_folder", create_folder_command)
+      Adapters::Registry.stub("#{storage}.commands.create_folder", create_folder_command)
+      allow(create_folder_command).to receive(:call).and_return(Success("AwesomeFolderInfo"))
     end
 
-    it "calls the appropriate command with the expected parameters" do
-      service
+    context "when storage is nextcloud" do
+      let(:storage) { create(:nextcloud_storage) }
 
-      expect(create_folder_command).to have_received(:call).with(
-        storage:,
-        auth_strategy: instance_of(Storages::Peripherals::StorageInteraction::AuthenticationStrategies::Strategy),
-        folder_name: name,
-        parent_location: Storages::Peripherals::ParentFolder.new(file_info.location)
-      ).once
-    end
-  end
+      let(:create_folder_input) do
+        # FIXME: Nextcloud uses the path and not the parent ID as the location. This is prime target for refactor.
+        Adapters::Input::CreateFolder.build(folder_name:, parent_location: parent_file_info.location).value!
+      end
 
-  context "when storage is one_drive" do
-    let(:storage) { create(:one_drive_storage) }
-    let(:parent_id) { file_info.id }
+      let(:create_folder_command) { class_double(Adapters::Providers::Nextcloud::Commands::CreateFolderCommand) }
 
-    let(:file_info) do
-      Storages::StorageFileInfo.new(
-        status: "OK",
-        status_code: 200,
-        id: "/Path/To/Parent/One",
-        name: "/"
-      )
-    end
+      before do
+        allow(StorageFileService)
+          .to receive(:call).with(storage:, user:, file_id: parent_id)
+                            .and_return(ServiceResult.success(result: parent_file_info))
+      end
 
-    let(:create_folder_command) { class_double(Storages::Peripherals::StorageInteraction::Nextcloud::CreateFolderCommand) }
+      it "calls the appropriate command with the expected parameters" do
+        service.call(user:, folder_name:, parent_id:)
 
-    before do
-      allow(create_folder_command).to receive(:call).and_return(ServiceResult.success)
-      Storages::Peripherals::Registry.stub("one_drive.commands.create_folder", create_folder_command)
+        expect(create_folder_command)
+          .to have_received(:call).with(storage:, auth_strategy:, input_data: create_folder_input).once
+      end
     end
 
-    it "calls the appropriate command with the expected parameters" do
-      service
+    context "when storage is one_drive" do
+      let(:storage) { create(:one_drive_storage) }
+      let(:parent_id) { parent_file_info.id }
+      let(:create_folder_command) { class_double(Adapters::Providers::OneDrive::Commands::CreateFolderCommand) }
 
-      expect(create_folder_command).to have_received(:call).with(
-        storage:,
-        auth_strategy: instance_of(Storages::Peripherals::StorageInteraction::AuthenticationStrategies::Strategy),
-        folder_name: name,
-        parent_location: Storages::Peripherals::ParentFolder.new(file_info.id)
-      ).once
+      it "calls the appropriate command with the expected parameters" do
+        service.call(user:, folder_name:, parent_id:)
+
+        expect(create_folder_command)
+          .to have_received(:call).with(storage:, auth_strategy:, input_data: create_folder_input).once
+      end
+    end
+
+    context "when storage is sharepoint" do
+      let(:storage) { create(:sharepoint_storage) }
+      let(:parent_id) { parent_file_info.id }
+      let(:create_folder_command) { class_double(Adapters::Providers::Sharepoint::Commands::CreateFolderCommand) }
+
+      it "calls the appropriate command with the expected parameters" do
+        service.call(user:, folder_name:, parent_id:)
+
+        expect(create_folder_command)
+          .to have_received(:call).with(storage:, auth_strategy:, input_data: create_folder_input).once
+      end
     end
   end
 end

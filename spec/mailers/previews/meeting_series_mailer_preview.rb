@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -35,7 +37,7 @@ class MeetingSeriesMailerPreview < ActionMailer::Preview
     user = FactoryBot.build_stubbed(:user, language:)
     meeting = RecurringMeeting.last
 
-    MeetingSeriesMailer.template_completed(meeting, user, actor)
+    MeetingSeriesMailer.invited(meeting, user, actor)
   end
 
   def rescheduled

@@ -53,9 +53,9 @@ module Projects
     def sub_header_data_attributes
       {
         controller: "filter--filters-form",
-        "application-target": "dynamic",
-        "filter--filters-form-perform-turbo-requests-value": true,
-        "filter--filters-form-clear-button-id-value": clear_button_id
+        "filter--filters-form-turbo-stream-request-value": true,
+        "filter--filters-form-clear-button-id-value": clear_button_id,
+        "filter--filters-form-display-filters-value": filters_expanded?
       }
     end
 
@@ -70,6 +70,46 @@ module Projects
 
     def clear_button_id
       "project-filters-form-clear-button"
+    end
+
+    def new_workspace_path(type)
+      return unless Project.workspace_types.key?(type)
+
+      url_for([:new, type.to_sym])
+    end
+
+    def new_workspace_label(type)
+      I18n.t(:"label_#{type}")
+    end
+
+    def allowed_new_workspace_types
+      @allowed_new_workspace_types ||= [].tap do |types|
+        types << "portfolio" if @current_user.allowed_globally?(:add_portfolios)
+        types << "program" if @current_user.allowed_globally?(:add_programs)
+        types << "project" if @current_user.allowed_globally?(:add_project)
+      end
+    end
+
+    def for_a_single_new_allowed_type
+      return unless allowed_new_workspace_types.length == 1
+
+      yield allowed_new_workspace_types[0]
+    end
+
+    def for_multiple_new_allowed_types
+      return unless allowed_new_workspace_types.length > 1
+
+      yield allowed_new_workspace_types
+    end
+
+    def workspace_type_enterprise_feature_allowed?(workspace_type)
+      return EnterpriseToken.allows_to?(:portfolio_management) if workspace_type.in?(%w[portfolio program])
+
+      true
+    end
+
+    def filters_expanded?
+      params[:filters].present?
     end
   end
 end

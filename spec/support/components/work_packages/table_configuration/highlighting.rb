@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -45,7 +47,7 @@ module Components
         choose "Entire row by"
 
         # Open select field
-        within(page.all(".form--field")[1]) do
+        within(page.all(".form--field")[3]) do
           page.find(".ng-input input").click
         end
         page.find(".ng-dropdown-panel .ng-option", text: label).click
@@ -57,7 +59,7 @@ module Components
         choose "Highlighted attribute(s)"
 
         # Open select field
-        within(page.all(".form--field")[0]) do
+        within(page.all(".form--field")[1]) do
           page.find(".ng-input input").click
         end
 
@@ -83,6 +85,7 @@ module Components
 
         retry_block do
           find(".op-tab-row--link", text: "HIGHLIGHTING", wait: 10).click
+          expect(page).to have_css(".op-tab-row--link_selected", text: "HIGHLIGHTING", wait: 10)
         end
       end
 

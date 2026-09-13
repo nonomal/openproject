@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Components
   class GlobalSearch
     include Capybara::DSL
@@ -5,11 +7,11 @@ module Components
     include RSpec::Matchers
 
     def container
-      page.find(".top-menu-search--input")
+      page.find(selector)
     end
 
     def selector
-      ".top-menu-search--input"
+      ".global-search"
     end
 
     def input
@@ -17,7 +19,7 @@ module Components
     end
 
     def dropdown
-      container.find(".ng-dropdown-panel")
+      page.find(".ng-dropdown-panel")
     end
 
     def click_input
@@ -41,8 +43,23 @@ module Components
       SeleniumHubWaiter.wait
     end
 
+    def open_tab(tab_id)
+      page.within_test_selector("search-tabs") do
+        name = tab_id.is_a?(Symbol) ? OpenProject::GlobalSearch.tab_name(tab_id.to_s) : tab_id
+        click_on(name)
+      end
+    end
+
+    def expect_active_tab(id)
+      expect(page).to have_css("#{page.test_selector("search-tab-#{id}")}[aria-current]")
+    end
+
     def expect_open
-      expect(page).to have_selector(container)
+      expect(page).to have_selector(selector)
+    end
+
+    def expect_closed
+      expect(page).to have_no_selector("#{selector}.expanded")
     end
 
     def submit_in_project_and_subproject_scope

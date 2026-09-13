@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,10 +32,17 @@
 # Intended to be used by the AccountController to implement the user consent
 # check.
 module Accounts::UserConsent
+  extend ActiveSupport::Concern
+
   include ::UserConsentHelper
 
+  included do
+    before_action :require_consenting_user,
+                  only: %i[consent confirm_consent]
+  end
+
   def consent
-    if user_consent_required? && consenting_user&.consent_expired?
+    if user_consent_required? && consenting_user.consent_expired?
       render "account/consent"
     else
       consent_finished
@@ -41,10 +50,8 @@ module Accounts::UserConsent
   end
 
   def confirm_consent
-    user = consenting_user
-
-    if user.present? && consent_param?
-      approve_consent!(user)
+    if consent_param?
+      approve_consent!(consenting_user)
     else
       reject_consent!
     end
@@ -63,8 +70,14 @@ module Accounts::UserConsent
     redirect_to authentication_stage_failure_path :consent
   end
 
+  private
+
+  def require_consenting_user
+    reject_consent! unless consenting_user
+  end
+
   def consenting_user
-    User.find_by id: session[:authenticated_user_id]
+    @consenting_user ||= User.find_by id: session[:authenticated_user_id]
   end
 
   def approve_consent!(user)

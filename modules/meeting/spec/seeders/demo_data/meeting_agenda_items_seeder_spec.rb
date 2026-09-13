@@ -101,5 +101,10 @@ RSpec.describe Meetings::DemoData::MeetingAgendaItemsSeeder do
         title: nil
       )
     end
+
+    it "correctly sets the required references" do
+      expect(seeder.all_required_references)
+        .to contain_exactly(:user_alice, :user_bob, :weekly_meeting, :work_package_some_important_task)
+    end
   end
 end

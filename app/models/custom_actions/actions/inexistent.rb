@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,6 +32,8 @@ class CustomActions::Actions::Inexistent < CustomActions::Actions::Base
   def self.key
     :inexistent
   end
+
+  def apply(*); end
 
   def validate(errors)
     errors.add :actions, :does_not_exist

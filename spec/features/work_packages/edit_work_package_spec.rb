@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 require "features/page_objects/notification"
 
@@ -115,7 +117,7 @@ RSpec.describe "edit work package", :js do
     end
   end
 
-  it "allows updating and seeing the results" do
+  it "allows updating and seeing the results", with_settings: { work_package_multiple_versions: false } do
     wp_page.update_attributes subject: "a new subject",
                               type: type2.name,
                               combinedDate: ["2013-03-04", "2013-03-20"],
@@ -124,7 +126,7 @@ RSpec.describe "edit work package", :js do
                               estimatedTime: "10",
                               remainingTime: "7",
                               priority: priority2.name,
-                              version: version.name,
+                              targetVersions: version.name,
                               category: category.name,
                               status: status2.name,
                               description: "a new description"
@@ -140,7 +142,7 @@ RSpec.describe "edit work package", :js do
                               description: "a new description",
                               priority: priority2.name,
                               status: status2.name,
-                              version: version.name,
+                              targetVersions: version.name,
                               category: category.name
 
     activity_tab.expect_journal_changed_attribute(
@@ -273,14 +275,12 @@ RSpec.describe "edit work package", :js do
         completer = wp_page.edit_field field_name
         completer.activate!
 
-        options = visible_user_auto_completer_options
-
         expected_options = [
           { name: manager.name, email: nil },  # Manager's email should not be visible
           { name: dev.name, email: dev.mail }  # Developer's email should be visible
         ]
 
-        expect(options).to eq(expected_options)
+        expect_visible_user_auto_completer_options(expected_options)
       end
     end
 
@@ -288,8 +288,6 @@ RSpec.describe "edit work package", :js do
       it "does show you the email of other users" do
         completer = wp_page.edit_field field_name
         completer.activate!
-
-        options = visible_user_auto_completer_options
 
         expected_options = [
           # With the right permissions, you can see other users email address
@@ -300,7 +298,7 @@ RSpec.describe "edit work package", :js do
             email: dev.mail }
         ]
 
-        expect(options).to eq(expected_options)
+        expect_visible_user_auto_completer_options(expected_options)
       end
     end
 

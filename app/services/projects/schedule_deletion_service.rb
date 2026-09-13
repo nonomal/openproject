@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -39,7 +41,7 @@ module Projects
 
     private
 
-    def before_perform(_params, service_result)
+    def before_perform(service_result)
       return service_result if model.archived?
 
       Projects::ArchiveService

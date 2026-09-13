@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,8 +29,13 @@
 #++
 
 class Setting < ApplicationRecord
+  class NotWritableError < StandardError; end
+
+  extend Accessors
   extend Aliases
   extend MailSettings
+
+  PASSWORD_MAX_LENGTH = 128
 
   ENCODINGS = %w(US-ASCII
                  windows-1250
@@ -70,73 +77,6 @@ class Setting < ApplicationRecord
                  Big5-HKSCS
                  TIS-620).freeze
 
-  class << self
-    def create_setting(name, value = {})
-      ::Settings::Definition.add(name, **value.symbolize_keys)
-    end
-
-    def create_setting_accessors(name)
-      return if [:installation_uuid].include?(name.to_sym)
-
-      # Defines getter and setter for each setting
-      # Then setting values can be read using: Setting.some_setting_name
-      # or set using Setting.some_setting_name = "some value"
-      src = <<-END_SRC
-        def self.#{name}
-          # when running too early, there is no settings table. do nothing
-          self[:#{name}] if settings_table_exists_yet?
-        end
-
-        def self.#{name}?
-          # when running too early, there is no settings table. do nothing
-          return unless settings_table_exists_yet?
-          definition = Settings::Definition[:#{name}]
-
-          if definition.format != :boolean
-            ActiveSupport::Deprecation.new.warn "Calling #{self}.#{name}? is deprecated since it is not a boolean", caller_locations
-          end
-
-          value = self[:#{name}]
-          ActiveRecord::Type::Boolean.new.cast(value) || false
-        end
-
-        def self.#{name}=(value)
-          if settings_table_exists_yet?
-            self[:#{name}] = value
-          else
-            logger.warn "Trying to save a setting named '#{name}' while there is no 'setting' table yet. This setting will not be saved!"
-            nil # when running too early, there is no settings table. do nothing
-          end
-        end
-
-        def self.#{name}_writable?
-          Settings::Definition[:#{name}].writable?
-        end
-      END_SRC
-      class_eval src, __FILE__, __LINE__
-    end
-
-    def method_missing(method, *, &)
-      if exists?(accessor_base_name(method))
-        create_setting_accessors(accessor_base_name(method))
-
-        send(method, *)
-      else
-        super
-      end
-    end
-
-    def respond_to_missing?(method_name, include_private = false)
-      exists?(accessor_base_name(method_name)) || super
-    end
-
-    private
-
-    def accessor_base_name(name)
-      name.to_s.sub(/(_writable\?)|(\?)|=\z/, "")
-    end
-  end
-
   validates :name,
             uniqueness: true,
             inclusion: {
@@ -152,6 +92,13 @@ class Setting < ApplicationRecord
               only_integer: true,
               allow_nil: true,
               if: ->(setting) { setting.nullable_integer_format? }
+            }
+  validates :value,
+            numericality: {
+              only_integer: true,
+              greater_than_or_equal_to: 1,
+              less_than_or_equal_to: PASSWORD_MAX_LENGTH,
+              if: ->(setting) { setting.name == "password_min_length" }
             }
 
   def nullable_integer_format?
@@ -172,7 +119,7 @@ class Setting < ApplicationRecord
 
   def set_value!(val, force: false)
     unless force || definition.writable?
-      raise NoMethodError, "#{name} is not writable but can be set through env vars or configuration.yml file."
+      raise NotWritableError, "#{name} is not writable but can be set through env vars or configuration.yml file."
     end
 
     self[:value] = formatted_value(val)
@@ -219,28 +166,6 @@ class Setting < ApplicationRecord
     Settings::Definition[name].present?
   end
 
-  def self.installation_uuid
-    if settings_table_exists_yet?
-      # we avoid the default getters and setters since the cache messes things up
-      setting = find_or_initialize_by(name: "installation_uuid")
-      if setting.value.blank?
-        setting.value = generate_installation_uuid
-        setting.save!
-      end
-      setting.value
-    else
-      "unknown"
-    end
-  end
-
-  def self.generate_installation_uuid
-    if Rails.env.test?
-      "test"
-    else
-      SecureRandom.uuid
-    end
-  end
-
   %i[emails_header emails_footer].each do |mail|
     src = <<-END_SRC
     def self.localized_#{mail}
@@ -269,27 +194,66 @@ class Setting < ApplicationRecord
     RequestStore.delete :settings_updated_at
   end
 
-  # Returns the Setting instance for the setting named name
-  # The setting can come from either
-  # * The database
-  # * The cached database value
-  # * The setting definition
-  #
-  # In case the definition is overwritten, e.g. via an ENV var,
-  # the definition value will always be used.
+  # Returns the value of the setting named name
+  # The value will be retrieved from that order:
+  # 1. An overwritten definition (e.g., when provided as ENV var)
+  # 2. The cached database value
+  # 3. The setting definition default
   def self.cached_or_default(name)
     name = name.to_s
-    raise "There's no setting named #{name}" unless exists? name
+    raise "There's no setting named #{name}" unless exists?(name)
 
     definition = Settings::Definition[name]
 
-    value = if definition.writable?
-              cached_settings.fetch(name) { definition.value }
-            else
-              definition.value
-            end
+    # Non-writable settings always use definition value (e.g., from ENV vars)
+    return deserialize(name, definition.value) unless definition.writable?
 
-    deserialize(name, value)
+    resolve_writable_value(name, definition)
+  end
+
+  # Resolves the value for a writable setting by checking (in order):
+  # 1. Cache (RequestStore, or Rails.cache populated from DB)
+  # 2. Persisted default value if setting has persist_on_first_read?
+  # 3. Definition default
+  def self.resolve_writable_value(name, definition)
+    settings_cache = cached_settings
+    if settings_cache.key?(name)
+      deserialize(name, settings_cache[name])
+    elsif definition.persist_on_first_read?
+      persist_default_value(name)
+    else
+      deserialize(name, definition.value)
+    end
+  end
+
+  # Persists the setting's default value to the database on first read.
+  # Uses advisory locking to prevent race conditions when multiple processes
+  # attempt to initialize the same setting concurrently.
+  #
+  # After persisting, clears the cache so subsequent calls to cached_settings
+  # will include the newly created setting.
+  def self.persist_default_value(name)
+    definition = Settings::Definition[name]
+    return definition.value unless settings_table_exists_yet?
+
+    OpenProject::Mutex.with_advisory_lock(Setting, "persist_default_#{name}") do
+      # Once we acquired the lock, check again whether the setting was not created by now.
+      setting = find_by(name:)
+      return setting.value if setting
+
+      generated_value = definition.default
+      create!(name:, value: formatted_value_for(generated_value, definition))
+
+      # Clear cache so the next setting call populates it with this value
+      clear_cache
+      generated_value
+    end
+  end
+
+  def self.formatted_value_for(value, definition)
+    return value.to_yaml if definition.serialized?
+
+    value.to_s
   end
 
   # Returns the settings from two levels of cache
@@ -339,7 +303,7 @@ class Setting < ApplicationRecord
       nil
     elsif definition.serialized? && value.is_a?(String)
       deserialize_hash(value)
-    elsif value != "".freeze && !value.nil?
+    elsif value != "" && !value.nil?
       read_formatted_setting(value, definition.format)
     elsif definition.format == :string
       value

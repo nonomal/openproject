@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module OAuthConnectionsHelpers
   def mock_one_drive_authorization_validation(with: {})
     me_response = {

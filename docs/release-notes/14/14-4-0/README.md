@@ -10,7 +10,7 @@ release_date: 2024-08-14
 
 Release date: 2024-08-14
 
-We released [OpenProject 14.4.0](https://community.openproject.org/versions/2063). The release contains several bug fixes and we recommend updating to the newest version. 
+We released [OpenProject 14.4.0](https://community.openproject.org/versions/2063). The release contains several bug fixes and we recommend updating to the newest version.
 
 In these Release Notes, we will give an overview of important technical updates as well as important feature changes. At the end, you will find a complete list of all changes and bug fixes.
 
@@ -22,7 +22,7 @@ OpenProject 14.4 introduces a new feature that allows OpenID clients, such as Ne
 
 With this feature, the OpenProject API will validate access tokens issued by the OpenID provider (Keycloak) by checking the token's signature and authenticating the user using the sub claim value. This integration ensures secure and efficient API authentication for OpenID clients.
 
-For more details, take a look at our [API documentation](../../../api/introduction/#oidc-provider-generated-jwt-as-a-bearer-token).
+For more details, take a look at our [API documentation](../../../api/introduction/#oauth-20-using-an-external-authorization-server).
 
 ### Improve error messages and logs of automatically managed project folders synchronization services/jobs
 
@@ -32,19 +32,19 @@ Up to now, the system faced issues such as unclear error messages, insufficient 
 
 Additionally, the logging structure has been enhanced to provide more detailed, tagged entries for better traceability.
 
-For more details, see https://community.openproject.org/wp/56861.
+For more details, see this [work package](https://community.openproject.org/wp/56861).
 
 ## Important feature changes
 
 ### Personal settings: Dark mode
 
-Dark mode for OpenProject is finally here! In the '[My account](../../../user-guide/account-settings/#profile-settings)' section under 'Settings', there is an **option labeled 'Mode' where users can now select 'Dark (Beta).'** – as an alternative to the light mode. When the dark mode is selected, the change applies only to that user, not to the entire instance. 
+Dark mode for OpenProject is finally here! In the '[My account](../../../user-guide/account-settings/interface/#look-and-feel)' section under 'Interface', there is an **option labeled 'Mode' where users can now select 'Dark (Beta).'** – as an alternative to the light mode. When the dark mode is selected, the change applies only to that user, not to the entire instance.
 
 ![News setting for dark mode in OpenProject, displayed in dark mode](openproject-14-4-dark-mode.png)
 
 Please note that this feature has been tested extensively, and we believe it works well. However, users might encounter issues that we haven't seen. Therefore, it will remain in beta for now, until we resolve all potential errors and ensure there are no issues.
 
-For more details, see https://community.openproject.org/wp/36233.
+For more details, see this [work package](https://community.openproject.org/wp/36233).
 
 ### Project attributes: Separate permissions for viewing and editing
 
@@ -56,7 +56,7 @@ The update adds **two new permissions: 'View project attributes' and 'Edit proje
 
 Permissions are now independent, so users with 'Edit project' can lack the new permissions. Users without 'View project attributes' cannot see or search project attributes in the overview, settings, list, exports, API, or Schema API. Users without 'Edit project attributes' cannot modify these attributes but can view them if they have view permission.
 
-For more details, see https://community.openproject.org/wp/50844.
+For more details, visit this [work package](https://community.openproject.org/wp/50844).
 
 ### Status-based progress reporting: Freely input % complete values for statuses
 
@@ -76,7 +76,7 @@ Last month, we already released a connection validation feature for OneDrive/Sha
 
 The validations include checking if the external storage server is reachable, verifying for SSL errors, ensuring the server is accessible, confirming that necessary apps are activated on Nextcloud and that their versions are compatible, and validating the app password.
 
-Read more about connection validation for Nextcloud in our [system admin guide](../../../system-admin-guide/files/external-file-storages/health-status/#connection-validation-for-nextcloud).
+Read more about connection validation for Nextcloud in our [system admin guide](../../../system-admin-guide/files/external-file-storages/health-status/#connection-validation).
 
 ### Project lists: Select/Exclude projects in project list explicitly via filter
 
@@ -86,7 +86,7 @@ For example, you can filter your active projects by excluding certain projects:
 
 ![Screenshot of OpenProject 14.4, filtering project lists with 'Project' 'is not'](openproject-14-4-project-lists-filter.png)
 
-For more details, see https://community.openproject.org/wp/55233.
+For more details, see this [work package](https://community.openproject.org/wp/55233).
 
 ### Meetings: Saving a new agenda item does not automatically add another empty one
 
@@ -114,7 +114,7 @@ To improve efficiency and access to file storages, OpenProject 14.4 allows admin
 
 In the "General information" section, there is now a link that opens in a new window and leads to the root folder of the storage. For Nextcloud, this link refers to the root folder of the Nextcloud instance. For OneDrive/SharePoint, the link refers to the root folder of the drive ID and also works with "OneDrive Business".
 
-See https://community.openproject.org/wp/56045 for more information on this feature.
+Visit this [work package](https://community.openproject.org/wp/56045) for more information on this feature.
 
 ### Show changes of long text custom fields in the activity similar to changes in the description
 
@@ -221,14 +221,16 @@ Clicking on the "Details" link will take the user to the diff view, which is als
 <!-- Warning: Anything above this line will be automatically removed by the release script -->
 
 ## Contributions
-A very special thank you goes to the City of Cologne again for sponsoring features on project attributes and project lists. 
+
+A very special thank you goes to the City of Cologne again for sponsoring features on project attributes and project lists.
 
 Also a big thanks to our Community members for reporting bugs and helping us identify and provide fixes.
 Special thanks for reporting and finding bugs go to Johan Bouduin, Sven Kunze and Marcel Carvalho.
 
-Last but not least, we are very grateful for our very engaged translation contributors on Crowdin, who translated quite a few OpenProject strings! This release we would like to highlight the three following users: 
+Last but not least, we are very grateful for our very engaged translation contributors on Crowdin, who translated quite a few OpenProject strings! This release we would like to highlight the three following users:
+
 - [Jeff Li](https://crowdin.com/profile/jeff_li) for translations to Chinese Simplified,
-- [Adam Siemienski ](https://crowdin.com/profile/siemienas) for translations to Polish,
+- [Adam Siemienski](https://crowdin.com/profile/siemienas) for translations to Polish,
 - [Yuliia Pavliuk](https://crowdin.com/profile/pav.yulia) for translations to Ukrainian.
 
 Would you like to help out with translations yourself? Then take a look at our translation guide and find out exactly how you can contribute. It is very much appreciated!

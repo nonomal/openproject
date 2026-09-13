@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -56,6 +58,9 @@ module API
         property :maximum_attachment_file_size,
                  getter: ->(*) { attachment_max_size.to_i.kilobyte }
 
+        property :maximum_api_v3_page_size,
+                 getter: ->(*) { apiv3_max_page_size }
+
         property :per_page_options,
                  getter: ->(*) { per_page_options_array }
 
@@ -100,7 +105,12 @@ module API
 
         property :available_features,
                  getter: ->(*) {
-                   EnterpriseToken.current&.available_features || []
+                   EnterpriseToken.available_features
+                 }
+
+        property :trialling_features,
+                 getter: ->(*) {
+                   EnterpriseToken.trialling_features
                  }
 
         property :allowed_link_protocols,

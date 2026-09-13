@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 #  OpenProject is an open source project management software.
 #  Copyright (C) the OpenProject GmbH
@@ -30,12 +32,46 @@ require "spec_helper"
 RSpec.describe Comment do
   shared_let(:user) { create(:user) }
   shared_let(:news) { create(:news) }
-  let(:comment) { described_class.new(author: user, comments: "some important words", commented: news) }
+
+  let(:commented) { news }
+
+  subject(:comment) { build(:comment, author: user, comments: "some important words", commented:) }
+
+  describe "associations" do
+    it { is_expected.to belong_to(:author).class_name("User") }
+    it { is_expected.to belong_to(:commented) }
+  end
+
+  describe "validations" do
+    it { is_expected.to validate_presence_of(:author) }
+    it { is_expected.to validate_presence_of(:commented) }
+    it { is_expected.to validate_presence_of(:comments) }
+  end
 
   describe "#create" do
-    it "creates the comment" do
-      expect(described_class.create(commented: news, author: user, comments: "some important words"))
-        .to be_truthy
+    before do
+      allow(OpenProject::Notifications).to receive(:send)
+    end
+
+    context "for news" do
+      it "creates the comment" do
+        expect { comment.save! }
+          .to change(described_class, :count).by(1).and change { commented.reload.comments_count }.by(1)
+
+        aggregate_failures "sends a news comment added event" do
+          expect(OpenProject::Notifications).to have_received(:send)
+          .with(OpenProject::Events::NEWS_COMMENT_CREATED,
+                comment: comment, send_notification: true)
+        end
+      end
+    end
+  end
+
+  describe "#destroy" do
+    before { comment.save! }
+
+    it "decrements the comments_count on the commented object" do
+      expect { comment.destroy! }.to change { commented.reload.comments_count }.by(-1)
     end
   end
 

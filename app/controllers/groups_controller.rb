@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,6 +30,7 @@
 
 class GroupsController < ApplicationController
   include GroupsHelper
+
   layout "admin"
 
   before_action :require_admin, except: %i[show]
@@ -37,7 +40,7 @@ class GroupsController < ApplicationController
                                       edit_membership add_users]
 
   def index
-    @groups = Group.order(Arel.sql("lastname ASC"))
+    @groups = Group.with_detail.not_organizational_units.in_tree_order
   end
 
   def show
@@ -75,7 +78,7 @@ class GroupsController < ApplicationController
 
     if service_call.success?
       flash[:notice] = I18n.t(:notice_successful_update)
-      redirect_to(groups_path)
+      redirect_to(groups_path, status: :see_other)
     else
       render action: :edit, status: :unprocessable_entity
     end
@@ -87,13 +90,13 @@ class GroupsController < ApplicationController
       .call
 
     flash[:info] = I18n.t(:notice_deletion_scheduled)
-    redirect_to(action: :index)
+    redirect_to(action: :index, status: :see_other)
   end
 
   def add_users
     service_call = Groups::UpdateService
                    .new(user: current_user, model: @group)
-                   .call(user_ids: @group.user_ids + Array(params[:user_ids]).map(&:to_i))
+                   .call(add_user_ids: Array(params[:user_ids]))
 
     respond_users_altered(service_call)
   end
@@ -103,7 +106,7 @@ class GroupsController < ApplicationController
 
     service_call = Groups::UpdateService
                    .new(user: current_user, model: @group)
-                   .call(user_ids: @group.user_ids - Array(params[:user_id]).map(&:to_i))
+                   .call(remove_user_ids: Array(params[:user_id]))
 
     respond_users_altered(service_call)
   end
@@ -137,13 +140,17 @@ class GroupsController < ApplicationController
       .call
 
     flash[:notice] = I18n.t :notice_successful_delete
-    redirect_to controller: "/groups", action: "edit", id: @group, tab: redirected_to_tab(member)
+    redirect_to controller: "/groups",
+                action: "edit",
+                id: @group,
+                tab: redirected_to_tab(member),
+                status: :see_other
   end
 
   protected
 
   def find_group
-    @group = Group.find(params[:id])
+    @group = Group.visible.find(params[:id])
   end
 
   def group_members
@@ -157,7 +164,7 @@ class GroupsController < ApplicationController
   def visible_group_members?
     current_user.admin? ||
       current_user.allowed_in_any_project?(:manage_members) ||
-      Group.in_project(Project.allowed_to(current_user, :view_members)).exists?
+      @group.projects.exists?(id: Project.allowed_to(current_user, :view_members))
   end
 
   def respond_membership_altered(service_call)
@@ -185,6 +192,10 @@ class GroupsController < ApplicationController
       service_call.apply_flash_message!(flash)
     end
 
-    redirect_to controller: "/groups", action: "edit", id: @group, tab: "users"
+    redirect_to controller: "/groups",
+                action: "edit",
+                id: @group,
+                tab: "users",
+                status: :see_other
   end
 end

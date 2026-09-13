@@ -66,8 +66,12 @@ RSpec.describe SharingStrategies::ProjectQueryStrategy do
   end
 
   describe "#manageable?" do
-    context "when the entity is editable" do
+    context "when the entity is editable, and the feature available", with_ee: %i[project_list_sharing] do
       it { expect(strategy.manageable?).to be(true) }
+    end
+
+    context "when the entity is editable, but feature is not available" do
+      it { expect(strategy.manageable?).to be(false) }
     end
 
     context "when the entity is not editable" do

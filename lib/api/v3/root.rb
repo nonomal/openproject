@@ -62,14 +62,19 @@ module API
       mount ::API::V3::News::NewsAPI
       mount ::API::V3::OAuth::OAuthApplicationsAPI
       mount ::API::V3::OAuth::OAuthClientCredentialsAPI
+      mount ::API::V3::Portfolios::PortfoliosAPI
       mount ::API::V3::Posts::PostsAPI
       mount ::API::V3::Principals::PrincipalsAPI
       mount ::API::V3::Priorities::PrioritiesAPI
+      mount ::API::V3::Programs::ProgramsAPI
       mount ::API::V3::Projects::ProjectsAPI
+      mount ::API::V3::ProjectPhaseDefinitions::ProjectPhaseDefinitionsAPI
+      mount ::API::V3::ProjectPhases::ProjectPhasesAPI
       mount ::API::V3::Projects::Statuses::StatusesAPI
       mount ::API::V3::Queries::QueriesAPI
       mount ::API::V3::Render::RenderAPI
       mount ::API::V3::Relations::RelationsAPI
+      mount ::API::V3::Reminders::RemindersAPI
       mount ::API::V3::Repositories::RevisionsAPI
       mount ::API::V3::Roles::RolesAPI
       mount ::API::V3::Shares::SharesAPI
@@ -83,8 +88,9 @@ module API
       mount ::API::V3::Values::ValuesAPI
       mount ::API::V3::Versions::VersionsAPI
       mount ::API::V3::Views::ViewsAPI
-      mount ::API::V3::WorkPackages::WorkPackagesAPI
       mount ::API::V3::WikiPages::WikiPagesAPI
+      mount ::API::V3::Workspaces::WorkspacesAPI
+      mount ::API::V3::WorkPackages::WorkPackagesAPI
 
       get "/" do
         RootRepresenter.new({}, current_user:)

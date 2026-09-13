@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,16 +30,17 @@
 
 require "spec_helper"
 
-RSpec.describe Queries::Operators::CustomFields::Hierarchies::EqualsWithDescendants do
+RSpec.describe Queries::Operators::CustomFields::Hierarchies::EqualsWithDescendants, with_ee: [:custom_field_hierarchies] do
   subject(:sql) { described_class.sql_for_field(values, db_table, db_field) }
 
-  let(:custom_field) { create(:custom_field, field_format: "hierarchy", hierarchy_root: nil) }
+  let(:custom_field) { create(:hierarchy_wp_custom_field, hierarchy_root: nil) }
   let!(:root) { service.generate_root(custom_field).value! }
-  let!(:germany) { service.insert_item(parent: root, label: "Germany", short: "DE").value! }
-  let!(:berlin) { service.insert_item(parent: germany, label: "Berlin").value! }
-  let!(:munich) { service.insert_item(parent: germany, label: "Munich").value! }
-  let!(:portugal) { service.insert_item(parent: root, label: "Portugal", short: "PT").value! }
-  let!(:lisbon) { service.insert_item(parent: portugal, label: "Lisboa").value! }
+  let(:contract_class) { CustomFields::Hierarchy::InsertListItemContract }
+  let!(:germany) { service.insert_item(contract_class:, parent: root, label: "Germany", short: "DE").value! }
+  let!(:berlin) { service.insert_item(contract_class:, parent: germany, label: "Berlin").value! }
+  let!(:munich) { service.insert_item(contract_class:, parent: germany, label: "Munich").value! }
+  let!(:portugal) { service.insert_item(contract_class:, parent: root, label: "Portugal", short: "PT").value! }
+  let!(:lisbon) { service.insert_item(contract_class:, parent: portugal, label: "Lisboa").value! }
   let(:service) { CustomFields::Hierarchy::HierarchicalItemService.new }
 
   let(:db_table) { "custom_values" }

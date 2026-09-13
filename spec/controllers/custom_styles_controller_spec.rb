@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -47,21 +49,12 @@ RSpec.describe CustomStylesController do
 
       context "when no active token exists" do
         before do
-          allow(EnterpriseToken).to receive(:current).and_return(nil)
+          allow(EnterpriseToken).to receive(:active_tokens).and_return([])
         end
 
-        it "redirects to #upsell" do
-          expect(subject).to redirect_to action: :upsell
+        it "renders show" do
+          expect(subject).to redirect_to action: :show, tab: "interface"
         end
-      end
-    end
-
-    describe "#upsell" do
-      subject { get :upsell }
-
-      it "renders upsell" do
-        expect(subject).to be_successful
-        expect(subject).to render_template "upsell"
       end
     end
 
@@ -96,6 +89,24 @@ RSpec.describe CustomStylesController do
           expect(response).to have_http_status(:unprocessable_entity)
           expect(response).to render_template "custom_styles/show"
         end
+      end
+    end
+
+    describe "#create", with_ee: false do
+      let(:custom_style) { CustomStyle.new }
+      let(:params) do
+        {
+          custom_style: { logo: "foo", favicon: "bar", icon_touch: "yay" }
+        }
+      end
+
+      before do
+        post :create, params:
+      end
+
+      it "renders a 403" do
+        expect(response).to have_http_status(:forbidden)
+        expect(flash[:error][:message]).to match /You need the basic enterprise plan to perform this action/
       end
     end
 
@@ -206,7 +217,7 @@ RSpec.describe CustomStylesController do
 
         it "removes the logo from custom_style" do
           expect(response).to redirect_to(action: :show)
-          expect(response).to have_http_status(:found)
+          expect(response).to have_http_status(:see_other)
         end
       end
 
@@ -222,7 +233,74 @@ RSpec.describe CustomStylesController do
       end
     end
 
-    describe "#export_logo_download" do
+    describe "#logo_mobile_download" do
+      before do
+        allow(CustomStyle).to receive(:current).and_return(custom_style)
+        allow(controller).to receive(:send_file) { controller.head 200 }
+
+        get :logo_mobile_download, params: {
+          digest: "1234",
+          filename: "logo_mobile_image.png"
+        }
+      end
+
+      context "when mobile logo is present" do
+        let(:custom_style) { build(:custom_style_with_logo_mobile) }
+
+        it "sends a file" do
+          expect(response).to have_http_status(:ok)
+        end
+      end
+
+      context "when no custom style is present" do
+        let(:custom_style) { nil }
+
+        it "renders with error" do
+          expect(controller).not_to have_received(:send_file)
+          expect(response).to have_http_status(:not_found)
+        end
+      end
+
+      context "when no mobile logo is present" do
+        let(:custom_style) { build_stubbed(:custom_style) }
+
+        it "renders with error" do
+          expect(controller).not_to have_received(:send_file)
+          expect(response).to have_http_status(:not_found)
+        end
+      end
+    end
+
+    describe "#logo_mobile_delete", with_ee: %i[define_custom_style] do
+      let(:custom_style) { create(:custom_style_with_logo_mobile) }
+
+      context "if it exists" do
+        before do
+          allow(CustomStyle).to receive(:current).and_return(custom_style)
+          allow(custom_style).to receive(:remove_logo_mobile).and_call_original
+
+          delete :logo_mobile_delete
+        end
+
+        it "removes the mobile logo from custom_style" do
+          expect(response).to redirect_to(action: :show)
+          expect(response).to have_http_status(:see_other)
+        end
+      end
+
+      context "if it does not exist" do
+        before do
+          allow(CustomStyle).to receive(:current).and_return(nil)
+          delete :logo_mobile_delete
+        end
+
+        it "renders 404" do
+          expect(response).to have_http_status :not_found
+        end
+      end
+    end
+
+    describe "#export_logo_download", with_ee: %i[define_custom_style] do
       before do
         allow(CustomStyle).to receive(:current).and_return(custom_style)
         allow(controller).to receive(:send_file) { controller.head 200 }
@@ -283,7 +361,7 @@ RSpec.describe CustomStylesController do
       end
     end
 
-    describe "#export_cover_download" do
+    describe "#export_cover_download", with_ee: %i[define_custom_style] do
       before do
         allow(CustomStyle).to receive(:current).and_return(custom_style)
         allow(controller).to receive(:send_file) { controller.head 200 }
@@ -335,6 +413,66 @@ RSpec.describe CustomStylesController do
         before do
           allow(CustomStyle).to receive(:current).and_return(nil)
           delete :export_cover_delete
+        end
+
+        it "renders 404" do
+          expect(response).to have_http_status :not_found
+        end
+      end
+    end
+
+    describe "#export_footer_download", with_ee: %i[define_custom_style] do
+      before do
+        allow(CustomStyle).to receive(:current).and_return(custom_style)
+        allow(controller).to receive(:send_file) { controller.head 200 }
+        get :export_footer_download, params: { digest: "1234", filename: "export_footer_image.png" }
+      end
+
+      context "when export cover is present" do
+        let(:custom_style) { build(:custom_style_with_export_footer) }
+
+        it "sends a file" do
+          expect(response).to have_http_status(:ok)
+        end
+      end
+
+      context "when no custom style is present" do
+        let(:custom_style) { nil }
+
+        it "renders with error" do
+          expect(controller).not_to have_received(:send_file)
+          expect(response).to have_http_status(:not_found)
+        end
+      end
+
+      context "when no export cover is present" do
+        let(:custom_style) { build_stubbed(:custom_style) }
+
+        it "renders with error" do
+          expect(controller).not_to have_received(:send_file)
+          expect(response).to have_http_status(:not_found)
+        end
+      end
+    end
+
+    describe "#export_footer_delete", with_ee: %i[define_custom_style] do
+      let(:custom_style) { create(:custom_style_with_export_footer) }
+
+      context "if it exists" do
+        before do
+          allow(CustomStyle).to receive(:current).and_return(custom_style)
+          delete :export_footer_delete
+        end
+
+        it "removes the export cover from custom_style" do
+          expect(response).to redirect_to(action: :show)
+        end
+      end
+
+      context "if it does not exist" do
+        before do
+          allow(CustomStyle).to receive(:current).and_return(nil)
+          delete :export_footer_delete
         end
 
         it "renders 404" do
@@ -571,6 +709,143 @@ RSpec.describe CustomStylesController do
         it "redirects to that tab" do
           post :update_colors, params: { tab: :branding, design_colors: [{ "primary-button-color" => "#110000" }] }
           expect(response).to redirect_to(action: :show, tab: :branding)
+        end
+      end
+    end
+
+    describe "#update_themes", with_ee: %i[define_custom_style] do
+      let!(:custom_style) { create(:custom_style) }
+
+      before do
+        post :update_themes, params: { theme: "OpenProject Gray", tab: :branding }
+      end
+
+      it "updates the theme and redirects to the selected tab" do
+        expect(custom_style.reload.theme).to eq("OpenProject Gray")
+        expect(flash[:notice]).to eq(I18n.t(:notice_successful_update))
+        expect(response).to redirect_to(action: :show, tab: :branding)
+      end
+    end
+
+    describe "update with export font uploads", with_ee: %i[define_custom_style] do
+      let(:custom_style) { create(:custom_style) }
+      let(:font_file) { Rack::Test::UploadedFile.new(Rails.public_path.join("fonts/noto-emoji/NotoEmoji.ttf"), "font/ttf") }
+
+      before do
+        allow(CustomStyle).to receive(:current).and_return(custom_style)
+      end
+
+      it "uploads regular font" do
+        post :update, params: { custom_style: { export_font_regular: font_file } }
+        expect(response).to redirect_to(action: :show)
+        expect(custom_style.reload.export_font_regular).to be_present
+        expect(File.basename(custom_style.reload.export_font_regular.file.path)).to eq("NotoEmoji.ttf")
+      end
+
+      it "uploads bold font" do
+        post :update, params: { custom_style: { export_font_bold: font_file } }
+        expect(response).to redirect_to(action: :show)
+        expect(custom_style.reload.export_font_bold).to be_present
+        expect(File.basename(custom_style.reload.export_font_bold.file.path)).to eq("NotoEmoji.ttf")
+      end
+
+      it "uploads italic font" do
+        post :update, params: { custom_style: { export_font_italic: font_file } }
+        expect(response).to redirect_to(action: :show)
+        expect(custom_style.reload.export_font_italic).to be_present
+        expect(File.basename(custom_style.reload.export_font_italic.file.path)).to eq("NotoEmoji.ttf")
+      end
+
+      it "uploads bold italic font" do
+        post :update, params: { custom_style: { export_font_bold_italic: font_file } }
+        expect(response).to redirect_to(action: :show)
+        expect(custom_style.reload.export_font_bold_italic).to be_present
+        expect(File.basename(custom_style.reload.export_font_bold_italic.file.path)).to eq("NotoEmoji.ttf")
+      end
+
+      describe "update with invalid file", with_ee: %i[define_custom_style] do
+        let(:font_file) { Rack::Test::UploadedFile.new(Rails.public_path.join("favicon.ico"), "font/ttf") }
+
+        it "does respect the file size limit" do
+          controller.singleton_class.include(CustomStylesControllerHelper)
+          allow(controller).to receive(:font_file_size).and_return(40.megabytes)
+          post :update, params: { custom_style: { export_font_regular: font_file } }
+          expect(response).to have_http_status(:unprocessable_entity)
+          expect(custom_style.reload.export_font_regular).not_to be_present
+          expect(flash[:error]).to include("is too large")
+        end
+
+        it "does not accept a non-font" do
+          post :update, params: { custom_style: { export_font_regular: font_file } }
+          expect(response).to have_http_status(:unprocessable_entity)
+          expect(custom_style.reload.export_font_regular).not_to be_present
+          expect(flash[:error]).to include "not a valid TTF font file."
+        end
+      end
+    end
+
+    describe "export font deletions", with_ee: %i[define_custom_style] do
+      context "when style exists" do
+        it "deletes regular font" do
+          style = create(:custom_style_with_export_font_regular)
+          allow(CustomStyle).to receive(:current).and_return(style)
+          delete :export_font_regular_delete
+          expect(response).to redirect_to(action: :show)
+          expect(response).to have_http_status(:see_other)
+          expect(style.reload.export_font_regular).not_to be_present
+        end
+
+        it "deletes bold font" do
+          style = create(:custom_style_with_export_font_bold)
+          allow(CustomStyle).to receive(:current).and_return(style)
+          delete :export_font_bold_delete
+          expect(response).to redirect_to(action: :show)
+          expect(response).to have_http_status(:see_other)
+          expect(style.reload.export_font_bold).not_to be_present
+        end
+
+        it "deletes italic font" do
+          style = create(:custom_style_with_export_font_italic)
+          allow(CustomStyle).to receive(:current).and_return(style)
+          delete :export_font_italic_delete
+          expect(response).to redirect_to(action: :show)
+          expect(response).to have_http_status(:see_other)
+          expect(style.reload.export_font_italic).not_to be_present
+        end
+
+        it "deletes bold italic font" do
+          style = create(:custom_style_with_export_font_bold_italic)
+          allow(CustomStyle).to receive(:current).and_return(style)
+          delete :export_font_bold_italic_delete
+          expect(response).to redirect_to(action: :show)
+          expect(response).to have_http_status(:see_other)
+          expect(style.reload.export_font_bold_italic).not_to be_present
+        end
+      end
+
+      context "when no style exists" do
+        before do
+          allow(CustomStyle).to receive(:current).and_return(nil)
+        end
+
+        it "returns 404 for regular" do
+          delete :export_font_regular_delete
+          expect(response).to have_http_status :not_found
+        end
+
+        it "returns 404 for bold" do
+          delete :export_font_bold_delete
+          expect(response).to have_http_status :not_found
+        end
+
+        it "returns 404 for italic" do
+          delete :export_font_italic_delete
+          expect(response).to have_http_status :not_found
+        end
+
+        it "returns 404 for bold italic" do
+          delete :export_font_bold_italic_delete
+          expect(response).to have_http_status :not_found
         end
       end
     end

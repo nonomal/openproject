@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -26,7 +28,7 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-# Method to manually wait for an asynchronous request (through jQuery) to complete.
+# Method to manually wait for an asynchronous request to complete.
 # This applies to all requests through resources as well.
 #
 # Note: Use this only if there are no other means of detecting the successful
@@ -35,6 +37,11 @@
 
 def loading_indicator_saveguard
   expect(page).to have_no_css(".op-loading-indicator")
+rescue Selenium::WebDriver::Error::StaleElementReferenceError
+  # The loading indicator disappeared mid-check (stale element reference while Capybara
+  # was building its failure message), which is exactly what we were waiting for.
+  # Retry — the element is gone so the next check will pass.
+  retry
 end
 
 # ng-select uses a loading indicator with css class .ng-spinner-loader when

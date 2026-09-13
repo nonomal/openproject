@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,6 +32,7 @@ module API::V3::ProjectStorages
   class ProjectStorageRepresenter < ::API::Decorators::Single
     include API::Decorators::DateProperty
     include API::Decorators::LinkedResource
+    include API::V3::Workspaces::LinkedResource
 
     defaults render_nil: true
 
@@ -55,11 +58,11 @@ module API::V3::ProjectStorages
     link :openWithConnectionEnsured do
       next unless show_open_storage_links
 
-      { href: represented.open_with_connection_ensured }
+      { href: api_v3_paths.project_storage_open(represented.id) }
     end
 
     associated_resource :storage, skip_render: ->(*) { true }, skip_link: ->(*) { false }
-    associated_resource :project, skip_render: ->(*) { true }, skip_link: ->(*) { false }
+    associated_project  skip_render: ->(*) { true }
     associated_resource :creator,
                         v3_path: :user,
                         representer: ::API::V3::Users::UserRepresenter,

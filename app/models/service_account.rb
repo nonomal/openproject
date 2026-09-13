@@ -35,13 +35,15 @@ class ServiceAccount < User
 
   has_one :service_account_association, dependent: :destroy
 
+  delegate :service, to: :service_account_association
+
   def to_s
     name
   end
 
   def available_custom_fields = []
 
-  def logged? = false
+  def logged? = true
 
   def builtin? = true
 

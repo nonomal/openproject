@@ -28,7 +28,8 @@
 
 module Calendar
   class ResolveWorkPackagesService < ::BaseServices::BaseCallable
-    def perform(query:)
+    def perform
+      query = params.fetch(:query)
       raise ActiveRecord::RecordNotFound if query.nil?
 
       query.remove_filter(:dates_interval)

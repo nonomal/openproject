@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -29,28 +29,41 @@
 import { HalResource } from 'core-app/features/hal/resources/hal-resource';
 import { GridWidgetResource } from 'core-app/features/hal/resources/grid-widget-resource';
 import { Attachable } from 'core-app/features/hal/resources/mixins/attachable-mixin';
+import { IHalResourceLink } from 'core-app/core/state/hal-resource';
+import idFromLink from '../helpers/id-from-link';
 
 export interface GridResourceLinks {
   update(payload:unknown):Promise<unknown>;
   updateImmediately(payload:unknown):Promise<unknown>;
   delete():Promise<unknown>;
+  project:IHalResourceLink;
 }
 
 export class GridBaseResource extends HalResource {
   public widgets:GridWidgetResource[];
 
-  public options:{ [key:string]:unknown };
+  public options:Record<string, unknown>;
 
   public rowCount:number;
 
   public columnCount:number;
+
+  public $links:GridResourceLinks;
+
+  public get projectId():string|undefined {
+    if (this.$links.project) {
+      return idFromLink(this.$links.project.href);
+    }
+
+    return undefined;
+  }
 
   public $initialize(source:any) {
     super.$initialize(source);
 
     this.widgets = this
       .widgets
-      .map((widget:Object) => {
+      .map((widget:object) => {
         const widgetResource = new GridWidgetResource(this.injector,
           widget,
           true,

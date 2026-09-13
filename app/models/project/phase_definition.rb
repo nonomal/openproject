@@ -38,6 +38,7 @@ class Project::PhaseDefinition < ApplicationRecord
            dependent: :destroy
   has_many :projects, through: :phases
   belongs_to :color, optional: false
+  has_many :work_packages, inverse_of: :project_phase_definition, dependent: :nullify
 
   validates :name, presence: true, uniqueness: true
   validates :start_gate_name, presence: true, if: :start_gate?
@@ -47,4 +48,6 @@ class Project::PhaseDefinition < ApplicationRecord
   default_scope { order(:position) }
 
   scopes :with_project_count
+
+  def to_s; name end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,8 +29,8 @@
 #++
 
 class Queries::Filters::TemplatedValue
-  KEY = "{id}".freeze
-  DEPRECATED_KEY = "templated".freeze
+  KEY = "{id}"
+  DEPRECATED_KEY = "templated"
 
   attr_accessor :templated_class
 

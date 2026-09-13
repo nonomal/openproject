@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,17 +30,16 @@
 
 module AccessibilityHelper
   def you_are_here_info(condition = true, disabled = nil)
-    if condition && !disabled
-      "<span style = 'display: block' class = 'position-label hidden-for-sighted'>#{I18n.t(:description_current_position)}</span>".html_safe
-    elsif condition && disabled
-      "<span style = 'display: none' class = 'position-label hidden-for-sighted'>#{I18n.t(:description_current_position)}</span>".html_safe
-    else
-      ""
-    end
+    return "" unless condition
+
+    content_tag(:span,
+                I18n.t(:description_current_position),
+                style: disabled ? "display: none" : "display: block",
+                class: "position-label sr-only")
   end
 
   def empty_element_tag
-    @empty_element_tag ||= ApplicationController.new.render_to_string(partial: "accessibility/empty_element_tag").html_safe
+    @empty_element_tag ||= ApplicationController.new.render_to_string(partial: "accessibility/empty_element_tag")
   end
 
   # Returns the locale :en for the given menu item if the user locale is

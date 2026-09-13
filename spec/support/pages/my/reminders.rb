@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,7 +34,7 @@ module Pages
   module My
     class Reminders < ::Pages::Reminders::Settings
       def path
-        my_reminders_path
+        my_notifications_path(tab: "reminders")
       end
     end
   end

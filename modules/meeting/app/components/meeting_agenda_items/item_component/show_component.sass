@@ -21,7 +21,6 @@ $meeting-agenda-item--presenter-width--mobile: 150px
 
   &--content
     overflow-wrap: anywhere
-    min-height: 32px
 
   &--presenter
     max-width: $meeting-agenda-item--presenter-width
@@ -64,3 +63,10 @@ $meeting-agenda-item--presenter-width--mobile: 150px
 
     .custom-presenter-flex
       margin-left: 0
+
+// Highlight agenda item when linked to it
+.op-meeting-agenda-item-wrapper
+  &:target
+    scroll-margin: 100px
+    outline: 2px solid var(--borderColor-accent-emphasis)
+    border-radius: 2px

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,7 +34,9 @@ require "rails/all"
 require "active_support"
 require "active_support/dependencies"
 require "core_extensions"
+require "sprockets/railtie"
 require "view_component"
+require "primer/view_components"
 require "primer/view_components/engine"
 
 # Require the gems listed in Gemfile, including any gems
@@ -125,9 +129,6 @@ module OpenProject
     # http://stackoverflow.com/questions/4590229
     config.middleware.use Rack::TempfileReaper
 
-    # Move secure_headers middleware to after the ShowExceptions
-    config.middleware.move_after ActionDispatch::ShowExceptions, SecureHeaders::Middleware
-
     # Add lookbook preview paths when enabled
     if OpenProject::Configuration.lookbook_enabled?
       config.paths.add Primer::ViewComponents::Engine.root.join("app/components").to_s, eager_load: true
@@ -215,10 +216,13 @@ module OpenProject
 
     config.action_controller.asset_host = OpenProject::Configuration::AssetHost.value
 
+    # Remove X-XSS-Protection header
+    config.action_dispatch.default_headers.delete "X-XSS-Protection"
+
     config.log_level = OpenProject::Configuration["log_level"].to_sym
 
     # Enable the Rails 7 cache format
-    config.active_support.cache_format_version = 7.0
+    config.active_support.cache_format_version = 7.1
 
     config.after_initialize do
       Settings::Definition.add_all

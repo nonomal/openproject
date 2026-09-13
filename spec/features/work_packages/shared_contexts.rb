@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,7 +32,7 @@
 # The status filter is loaded very late in the page setup.
 RSpec.shared_context "ensure wp details pane update done" do
   let(:activity_tab) { Components::WorkPackages::Activities.new(work_package) }
-  let(:abstract_work_package_page) { Pages::AbstractWorkPackage.new(work_package) }
+  let(:abstract_work_package_page) { Pages::PrimerizedSplitWorkPackage.new(work_package) }
 
   after do
     unless update_user

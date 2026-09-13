@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -45,7 +45,7 @@ import { WorkPackageTable } from 'core-app/features/work-packages/components/wp-
 import { EditForm } from 'core-app/shared/components/fields/edit/edit-form/edit-form';
 import { editModeClassName } from 'core-app/shared/components/fields/edit/edit-field.component';
 import { WorkPackageResource } from 'core-app/features/hal/resources/work-package-resource';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
+import { LazyInject } from 'core-app/shared/helpers/angular/lazy-inject.decorator';
 import { ApiV3Service } from 'core-app/core/apiv3/api-v3.service';
 import { editFieldContainerClass } from 'core-app/shared/components/fields/display/display-field-renderer';
 import { WorkPackagesListService } from 'core-app/features/work-packages/components/wp-list/wp-list.service';
@@ -54,17 +54,17 @@ export const activeFieldContainerClassName = 'inline-edit--active-field';
 export const activeFieldClassName = 'inline-edit--field';
 
 export class TableEditForm extends EditForm<WorkPackageResource> {
-  @InjectField() public wpTableColumns:WorkPackageViewColumnsService;
+  @LazyInject() public wpTableColumns:WorkPackageViewColumnsService;
 
-  @InjectField() public apiV3Service!:ApiV3Service;
+  @LazyInject() public apiV3Service!:ApiV3Service;
 
-  @InjectField() public states:States;
+  @LazyInject() public states:States;
 
-  @InjectField() public FocusHelper:FocusHelperService;
+  @LazyInject() public FocusHelper:FocusHelperService;
 
-  @InjectField() public editingPortalService:EditingPortalService;
+  @LazyInject() public editingPortalService:EditingPortalService;
 
-  @InjectField() wpListService:WorkPackagesListService;
+  @LazyInject() wpListService:WorkPackagesListService;
 
   // Use cell builder to reset edit fields
   private cellBuilder = new CellBuilder(this.injector);
@@ -87,18 +87,18 @@ export class TableEditForm extends EditForm<WorkPackageResource> {
   }
 
   destroy() {
-    _.each(this.activeFields, (field) => {
+    Object.values(this.activeFields).forEach((field) => {
       field.deactivate(false);
     });
     this.resourceSubscription.unsubscribe();
   }
 
-  public findContainer(fieldName:string):JQuery {
-    return this.rowContainer.find(`.${tdClassName}.${fieldName} .${editFieldContainerClass}`).first();
+  public findContainer(fieldName:string) {
+    return this.rowContainer?.querySelector<HTMLElement>(`.${tdClassName}.${fieldName} .${editFieldContainerClass}`);
   }
 
   public findCell(fieldName:string) {
-    return this.rowContainer.find(`.${tdClassName}.${fieldName}`).first();
+    return this.rowContainer?.querySelector<HTMLTableCellElement>(`.${tdClassName}.${fieldName}`);
   }
 
   public activateField(form:EditForm, schema:IFieldSchema, fieldName:string, errors:string[]):Promise<EditFieldHandler> {
@@ -107,12 +107,12 @@ export class TableEditForm extends EditForm<WorkPackageResource> {
         // Forcibly set the width since the edit field may otherwise
         // be given more width. Thereby preserve a minimum width of 150.
         // To avoid flickering content, the padding is removed, too.
-        const td = this.findCell(fieldName);
-        td.addClass(editModeClassName);
-        let width = parseInt(td.css('width'));
+        const td = this.findCell(fieldName)!;
+        td.classList.add(editModeClassName);
+        let width = td.offsetWidth;
         width = width > 150 ? width - 10 : 150;
-        td.css('max-width', `${width}px`);
-        td.css('width', `${width}px`);
+        td.style.maxWidth = `${width}px`;
+        td.style.width = `${width}px`;
 
         return this.editingPortalService.create(
           cell,
@@ -127,16 +127,16 @@ export class TableEditForm extends EditForm<WorkPackageResource> {
 
   public reset(fieldName:string, focus?:boolean) {
     const cell = this.findContainer(fieldName);
-    const td = this.findCell(fieldName);
+    const td = this.findCell(fieldName)!;
 
-    if (cell.length) {
-      this.findCell(fieldName).css('width', '');
-      this.findCell(fieldName).css('max-width', '');
-      this.cellBuilder.refresh(cell[0], this.resource, fieldName);
-      td.removeClass(editModeClassName);
+    if (cell) {
+      td.style.width = '';
+      td.style.maxWidth = '';
+      this.cellBuilder.refresh(cell, this.resource, fieldName);
+      td.classList.remove(editModeClassName);
 
       if (focus) {
-        this.FocusHelper.focus(cell[0]);
+        this.FocusHelper.focus(cell);
       }
     }
   }
@@ -154,10 +154,9 @@ export class TableEditForm extends EditForm<WorkPackageResource> {
 
   protected focusOnFirstError():void {
     // Focus the first field that is erroneous
-    jQuery(this.table.tableAndTimelineContainer)
-      .find(`.${activeFieldContainerClassName}.-error .${activeFieldClassName}`)
-      .first()
-      .trigger('focus');
+    this.table.tableAndTimelineContainer
+      ?.querySelector<HTMLElement>(`.${activeFieldContainerClassName}.-error .${activeFieldClassName}`)
+      ?.focus();
   }
 
   /**
@@ -181,15 +180,15 @@ export class TableEditForm extends EditForm<WorkPackageResource> {
       const interval = setInterval(() => {
         const container = this.findContainer(fieldName);
 
-        if (container.length > 0) {
+        if (container) {
           clearInterval(interval);
-          resolve(container[0]);
+          resolve(container);
         }
       }, 100);
     });
   }
 
   private get rowContainer() {
-    return jQuery(this.table.tableAndTimelineContainer).find(`.${this.classIdentifier}-table`);
+    return this.table.tableAndTimelineContainer.querySelector(`.${this.classIdentifier}-table`);
   }
 }

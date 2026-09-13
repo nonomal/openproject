@@ -31,12 +31,22 @@
 module RecurringMeetings
   class UpdateContract < BaseContract
     include Redmine::I18n
+    include UnchangedProject
 
-    validate :user_allowed_to_edit
+    validate :user_allowed_to_edit_in_source_project
+    validate :user_allowed_to_edit_in_destination_project
     validate :not_before_scheduled_time
     validate :all_instantiated_meetings_covered
 
-    def user_allowed_to_edit
+    def user_allowed_to_edit_in_source_project
+      with_unchanged_project_id do
+        errors.add :base, :error_unauthorized unless user.allowed_in_project?(:edit_meetings, model.project)
+      end
+    end
+
+    def user_allowed_to_edit_in_destination_project
+      return unless model.project_id_changed?
+
       unless user.allowed_in_project?(:edit_meetings, model.project)
         errors.add :base, :error_unauthorized
       end
@@ -55,6 +65,9 @@ module RecurringMeetings
     end
 
     def all_instantiated_meetings_covered
+      # Don't run coverage call when model itself is invalid
+      # as that might lead to unexpected errors
+      return if model.errors.any?
       return if model.end_after_never?
       return unless model.reschedule_required?
 

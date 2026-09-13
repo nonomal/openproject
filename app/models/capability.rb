@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,7 +32,8 @@ class Capability < ApplicationRecord
   include Tableless
   include Scopes::Scoped
 
-  scopes :default
+  scopes :default,
+         :visible
 
   default_scope { default }
 

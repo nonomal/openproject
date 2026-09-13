@@ -38,7 +38,6 @@ RSpec.describe Projects::Settings::DescriptionForm, type: :forms do
   it "renders field" do
     expect(page).to have_field "Description", with: "example description", visible: :hidden
     expect(page).to have_element "opce-ckeditor-augmented-textarea",
-                                 "data-textarea-selector": "\"#project_description\""
-    expect(page).to have_element "opce-ckeditor-augmented-textarea", "data-qa-field-name": "description"
+                                 "data-test-selector": "augmented-text-area-description"
   end
 end

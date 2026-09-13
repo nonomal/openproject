@@ -60,6 +60,14 @@ module Storages::Admin
           data: { "storages--storage-audience-target": "audienceInput" },
           value: prefilled_audience
         )
+
+        toggleable_group.text_field(
+          name: :token_exchange_scope,
+          label: I18n.t("activerecord.attributes.storages/nextcloud_storage.token_exchange_scope"),
+          required: false,
+          caption: I18n.t("storages.instructions.nextcloud.token_exchange_scope"),
+          input_width: :large
+        )
       end
     end
 

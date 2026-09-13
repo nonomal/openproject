@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,11 +34,10 @@ class Tables::Comments < Tables::Base
   def self.table(migration)
     create_table migration do |t|
       t.string :commented_type, limit: 30, default: "", null: false
-      t.integer :commented_id, default: 0, null: false
-      t.integer :author_id, default: 0, null: false
+      t.bigint :commented_id, null: false
+      t.bigint :author_id, null: false
       t.text :comments
-      t.datetime :created_on, null: false
-      t.datetime :updated_on, null: false
+      t.timestamps precision: nil, default: -> { "CURRENT_TIMESTAMP" }
 
       t.index :author_id, name: "index_comments_on_author_id"
       t.index %i[commented_id commented_type], name: "index_comments_on_commented_id_and_commented_type"

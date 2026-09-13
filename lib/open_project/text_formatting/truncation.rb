@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,9 +34,27 @@ module OpenProject
       # Used for truncation
       include ActionView::Helpers::TextHelper
 
+      ##
       # Truncates and returns the string as a single line
-      def truncate_single_line(string, *)
-        truncate(string.to_s, *).gsub(%r{[\r\n]+}m, " ").html_safe
+      #
+      # @overload truncate_single_line(text, options = {}, &block)
+      #   @param [String] text the string to truncate.
+      #   @param [Hash] options
+      #   @option options [Number] :length (30)
+      #     The maximum number of characters that should be returned, excluding
+      #     any extra content from the block.
+      #   @option options [String] :omission ("...")
+      #     The string to append after truncating.
+      #   @option options [String, RegExp] :separator
+      #     A string or regexp used to find a breaking point at which to
+      #     truncate. By default, truncation can occur at any character in text.
+      #   @option options [Boolean] :escape (true)
+      #     Whether to escape the result.
+      #
+      # @see ActionView::Helpers::TextHelper#truncate
+      # @return [String] an HTML-safe safe string as single-line.
+      def truncate_single_line(text, *)
+        truncate(text, *).gsub(%r{[\r\n]+}m, " ").html_safe # rubocop:disable Rails/OutputSafety
       end
     end
   end

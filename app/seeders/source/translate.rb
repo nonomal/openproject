@@ -65,8 +65,8 @@ module Source::Translate
 
   def translatable_keys(hash)
     hash.keys
-      .filter { translatable?(_1) }
-      .map { remove_translatable_prefix(_1) }
+      .filter { translatable?(it) }
+      .map { remove_translatable_prefix(it) }
   end
 
   def translate_value(value, i18n_key)

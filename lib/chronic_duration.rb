@@ -255,15 +255,37 @@ module ChronicDuration
     res
   end
 
-  def calculate_from_words(string, opts)
+  def calculate_from_words(string, opts) # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
     val = 0
+    last_explicit_unit = nil
     words = string.split
+
     words.each_with_index do |v, k|
       next unless v&.match?(float_matcher)
 
-      val += (convert_to_number(v) * duration_units_seconds_multiplier(
-        words[k + 1] || (opts[:default_unit] || "seconds"), opts
-      ))
+      next_word = words[k + 1]
+
+      if next_word && duration_units_list.include?(next_word)
+        # Next word is a valid unit, use it and remember as last explicit unit
+        unit = next_word
+        last_explicit_unit = next_word
+      elsif last_explicit_unit
+        # No explicit unit, but we have a previous unit - use next smaller unit
+        current_index = duration_units_list.index(last_explicit_unit)
+        unit = if current_index > 0
+                 # Use next smaller unit (lower index in array)
+                 duration_units_list[current_index - 1]
+               else
+                 # Already at smallest unit (seconds), keep using it
+                 last_explicit_unit
+               end
+        last_explicit_unit = unit
+      else
+        # No explicit unit and no previous unit, fall back to default
+        unit = opts[:default_unit] || "seconds"
+      end
+
+      val += convert_to_number(v) * duration_units_seconds_multiplier(unit, opts)
     end
     val
   end

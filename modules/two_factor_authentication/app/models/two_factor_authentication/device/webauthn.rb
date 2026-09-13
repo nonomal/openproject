@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module TwoFactorAuthentication
   class Device::Webauthn < Device
     validates :webauthn_external_id, presence: true, uniqueness: { scope: :user_id }

@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -37,9 +37,7 @@ import { WpGraphConfigurationFiltersTabInnerComponent } from 'core-app/shared/co
 import { WpGraphConfigurationSettingsTabInnerComponent } from 'core-app/shared/components/work-package-graphs/configuration-modal/tabs/settings-tab-inner.component';
 import { WorkPackageEmbeddedGraphComponent } from 'core-app/shared/components/work-package-graphs/embedded/wp-embedded-graph.component';
 import { WorkPackageOverviewGraphComponent } from 'core-app/shared/components/work-package-graphs/overview/wp-overview-graph.component';
-import * as ChartDataLabels from 'chartjs-plugin-datalabels';
 import { OpenprojectTabsModule } from 'core-app/shared/components/tabs/openproject-tabs.module';
-import { NgChartsModule } from 'ng2-charts';
 
 @NgModule({
   imports: [
@@ -49,8 +47,10 @@ import { NgChartsModule } from 'ng2-charts';
 
     OpenprojectWorkPackagesModule,
 
-    NgChartsModule,
     OpenprojectTabsModule,
+
+    // Embedded graphs
+    WorkPackageEmbeddedGraphComponent,
   ],
   declarations: [
     // Modals
@@ -60,11 +60,8 @@ import { NgChartsModule } from 'ng2-charts';
     WpGraphConfigurationSettingsTabComponent,
     WpGraphConfigurationSettingsTabInnerComponent,
 
-    // Embedded graphs
-    WorkPackageEmbeddedGraphComponent,
     // Work package graphs on version page
     WorkPackageOverviewGraphComponent,
-
   ],
   exports: [
     // Modals
@@ -73,17 +70,6 @@ import { NgChartsModule } from 'ng2-charts';
     // Embedded graphs
     WorkPackageEmbeddedGraphComponent,
     WorkPackageOverviewGraphComponent,
-  ],
+  ]
 })
-export class OpenprojectWorkPackageGraphsModule {
-  constructor() {
-    // By this seemingly useless statement, the plugin is registered with Chart.
-    // Simply importing it will have it removed probably by angular tree shaking
-    // so it will not be active. The current default of the plugin is to be enabled
-    // by default. This will be changed in the future:
-    // https://github.com/chartjs/chartjs-plugin-datalabels/issues/42
-    //
-    // eslint-ignore-next-line @typescript-eslint/no-unused-expressions
-    ChartDataLabels;
-  }
-}
+export class OpenprojectWorkPackageGraphsModule {}

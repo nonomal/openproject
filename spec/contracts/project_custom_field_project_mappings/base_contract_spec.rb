@@ -49,11 +49,7 @@ RSpec.describe ProjectCustomFieldProjectMappings::BaseContract do
   end
 
   context "with non-visible custom field and admin user" do
-    let(:project_custom_field) { build_stubbed(:project_custom_field, admin_only: true) }
-
-    before do
-      allow(ProjectCustomField).to receive(:all).and_return([project_custom_field])
-    end
+    let(:project_custom_field) { create(:project_custom_field, admin_only: true) }
 
     it_behaves_like "contract is valid"
   end

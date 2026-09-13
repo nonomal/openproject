@@ -21,12 +21,13 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit } from '@angular/core';
+import { debounce } from 'lodash-es';
+import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 export const remoteFieldUpdaterSelector = 'remote-field-updater';
@@ -35,13 +36,12 @@ export const remoteFieldUpdaterSelector = 'remote-field-updater';
   selector: remoteFieldUpdaterSelector,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: '',
+  standalone: false,
 })
 export class RemoteFieldUpdaterComponent implements OnInit, OnDestroy {
-  constructor(
-    private elementRef:ElementRef,
-    private http:HttpClient,
-  ) {
-  }
+  private elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  private http = inject(HttpClient);
+
 
   private url:string;
 
@@ -54,14 +54,14 @@ export class RemoteFieldUpdaterComponent implements OnInit, OnDestroy {
   private unitsTextField:HTMLInputElement | null = null;
 
   ngOnInit():void {
-    const element = this.elementRef.nativeElement as HTMLElement;
-    this.form = element.closest('form') as HTMLFormElement;
+    const element = this.elementRef.nativeElement;
+    this.form = element.closest('form')!;
     this.costTypeSelect = this.form.querySelector('#cost_entry_cost_type_id');
     this.unitsTextField = this.form.querySelector('#cost_entry_units');
 
-    this.url = element.dataset.url as string;
+    this.url = element.dataset.url!;
 
-    this.debouncedUpdaterBound = _.debounce(this.updater.bind(this), 500);
+    this.debouncedUpdaterBound = debounce(this.updater.bind(this), 500);
 
     this.addListeners();
   }
@@ -93,7 +93,7 @@ export class RemoteFieldUpdaterComponent implements OnInit, OnDestroy {
         .filter((mutation) => mutation.type === 'childList')
         .forEach(() => {
           if (this.spentOnTextField === null && this.form.querySelector('#cost_entry_spent_on')) {
-            this.spentOnTextField = this.form.querySelector('#cost_entry_spent_on') as HTMLInputElement;
+            this.spentOnTextField = this.form.querySelector('#cost_entry_spent_on')!;
             this.spentOnTextField.addEventListener(type, eventListener);
             observer.disconnect(); // Stop observing once the element is found and listener is added
           }
@@ -127,13 +127,13 @@ export class RemoteFieldUpdaterComponent implements OnInit, OnDestroy {
       .form
       .querySelectorAll('.remote-field--input')
       .forEach((el:HTMLInputElement) => {
-        params[el.dataset.remoteFieldKey as string] = el.value;
+        params[el.dataset.remoteFieldKey!] = el.value;
       });
 
     this
       .request(params)
       .subscribe((response:object) => {
-        _.each(response, (val:string, selector:string) => {
+        Object.entries(response).forEach(([selector, val]) => {
           const element = document.getElementById(selector) as HTMLElement|HTMLInputElement;
 
           if (element instanceof HTMLInputElement) {

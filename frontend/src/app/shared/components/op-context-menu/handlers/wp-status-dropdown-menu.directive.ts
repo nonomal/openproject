@@ -21,14 +21,13 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
 import { StateService } from '@uirouter/core';
-import { OPContextMenuService } from 'core-app/shared/components/op-context-menu/op-context-menu.service';
-import { Directive, ElementRef, Input } from '@angular/core';
+import { Directive, Input, inject } from '@angular/core';
 import {
   OpContextMenuTrigger
 } from 'core-app/shared/components/op-context-menu/handlers/op-context-menu-trigger.directive';
@@ -49,26 +48,24 @@ import {
   WorkPackageNotificationService
 } from 'core-app/features/work-packages/services/notifications/work-package-notification.service';
 import isNewResource from 'core-app/features/hal/helpers/is-new-resource';
-import { HalError } from "core-app/features/hal/services/hal-error";
+import { HalError } from 'core-app/features/hal/services/hal-error';
 
 @Directive({
   selector: '[wpStatusDropdown]',
+  standalone: false,
 })
 export class WorkPackageStatusDropdownDirective extends OpContextMenuTrigger {
+  readonly $state = inject(StateService);
+  protected workPackageNotificationService = inject(WorkPackageNotificationService);
+  protected halEditing = inject(HalResourceEditingService);
+  protected toastService = inject(ToastService);
+  protected I18n = inject(I18nService);
+  protected halEvents = inject(HalEventsService);
+
+  // eslint-disable-next-line @angular-eslint/no-input-rename
   @Input('wpStatusDropdown-workPackage') public workPackage:WorkPackageResource;
 
-  constructor(readonly elementRef:ElementRef,
-    readonly opContextMenu:OPContextMenuService,
-    readonly $state:StateService,
-    protected workPackageNotificationService:WorkPackageNotificationService,
-    protected halEditing:HalResourceEditingService,
-    protected toastService:ToastService,
-    protected I18n:I18nService,
-    protected halEvents:HalEventsService) {
-    super(elementRef, opContextMenu);
-  }
-
-  protected open(evt:JQuery.TriggeredEvent) {
+  protected open(evt:Event) {
     const change = this.halEditing.changeFor(this.workPackage);
 
     change.getForm().then((form:any) => {
@@ -113,7 +110,7 @@ export class WorkPackageStatusDropdownDirective extends OpContextMenuTrigger {
       linkText: status.name,
       postIcon: status.isReadonly ? 'icon-locked' : null,
       postIconTitle: this.I18n.t('js.work_packages.message_work_package_read_only'),
-      class: Highlighting.inlineClass('status', status.id!),
+      class: Highlighting.dotClass('status', status.id!),
       onClick: () => {
         this.updateStatus(status);
         return true;

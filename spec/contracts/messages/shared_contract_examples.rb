@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -37,13 +39,13 @@ RSpec.shared_examples_for "message contract" do
     end
   end
 
-  let(:permissions) { [] }
+  let(:permissions) { %i[edit_messages] }
   let(:reply_message) { build_stubbed(:message) }
   let(:other_user) { build_stubbed(:user) }
-  let(:message_forum) do
-    build_stubbed(:forum)
-  end
   let(:message_project) { build_stubbed(:project) }
+  let(:message_forum) do
+    build_stubbed(:forum, project: message_project)
+  end
   let(:message_parent) { build_stubbed(:message) }
   let(:message_subject) { "Subject" }
   let(:message_content) { "A content" }

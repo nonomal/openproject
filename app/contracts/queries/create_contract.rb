@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,5 +30,10 @@
 
 module Queries
   class CreateContract < BaseContract
+    validate :user_allowed_to_save
+
+    def user_allowed_to_save
+      errors.add :base, :error_unauthorized unless user_allowed_to_save_queries?
+    end
   end
 end

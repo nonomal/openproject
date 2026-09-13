@@ -34,13 +34,13 @@ img.diff, div.diff, table.diff, blockquote.diff, address.diff, h1.diff, h2.diff,
 
 del
   &.diffmod, &.diffdel
-    background: var(--diffBlob-deletion-bgColor-word)
-    color: var(--diffBlob-deletion-fgColor-text)
+    background: var(--label-red-bgColor-active)
+    color: var(--diffBlob-deletionLine-fgColor)
 
 ins
   &.diffmod, &.diffins
-    background: var(--diffBlob-addition-bgColor-word)
-    color: var(--diffBlob-addition-fgColor-text)
+    background: var(--label-green-bgColor-active)
+    color: var(--diffBlob-additionLine-fgColor)
 
 .text-diff
   padding: 1em

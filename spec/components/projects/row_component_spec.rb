@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,20 +31,48 @@
 require "rails_helper"
 
 RSpec.describe Projects::RowComponent, type: :component do
-  describe "#name" do
+  include Rails.application.routes.url_helpers
+
+  def render_component(...)
+    render_inline(described_class.new(...))
+  end
+
+  let(:project) { build_stubbed(:project, name: "My Project No. 1", identifier: "myproject_no_1") }
+  let(:table) do
+    instance_double(Projects::TableComponent, columns: [Queries::Projects::Selects::Default.new(:name)],
+                                              favorited_project_ids: [])
+  end
+
+  let(:user) { build_stubbed(:user) }
+
+  current_user { user }
+
+  subject(:rendered_component) do
+    render_component(row: [project, 0], table:)
+  end
+
+  describe "Project Name" do
     it "renders the project name as a link" do
-      project = build_stubbed(:project, name: "My Project No. 1", identifier: "myproject_no_1")
-
-      table = instance_double(Projects::TableComponent, columns: [Queries::Projects::Selects::Default.new(:name)],
-                                                        favored_project_ids: [])
-      component = described_class.new(row: [project, 0], table:)
-
-      render_inline(component)
-
-      expect(page).to have_css(
+      expect(rendered_component).to have_css(
         "a[data-turbo='false'][href='/projects/myproject_no_1']",
         text: "My Project No. 1"
       )
+    end
+  end
+
+  describe "Menu" do
+    context "when the user is anonymous" do
+      let(:user) { build_stubbed(:anonymous) }
+
+      it "renders no action menu" do
+        expect(rendered_component).not_to have_element "action-menu"
+      end
+    end
+
+    context "when the user is logged in" do
+      it "renders an async Primer ActionMenu shell" do
+        expect(rendered_component).to have_element "action-menu"
+      end
     end
   end
 end

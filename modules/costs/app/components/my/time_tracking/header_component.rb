@@ -33,20 +33,8 @@ module My
     class HeaderComponent < ApplicationComponent
       options :date, :mode, :view_mode
 
-      def view_mode_block
-        if view_mode == :list
-          lambda do |button|
-            button.with_leading_visual_icon(icon: "list-unordered")
-            button.with_trailing_action_icon(icon: "triangle-down")
-            t(:label_list)
-          end
-        else
-          lambda do |button|
-            button.with_leading_visual_icon(icon: :calendar)
-            button.with_trailing_action_icon(icon: "triangle-down")
-            t(:label_calendar)
-          end
-        end
+      def view_mode_switch_link(new_view_mode)
+        my_time_tracking_path(date: date, mode: mode, view_mode: new_view_mode)
       end
     end
   end

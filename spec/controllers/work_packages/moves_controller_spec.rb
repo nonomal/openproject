@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -33,6 +35,7 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
   shared_let(:role) do
     create(:project_role,
            permissions: %i(move_work_packages
+                           copy_work_packages
                            view_work_packages
                            add_work_packages
                            edit_work_packages
@@ -67,8 +70,8 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
   describe "new.html" do
     become_admin
 
-    describe "w/o a valid planning element id" do
-      describe "w/o being a member or administrator" do
+    describe "without a valid planning element id" do
+      describe "without being a member or administrator" do
         become_non_member
 
         it "renders a 404 page" do
@@ -78,7 +81,7 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
         end
       end
 
-      describe "w/ the current user being a member" do
+      describe "with the current user being a member" do
         become_member_with_view_planning_element_permissions
 
         it "raises ActiveRecord::RecordNotFound errors" do
@@ -89,10 +92,10 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
       end
     end
 
-    describe "w/ a valid planning element id" do
+    describe "with a valid planning element id" do
       become_admin
 
-      describe "w/o being a member or administrator" do
+      describe "without being a member or administrator" do
         become_non_member
 
         it "renders a 403 Forbidden page" do
@@ -102,7 +105,7 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
         end
       end
 
-      describe "w/ the current user being a member" do
+      describe "with the current user being a member" do
         become_member_with_move_work_package_permissions
 
         before do
@@ -113,10 +116,57 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
           expect(response).to render_template("work_packages/moves/new")
         end
       end
+
+      describe "with a semantic work package identifier",
+               with_settings: { work_packages_identifier: "semantic" } do
+        let(:semantic_project) { create(:project, :semantic, public: false, types: [type, type2]) }
+        let(:semantic_target_project) { create(:project, :semantic, public: false, types: [type, type2]) }
+        let(:semantic_work_package) do
+          create(:work_package, project: semantic_project, type:, author: user, priority:)
+        end
+        let!(:semantic_member) { create(:member, user: current_user, project: semantic_project, roles: [role]) }
+        let!(:semantic_target_member) { create(:member, user: current_user, project: semantic_target_project, roles: [role]) }
+
+        it "resolves the semantic identifier and renders the new builder template" do
+          get "new", params: { work_package_id: semantic_work_package.display_id }
+
+          expect(response).to render_template("work_packages/moves/new")
+        end
+
+        it "resolves the semantic identifier on create and moves the work package" do
+          post :create, params: {
+            work_package_id: semantic_work_package.display_id,
+            new_project_id: semantic_target_project.id,
+            new_type_id: semantic_target_project.enabled_types.first.id,
+            follow: "1"
+          }
+
+          expect(response).to be_redirect
+          expect(semantic_work_package.reload.project_id).to eq(semantic_target_project.id)
+          expect(response.location).to match(%r{/work_packages/#{semantic_target_project.identifier}-\d+})
+        end
+      end
     end
   end
 
   describe "#create" do
+    context "when the user has copy_work_packages but not move_work_packages" do
+      let(:copy_only_role) do
+        create(:project_role,
+               permissions: %i[copy_work_packages view_work_packages edit_work_packages])
+      end
+      let!(:source_member) { create(:member, user: current_user, project:, roles: [copy_only_role]) }
+
+      it "renders a 403 Forbidden page" do
+        post :create,
+             params: {
+               work_package_id: work_package.id
+             }
+
+        expect(response.response_code).to eq(403)
+      end
+    end
+
     let!(:source_member) { create(:member, user: current_user, project:, roles: [role]) }
     let!(:target_member) { create(:member, user: current_user, project: target_project, roles: [role]) }
     let(:target_project) { create(:project, public: false) }
@@ -128,7 +178,7 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
     end
 
     describe "an issue to another project" do
-      context "w/o following" do
+      context "without following" do
         before do
           status
         end
@@ -160,7 +210,7 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
                params: {
                  work_package_id: work_package.id,
                  new_project_id: target_project.id,
-                 new_type_id: target_project.types.first.id,
+                 new_type_id: target_project.enabled_types.first.id,
                  assigned_to_id: "",
                  responsible_id: "",
                  status_id: "",
@@ -175,6 +225,40 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
           expect(subject).to redirect_to(work_package_path(work_package))
         end
       end
+
+      context "when the move fails validation, with semantic identifiers",
+              with_settings: { work_packages_identifier: "semantic" } do
+        let(:outsider) { create(:user) }
+        let(:unmovable_work_package) do
+          create(:work_package,
+                 project_id: project.id,
+                 type:,
+                 author: user,
+                 priority:,
+                 responsible: outsider)
+        end
+
+        before do
+          # outsider is not a member of target_project, so the move fails
+          # contract validation before anything is persisted.
+          unmovable_work_package.update_columns(identifier: "SRC-1", sequence_number: 1)
+
+          post :create,
+               params: {
+                 work_package_id: unmovable_work_package.id,
+                 new_project_id: target_project.id
+               }
+        end
+
+        it "shows the semantic identifier in the error flash, not the bare numeric id" do
+          expect(flash[:error]).to include("SRC-1")
+          expect(flash[:error]).not_to include("##{unmovable_work_package.id}")
+        end
+
+        it "does not persist the move" do
+          expect(unmovable_work_package.reload.project_id).to eq(project.id)
+        end
+      end
     end
 
     describe "bulk move" do
@@ -182,8 +266,9 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
         before do
           # make sure, that the types of the work-packages are available on the target-project
           # (and handle it/test it, when this is not the case see #1868)
-          target_project.types << [work_package.type, work_package_2.type]
-          target_project.save
+          [work_package.type, work_package_2.type].each do |type|
+            target_project.project_types.create!(type:)
+          end
 
           post :create,
                params: {
@@ -228,6 +313,31 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
         end
       end
 
+      context "when the moved work package has a version not shared with the target project" do
+        let(:source_version) { create(:version, project:) }
+        let(:target_version) { create(:version, project: target_project) }
+
+        before do
+          target_project.project_types.create!(type: work_package.type)
+          work_package.target_versions = [source_version]
+
+          post :create,
+               params: {
+                 ids: [work_package.id],
+                 new_project_id: target_project.id,
+                 target_version_ids: [target_version.id]
+               }
+          work_package.reload
+        end
+
+        # The project change clears the (now unassignable) source version via the
+        # system, which must not clash with the user-assigned target version.
+        it "moves the work package and swaps in the target version" do
+          expect(work_package.project_id).to eq(target_project.id)
+          expect(work_package.target_versions.pluck(:id)).to eq([target_version.id])
+        end
+      end
+
       context "to another type" do
         before do
           post :create,
@@ -262,6 +372,25 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
         end
       end
 
+      context "with another budget" do
+        let(:target_budget) { create(:budget, project:) }
+
+        before do
+          post :create,
+               params: {
+                 ids: [work_package.id, work_package_2.id],
+                 budget_id: target_budget.id
+               }
+          work_package.reload
+          work_package_2.reload
+        end
+
+        it "assigns the budget to the work packages" do
+          expect(work_package.budget_id).to eq(target_budget.id)
+          expect(work_package_2.budget_id).to eq(target_budget.id)
+        end
+      end
+
       shared_examples_for "single note for moved work package" do
         it { expect(moved_work_package.journals.count).to eq(2) }
 
@@ -271,7 +400,7 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
       describe "move with given note" do
         let(:note) { "Moving a work package" }
 
-        context "w/o work package changes" do
+        context "without work package changes" do
           before do
             post :create,
                  params: {
@@ -285,7 +414,7 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
           end
         end
 
-        context "w/o work package changes" do
+        context "with a work package priority change" do
           before do
             post :create,
                  params: {
@@ -301,15 +430,15 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
         end
       end
 
-      describe "&copy" do
-        context "follows to another project" do
+      describe "& duplicate" do
+        context "when following to another project" do
           before do
             post :create,
                  params: {
                    ids: [work_package.id],
                    copy: "",
                    new_project_id: target_project.id,
-                   new_type_id: target_project.types.first.id, # FIXME see #1868
+                   new_type_id: target_project.enabled_types.first.id, # FIXME see #1868
                    follow: ""
                  }
           end
@@ -320,7 +449,7 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
           end
         end
 
-        context "w/o changing the work package's attribute" do
+        context "without changing the work package's attribute" do
           before do
             post :create,
                  params: {
@@ -340,8 +469,8 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
             expect(subject.status_id).to eq(work_package.status_id)
           end
 
-          it "did not change the status" do
-            expect(subject.version_id).to eq(work_package.version_id)
+          it "did not change the version" do
+            expect(subject.target_versions.pluck(:id)).to eq(work_package.target_versions.pluck(:id))
           end
 
           it "did not change the assignee" do
@@ -354,10 +483,10 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
         end
 
         context "with changing the work package's attribute" do
-          let(:start_date) { Date.today }
-          let(:due_date) { Date.today + 1 }
+          let(:start_date) { Date.current }
+          let(:due_date) { Date.tomorrow }
           let(:target_version) { create(:version, project: target_project) }
-          let(:target_type) { target_project.types.first }
+          let(:target_type) { target_project.enabled_types.first }
           let(:target_status) { create(:status, workflow_for_type: target_type) }
 
           let(:target_user) do
@@ -381,7 +510,7 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
                    assigned_to_id: target_user.id,
                    responsible_id: target_user.id,
                    status_id: target_status,
-                   version_id: target_version.id,
+                   target_version_ids: [target_version.id],
                    start_date:,
                    due_date:
                  }
@@ -389,7 +518,7 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
 
           subject { WorkPackage.limit(2).order(Arel.sql("id desc")).where(project_id: target_project.id) }
 
-          it "copied two work packages" do
+          it "duplicates two work packages" do
             expect(subject.count).to eq(2)
           end
 
@@ -418,8 +547,8 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
           end
 
           it "did change the version" do
-            subject.map(&:version_id).each do |id|
-              expect(id).to eq(target_version.id)
+            subject.each do |work_package|
+              expect(work_package.target_versions.pluck(:id)).to eq([target_version.id])
             end
           end
 
@@ -437,7 +566,7 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
         end
 
         context "with given note" do
-          let(:note) { "Copying a work package" }
+          let(:note) { "Duplicating a work package" }
 
           before do
             post :create,
@@ -486,9 +615,9 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
             end
           end
 
-          context "when copying the parent with a child exceeds the request limit",
+          context "when duplicating the parent with a child exceeds the request limit",
                   with_settings: { work_packages_bulk_request_limit: 1 } do
-            let(:note) { "Copying a work package" }
+            let(:note) { "Duplicating a work package" }
 
             before do
               post :create,
@@ -515,7 +644,7 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
           end
         end
 
-        context "when copying child work package from one project to other" do
+        context "when duplicating child work package from one project to other" do
           let(:to_project) do
             create(:project,
                    types: [type])
@@ -547,7 +676,7 @@ RSpec.describe WorkPackages::MovesController, with_settings: { journal_aggregati
                      copy: "",
                      new_project_id: to_project.id,
                      work_package_id: child_wp.id,
-                     new_type_id: to_project.types.first.id
+                     new_type_id: to_project.enabled_types.first.id
                    }
             end
           end

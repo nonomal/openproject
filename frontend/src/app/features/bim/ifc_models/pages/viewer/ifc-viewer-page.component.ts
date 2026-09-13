@@ -21,18 +21,13 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import {
-  ChangeDetectionStrategy,
-  Component,
-  Injector,
-  OnInit,
-  ViewEncapsulation,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, ViewEncapsulation, inject } from '@angular/core';
+
 import {
   PartitionedQuerySpacePageComponent,
   ToolbarButtonComponentDefinition,
@@ -44,9 +39,12 @@ import {
   ZenModeButtonComponent,
 } from 'core-app/features/work-packages/components/wp-buttons/zen-mode-toggle-button/zen-mode-toggle-button.component';
 import {
+  bcfCardsViewIdentifier,
   bcfSplitViewCardsIdentifier,
+  bcfTableViewIdentifier,
   bcfViewerViewIdentifier,
   BcfViewService,
+  BcfViewState,
 } from 'core-app/features/bim/ifc_models/pages/viewer/bcf-view.service';
 import {
   BcfViewToggleButtonComponent,
@@ -91,8 +89,15 @@ import {
     QueryParamListenerService,
   ],
   selector: 'op-ifc-viewer-page',
+  standalone: false,
 })
-export class IFCViewerPageComponent extends PartitionedQuerySpacePageComponent implements UntilDestroyedMixin, OnInit {
+export class IFCViewerPageComponent
+  extends PartitionedQuerySpacePageComponent
+  implements UntilDestroyedMixin, OnInit, OnDestroy {
+  readonly ifcData = inject(IfcModelsDataService);
+  readonly bcfView = inject(BcfViewService);
+  readonly viewerBridgeService = inject(ViewerBridgeService);
+
   text = {
     title: this.I18n.t('js.bcf.management'),
     delete: this.I18n.t('js.button_delete'),
@@ -109,7 +114,6 @@ export class IFCViewerPageComponent extends PartitionedQuerySpacePageComponent i
       component: WorkPackageCreateButtonComponent,
       inputs: {
         stateName$: of(this.newRoute),
-        allowed: ['work_packages.createWorkPackage', 'work_package.copy'],
       },
     },
     {
@@ -154,14 +158,8 @@ export class IFCViewerPageComponent extends PartitionedQuerySpacePageComponent i
     },
   ];
 
-  constructor(
-    readonly ifcData:IfcModelsDataService,
-    readonly bcfView:BcfViewService,
-    readonly injector:Injector,
-    readonly viewerBridgeService:ViewerBridgeService,
-  ) {
-    super(injector);
-  }
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  private removeSubscription:Function;
 
   ngOnInit():void {
     super.ngOnInit();
@@ -173,8 +171,36 @@ export class IFCViewerPageComponent extends PartitionedQuerySpacePageComponent i
       .subscribe((query) => {
         const dr = query.displayRepresentation || bcfSplitViewCardsIdentifier;
         this.filterAllowed = dr !== bcfViewerViewIdentifier;
+        // When changing the query space by selecting a dropdown option, handle the split screen
+        // and hide it for full views.
+        this.updateSplitScreen(dr as BcfViewState);
         this.cdRef.detectChanges();
       });
+
+    this.removeSubscription = this.$transitions.onSuccess({}, (_transition):void => {
+      // When going back from "details" route to "list" route handle the split screen right side
+      const dr = this.querySpace.query.value?.displayRepresentation;
+      this.updateSplitScreen((dr || bcfTableViewIdentifier) as BcfViewState);
+    });
+  }
+
+  ngOnDestroy() {
+    this.removeSubscription();
+    super.ngOnDestroy();
+  }
+
+  breadcrumbItems() {
+    return [
+      {
+        href: this.pathHelperService.projectPath(this.currentProject.identifier!),
+        text: (this.currentProject.name),
+      },
+      {
+        href: this.pathHelperService.projectBCFPath(this.currentProject.identifier!),
+        text: this.I18n.t('js.bcf.label_bcf'),
+      },
+      this.selectedTitle ?? '',
+    ];
   }
 
   /**
@@ -186,5 +212,19 @@ export class IFCViewerPageComponent extends PartitionedQuerySpacePageComponent i
         this.bcfView.initialize(query, query.results);
         return query;
       });
+  }
+
+  private updateSplitScreen(dr:BcfViewState):void {
+    const isFullViewDisplayRepresentation = [
+      bcfViewerViewIdentifier,
+      bcfCardsViewIdentifier,
+      bcfTableViewIdentifier,
+    ].includes(dr);
+
+    const isListRoute = this.uiRouterGlobals.current.name === 'bim.partitioned.list';
+
+    if (isListRoute && isFullViewDisplayRepresentation) {
+      document.documentElement.style.setProperty('--split-screen-width', '0');
+    }
   }
 }

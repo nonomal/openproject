@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,7 +29,7 @@
 #++
 
 class Queries::Filters::MeValue
-  KEY = "me".freeze
+  KEY = "me"
 
   def id
     KEY

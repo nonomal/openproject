@@ -20,12 +20,12 @@ with OpenProject 4.0.7.
 
 Additionally, several errors on the work package table have been fixed:
 
-  - Deleted work package queries which have been added to the side menu
-    are now properly removed when the query is deleted
-    ([#18591](https://community.openproject.org/work_packages/18591 "#18591")).
-  - The “Save” button in the query list is now only displayed when
-    changes have been made
-    ([#18592](https://community.openproject.org/work_packages/18592 "#18592")).
+- Deleted work package queries which have been added to the side menu
+  are now properly removed when the query is deleted
+  ([#18591](https://community.openproject.org/work_packages/18591 "#18591")).
+- The “Save” button in the query list is now only displayed when
+  changes have been made
+  ([#18592](https://community.openproject.org/work_packages/18592 "#18592")).
 
 Furthermore, a bug has been fixed which caused an internal error when
 creating a new reporting

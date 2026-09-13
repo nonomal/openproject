@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -60,7 +62,6 @@ RSpec.describe "Upload attachment to work package", :js, :selenium do
       before do
         wp_page.visit!
         wp_page.ensure_page_loaded
-        wp_page.switch_to_tab(tab: "Activity")
         wp_page.wait_for_activity_tab
       end
 
@@ -113,7 +114,7 @@ RSpec.describe "Upload attachment to work package", :js, :selenium do
           message: "Successful creation."
         )
 
-        split_view = Pages::SplitWorkPackage.new(WorkPackage.last)
+        split_view = Pages::PrimerizedSplitWorkPackage.new(WorkPackage.last)
 
         field = split_view.edit_field :description
         expect(field.display_element).to have_css("img")
@@ -139,6 +140,49 @@ RSpec.describe "Upload attachment to work package", :js, :selenium do
 
         wp.reload
         expect(wp.attachments.count).to eq(1)
+      end
+
+      context "with the attachments list hidden" do
+        let!(:project) do
+          create(:project, types: [type], deactivate_work_package_attachments: true)
+        end
+
+        it "claims the image uploaded in the description (Regression COMMS-890)" do
+          table.visit!
+          new_page = table.create_wp_by_button type
+          subject = new_page.edit_field :subject
+          subject.set_value "My subject"
+
+          expect(page).to have_no_css("op-attachments")
+
+          target = find(".ck-content")
+          attachments.drag_and_drop_file(target, image_fixture.path)
+
+          sleep 2 unless using_cuprite? # rubocop:disable OpenProject/NoSleepInFeatureSpecs
+          editor.wait_until_upload_progress_toaster_cleared
+
+          editor.in_editor do |_container, editable|
+            expect(editable).to have_css('img[src*="/api/v3/attachments/"]', wait: 20)
+            expect(editable).to have_no_css(".ck-upload-placeholder-loader")
+          end
+
+          sleep 2 unless using_cuprite? # rubocop:disable OpenProject/NoSleepInFeatureSpecs
+
+          scroll_to_and_click find_by_id("work-packages--edit-actions-save")
+
+          new_page.expect_and_dismiss_toaster(
+            message: "Successful creation."
+          )
+
+          split_view = Pages::SplitWorkPackage.new(WorkPackage.last)
+
+          field = split_view.edit_field :description
+          expect(field.display_element).to have_css("img")
+
+          wp = WorkPackage.last
+          expect(wp.attachments.count).to eq(1)
+          expect(wp.attachments.first.container).to eq(wp)
+        end
       end
     end
 
@@ -224,23 +268,31 @@ RSpec.describe "Upload attachment to work package", :js, :selenium do
   describe "attachment dropzone" do
     shared_examples "attachment dropzone common" do
       it "can drag something to the files tab and have it open" do
-        wp_page.switch_to_tab(tab: "Activity")
-        wp_page.wait_for_activity_tab
+        wp_page.switch_to_tab(tab: "Files")
+        wait_for_network_idle
 
-        wp_page.expect_tab "Activity"
+        wp_page = Pages::FullWorkPackage.new(work_package, project)
+        wp_page.ensure_page_loaded
+        wp_page.expect_tab "Files"
+
+        attachments = Components::Attachments.new
         attachments.drag_and_drop_file test_selector("op-attachments--drop-box"),
                                        image_fixture.path,
                                        :center,
                                        page.find('[data-qa-tab-id="files"]'),
                                        delay_dragleave: true
 
-        expect(page).to have_test_selector("op-files-tab--file-list-item-title", text: "image.png", wait: 10)
         editor.wait_until_upload_progress_toaster_cleared
+        expect(page).to have_test_selector("op-files-tab--file-list-item-title", text: "image.png", wait: 10)
         wp_page.expect_tab "Files"
       end
 
       it "can drag something from the files tab and create a comment with it" do
-        wp_page.switch_to_tab(tab: "files")
+        wp_page.switch_to_tab(tab: "Activity")
+        wait_for_network_idle
+        wp_page = Pages::FullWorkPackage.new(work_package, project)
+        wp_page.ensure_page_loaded
+        wp_page.wait_for_activity_tab
 
         attachments.drag_and_drop_file ".work-package-comment",
                                        image_fixture.path,

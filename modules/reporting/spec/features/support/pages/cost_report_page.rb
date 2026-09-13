@@ -79,21 +79,17 @@ module Pages
       end
     end
 
-    def show_loading_indicator(present: true)
-      if present
-        expect(page).to have_css("#ajax-indicator")
-      else
-        expect(page).to have_no_css("#ajax-indicator")
-      end
-    end
-
     def wait_for_page_to_reload
-      show_loading_indicator
-      show_loading_indicator(present: false)
+      wait_for_network_idle
+      expect(page).to have_no_css("#global-loading-indicator")
     end
 
     def path
-      cost_reports_path(project)
+      if project
+        project_reporting_cost_reports_path(project)
+      else
+        reporting_cost_reports_path
+      end
     end
   end
 end

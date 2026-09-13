@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 require "features/work_packages/details/inplace_editor/shared_examples"
 require "features/work_packages/shared_contexts"
@@ -37,7 +39,7 @@ RSpec.describe "subject inplace editor", :js, :selenium do
            project: subproject2)
   end
 
-  let(:property_name) { :version }
+  let(:property_name) { :targetVersions }
   let(:work_package) { create(:work_package, project:) }
   let(:user) do
     create(:user,
@@ -55,11 +57,11 @@ RSpec.describe "subject inplace editor", :js, :selenium do
       login_as(user)
     end
 
-    it "renders hierarchical versions" do
+    it "renders hierarchical versions", with_settings: { work_package_multiple_versions: false } do
       work_package_page.visit!
       work_package_page.ensure_page_loaded
 
-      field = work_package_page.work_package_field(:version)
+      field = work_package_page.work_package_field(:targetVersions)
       field.activate!
 
       expect(page).to have_css(".ng-option-label", text: "-")
@@ -70,7 +72,7 @@ RSpec.describe "subject inplace editor", :js, :selenium do
       # Expect the order to be descending by version date
       labels = page.all(".ng-option-label").map { |el| el.text.strip }
       expect(labels)
-        .to eq ["-", project.name, version.name, "Project N/A", version2.name, version3.name]
+        .to eq ["-", project.name, version.name, I18n.t(:"api_v3.undisclosed.project"), version2.name, version3.name]
 
       page.find(".ng-option-label", text: version3.name).select_option
       field.expect_state_text(version3.name)
@@ -80,7 +82,7 @@ RSpec.describe "subject inplace editor", :js, :selenium do
       work_package_page.visit!
       work_package_page.ensure_page_loaded
 
-      field = work_package_page.work_package_field(:version)
+      field = work_package_page.work_package_field(:targetVersions)
       field.activate!
 
       field.set_new_value "Super cool new release"
@@ -100,7 +102,7 @@ RSpec.describe "subject inplace editor", :js, :selenium do
       work_package_page.visit!
       work_package_page.ensure_page_loaded
 
-      field = work_package_page.work_package_field(:version)
+      field = work_package_page.work_package_field(:targetVersions)
       field.activate!
 
       field.input_element.find("input").set "Version that does not exist"

@@ -32,19 +32,20 @@ module Meetings
     include ApplicationHelper
     include OpPrimer::ComponentHelpers
 
-    def initialize(meeting:)
+    def initialize(meeting:, state: :show)
       super
 
       @meeting = meeting
       @project = meeting.project
+      @state = state
     end
 
     private
 
-    def wrapper_data_attributes
+    def show_page_data_attributes
       {
-        controller: "meetings-drag-and-drop add-meeting-params",
-        "application-target": "dynamic"
+        turbo: true,
+        controller: "meetings--drag-and-drop meetings--submit"
       }
     end
   end

@@ -48,7 +48,7 @@ The following sections provide links to the documentation for each project phase
 
 | Project phase                                                | Documentation for                                            |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| [Project concept and initiation](#project-concept-and-initiation) | Collect ideas and specify project scope and deliverables:  set up a project, document initial ideas, project description, invite members. |
+| [Project concept and initiation](#project-concept-and-initiation) | Collect ideas and specify project scope and deliverables: set up a project, document initial ideas, project description, invite members. |
 | [Project definition and planning](#project-definition-and-planning) | Create a project overview with detailed information, set up a project plan, create your roadmap. |
 | [Project launch or execution](#project-launch-or-execution)  | Manage all project activities, such as tasks, deliverables, risks, features, bugs, change requests. Use agile boards with your teams, document meetings, share news. |
 | [Project performance and control](#project-performance-and-control) | Create and manage project budgets, track and evaluate time and costs. Have custom reports for accurate, current insight into project performance and allocated resources. |
@@ -103,10 +103,10 @@ Create and manage project budgets, track and evaluate time and costs. Have custo
 
 Document project achievements, lessons learned, best practices and easily summarize the main results of a project. Archive projects for later reference and lessons learned.
 
-| Features        | Documentation for                                            |
-| --------------- | ------------------------------------------------------------ |
-| [Wiki](../../user-guide/wiki/create-edit-wiki/)            | Document all relevant project information, lessons learned, best practices, results, and more. |
-| [Project archive](../../user-guide/projects/#archive-a-project) | Archive your project for further reference and documentation. |
+| Features                                                                                             | Documentation for                                            |
+|------------------------------------------------------------------------------------------------------| ------------------------------------------------------------ |
+| [Wiki](../../user-guide/wiki/create-edit-wiki/)                                                      | Document all relevant project information, lessons learned, best practices, results, and more. |
+| [Project archive](../../user-guide/projects/project-settings/project-information/#archive-a-project) | Archive your project for further reference and documentation. |
 
 ## OpenProject products
 
@@ -116,8 +116,8 @@ OpenProject can be used in three different editions, either on-premises or as so
 
 ![openproject versions](1569586019132.png)
 
-* [Community edition](https://www.openproject.org/download-and-installation/): self-installed on-premise.
-* [Enterprise cloud edition](https://www.openproject.org/enterprise-edition/#hosting-options): we host it, incl. Enterprise add-ons and support.
-* [Enterprise on-premises edition](https://www.openproject.org/enterprise-edition/): self-hosted version, incl. Enterprise add-ons and support.
+- [Community edition](https://www.openproject.org/download-and-installation/): self-installed on-premises.
+- [Enterprise cloud edition](https://www.openproject.org/enterprise-edition/#hosting-options): we host it, incl. Enterprise add-ons and support.
+- [Enterprise on-premises edition](https://www.openproject.org/enterprise-edition/): self-hosted version, incl. Enterprise add-ons and support.
 
 To compare the features side by side, please visit our [Feature Comparison](https://www.openproject.org/pricing/#features) page.

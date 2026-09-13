@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -103,7 +105,7 @@ module UserInvitation
   end
 
   def reset_login(user_id)
-    User.where(id: user_id).update_all identity_url: nil
+    UserAuthProviderLink.where(user_id:).delete_all
     UserPassword.where(user_id:).destroy_all
   end
 
@@ -117,8 +119,8 @@ module UserInvitation
   def invite_user!(user, send_notification: true)
     user, token = user_invitation user
 
-    if token && send_notification
-      OpenProject::Notifications.send(Events.user_invited, token)
+    if token
+      OpenProject::Notifications.send(Events.user_invited, token) if send_notification
 
       user
     end

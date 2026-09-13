@@ -29,7 +29,9 @@
 #++
 
 class MeetingMailer < UserMailer
-  def invited(meeting, user, actor)
+  include CalendarAttachment
+
+  def invited(meeting, user, actor, standalone_occurrence: false)
     @actor = actor
     @meeting = meeting
     @user = user
@@ -37,24 +39,26 @@ class MeetingMailer < UserMailer
     open_project_headers "Project" => @meeting.project.identifier,
                          "Meeting-Id" => @meeting.id
 
-    with_attached_ics(meeting, user) do
+    with_attached_ics(meeting, user, standalone_occurrence:) do
       subject = "[#{@meeting.project.name}] #{@meeting.title}"
       mail(to: user, subject:)
     end
   end
 
-  def rescheduled(meeting, user, actor, changes:)
+  def updated(meeting, user, actor, changes:, added_participants: [], removed_participants: [])
     @actor = actor
     @user = user
     @meeting = meeting
     @changes = changes
+    @added_participants = Array(added_participants)
+    @removed_participants = Array(removed_participants)
 
     open_project_headers "Project" => @meeting.project.identifier,
                          "Meeting-Id" => @meeting.id
 
     with_attached_ics(meeting, user) do
       subject = "[#{@meeting.project.name}] "
-      subject << I18n.t("meeting.email.rescheduled.header", title: @meeting.title)
+      subject << I18n.t("meeting.email.updated.header", title: @meeting.title)
       mail(to: user, subject:)
     end
   end
@@ -89,6 +93,21 @@ class MeetingMailer < UserMailer
     end
   end
 
+  def ended_series(series, user, actor)
+    @actor = actor
+    @user = user
+    @series = series
+
+    open_project_headers "Project" => @series.project.identifier,
+                         "Meeting-Id" => @series.id
+
+    with_attached_ics(@series, user) do
+      subject = I18n.t("meeting.email.ended.header_series", title: @series.title)
+
+      mail(to: user, subject: "[#{@series.project.name}] #{subject}")
+    end
+  end
+
   def icalendar_notification(meeting, user, _actor, **)
     @meeting = meeting
 
@@ -107,12 +126,17 @@ class MeetingMailer < UserMailer
       call = ics_service_call(meeting, user, **args)
 
       call.on_success do
-        attachments["meeting.ics"] = {
-          mime_type: "text/calendar; method=REQUEST; charset=UTF-8",
-          content: call.result
-        }
+        ics_content = call.result
+        cancelled = args[:cancelled] || false
 
-        yield
+        # The attachment has to be added before the mail is created
+        add_calendar_attachment(ics_content, cancelled:)
+
+        message = yield
+
+        add_calendar_part(message, ics_content, cancelled:)
+
+        message
       end
 
       call.on_failure do
@@ -121,15 +145,15 @@ class MeetingMailer < UserMailer
     end
   end
 
-  def ics_service_call(meeting, user, **args)
+  def ics_service_call(meeting, user, standalone_occurrence: false, **args)
     if meeting.is_a?(RecurringMeeting)
       ::RecurringMeetings::ICalService
         .new(user:, series: meeting)
         .generate_series(**args)
-    elsif meeting.recurring?
+    elsif meeting.recurring? && !standalone_occurrence
       ::RecurringMeetings::ICalService
         .new(user:, series: meeting.recurring_meeting)
-        .generate_occurrence(meeting, **args)
+        .generate_single_occurrence(meeting: meeting, **args)
     else
       ::Meetings::ICalService
         .new(user:, meeting:)
@@ -139,7 +163,5 @@ class MeetingMailer < UserMailer
 
   def set_headers(meeting)
     open_project_headers "Project" => meeting.project.identifier, "Meeting-Id" => meeting.id
-    headers["Content-Type"] = 'text/calendar; charset=utf-8; method="PUBLISH"; name="meeting.ics"'
-    headers["Content-Transfer-Encoding"] = "8bit"
   end
 end

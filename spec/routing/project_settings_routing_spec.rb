@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -103,28 +105,42 @@ RSpec.describe Projects::SettingsController do
     it do
       expect(get("/projects/123/settings/work_packages/types"))
         .to route_to(
-          controller: "projects/settings/work_packages/types", action: "show", project_id: "123"
+          controller: "projects/settings/work_packages/types", action: "index", project_id: "123"
         )
     end
 
     it do
-      expect(patch("/projects/123/settings/work_packages/types"))
+      expect(get("/projects/123/settings/work_packages/types/new"))
         .to route_to(
-          controller: "projects/settings/work_packages/types", action: "update", project_id: "123"
+          controller: "projects/settings/work_packages/types", action: "new", project_id: "123"
         )
     end
 
     it do
-      expect(get("/projects/123/settings/work_packages/activities"))
+      expect(post("/projects/123/settings/work_packages/types"))
         .to route_to(
-          controller: "projects/settings/work_packages/activities", action: "show", project_id: "123"
+          controller: "projects/settings/work_packages/types", action: "create", project_id: "123"
         )
     end
 
     it do
-      expect(patch("/projects/123/settings/work_packages/activities"))
+      expect(delete("/projects/123/settings/work_packages/types/5"))
         .to route_to(
-          controller: "projects/settings/work_packages/activities", action: "update", project_id: "123"
+          controller: "projects/settings/work_packages/types", action: "destroy", project_id: "123", id: "5"
+        )
+    end
+
+    it do
+      expect(get("/projects/123/settings/work_packages/internal_comments"))
+        .to route_to(
+          controller: "projects/settings/work_packages/internal_comments", action: "show", project_id: "123"
+        )
+    end
+
+    it do
+      expect(patch("/projects/123/settings/work_packages/internal_comments"))
+        .to route_to(
+          controller: "projects/settings/work_packages/internal_comments", action: "update", project_id: "123"
         )
     end
   end

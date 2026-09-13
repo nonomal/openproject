@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -63,7 +65,7 @@ module Pages
 
         def remove_from_project!(name)
           open_projects_tab!
-          find_project(name).find("a[data-method=delete]").click
+          find_project(name).find("a[data-turbo-method=delete]").click
         end
 
         def edit_roles!(membership, roles)

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -36,6 +38,7 @@ module AttributeHelpTexts
 
     attribute :type
     attribute :attribute_name
+    attribute :caption
     attribute :help_text
 
     validate :user_allowed

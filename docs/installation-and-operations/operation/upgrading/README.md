@@ -8,6 +8,8 @@ sidebar_navigation:
 
 > **Note**: We strongly recommend that you have backed up your installation before upgrading OpenProject to a newer version, especially when performing multiple upgrades at once. Please follow the [backup](../backing-up) instructions.
 
+> **Note**: OpenProject supports migrating from one major version to the next. That means that migrating from a version X (and any of its minor and patch level) to version X+1 (and any of its minor and patch level) is supported. Migrating to X+2 however cannot be done directly but requires to install X+1 in between. Please refer to the [Step-wise database migration script](#step-wise-database-migration-script) section for an easy way to do this.
+
 | Topic                                                        | Content                                                      |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | [Package-based installation](#package-based-installation-debrpm) | How to upgrade a package-based installation of OpenProject.  |
@@ -39,14 +41,14 @@ sudo openproject configure
 
 On Ubuntu 22.04., you might see warnings like these:
 
-> W: https://dl.packager.io/srv/deb/opf/openproject/stable/15/ubuntu/dists/22.04/InRelease: Key is stored in legacy trusted.gpg keyring (/etc/apt/trusted.gpg), see the DEPRECATION section in apt-key(8) for details.
+> W: `https://dl.packager.io/srv/deb/opf/openproject/stable/17/ubuntu/dists/22.04/InRelease`: Key is stored in legacy trusted.gpg keyring (/etc/apt/trusted.gpg), see the DEPRECATION section in apt-key(8) for details.
 
 This message is due to Ubuntu 22.04 switching to a more secure way of adding repository sources, which is not yet supported by the repository provider. There is ongoing work on this item, the message is for information only.
 
 If you get an error like the following:
 
-> E: Repository 'https://dl.packager.io/srv/deb/opf/openproject/stable/15/ubuntu 22.04 InRelease' changed its 'Origin' value from '' to 'https://packager.io/gh/opf/openproject'
-> E: Repository 'https://dl.packager.io/srv/deb/opf/openproject/stable/15/ubuntu 22.04 InRelease' changed its 'Label' value from '' to 'Ubuntu 22.04 packages for opf/openproject'
+> E: Repository '`https://dl.packager.io/srv/deb/opf/openproject/stable/17/ubuntu` 22.04 InRelease' changed its 'Origin' value from '' to '`https://packager.io/gh/opf/openproject`'
+> E: Repository '`https://dl.packager.io/srv/deb/opf/openproject/stable/17/ubuntu` 22.04 InRelease' changed its 'Label' value from '' to 'Ubuntu 22.04 packages for opf/openproject'
 
 These two messages messages are expected, due to a change in Origin and Label repository metadata, to better explain what the repository is about. You should allow the change, and/or run `sudo apt-get update --allow-releaseinfo-change` for the update to go through.
 
@@ -71,7 +73,27 @@ sudo openproject configure
 OpenProject uses a different package repository for each Major version of OpenProject.
 This means that if you want to switch from (e.g.) OpenProject 11.x to 12.x, you will need to explicitly update your package source to be able to install the newer versions.
 
-The necessary steps are the same as setting up the package source for the first time. You can also check the [installation guide](../../installation/packaged) for more information. Please follow the link below to see the appropriate steps for your Linux distribution.
+As in 17.0., also the package URL is changing, we recommend you remove the package repository information first, and then re-add it:
+
+**Debian / Ubuntu**
+
+```shell
+rm /etc/apt/sources.list.d/openproject.list
+```
+
+**Enterprise Linux / Centos**
+
+```shell
+rm /etc/yum.repos.d/openproject.repo
+```
+
+**SLES15**
+
+```shell
+rm /etc/zypp/repos.d/openproject.repo
+```
+
+Then follow the first steps of the [installation guide](../../installation/packaged) for adding the correct information. Please follow the link below to see the appropriate steps for your Linux distribution.
 
 | Distribution (64 bits only)                                              |
 |--------------------------------------------------------------------------|
@@ -84,7 +106,7 @@ The necessary steps are the same as setting up the package source for the first 
 
 After following the steps to update the package source, updating the openproject package and running `openproject configure`, your system will be up to date.
 
-In case you experience issues, please note the exact steps you took, copy the output of all commands you ran and open a post in our [installation support forum](https://community.openproject.org/projects/openproject/forums/9).
+In case you experience issues, please note the exact steps you took, copy the output of all commands you ran and open a post in our [installation support forum](https://community.openproject.org/projects/openproject/forums/9), or as an Enterprise customer, reaching out to [our customer support](mailto:support@openproject.org).
 
 ### Running openproject configure
 
@@ -97,7 +119,9 @@ If you want to perform changes to your configuration or are unsure what steps ar
 Note that this still takes previous values into consideration. Values that should not change from your previous configurations can be skipped by pressing `<Return>`. This also applies for steps with passwords, which are shown as empty even though they may have a value. Skipping those steps equals to re-use the existing value.
 
 ## Compose-based installation
-> **Note**: Please make sure the git repository with the docker-compose.yml file is up-to-date. If you're using an old version of the repository, the update might fail.
+
+> [!NOTE]
+> Please make sure the git repository with the docker-compose.yml file is up-to-date. If you're using an old version of the repository, the update might fail.
 
 When using the Compose-based docker installation, you can simply do the following:
 
@@ -117,7 +141,7 @@ When using the all-in-one docker container, you need to perform the following st
 
 ```shell
 docker pull openproject/openproject:VERSION
-# e.g. docker pull openproject/openproject:15
+# e.g. docker pull openproject/openproject:17
 ```
 
 Then stop and remove your existing container (we assume that you are running with the recommended production setup here):
@@ -161,6 +185,15 @@ sudo chown -R 102 /volume1/openproject/*
 After that it's simply a matter of launching the new container mounted with the copied `pgdata` and `assets` folders
 as described in the [installation section](../../installation/docker/).
 
+## Upgrade notes from 16.x
+
+Starting from 16.x OpenProject only supports migrating from one major version (and its minor and patch levels) to the next major version (and its minor and patch levels). So all installations need to migrate to any 16.x version before continuing.
+
+OpenProject 17.0 upgraded to a new major version of `good_job`, its underlying processor for background jobs. This upgrade was already prepared with
+OpenProject 15.3, so if you've had any version between 15.3 and 16.6 running in your environment, you should be safe to proceed to 17.0.
+However, if you directly upgraded from a version before 15.3, make sure to at least leave the background workers running on version 16.6 for a few minutes,
+so that they can process all pending jobs, before continuing the upgrade to 17.0.
+
 ## Upgrade notes from 10.5.x
 
 Generally, there are no special steps or caveats when upgrading to OpenProject 13.x or higher from any version greater than 10.5.x. Simply follow the upgrade steps outlined above for your type of installation.
@@ -169,7 +202,7 @@ If you are using Docker, you should mount your OpenProject volume at `/var/openp
 
 ## Upgrade notes from 9.x to 10.4.x
 
-When upgrading from OpenProject <= 10.4.x to a newer version, you might need to remove the old cron jobs from ```/etc/cron.d/```.  
+When upgrading from OpenProject <= 10.4.x to a newer version, you might need to remove the old cron jobs from ```/etc/cron.d/```.
 You can list all OpenProject related cronjobs by using the ```sudo ls  /etc/cron.d/openproject-*``` command.
 
 ## Upgrade notes for 8.x to 9.x
@@ -195,21 +228,21 @@ you will need to adjust that package source.
 
 #### APT-based systems (Debian, Ubuntu)
 
- - Update the reference to `opf/openproject-ce` in `/etc/apt/sources.list.d/openproject.list` to `opf/openproject`.
- - Update the reference to `stable/8` in `/etc/apt/sources.list.d/openproject.list` to `stable/9`.
- - Perform the Upgrade steps as mentioned above in *Upgrading your OpenProject installation*
+- Update the reference to `opf/openproject-ce` in `/etc/apt/sources.list.d/openproject.list` to `opf/openproject`.
+- Update the reference to `stable/8` in `/etc/apt/sources.list.d/openproject.list` to `stable/9`.
+- Perform the Upgrade steps as mentioned above in _Upgrading your OpenProject installation_
 
 #### YUM-based systems (CentOS, RHEL)
 
- - Update the reference to `opf/openproject-ce` in `/etc/yum.repos.d/openproject.repo` to `opf/openproject`.
- - Update the reference to `stable/8` in `/etc/yum.repos.d/openproject.repo` to `stable/9`.
- - Perform the Upgrade steps as mentioned above in *Upgrading your OpenProject installation*
+- Update the reference to `opf/openproject-ce` in `/etc/yum.repos.d/openproject.repo` to `opf/openproject`.
+- Update the reference to `stable/8` in `/etc/yum.repos.d/openproject.repo` to `stable/9`.
+- Perform the Upgrade steps as mentioned above in _Upgrading your OpenProject installation_
 
 #### SUSE Linux Enterprise Server 12
 
- - Update the reference to `opf/openproject-ce` in `/etc/zypp/repos.d/openproject.repo` to `opf/openproject`.
- - Update the reference to `stable/8` in `/etc/zypp/repos.d/openproject.repo` to `stable/9`.
- - Perform the Upgrade steps as mentioned above in *Upgrading your OpenProject installation*
+- Update the reference to `opf/openproject-ce` in `/etc/zypp/repos.d/openproject.repo` to `opf/openproject`.
+- Update the reference to `stable/8` in `/etc/zypp/repos.d/openproject.repo` to `stable/9`.
+- Perform the Upgrade steps as mentioned above in _Upgrading your OpenProject installation_
 
 ## Upgrade notes for OpenProject 7.x to 8.x
 
@@ -234,3 +267,68 @@ rm -rf /opt/openproject/frontend/node_modules
 OpenProject 8.0. has removed Textile, all previous content is migrated to GFM Markdown using [pandoc](https://pandoc.org). This will happen automatically during the migration run. A recent pandoc version will be downloaded by OpenProject.
 
 For more information, please visit [this separate guide](../../misc/textile-migration).
+
+## Step-wise database migration script
+
+For migrating database dumps from OpenProject version 10 or later to the current version, you can use the [`bin/migrate`](https://github.com/opf/openproject/blob/dev/bin/migrate) script. This script automates the process of restoring a database dump and sequentially applying migrations through each OpenProject version until the latest version is reached.
+
+### Prerequisites
+
+- Docker installed and running
+- Docker Hub access (to pull OpenProject images)
+- A database dump file from OpenProject 10.x or later in `.sql` plain text format
+
+### Usage
+
+```shell
+./bin/migrate [OPTIONS] <dump-file>
+```
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `-n, --change-schema-name NAME` | Change the PostgreSQL schema name to `NAME` before dumping the migrated database. Default schema is `public`. |
+| `-f, --format FORMAT` | Output format for the migrated dump. Options: `sql` (default, gzipped), `pgdump` (custom/binary format). |
+
+### Examples
+
+Migrate a database dump to the latest version:
+
+```shell
+./bin/migrate openproject-10.5.sql
+```
+
+Migrate and output in PostgreSQL custom format:
+
+```shell
+./bin/migrate -f pgdump openproject-10.5.sql
+```
+
+Migrate and change the schema name to `custom_schema`:
+
+```shell
+./bin/migrate -n custom_schema openproject-10.5.sql
+```
+
+Migrate with both custom format and schema name:
+
+```shell
+./bin/migrate -f pgdump -n custom_schema openproject-10.5.sql
+```
+
+### Output
+
+The script creates a new file with the migrated database dump. The output filename is derived from the input filename:
+
+- For SQL format (default): `{input}-migrated.sql.gz` (gzipped)
+- For pgdump format: `{input}-migrated.pgdump`
+
+### Notes
+
+- The script requires a dump from OpenProject 10.x or later. For older versions, use `script/migrate/migrate-from-pre-8.sh` first.
+- The script starts a temporary PostgreSQL 17 container for the migration process.
+- Each OpenProject version's Docker image is pulled on demand during migration.
+- The migration process may take significant time depending on the size of your database and the number of versions to migrate through.
+- The script automatically cleans up the temporary container and files on exit.
+- When moving from a packaged installation to Docker Compose across multiple major versions, run this script on your SQL dump before importing it. See the [packaged → Docker Compose migration guide](../../misc/packaged-docker-migration/).

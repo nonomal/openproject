@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -77,7 +79,19 @@ RSpec.describe Users::RegisterUserService, with_ee: %i[sso_auth_providers] do
   end
 
   describe "#register_omniauth_user" do
-    let(:user) { User.new(status: Principal.statuses[:registered], identity_url: "azure:1234") }
+    let(:auth_provider) { create(:oidc_provider_google, limit_self_registration:) }
+    let(:user) do
+      user = User.new(status: Principal.statuses[:registered])
+      user.user_auth_provider_links = [
+        UserAuthProviderLink.new(
+          auth_provider:,
+          external_id: "1234",
+          created_at: Time.zone.now,
+          updated_at: Time.zone.now
+        )
+      ]
+      user
+    end
     let(:instance) { described_class.new(user) }
 
     before do
@@ -85,70 +99,64 @@ RSpec.describe Users::RegisterUserService, with_ee: %i[sso_auth_providers] do
       allow(user).to receive(:save).and_return true
     end
 
-    it "tries to activate that user regardless of settings" do
-      with_all_registration_options do |_type|
-        call = instance.call
-        expect(call).to be_success
-        expect(call.result).to eq user
-        expect(call.message).to eq I18n.t(:notice_account_registered_and_logged_in)
+    context "with limit_self_registration disabled" do
+      let(:limit_self_registration) { false }
+
+      it "tries to activate that user regardless of settings" do
+        with_all_registration_options do |_type|
+          call = instance.call
+          expect(call).to be_success
+          expect(call.result).to eq user
+          expect(call.message).to eq I18n.t(:notice_account_registered_and_logged_in)
+        end
       end
     end
 
-    context "with limit_self_registration enabled and self_registration disabled",
-            with_settings: {
-              self_registration: 0,
-            } do
-      it "fails to activate due to disabled self registration" do
-        create(:oidc_provider, slug: "azure")
-        call = instance.call
-        expect(call).not_to be_success
-        expect(call.result).to eq user
-        expect(call.message).to eq I18n.t("account.error_self_registration_limited_provider", name: "azure")
+    context "with limit_self_registration enabled" do
+      let(:limit_self_registration) { true }
+
+      context "with self_registration disabled", with_settings: { self_registration: 0 } do
+        it "fails to activate due to disabled self registration" do
+          call = instance.call
+          expect(call).not_to be_success
+          expect(call.result).to eq user
+          expect(call.message).to eq I18n.t("account.error_self_registration_limited_provider", name: auth_provider.slug)
+        end
       end
-    end
 
-    context "with limit_self_registration enabled and self_registration manual",
-            with_settings: {
-              self_registration: 2,
-            } do
-      it "registers the user, but does not activate it" do
-        create(:oidc_provider, slug: "azure")
-        call = instance.call
-        expect(call).to be_success
-        expect(call.result).to eq user
-        expect(user).to be_registered
-        expect(user).not_to have_received(:activate)
-        expect(call.message).to eq I18n.t(:notice_account_pending)
+      context "with self_registration manual", with_settings: { self_registration: 2 } do
+        it "registers the user, but does not activate it" do
+          call = instance.call
+          expect(call).to be_success
+          expect(call.result).to eq user
+          expect(user).to be_registered
+          expect(user).not_to have_received(:activate)
+          expect(call.message).to eq I18n.t(:notice_account_pending)
+        end
       end
-    end
 
-    context "with limit_self_registration enabled and self_registration email",
-            with_settings: {
-              self_registration: 1,
-            } do
-      it "registers the user, but does not activate it" do
-        create(:oidc_provider, slug: "azure")
-
-        call = instance.call
-        expect(call).to be_success
-        expect(call.result).to eq user
-        expect(user).to be_registered
-        expect(user).not_to have_received(:activate)
-        expect(call.message).to eq I18n.t(:notice_account_register_done)
+      context "with self_registration email", with_settings: { self_registration: 1 } do
+        it "registers the user, but does not activate it" do
+          call = instance.call
+          expect(call).to be_success
+          expect(call.result).to eq user
+          expect(user).to be_registered
+          expect(user).not_to have_received(:activate)
+          expect(call.message).to eq I18n.t(:notice_account_register_done)
+        end
       end
-    end
 
-    context "with limit_self_registration enabled and self_registration automatic",
-            with_settings: {
-              self_registration: 3,
-            } do
-      it "activates the user" do
-        create(:oidc_provider, slug: "azure")
-        call = instance.call
-        expect(call).to be_success
-        expect(call.result).to eq user
-        expect(user).to have_received(:activate)
-        expect(call.message).to eq I18n.t(:notice_account_activated)
+      context "with self_registration automatic",
+              with_settings: {
+                self_registration: 3
+              } do
+        it "activates the user" do
+          call = instance.call
+          expect(call).to be_success
+          expect(call.result).to eq user
+          expect(user).to have_received(:activate)
+          expect(call.message).to eq I18n.t(:notice_account_activated)
+        end
       end
     end
   end
@@ -336,8 +344,5 @@ RSpec.describe Users::RegisterUserService, with_ee: %i[sso_auth_providers] do
       # Does not include the internal error message itself
       expect(call.message).to eq I18n.t(:notice_activation_failed)
     end
-  end
-
-  describe "#with_saved_user_result" do
   end
 end

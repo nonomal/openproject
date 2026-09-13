@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -34,15 +36,12 @@ class Queries::WorkPackages::Selects::RelationToTypeSelect < Queries::WorkPackag
   end
 
   def caption
-    I18n.t(:"activerecord.attributes.query.relations_to_type_column",
-           type: type.name)
+    I18n.t(:"activerecord.attributes.query.relations_to_type_column", type: type.name)
   end
 
   def self.instances(context = nil)
-    if !granted_by_enterprise_token
-      []
-    elsif context
-      context.types
+    if context
+      context.enabled_types
     else
       Type.all
     end.map { |type| new(type) }

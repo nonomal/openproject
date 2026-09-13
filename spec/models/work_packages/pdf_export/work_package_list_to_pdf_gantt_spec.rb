@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -56,11 +58,14 @@ end
 RSpec.describe WorkPackage::PDFExport::WorkPackageListToPdf do
   include Redmine::I18n
   include PDFExportSpecUtils
+
   let!(:status_new) { create(:status, name: "New", is_default: true) }
-  let(:type_standard) { create(:type_standard, name: "Standard", color: create(:color, hexcode: "#FFFF00")) }
+  # Sequenced position on purpose: the grouped export orders by it, and the named type
+  # factories hard-code low positions that would sort them before the milestone type.
+  let(:type_task) { create(:type, name: "Task", color: create(:color, hexcode: "#FFFF00")) }
   let(:type_bug) { create(:type_bug, name: "Bug", color: create(:color, hexcode: "#00FFFF")) }
   let!(:type_milestone) { create(:type, name: "Milestone", is_milestone: true, color: create(:color, hexcode: "#FF0000")) }
-  let(:types) { [type_standard, type_milestone] }
+  let(:types) { [type_task, type_milestone] }
   let(:project) do
     create(:project, name: "Foo Bla. Report No. 4/2021 with/for Case 42", types:)
   end
@@ -78,7 +83,7 @@ RSpec.describe WorkPackage::PDFExport::WorkPackageListToPdf do
     end
   end
   let(:export_time) { DateTime.new(2024, 4, 22, 12, 37) }
-  let(:export_time_formatted) { format_time(export_time, include_date: true) }
+  let(:export_date_formatted) { format_date(export_time) }
   let(:export) do
     login_as(user)
     work_packages
@@ -102,6 +107,9 @@ RSpec.describe WorkPackage::PDFExport::WorkPackageListToPdf do
   let(:work_package_task_due) do
     Date.new(2024, 4, 21)
   end
+  let(:work_package_task_due_too_long) do
+    work_package_task_due + (Exports::PDF::Components::Gantt::GanttBuilder::MAX_YEAR_RANGE + 1).years
+  end
   let(:work_package_milestone_start) do
     nil
   end
@@ -112,7 +120,7 @@ RSpec.describe WorkPackage::PDFExport::WorkPackageListToPdf do
     create(:work_package,
            project:,
            status: status_new,
-           type: type_standard,
+           type: type_task,
            subject: "Work package 1",
            start_date: work_package_task_start,
            due_date: work_package_task_due)
@@ -125,6 +133,15 @@ RSpec.describe WorkPackage::PDFExport::WorkPackageListToPdf do
            subject: "Work package 2",
            start_date: work_package_milestone_start,
            due_date: work_package_milestone_due)
+  end
+  let(:work_package_task_far_future) do
+    create(:work_package,
+           project:,
+           status: status_new,
+           type: type_task,
+           subject: "Work package 3",
+           start_date: work_package_task_start,
+           due_date: work_package_task_due_too_long)
   end
   let(:filler_work_packages) do
     Array.new(50) do
@@ -162,7 +179,8 @@ RSpec.describe WorkPackage::PDFExport::WorkPackageListToPdf do
   end
 
   def wp_title_column(work_package)
-    "#{work_package.type} ##{work_package.id} • #{work_package.status} • #{wp_title_dates work_package} #{work_package.subject}"
+    "#{work_package.type} #{work_package.formatted_id} • #{work_package.status} • " \
+      "#{wp_title_dates work_package} #{work_package.subject}"
   end
 
   subject(:pdf) do
@@ -187,7 +205,7 @@ RSpec.describe WorkPackage::PDFExport::WorkPackageListToPdf do
       expect(pdf[:strings]).to eq [query.name, "2024 Apr 21 22 23", # header columns
                                    wp_title_column(work_package_task),
                                    wp_title_column(work_package_milestone),
-                                   "1/1", export_time_formatted, query.name].join(" ").squeeze(" ")
+                                   "1/1", export_date_formatted, query.name].join(" ").squeeze(" ")
 
       # if one of these expect fails you can output the actual pdf calls uncommenting the following line
       # show_calls
@@ -210,6 +228,23 @@ RSpec.describe WorkPackage::PDFExport::WorkPackageListToPdf do
     end
   end
 
+  describe "work package id formatting" do
+    context "in classic mode",
+            with_settings: { work_packages_identifier: "classic" } do
+      it "uses the numeric id and not the semantic identifier in the gantt chart" do
+        expect(pdf[:strings]).to include("##{work_package_task.id}")
+      end
+    end
+
+    context "in semantic mode",
+            with_settings: { work_packages_identifier: "semantic" } do
+      it "uses the semantic identifier and not the numeric id in the gantt chart" do
+        expect(pdf[:strings]).to include(work_package_task.identifier)
+        expect(pdf[:strings]).not_to include("##{work_package_task.id}")
+      end
+    end
+  end
+
   describe "with a request for a PDF gantt split on multiple horizontal pages" do
     let(:work_package_milestone_due) do
       Date.new(2024, 5, 8)
@@ -219,9 +254,9 @@ RSpec.describe WorkPackage::PDFExport::WorkPackageListToPdf do
       expect(pdf[:strings]).to eq [query.name, "2024 Apr May 21 22 23 24 25 26 27 28 29 30 1 2 3 4 5", # header columns
                                    wp_title_column(work_package_task),
                                    wp_title_column(work_package_milestone),
-                                   "1/2", export_time_formatted, query.name,
+                                   "1/2", export_date_formatted, query.name,
                                    "2024 May 6 7 8", # header columns
-                                   "2/2", export_time_formatted, query.name].join(" ").squeeze(" ")
+                                   "2/2", export_date_formatted, query.name].join(" ").squeeze(" ")
 
       # if one of these expect fails you can output the actual pdf calls uncommenting the following line
       # show_calls
@@ -256,25 +291,25 @@ RSpec.describe WorkPackage::PDFExport::WorkPackageListToPdf do
         query.name, "2024 Apr May 21 22 23 24 25 26 27 28 29 30 1 2 3 4 5", # header columns
         wp_title_column(work_package_task),
         filler_work_packages.slice(0, 17).map.map { |wp| wp_title_column(wp) },
-        "1/6", export_time_formatted, query.name,
+        "1/6", export_date_formatted, query.name,
 
         "2024 May 6 7 8", # header columns
-        "2/6", export_time_formatted, query.name,
+        "2/6", export_date_formatted, query.name,
 
         query.name, "2024 Apr May 21 22 23 24 25 26 27 28 29 30 1 2 3 4 5", # header columns
         filler_work_packages.slice(17, 18).map { |wp| wp_title_column(wp) },
-        "3/6", export_time_formatted, query.name,
+        "3/6", export_date_formatted, query.name,
 
         "2024 May 6 7 8", # header columns
-        "4/6", export_time_formatted, query.name,
+        "4/6", export_date_formatted, query.name,
 
         query.name, "2024 Apr May 21 22 23 24 25 26 27 28 29 30 1 2 3 4 5", # header columns
         filler_work_packages.slice(35, 15).map { |wp| wp_title_column(wp) },
         wp_title_column(work_package_milestone),
-        "5/6", export_time_formatted, query.name,
+        "5/6", export_date_formatted, query.name,
 
         "2024 May 6 7 8", # header columns
-        "6/6", export_time_formatted, query.name
+        "6/6", export_date_formatted, query.name
       ].flatten.join(" ").squeeze(" ")
     end
 
@@ -317,16 +352,16 @@ RSpec.describe WorkPackage::PDFExport::WorkPackageListToPdf do
         query.name, "2024 Apr May 21 22 23 24 25 26 27 28 29 30 1", # header columns
         wp_title_column(work_package_task),
         filler_work_packages.slice(0, 17).map { |wp| wp_title_column(wp) },
-        "1/3", export_time_formatted, query.name,
+        "1/3", export_date_formatted, query.name,
 
         query.name, "2024 Apr May 21 22 23 24 25 26 27 28 29 30 1", # header columns
         filler_work_packages.slice(17, 18).map { |wp| wp_title_column(wp) },
-        "2/3", export_time_formatted, query.name,
+        "2/3", export_date_formatted, query.name,
 
         query.name, "2024 Apr May 21 22 23 24 25 26 27 28 29 30 1", # header columns
         filler_work_packages.slice(35, 15).map { |wp| wp_title_column(wp) },
         wp_title_column(work_package_milestone),
-        "3/3", export_time_formatted, query.name
+        "3/3", export_date_formatted, query.name
       ].flatten.join(" ").squeeze(" ")
     end
 
@@ -364,9 +399,9 @@ RSpec.describe WorkPackage::PDFExport::WorkPackageListToPdf do
       expect(pdf[:strings]).to eq [query.name, "2024 Apr 21 22 23", # header columns
                                    type_milestone.name,
                                    wp_title_column(work_package_milestone),
-                                   type_standard.name,
+                                   type_task.name,
                                    wp_title_column(work_package_task),
-                                   "1/1", export_time_formatted, query.name].join(" ").squeeze(" ")
+                                   "1/1", export_date_formatted, query.name].join(" ").squeeze(" ")
 
       # if one of these expect fails you can output the actual pdf calls uncommenting the following line
       # show_calls
@@ -386,6 +421,44 @@ RSpec.describe WorkPackage::PDFExport::WorkPackageListToPdf do
         [:fill_path_with_nonzero]
       ]
       expect(include_calls?(task, pdf[:calls])).to be true
+    end
+  end
+
+  describe "with a request for a PDF gantt grouped by target versions" do
+    let(:query_attributes) { { group_by: "target_versions" } }
+    let(:version_one) { create(:version, project:, name: "1.0") }
+    let(:version_two) { create(:version, project:, name: "2.0") }
+    let(:work_packages) do
+      work_package_task.target_version_ids_replacements = [version_one.id, version_two.id]
+      work_package_task.save!
+      [work_package_task, work_package_milestone]
+    end
+
+    context "with multiple versions active",
+            with_settings: { work_package_multiple_versions: true } do
+      it "joins the several target versions of a work package into one group, " \
+         "and groups work packages without a target version under a none placeholder" do
+        expect(pdf[:strings]).to eq [query.name, "2024 Apr 21 22 23", # header columns
+                                     "1.0, 2.0",
+                                     wp_title_column(work_package_task),
+                                     I18n.t(:label_none_parentheses),
+                                     wp_title_column(work_package_milestone),
+                                     "1/1", export_date_formatted, query.name].join(" ").squeeze(" ")
+      end
+    end
+  end
+
+  describe "with a request for a PDF gantt with too long date range" do
+    let(:work_packages) { [work_package_task_far_future] }
+
+    it "raises as the date range is too long" do
+      expect { export_pdf }.to raise_error(
+        Exports::ExportError,
+        I18n.t(
+          :error_pdf_date_range_too_long,
+          years: Exports::PDF::Components::Gantt::GanttBuilder::MAX_YEAR_RANGE
+        )
+      )
     end
   end
 end

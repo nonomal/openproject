@@ -21,34 +21,27 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import {
-  Injectable,
-  Injector,
-} from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { WorkPackageResource } from 'core-app/features/hal/resources/work-package-resource';
-import { WorkPackageRelationsHierarchyService } from 'core-app/features/work-packages/components/wp-relations/wp-relations-hierarchy/wp-relations-hierarchy.service';
-import { WorkPackageInlineCreateService } from 'core-app/features/work-packages/components/wp-inline-create/wp-inline-create.service';
+import {
+  WorkPackageInlineCreateService,
+} from 'core-app/features/work-packages/components/wp-inline-create/wp-inline-create.service';
 import { IsolatedQuerySpace } from 'core-app/features/work-packages/directives/query-space/isolated-query-space';
 import { HalResourceService } from 'core-app/features/hal/services/hal-resource.service';
-import { PathHelperService } from 'core-app/core/path-helper/path-helper.service';
-import { BoardInlineAddAutocompleterComponent } from 'core-app/features/boards/board/inline-add/board-inline-add-autocompleter.component';
-import { GonService } from 'core-app/core/gon/gon.service';
+import {
+  BoardInlineAddAutocompleterComponent,
+} from 'core-app/features/boards/board/inline-add/board-inline-add-autocompleter.component';
 import { Observable } from 'rxjs';
 
 @Injectable()
 export class BoardInlineCreateService extends WorkPackageInlineCreateService {
-  constructor(
-    readonly injector:Injector,
-    protected readonly querySpace:IsolatedQuerySpace,
-    protected readonly halResourceService:HalResourceService,
-  ) {
-    super(injector);
-  }
+  protected readonly querySpace = inject(IsolatedQuerySpace);
+  protected readonly halResourceService = inject(HalResourceService);
 
   /**
    * A separate reference pane for the inline create component

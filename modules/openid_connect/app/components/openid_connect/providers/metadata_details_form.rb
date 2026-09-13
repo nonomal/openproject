@@ -35,26 +35,24 @@ module OpenIDConnect
         OpenIDConnect::Provider::DISCOVERABLE_STRING_ATTRIBUTES_ALL.each do |attr|
           f.text_field(
             name: attr,
-            label: I18n.t("activerecord.attributes.openid_connect/provider.#{attr}"),
+            label: OpenIDConnect::Provider.human_attribute_name(attr),
             disabled: provider.seeded_from_env?,
             required: OpenIDConnect::Provider::DISCOVERABLE_STRING_ATTRIBUTES_MANDATORY.include?(attr),
             input_width: :large
           )
         end
 
-        if OpenProject::FeatureDecisions.oidc_token_exchange_active?
-          f.text_field(
-            name: :grant_types_supported,
-            label: I18n.t("activerecord.attributes.openid_connect/provider.grant_types_supported"),
-            disabled: provider.seeded_from_env?,
-            required: false,
-            input_width: :large
-          )
-        end
+        f.text_field(
+          name: :grant_types_supported,
+          label: OpenIDConnect::Provider.human_attribute_name(:grant_types_supported),
+          disabled: provider.seeded_from_env?,
+          required: false,
+          input_width: :large
+        )
 
         f.text_field(
           name: :icon,
-          label: I18n.t("activerecord.attributes.openid_connect/provider.icon"),
+          label: OpenIDConnect::Provider.human_attribute_name(:icon),
           caption: I18n.t("saml.instructions.icon"),
           disabled: provider.seeded_from_env?,
           required: false,

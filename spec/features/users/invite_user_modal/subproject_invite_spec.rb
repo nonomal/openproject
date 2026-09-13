@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -36,7 +38,7 @@ RSpec.describe "Invite user modal subprojects", :js do
   shared_let(:invitable_user) { create(:user, firstname: "Invitable", lastname: "User") }
 
   let(:permissions) { %i[view_work_packages edit_work_packages manage_members work_package_assigned] }
-  let(:global_permissions) { %i[] }
+  let(:global_permissions) { %i[view_all_principals] }
   let(:modal) do
     Components::Users::InviteUserModal.new project: subproject,
                                            principal: invitable_user,
@@ -74,7 +76,7 @@ RSpec.describe "Invite user modal subprojects", :js do
       assignee_field.expect_inactive!
       assignee_field.expect_display_value invitable_user.name
 
-      new_member = subproject.reload.member_principals.find_by(user_id: invitable_user.id)
+      new_member = subproject.reload.members.find_by(user_id: invitable_user.id)
       expect(new_member).to be_present
       expect(new_member.roles).to eq [role]
     end

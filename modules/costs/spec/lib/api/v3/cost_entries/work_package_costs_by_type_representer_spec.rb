@@ -39,7 +39,7 @@ RSpec.describe API::V3::CostEntries::WorkPackageCostsByTypeRepresenter do
     create_list(:cost_entry,
                 2,
                 units: 1,
-                work_package:,
+                entity: work_package,
                 project:,
                 cost_type: cost_type_A)
   end
@@ -47,7 +47,7 @@ RSpec.describe API::V3::CostEntries::WorkPackageCostsByTypeRepresenter do
     create_list(:cost_entry,
                 3,
                 units: 2,
-                work_package:,
+                entity: work_package,
                 project:,
                 cost_type: cost_type_B)
   end

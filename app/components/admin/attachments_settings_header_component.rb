@@ -36,5 +36,36 @@ module Admin
       @title = title
       @selected = selected
     end
+
+    def tabs
+      tabs = [
+        {
+          name: "general",
+          path: admin_settings_attachments_path,
+          label: t("settings.general")
+        }
+      ]
+
+      if Setting.antivirus_scan_available?
+        tabs << {
+          name: "virus",
+          path: admin_settings_virus_scanning_path,
+          label: t(:"settings.antivirus.title"),
+          enterprise_feature: :virus_scanning
+        }
+      end
+
+      if Setting.antivirus_scan_available? &&
+        User.current.admin? &&
+        (EnterpriseToken.allows_to?(:virus_scanning) || Attachment.status_quarantined.any?)
+        tabs << {
+          name: "quarantined",
+          path: admin_quarantined_attachments_path,
+          label: t(:"antivirus_scan.quarantined_attachments.title")
+        }
+      end
+
+      tabs
+    end
   end
 end

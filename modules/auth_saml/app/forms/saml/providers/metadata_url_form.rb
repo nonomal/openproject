@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -36,6 +38,14 @@ module Saml
           required: false,
           disabled: provider.seeded_from_env?,
           caption: I18n.t("saml.instructions.metadata_url"),
+          input_width: :xlarge
+        )
+        f.text_field(
+          name: :idp_entity_id,
+          label: I18n.t("activerecord.attributes.saml/provider.idp_entity_id"),
+          required: false,
+          disabled: provider.seeded_from_env?,
+          caption: I18n.t("saml.instructions.idp_entity_id"),
           input_width: :xlarge
         )
       end

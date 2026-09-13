@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,17 +33,9 @@ module Reminders
     include Reminders::ServiceHelpers
 
     def after_perform(service_call)
-      reschedule_reminder(service_call.result) if remind_at_changed?
+      reschedule_reminder(service_call.result) if model.saved_change_to_remind_at?
 
       service_call
-    end
-
-    private
-
-    def remind_at_changed?
-      # For some reason reminder.remind_at_changed? returns false
-      # so we assume a change if remind_at is present in the params (would have passed contract validation)
-      params[:remind_at].present?
     end
   end
 end

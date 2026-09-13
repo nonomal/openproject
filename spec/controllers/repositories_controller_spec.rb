@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,15 +31,9 @@
 require "spec_helper"
 
 RSpec.describe RepositoriesController do
-  let(:project) do
-    project = create(:project)
-    allow(Project).to receive(:find).and_return(project)
-    project
-  end
-  let(:user) do
-    create(:user, member_with_roles: { project => role })
-  end
-  let(:role) { create(:project_role, permissions: []) }
+  let(:project) { create(:project) }
+  let(:user) { create(:user, member_with_permissions: { project => permissions }) }
+  let(:permissions) { [] }
   let (:url) { "file:///tmp/something/does/not/exist.svn" }
 
   let(:repository) do
@@ -46,20 +42,28 @@ RSpec.describe RepositoriesController do
                          scm_type: "local",
                          url:,
                          project:)
-    allow(repo).to receive(:default_branch).and_return("master")
-    allow(repo).to receive(:branches).and_return(["master"])
-    allow(repo).to receive(:save).and_return(true)
+
+    allow(repo).to receive_messages({
+                                      default_branch: "master",
+                                      branches: ["master"],
+                                      save: true
+                                    })
 
     repo
   end
 
   before do
     login_as(user)
+
+    visible_relation = instance_double(Project.all.class).as_null_object
+    allow(Project).to receive(:visible).and_return(visible_relation)
+    allow(visible_relation).to receive(:find).and_return(project)
+
     allow(project).to receive(:repository).and_return(repository)
   end
 
   describe "manages the repository" do
-    let(:role) { create(:project_role, permissions: [:manage_repository]) }
+    let(:permissions) { [:manage_repository] }
 
     before do
       # authorization checked in spec/permissions/manage_repositories_spec.rb
@@ -105,7 +109,7 @@ RSpec.describe RepositoriesController do
   end
 
   describe "with empty repository" do
-    let(:role) { create(:project_role, permissions: [:browse_repository]) }
+    let(:permissions) { [:browse_repository] }
 
     before do
       allow(repository.scm)
@@ -163,10 +167,7 @@ RSpec.describe RepositoriesController do
         end
 
         context "requested by an authorized user" do
-          let(:role) do
-            create(:project_role, permissions: %i[browse_repository
-                                                  view_commit_author_statistics])
-          end
+          let(:permissions) { %i[browse_repository view_commit_author_statistics] }
 
           it "is successful" do
             expect(response).to be_successful
@@ -178,7 +179,7 @@ RSpec.describe RepositoriesController do
         end
 
         context "requested by an unauthorized user" do
-          let(:role) { create(:project_role, permissions: [:browse_repository]) }
+          let(:permissions) { [:browse_repository] }
 
           it "returns 403" do
             expect(response.code).to eq("403")
@@ -187,7 +188,7 @@ RSpec.describe RepositoriesController do
       end
 
       describe "committers" do
-        let(:role) { create(:project_role, permissions: [:manage_repository]) }
+        let(:permissions) { [:manage_repository] }
 
         describe "#get" do
           before do
@@ -220,10 +221,7 @@ RSpec.describe RepositoriesController do
         end
 
         describe "requested by a user with view_commit_author_statistics permission" do
-          let(:role) do
-            create(:project_role, permissions: %i[browse_repository
-                                                  view_commit_author_statistics])
-          end
+          let(:permissions) { %i[browse_repository view_commit_author_statistics] }
 
           it "show the commits per author graph" do
             expect(assigns(:show_commits_per_author)).to be(true)
@@ -231,7 +229,7 @@ RSpec.describe RepositoriesController do
         end
 
         describe "requested by a user without view_commit_author_statistics permission" do
-          let(:role) { create(:project_role, permissions: [:browse_repository]) }
+          let(:permissions) { [:browse_repository] }
 
           it "does not show the commits per author graph" do
             expect(assigns(:show_commits_per_author)).to be(false)
@@ -242,13 +240,13 @@ RSpec.describe RepositoriesController do
       shared_examples "renders the repository title" do |active_breadcrumb|
         it do
           expect(response).to be_successful
-          expect(response.body).to have_css(".repository-breadcrumbs", text: active_breadcrumb)
+          expect(response.body).to have_css(".PageHeader-breadcrumbs", text: active_breadcrumb)
         end
       end
 
       describe "show" do
         render_views
-        let(:role) { create(:project_role, permissions: [:browse_repository]) }
+        let(:permissions) { [:browse_repository] }
 
         before do
           get :show, params: { project_id: project.identifier, repo_path: path }
@@ -269,7 +267,7 @@ RSpec.describe RepositoriesController do
 
       describe "changes" do
         render_views
-        let(:role) { create(:project_role, permissions: [:browse_repository]) }
+        let(:permissions) { [:browse_repository] }
 
         before do
           get :changes, params: { project_id: project.identifier, repo_path: path }
@@ -289,10 +287,22 @@ RSpec.describe RepositoriesController do
         end
       end
 
+      describe "#entry" do
+        let(:permissions) { [:browse_repository] }
+
+        it "serves raw files as application/octet-stream attachment" do
+          get :entry, params: { project_id: project.identifier, repo_path: "subversion_test/textfile.txt", format: "raw" }
+
+          expect(response).to be_successful
+          expect(response.headers["Content-Type"]).to eq("application/octet-stream")
+          expect(response.headers["Content-Disposition"]).to match(/attachment/)
+        end
+      end
+
       describe "checkout path" do
         render_views
 
-        let(:role) { create(:project_role, permissions: [:browse_repository]) }
+        let(:permissions) { [:browse_repository] }
         let(:checkout_hash) do
           {
             "subversion" => { "enabled" => "1",

@@ -38,17 +38,21 @@ module Costs::Patches::PermittedParamsPatch
       params.require(:cost_entry).permit(:comments,
                                          :units,
                                          :overridden_costs,
-                                         :spent_on)
+                                         :spent_on,
+                                         :user_id,
+                                         :entity_id,
+                                         :entity_type,
+                                         :cost_type_id)
     end
 
     def budget
       params.require(:budget).permit(:subject,
                                      :description,
-                                     :fixed_date,
+                                     :fixed_date, :base_amount,
                                      { new_material_budget_item_attributes: %i[units cost_type_id comments amount] },
                                      { new_labor_budget_item_attributes: %i[hours user_id comments amount] },
                                      { existing_material_budget_item_attributes: %i[units cost_type_id comments amount] },
-                                     existing_labor_budget_item_attributes: %i[hours user_id comments amount])
+                                     { existing_labor_budget_item_attributes: %i[hours user_id comments amount] })
     end
 
     def cost_type
@@ -56,6 +60,8 @@ module Costs::Patches::PermittedParamsPatch
                                         :unit,
                                         :unit_plural,
                                         :default,
+                                        :for_all_projects,
+                                        :current_rate,
                                         { new_rate_attributes: %i[valid_from rate] },
                                         existing_rate_attributes: %i[valid_from rate])
     end
@@ -77,7 +83,8 @@ module Costs::Patches::PermittedParamsPatch
           :hours,
           :comments,
           :spent_on,
-          :work_package_id,
+          :entity_type,
+          :entity_id,
           :activity_id,
           :project_id,
           :issue_id,

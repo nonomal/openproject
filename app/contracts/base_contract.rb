@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -226,7 +228,7 @@ class BaseContract < Disposable::Twin
   end
 
   def collect_available_custom_field_attributes
-    model.available_custom_fields.map(&:attribute_name)
+    model.available_custom_fields.flat_map(&:all_attribute_names)
   end
 
   def reduce_writable_attributes(attributes)

@@ -21,39 +21,38 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
+import { keyBy } from 'lodash-es';
 import {
   ChangeDetectionStrategy,
   Component,
   EventEmitter,
   forwardRef,
+  inject,
   Input,
   OnInit,
   Output,
   ViewEncapsulation,
 } from '@angular/core';
 import { Observable } from 'rxjs';
-import {
-  filter,
-  map,
-} from 'rxjs/operators';
-import {
-  ControlValueAccessor,
-  NG_VALUE_ACCESSOR,
-} from '@angular/forms';
+import { filter, map } from 'rxjs/operators';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { ID } from '@datorama/akita';
-import { OpInviteUserModalService } from 'core-app/features/invite-user-modal/invite-user-modal.service';
+import { OpInviteUserDialogService } from 'core-app/features/invite-user-modal/invite-user-dialog.service';
 import { HalResource } from 'core-app/features/hal/resources/hal-resource';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
 import { IHALCollection } from 'core-app/core/apiv3/types/hal-collection.type';
-import { OpAutocompleterComponent } from 'core-app/shared/components/autocompleter/op-autocompleter/op-autocompleter.component';
+import {
+  OpAutocompleterComponent,
+} from 'core-app/shared/components/autocompleter/op-autocompleter/op-autocompleter.component';
 import { ApiV3FilterBuilder } from 'core-app/shared/helpers/api-v3/api-v3-filter-builder';
 import { addFiltersToPath } from 'core-app/core/apiv3/helpers/add-filters-to-path';
-import { UserAutocompleterTemplateComponent } from 'core-app/shared/components/autocompleter/user-autocompleter/user-autocompleter-template.component';
+import {
+  UserAutocompleterTemplateComponent,
+} from 'core-app/shared/components/autocompleter/user-autocompleter/user-autocompleter-template.component';
 import { IUser } from 'core-app/core/state/principals/user.model';
 import { compareByAttribute } from 'core-app/shared/helpers/angular/tracking-functions';
 
@@ -77,18 +76,16 @@ export interface IUserAutocompleteItem {
       useExisting: forwardRef(() => UserAutocompleterComponent),
       multi: true,
     },
-    // Provide a new version of the modal invite service,
-    // as otherwise the close event will be shared across all instances
-    OpInviteUserModalService,
   ],
   styleUrls: ['./user-autocompleter.component.sass'],
   encapsulation: ViewEncapsulation.None,
+  standalone: false,
 })
 export class UserAutocompleterComponent extends OpAutocompleterComponent<IUserAutocompleteItem> implements OnInit, ControlValueAccessor {
   @Input() public inviteUserToProject:string|undefined;
 
-  @Input() public isOpenedInModal:boolean = false;
-  @Input() public hoverCards:boolean = true;
+  @Input() public isOpenedInModal = false;
+  @Input() public hoverCards = true;
 
   @Input() public url:string = this.apiV3Service.users.path;
 
@@ -96,7 +93,7 @@ export class UserAutocompleterComponent extends OpAutocompleterComponent<IUserAu
 
   @Output() public userInvited = new EventEmitter<HalResource>();
 
-  @InjectField(OpInviteUserModalService) opInviteUserModalService:OpInviteUserModalService;
+  readonly opInviteUserDialogService = inject(OpInviteUserDialogService);
 
   getOptionsFn = this.getAvailableUsers.bind(this);
 
@@ -110,7 +107,7 @@ export class UserAutocompleterComponent extends OpAutocompleterComponent<IUserAu
     });
 
     this
-      .opInviteUserModalService
+      .opInviteUserDialogService
       .close
       .pipe(
         this.untilDestroyed(),
@@ -131,11 +128,19 @@ export class UserAutocompleterComponent extends OpAutocompleterComponent<IUserAu
       .http
       .get<IHALCollection<IUser>>(filteredURL.toString())
       .pipe(
-        map((res) => _.uniqBy(res._embedded.elements, (el) => el._links.self?.href || el.id)),
+        map((res) => {
+          const seen = new Set<string|number>();
+          return res._embedded.elements.filter((el) => {
+            const key = el._links.self?.href || el.id;
+            if (seen.has(key)) { return false; }
+            seen.add(key);
+            return true;
+          });
+        }),
         map((users) => {
           const mapped:IUserAutocompleteItem[] = users.map((user) => {
               return { id: user.id, name: user.name, href: user._links.self?.href, email: user.email };
-            });
+          });
 
           if (this.additionalOptions) {
             return this.additionalOptions.concat(mapped);
@@ -147,7 +152,7 @@ export class UserAutocompleterComponent extends OpAutocompleterComponent<IUserAu
   }
 
   protected buildFilteredURL(searchTerm?:string):URL {
-    const filterObject = _.keyBy(this.filters, 'name');
+    const filterObject = keyBy(this.filters, 'name');
     const searchFilters = ApiV3FilterBuilder.fromFilterObject(filterObject);
 
     if (searchTerm?.length) {

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -36,6 +38,7 @@ RSpec.describe API::V3::HelpTexts::HelpTextRepresenter do
   let(:help_text) do
     build_stubbed(:work_package_help_text,
                   attribute_name: "status",
+                  caption: "Short caption",
                   help_text: "This is a help text for **status** attribute.")
   end
 
@@ -63,7 +66,8 @@ RSpec.describe API::V3::HelpTexts::HelpTextRepresenter do
       "id" => help_text.id,
       "scope" => "WorkPackage",
       "attribute" => "status",
-      "attributeCaption" => "Status",
+      "caption" => "Short caption",
+      "attributeFieldName" => "Status",
       "helpText" => {
         "format" => "markdown",
         "raw" => "This is a help text for **status** attribute.",

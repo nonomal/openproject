@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,33 +31,30 @@
 require "spec_helper"
 
 RSpec.describe CustomValue::FormatStrategy do
-  let(:custom_value) do
-    double("CustomValue",
-           value:)
-  end
+  let(:custom_value) { instance_double(CustomValue, value:) }
 
   describe "#value_present?" do
     subject { described_class.new(custom_value).value_present? }
 
-    context "value is nil" do
+    context "when value is nil" do
       let(:value) { nil }
 
       it { is_expected.to be(false) }
     end
 
-    context "value is empty string" do
+    context "when value is an empty string" do
       let(:value) { "" }
 
       it { is_expected.to be(false) }
     end
 
-    context "value is present string" do
+    context "when value is a present string" do
       let(:value) { "foo" }
 
       it { is_expected.to be(true) }
     end
 
-    context "value is present integer" do
+    context "when value is a present integer" do
       let(:value) { 42 }
 
       it { is_expected.to be(true) }

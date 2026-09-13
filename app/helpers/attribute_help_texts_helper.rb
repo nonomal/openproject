@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,13 +29,9 @@
 #++
 
 module AttributeHelpTextsHelper
-  def selectable_attributes(instance)
-    available = instance.class.available_attributes
-    used = AttributeHelpText.used_attributes(instance.type)
-
-    available
-      .reject { |key,| used.include? key }
-      .map { |key, label| [label, key] }
-      .sort_by { |label, _key| label.downcase }
+  def help_text_for(model, attribute_name, current_user: User.current)
+    AttributeHelpText.for(model)
+      &.cached(current_user)
+      &.[](AttributeHelpText.normalize_value_for(:attribute_name, attribute_name))
   end
 end

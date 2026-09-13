@@ -46,13 +46,87 @@ Capybara.add_selector :primer_label, locator_type: [String, Symbol] do
     text.public_send(exact ? :eql? : :include?, locator.to_s)
   end
 
-  expression_filter :scheme do |expr, scheme|
-    builder(expr).add_attribute_conditions(class: "Label--#{scheme.downcase}")
+  # Use `node_filter` instead of `expression_filter` to have a better failure
+  # message when the selector fails: `expression_filter` modifies the initial
+  # query and elements without the expected scheme are not returned.
+  # `node_filter` applies the filter on the elements returned by the query so
+  # that error message can list them if none matches.
+  node_filter :scheme do |node, scheme|
+    actual = node[:class].scan(/(?<=Label--)[\w-]+/)
+    scheme = scheme.to_s
+
+    actual.include?(scheme).tap do |res|
+      actual_values = actual.any? ? actual.map(&:inspect).to_sentence : "not set"
+      add_error("Expected scheme to be #{scheme.inspect} but was #{actual_values}") unless res
+    end
   end
 
   describe_expression_filters do |scheme: nil, **|
     " with scheme #{scheme.inspect}" if scheme
   end
+
+  filter_set(:capybara_accessible_selectors, %i[aria described_by])
+end
+
+Capybara.add_selector :primer_text, locator_type: [String] do
+  label "Primer Text"
+
+  xpath do |locator, **options|
+    xpath = XPath.descendant(:span)
+    xpath = xpath[XPath.attr(:class).contains_word(options[:class])] if options[:class]
+    unless locator.nil?
+      locator = locator.to_s
+      xpath = xpath[XPath.string.n.is(locator)]
+    end
+    xpath
+  end
+
+  # Use `node_filter` instead of `expression_filter` to have a better failure
+  # message when the selector fails: `expression_filter` modifies the initial
+  # query and elements without the expected color are not returned.
+  # `node_filter` applies the filter on the elements returned by the query so
+  # that error message can list them if none matches.
+  node_filter :color do |node, color|
+    class_attr = node[:class]
+    next false unless class_attr
+
+    actual = class_attr.scan(/(?<=color-fg-)[\w-]+/)
+    color = color.to_s
+
+    actual.include?(color).tap do |res|
+      actual_values = actual.any? ? actual.map(&:inspect).to_sentence : "not set"
+      add_error("Expected color to be #{color.inspect} but was #{actual_values}") unless res
+    end
+  end
+
+  describe_expression_filters do |color: nil, **|
+    " with color #{color.inspect}" if color
+  end
+
+  filter_set(:capybara_accessible_selectors, %i[aria described_by])
+end
+
+Capybara.add_selector :octicon, locator_type: [String, Symbol] do
+  label "Octicon"
+
+  css do |locator|
+    css_selector = "svg.octicon"
+    css_selector += ".octicon-#{locator.to_s.downcase}" if locator
+    css_selector
+  end
+
+  expression_filter(:size, valid_values: [Numeric, *Primer::Beta::Octicon::SIZE_OPTIONS]) do |expr, size|
+    px_size = size.is_a?(Numeric) ? size : Primer::Beta::Octicon::SIZE_MAPPINGS.fetch(size)
+    builder(expr).add_attribute_conditions(width: px_size, height: px_size)
+  end
+
+  describe_expression_filters do |size: nil, **|
+    desc = +""
+    desc << (size.is_a?(Numeric) ? " with size #{size}px" : " with #{size.inspect} size") if size.present?
+    desc
+  end
+
+  filter_set(:capybara_accessible_selectors, %i[aria described_by])
 end
 
 module Capybara
@@ -63,6 +137,22 @@ module Capybara
 
     def have_no_primer_label(...)
       Matchers::NegatedMatcher.new(have_primer_label(...))
+    end
+
+    def have_primer_text(locator = nil, **, &)
+      Matchers::HaveSelector.new(:primer_text, locator, **, &)
+    end
+
+    def have_no_primer_text(...)
+      Matchers::NegatedMatcher.new(have_primer_text(...))
+    end
+
+    def have_octicon(locator = nil, **, &)
+      Matchers::HaveSelector.new(:octicon, locator, **, &)
+    end
+
+    def have_no_octicon(...)
+      Matchers::NegatedMatcher.new(have_octicon(...))
     end
   end
 end

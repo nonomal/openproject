@@ -32,9 +32,10 @@ See COPYRIGHT and LICENSE files for more details.
   render(Primer::OpenProject::PageHeader.new) do |header|
     header.with_title { t("team_planner.label_new_team_planner") }
     header.with_breadcrumbs(
-      [*([href: home_path, text: organization_name] unless @project),
-       *([href: project_overview_path(@project.id), text: @project.name] if @project),
-       t("team_planner.label_new_team_planner")]
+      [
+        ({ href: project_overview_path(@project.id), text: @project.name} if @project),
+        t("team_planner.label_new_team_planner")
+      ].compact
     )
   end
 %>

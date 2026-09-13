@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,6 +33,14 @@ require "work_package"
 
 RSpec.describe UsersController do
   shared_let(:admin) { create(:admin) }
+  shared_let(:user_manager) do
+    create(:user,
+           login: "user-manager",
+           mail: "user-manager@example.com",
+           firstname: "User",
+           lastname: "Manager",
+           global_permissions: %i[view_all_principals manage_user])
+  end
   shared_let(:anonymous) { User.anonymous }
 
   shared_let(:user_password) { "bob!" * 4 }
@@ -115,7 +125,7 @@ RSpec.describe UsersController do
       context "when the setting users_deletable_by_self is set to true",
               with_settings: { users_deletable_by_self: true } do
         before do
-          get :deletion_info, params:
+          get :deletion_info, params:, format: :turbo_stream
         end
 
         it { expect(response).to have_http_status(:success) }
@@ -124,13 +134,16 @@ RSpec.describe UsersController do
           expect(assigns(:user)).to eq(user)
         end
 
-        it { expect(response).to render_template("deletion_info") }
+        it "renders a dialog" do
+          expect(response).to be_successful
+          expect(response).to have_turbo_stream action: "dialog", target: "users-delete-dialog-component"
+        end
       end
 
       context "when the setting users_deletable_by_self is set to false",
               with_settings: { users_deletable_by_self: false } do
         before do
-          get :deletion_info, params:
+          get :deletion_info, params:, format: :turbo_stream
         end
 
         it { expect(response).to have_http_status(:not_found) }
@@ -141,15 +154,10 @@ RSpec.describe UsersController do
       current_user { anonymous }
 
       before do
-        get :deletion_info, params:
+        get :deletion_info, params:, format: :turbo_stream
       end
 
-      it {
-        expect(response).to redirect_to(controller: "account",
-                                        action: "login",
-                                        back_url: controller.url_for(controller: "users",
-                                                                     action: "deletion_info"))
-      }
+      it { expect(response).to have_http_status(:unauthorized) }
     end
 
     context "when the current user is admin" do
@@ -158,7 +166,7 @@ RSpec.describe UsersController do
       context "when the setting users_deletable_by_admins is set to true",
               with_settings: { users_deletable_by_admins: true } do
         before do
-          get :deletion_info, params:
+          get :deletion_info, params:, format: :turbo_stream
         end
 
         it { expect(response).to have_http_status(:success) }
@@ -167,13 +175,16 @@ RSpec.describe UsersController do
           expect(assigns(:user)).to eq(user)
         end
 
-        it { expect(response).to render_template("deletion_info") }
+        it "renders a dialog" do
+          expect(response).to be_successful
+          expect(response).to have_turbo_stream action: "dialog", target: "users-delete-dialog-component"
+        end
       end
 
       context "when the setting users_deletable_by_admins is set to false",
               with_settings: { users_deletable_by_admins: false } do
         before do
-          get :deletion_info, params:
+          get :deletion_info, params:, format: :turbo_stream
         end
 
         it { expect(response).to have_http_status(:not_found) }
@@ -198,6 +209,34 @@ RSpec.describe UsersController do
       end
     end
 
+    context "with create_user permission rights" do
+      let(:user_with_create_user_permission) do
+        create(:user, global_permissions: %i[view_all_principals create_user manage_user])
+      end
+
+      before do
+        expect(ActionMailer::Base.deliveries).to be_empty
+
+        as_logged_in_user user_with_create_user_permission do
+          perform_enqueued_jobs do
+            post :resend_invitation, params: { id: invited_user.id }
+          end
+        end
+      end
+
+      it "redirects back to the edit user page" do
+        expect(response).to redirect_to edit_user_path(invited_user)
+      end
+
+      it "sends another activation email" do
+        mail = ActionMailer::Base.deliveries.first.body.parts.first.body.to_s
+        token = Token::Invitation.find_by user_id: invited_user.id
+
+        expect(mail).to include "activate your account"
+        expect(mail).to include token.value
+      end
+    end
+
     context "with admin rights" do
       before do
         expect(ActionMailer::Base.deliveries).to be_empty
@@ -219,6 +258,39 @@ RSpec.describe UsersController do
 
         expect(mail).to include "activate your account"
         expect(mail).to include token.value
+      end
+    end
+
+    context "when trying to modify an admin" do
+      let(:affected_user) { create(:admin) }
+
+      subject do
+        as_logged_in_user acting_user do
+          post :resend_invitation, params: { id: affected_user.id }
+        end
+      end
+
+      context "as non-admin" do
+        let(:acting_user) { create(:user, global_permissions: %i[view_all_principals create_user manage_user]) }
+
+        it "does not allow changing the status of an admin" do
+          subject
+
+          expect(flash[:error]).to eq(I18n.t("user.error_admin_change_on_non_admin"))
+          expect(response).to redirect_to(action: :edit)
+        end
+      end
+
+      context "as admin" do
+        let(:acting_user) { admin }
+
+        it "allows changing the status of an admin" do
+          subject
+
+          affected_user.reload
+
+          expect(affected_user).to be_invited
+        end
       end
     end
   end
@@ -407,37 +479,166 @@ RSpec.describe UsersController do
     end
   end
 
-  describe "#change_status",
-           with_settings: {
-             available_languages: %w[en de],
-             bcc_recipients: 1
-           } do
+  describe "#change_status", with_settings: { available_languages: %w[en de], bcc_recipients: 1 } do
+    let(:acting_user) { user_manager }
+    let(:affected_user) { registered_user }
+
+    let!(:registered_user) do
+      create(:user, status: User.statuses[:registered], language: "de")
+    end
+
+    subject do
+      as_logged_in_user acting_user do
+        post :change_status,
+             params: {
+               id: affected_user.id,
+               **status_params
+             }
+      end
+    end
+
+    describe "WHEN locking a user" do
+      let(:status_params) do
+        { lock: "1" }
+      end
+
+      it "locks the user" do
+        subject
+
+        affected_user.reload
+
+        expect(affected_user).to be_locked
+      end
+
+      context "when trying to modifiy yourself" do
+        let(:affected_user) { acting_user }
+
+        it "does not allow changing own status" do
+          subject
+
+          expect(flash[:error]).to eq(I18n.t("user.error_status_change_self"))
+          expect(response).to redirect_to(action: :edit)
+        end
+      end
+
+      context "when trying to modify an admin" do
+        let(:affected_user) { create(:admin) }
+
+        context "as non-admin" do
+          it "does not allow changing the status of an admin" do
+            subject
+
+            expect(flash[:error]).to eq(I18n.t("user.error_admin_change_on_non_admin"))
+            expect(response).to redirect_to(action: :edit)
+          end
+        end
+
+        context "as admin" do
+          let(:acting_user) { admin }
+
+          it "allows changing the status of an admin" do
+            subject
+
+            affected_user.reload
+
+            expect(affected_user).to be_locked
+          end
+        end
+      end
+    end
+
+    describe "WHEN unlocking a locked user" do
+      before do
+        registered_user.lock
+      end
+
+      let(:status_params) do
+        { unlock: "1" }
+      end
+
+      it "activates and unlocks the user" do
+        subject
+
+        affected_user.reload
+
+        expect(affected_user).to be_active
+        expect(affected_user).not_to be_locked
+      end
+
+      it "resets failed login attempts" do
+        affected_user.update(failed_login_count: 3)
+
+        expect do
+          subject
+          affected_user.reload
+        end.to change(affected_user, :failed_login_count).to(0)
+      end
+
+      context "when the user does not have an authentication method" do
+        before do
+          UserPassword.where(user_id: affected_user.id).delete_all
+          UserAuthProviderLink.where(user_id: affected_user.id).delete_all
+          affected_user.update(ldap_auth_source_id: nil)
+        end
+
+        it "does not activate or unlock the user and shows an error" do
+          subject
+
+          affected_user.reload
+          expect(affected_user).not_to be_active
+          expect(affected_user).to be_locked
+
+          expect(flash[:error]).to eq(I18n.t("user.error_status_change_failed",
+                                             errors: I18n.t(:notice_user_missing_authentication_method)))
+          expect(response).to redirect_to(action: :edit)
+        end
+      end
+
+      context "when trying to modifiy yourself" do
+        let(:affected_user) { acting_user }
+
+        it "does not allow changing own status" do
+          subject
+
+          expect(flash[:error]).to eq(I18n.t("user.error_status_change_self"))
+          expect(response).to redirect_to(action: :edit)
+        end
+      end
+
+      context "when trying to modify an admin as non-admin" do
+        let(:acting_user) { create(:user, global_permissions: %i[view_all_principals manage_user]) }
+        let(:affected_user) { create(:admin) }
+
+        it "does not allow changing the status of an admin" do
+          subject
+
+          expect(flash[:error]).to eq(I18n.t("user.error_admin_change_on_non_admin"))
+          expect(response).to redirect_to(action: :edit)
+        end
+      end
+    end
+
     describe "WHEN activating a registered user" do
-      let!(:registered_user) do
-        create(:user, status: User.statuses[:registered],
-                      language: "de")
+      let(:status_params) do
+        { activate: "1" }
       end
 
       let(:user_limit_reached) { false }
 
       before do
         allow(OpenProject::Enterprise).to receive(:user_limit_reached?).and_return(user_limit_reached)
-
-        as_logged_in_user admin do
-          post :change_status,
-               params: {
-                 id: registered_user.id,
-                 user: { status: User.statuses[:active] },
-                 activate: "1"
-               }
-        end
       end
 
       it "activates the user" do
-        assert registered_user.reload.active?
+        subject
+
+        affected_user.reload
+        expect(affected_user).to be_active
       end
 
       it "sends an email to the correct user in the correct language" do
+        subject
+
         perform_enqueued_jobs
         mail = ActionMailer::Base.deliveries.last
         expect(mail).not_to be_nil
@@ -447,14 +648,71 @@ RSpec.describe UsersController do
         end
       end
 
+      context "when trying to modifiy yourself" do
+        let(:affected_user) { acting_user }
+
+        it "does not allow changing own status" do
+          subject
+
+          expect(flash[:error]).to eq(I18n.t("user.error_status_change_self"))
+          expect(response).to redirect_to(action: :edit)
+        end
+      end
+
+      context "when trying to modify an admin" do
+        let(:affected_user) { create(:admin) }
+
+        context "as non-admin" do
+          it "does not allow changing the status of an admin" do
+            subject
+
+            expect(flash[:error]).to eq(I18n.t("user.error_admin_change_on_non_admin"))
+            expect(response).to redirect_to(action: :edit)
+          end
+        end
+
+        context "as admin" do
+          let(:acting_user) { admin }
+
+          it "allows changing the status of an admin" do
+            subject
+
+            affected_user.reload
+
+            expect(affected_user).to be_active
+          end
+        end
+      end
+
+      context "when the user does not have an authentication method" do
+        before do
+          UserPassword.where(user_id: registered_user.id).delete_all
+          UserAuthProviderLink.where(user_id: registered_user.id).delete_all
+          registered_user.update(ldap_auth_source_id: nil)
+        end
+
+        it "does not activate the user and shows an error" do
+          subject
+
+          affected_user.reload
+          expect(affected_user).not_to be_active
+
+          expect(flash[:error]).to eq(I18n.t("user.error_status_change_failed",
+                                             errors: I18n.t(:notice_user_missing_authentication_method)))
+          expect(response).to redirect_to(action: :edit)
+        end
+      end
+
       context "with user limit reached" do
         let(:user_limit_reached) { true }
 
         it "shows the user limit reached error and recommends to upgrade" do
-          expect(flash[:error]).to match /Adding additional users will exceed the current limit.*upgrade/i
+          subject
+          expect(flash[:error]).to match(/Adding additional users will exceed the current limit./i)
         end
 
         it "does not activate the user" do
+          subject
           expect(registered_user.reload).not_to be_active
         end
       end
@@ -471,26 +729,22 @@ RSpec.describe UsersController do
     end
 
     it "to be success" do
-      expect(response)
-        .to have_http_status(:ok)
+      expect(response).to have_http_status(:ok)
     end
 
     it "renders the index" do
-      expect(response)
-        .to have_rendered("index")
+      expect(response).to have_rendered("index")
     end
 
-    it "assigns users" do
-      expect(assigns(:users))
-        .to contain_exactly(user, admin)
+    it "assigns a query" do
+      expect(assigns(:query).results).to contain_exactly(user, admin, user_manager)
     end
 
     context "with a name filter" do
-      let(:params) { { name: user.firstname } }
+      let(:params) { { filters: %(any_name_attribute ~ "#{user.firstname}") } }
 
-      it "assigns users" do
-        expect(assigns(:users))
-          .to contain_exactly(user)
+      it "assigns a query filtered by name" do
+        expect(assigns(:query).results).to contain_exactly(user)
       end
     end
 
@@ -498,12 +752,27 @@ RSpec.describe UsersController do
       let(:group) { create(:group, members: [user]) }
 
       let(:params) do
-        { group_id: group.id }
+        { filters: %(group = "#{group.id}") }
       end
 
-      it "assigns users" do
-        expect(assigns(:users))
-          .to contain_exactly(user)
+      it "assigns a query filtered by group" do
+        expect(assigns(:query).results).to contain_exactly(user)
+      end
+    end
+
+    context "with the department column requested" do
+      let(:params) { { columns: "login department" } }
+
+      it "assigns a query selecting the department" do
+        expect(assigns(:query).selects.map(&:attribute)).to eq(%i[login department])
+      end
+    end
+
+    context "with a user scheduled for deletion present" do
+      let!(:deleted_user) { create(:user_marked_for_deletion) }
+
+      it "does not include this user to the users list" do
+        expect(assigns(:query).results).to contain_exactly(user, admin, user_manager)
       end
     end
   end
@@ -545,14 +814,13 @@ RSpec.describe UsersController do
 
     context "enabled" do
       before do
-        allow(Setting).to receive(:session_ttl_enabled?).and_return(true)
-        allow(Setting).to receive(:session_ttl).and_return("120")
+        allow(Setting).to receive_messages(session_ttl_enabled?: true, session_ttl: "120")
         @controller.send(:logged_user=, admin)
       end
 
       context "before 120 min of inactivity" do
         before do
-          session[:updated_at] = Time.now - 1.hour
+          session[:updated_at] = 1.hour.ago
           get :index
         end
 
@@ -561,7 +829,7 @@ RSpec.describe UsersController do
 
       context "after 120 min of inactivity" do
         before do
-          session[:updated_at] = Time.now - 3.hours
+          session[:updated_at] = 3.hours.ago
           get :index
         end
 
@@ -581,7 +849,7 @@ RSpec.describe UsersController do
       context "with ttl = 0" do
         before do
           allow(Setting).to receive(:session_ttl).and_return("0")
-          session[:updated_at] = Time.now - 1.hour
+          session[:updated_at] = 1.hour.ago
           get :index
         end
 
@@ -591,7 +859,7 @@ RSpec.describe UsersController do
       context "with ttl < 0" do
         before do
           allow(Setting).to receive(:session_ttl).and_return("-60")
-          session[:updated_at] = Time.now - 1.hour
+          session[:updated_at] = 1.hour.ago
           get :index
         end
 
@@ -601,7 +869,7 @@ RSpec.describe UsersController do
       context "with ttl < 5 > 0" do
         before do
           allow(Setting).to receive(:session_ttl).and_return("4")
-          session[:updated_at] = Time.now - 1.hour
+          session[:updated_at] = 1.hour.ago
           get :index
         end
 
@@ -612,7 +880,7 @@ RSpec.describe UsersController do
 
   describe "PATCH #update" do
     shared_let(:user_with_manage_user_global_permission) do
-      create(:user, login: "human-resources", global_permissions: [:manage_user])
+      create(:user, login: "human-resources", global_permissions: %i[view_all_principals manage_user])
     end
     shared_let(:some_user) { create(:user, firstname: "User being updated") }
     shared_let(:some_admin) { create(:admin, firstname: "Admin being updated") }
@@ -620,6 +888,7 @@ RSpec.describe UsersController do
     context "when updating fields as an admin" do
       current_user { admin }
 
+      let(:generated_password) { nil }
       let(:params) do
         {
           id: some_user.id,
@@ -632,6 +901,14 @@ RSpec.describe UsersController do
             comments_sorting: "desc"
           }
         }
+      end
+
+      prepend_before do
+        if generated_password
+          allow(OpenProject::Passwords::Generator)
+            .to receive(:random_password)
+            .and_return(generated_password)
+        end
       end
 
       before do
@@ -675,6 +952,54 @@ RSpec.describe UsersController do
           expect(mail.body.encoded)
             .to include("newpassPASS!")
         end
+
+        it "forces a password change on next login because the password was emailed" do
+          expect(some_user.reload.force_password_change).to be(true)
+        end
+      end
+
+      context "when assigning a random password" do
+        let(:generated_password) { "randompassPASS!" }
+        let(:params) do
+          {
+            id: some_user.id,
+            user: {
+              assign_random_password: "1"
+            }
+          }
+        end
+
+        it "sends an email to the user with the generated password" do
+          mail = ActionMailer::Base.deliveries.last
+
+          expect(mail.to)
+            .to contain_exactly(some_user.mail)
+
+          expect(mail.body.encoded)
+            .to include(generated_password)
+        end
+
+        it "forces a password change on next login" do
+          expect(some_user.reload.force_password_change).to be(true)
+        end
+      end
+
+      context "when manually setting a password without send_information" do
+        let(:params) do
+          {
+            id: some_user.id,
+            user: { password: "newpassPASS!",
+                    password_confirmation: "newpassPASS!" }
+          }
+        end
+
+        it "does not force a password change (password was not emailed)" do
+          expect(some_user.reload.force_password_change).to be(false)
+        end
+
+        it "does not send any email" do
+          expect(ActionMailer::Base.deliveries).to be_empty
+        end
       end
 
       context "with invalid params" do
@@ -695,6 +1020,47 @@ RSpec.describe UsersController do
           expect(assigns(:user).errors.first)
             .to have_attributes(attribute: :firstname, type: :blank)
         end
+      end
+
+      # Department membership lives in a separate table and is mutated by these
+      # examples, so use a fresh user per example rather than the shared some_user.
+      context "when changing the department" do
+        let(:edited_user) { create(:user) }
+        let(:department) { create(:department, name: "Engineering") }
+
+        it "assigns the user to the selected department" do
+          put :update, params: { id: edited_user.id, user: { department_id: department.id } }
+          expect(edited_user.reload.department).to eq(department)
+        end
+
+        context "when the user already belongs to a department" do
+          let!(:current_department) { create(:department, name: "Sales", members: [edited_user]) }
+
+          it "moves the user to the selected department" do
+            put :update, params: { id: edited_user.id, user: { department_id: department.id } }
+            expect(edited_user.reload.department).to eq(department)
+          end
+
+          it "clears the department when submitted blank" do
+            put :update, params: { id: edited_user.id, user: { department_id: "" } }
+            expect(edited_user.reload.department).to be_nil
+          end
+        end
+      end
+    end
+
+    context "when a non-admin with manage_user permission changes the department" do
+      shared_let(:manager) { create(:user, global_permissions: %i[manage_user view_all_principals]) }
+      let(:edited_user) { create(:user, firstname: "Original") }
+      let(:department) { create(:department, name: "Engineering") }
+
+      current_user { manager }
+
+      it "ignores the department change while still updating other attributes" do
+        put :update, params: { id: edited_user.id, user: { firstname: "Renamed", department_id: department.id } }
+
+        expect(edited_user.reload.firstname).to eq("Renamed")
+        expect(edited_user.department).to be_nil
       end
     end
 
@@ -765,7 +1131,7 @@ RSpec.describe UsersController do
                      value: "another_email@example.com",
                      edited_user: :some_admin,
                      current_user: :admin
-    include_examples "it can update field",
+    include_examples "it cannot update field",
                      field: :mail,
                      value: "another_email@example.com",
                      edited_user: :some_user,
@@ -782,7 +1148,7 @@ RSpec.describe UsersController do
                      current_user: :user
 
     context "with external authentication" do
-      let(:some_user) { create(:user, identity_url: "some:identity") }
+      let(:some_user) { create(:user, :passwordless, identity_url: "some:identity") }
 
       before do
         as_logged_in_user(admin) do
@@ -793,6 +1159,21 @@ RSpec.describe UsersController do
 
       it "ignores setting force_password_change" do
         expect(some_user.force_password_change).to be(false)
+      end
+    end
+
+    context "with external authentication and an existing password" do
+      let(:some_user) { create(:user, identity_url: "some:identity") }
+
+      before do
+        as_logged_in_user(admin) do
+          put :update, params: { id: some_user.id, user: { force_password_change: "true" } }
+        end
+        some_user.reload
+      end
+
+      it "accepts setting force_password_change" do
+        expect(some_user.force_password_change).to be(true)
       end
     end
 
@@ -885,9 +1266,9 @@ RSpec.describe UsersController do
         end
 
         context "when not login_required", with_settings: { login_required: false } do
-          it "responds with 200" do
+          it "responds with 404" do
             expect(response)
-              .to have_http_status(:ok)
+              .to have_http_status(:not_found)
           end
         end
 

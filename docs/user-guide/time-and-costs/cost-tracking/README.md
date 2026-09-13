@@ -26,7 +26,7 @@ To log costs to a work package you can either press the button on the top right 
 
 A new form is opened, where you can log unit costs. You can edit the following information:
 
-1. **Work package ID**. By default, the work package ID of the work package where you selected *Log unit costs* option is shown. You can change this number, in which case the unit costs will be logged for the respective work package.
+1. **Work package ID**. By default, the work package ID of the work package where you selected _Log unit costs_ option is shown. You can change this number, in which case the unit costs will be logged for the respective work package.
 
 2. The **date**, for which the unit costs are logged.
 
@@ -36,7 +36,9 @@ A new form is opened, where you can log unit costs. You can edit the following i
 4. The **cost type** field offers a range of pre-defined cost types which can be configured in the [Administration](../../../system-admin-guide/time-and-costs). The units and respective costs per unit category are defined for every cost type separately. Please note that you need certain privileges to be able to  create new cost types and define costs for specific units.
 
    <div class="glossary">
+
    **Cost Types** are defined as types of costs that can be defined by system admins (e.g. consultant days or licenses).
+
    </div>
 
 5. You can enter the number of **units** to be logged.

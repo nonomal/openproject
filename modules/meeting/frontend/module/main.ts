@@ -1,4 +1,4 @@
-// -- copyright
+//-- copyright
 // OpenProject is an open source project management software.
 // Copyright (C) the OpenProject GmbH
 //
@@ -15,16 +15,18 @@
 // of the License, or (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
+//++
 
-import { CUSTOM_ELEMENTS_SCHEMA, Injector, NgModule } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, Injector, NgModule, inject } from '@angular/core';
 import { OpSharedModule } from 'core-app/shared/shared.module';
 import { OpenprojectTabsModule } from 'core-app/shared/components/tabs/openproject-tabs.module';
 import {
@@ -37,7 +39,7 @@ import { HttpClient } from '@angular/common/http';
 import { filter, map, startWith, switchMap, throttleTime } from 'rxjs/operators';
 import { fromEvent, merge, Observable } from 'rxjs';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
-import { TurboStreamElement } from 'core-typings/turbo';
+import { type FrameElement, type TurboBeforeStreamRenderEvent, type TurboFrameRenderEvent } from "@hotwired/turbo";
 
 export function workPackageMeetingsCount(
   workPackage:WorkPackageResource,
@@ -51,13 +53,13 @@ export function workPackageMeetingsCount(
     fromEvent(document, 'turbo:before-stream-render'),
   )
     .pipe(
-      filter((event:CustomEvent) => {
+      filter((event:TurboFrameRenderEvent|TurboBeforeStreamRenderEvent) => {
         if (event.type === 'turbo:frame-render') {
-          return (event.target as HTMLElement).id?.includes('work-package-meetings-tab');
+          return (event.target as FrameElement).id?.includes('work-package-meetings-tab');
         }
 
         if (event.type === 'turbo:before-stream-render') {
-          const stream:TurboStreamElement = (event.detail as { newStream:TurboStreamElement }).newStream;
+          const stream = (event as TurboBeforeStreamRenderEvent).detail.newStream;
           return stream.target?.includes('work-package-meetings-tab');
         }
 
@@ -67,7 +69,7 @@ export function workPackageMeetingsCount(
       throttleTime(1000),
       switchMap(() => {
         return http
-          .get(`${pathHelperService.workPackagePath(workPackage.id as string)}/meetings/tab/count`)
+          .get(`${pathHelperService.projectWorkPackagePath(workPackage.project.id as string, workPackage.id as string)}/meetings/tab/count`)
           .pipe(
             map((res:{ count:number }) => res.count),
           );
@@ -78,13 +80,16 @@ export function workPackageMeetingsCount(
 export function initializeMeetingPlugin(injector:Injector) {
   const wpTabService = injector.get(WorkPackageTabsService);
   const I18n = injector.get(I18nService);
-  wpTabService.register({
-    component: MeetingsTabComponent,
-    name: I18n.t('js.label_meetings'),
-    id: 'meetings',
-    displayable: (workPackage) => !!workPackage.meetings,
-    count: workPackageMeetingsCount,
-  });
+  wpTabService.registerAfter(
+    'relations',
+    {
+      component: MeetingsTabComponent,
+      name: I18n.t('js.label_meetings'),
+      id: 'meetings',
+      displayable: (workPackage) => !!workPackage.meetings,
+      count: workPackageMeetingsCount,
+    },
+  );
 }
 
 @NgModule({
@@ -101,7 +106,9 @@ export function initializeMeetingPlugin(injector:Injector) {
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
 export class PluginModule {
-  constructor(injector:Injector) {
+  constructor() {
+    const injector = inject(Injector);
+
     initializeMeetingPlugin(injector);
   }
 }

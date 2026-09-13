@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -36,6 +38,7 @@ module Admin::Settings
 
     # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
     def validate_enabled_modules
+      return if params[:tab] == "notifications"
       return if settings_params[:default_projects_modules].blank?
 
       enabled_modules = settings_params[:default_projects_modules].map(&:to_sym)
@@ -58,7 +61,7 @@ module Admin::Settings
       if module_missing_deps.any?
         flash[:error] = helpers.list_of_messages(module_missing_deps)
 
-        redirect_to action: :show
+        redirect_to action: :show, tab: params[:tab]
       end
     end
 

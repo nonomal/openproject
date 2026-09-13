@@ -31,19 +31,6 @@ See COPYRIGHT and LICENSE files for more details.
 
 <%= render CustomFields::IndexPageHeaderComponent.new(tabs: custom_fields_tabs) %>
 
-<%=
-  render(Primer::OpenProject::SubHeader.new) do |subheader|
-    subheader.with_action_button(
-      scheme: :primary,
-      aria: { label: I18n.t(:label_custom_field_new) },
-      title: I18n.t(:label_custom_field_new),
-      tag: :a,
-      href: new_custom_field_path(type: selected_tab(custom_fields_tabs)[:name])
-    ) do |button|
-      button.with_leading_visual_icon(icon: :plus)
-      t("activerecord.models.custom_field")
-    end
-  end
-%>
+<%= render(CustomFields::FormatSubHeaderComponent.new(customizable_name: @tab.delete_suffix("CustomField"))) %>
 
-<%= render_tabs custom_fields_tabs, with_tab_nav: false %>
+<%= render_tabs custom_fields_tabs %>

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -49,22 +51,22 @@ RSpec.describe WorkPackage, "spent_time" do
   end
   let!(:time_entry) do
     create(:time_entry,
-           work_package:,
+           entity: work_package,
            project:)
   end
   let(:time_entry2) do
     create(:time_entry,
-           work_package:,
+           entity: work_package,
            project:)
   end
   let(:child_time_entry) do
     create(:time_entry,
-           work_package: child_work_package,
+           entity: child_work_package,
            project:)
   end
   let(:child_time_entry_in_other_project) do
     create(:time_entry,
-           work_package: child_work_package_in_other_project,
+           entity: child_work_package_in_other_project,
            project: other_project)
   end
   let(:role) do

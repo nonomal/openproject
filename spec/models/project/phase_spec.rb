@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,8 +31,13 @@
 require "rails_helper"
 
 RSpec.describe Project::Phase do
+  shared_let(:admin) { create(:admin) }
+  before do
+    login_as(admin)
+  end
+
   it "can be instantiated" do
-    expect { described_class.new }.not_to raise_error(NotImplementedError)
+    expect { described_class.new }.not_to raise_error
   end
 
   it { is_expected.to have_readonly_attribute(:definition_id) }
@@ -38,7 +45,53 @@ RSpec.describe Project::Phase do
   describe "associations" do
     it { is_expected.to belong_to(:project).required }
     it { is_expected.to belong_to(:definition).required }
-    it { is_expected.to have_many(:work_packages) }
+    it { is_expected.to have_many(:work_packages).through(:definition) }
+  end
+
+  describe ".with_timeline_content" do
+    let(:project) { create(:project) }
+
+    let!(:phase_with_both_dates) do
+      create(:project_phase, project:, start_date: Time.zone.today, finish_date: Time.zone.today + 5)
+    end
+    let!(:phase_without_dates) do
+      create(:project_phase, project:, start_date: nil, finish_date: nil)
+    end
+    let!(:phase_with_only_start_date) do
+      create(:project_phase, project:, start_date: Time.zone.today, finish_date: nil)
+    end
+    let!(:phase_with_start_gate_and_start_date) do
+      create(:project_phase, project:,
+                             definition: create(:project_phase_definition, :with_start_gate),
+                             start_date: Time.zone.today, finish_date: nil)
+    end
+    let!(:phase_with_finish_gate_and_finish_date) do
+      create(:project_phase, project:,
+                             definition: create(:project_phase_definition, :with_finish_gate),
+                             start_date: nil, finish_date: Time.zone.today + 5)
+    end
+
+    subject { described_class.with_timeline_content }
+
+    it "includes phases with both dates" do
+      expect(subject).to include(phase_with_both_dates)
+    end
+
+    it "includes phases with a start gate and start date" do
+      expect(subject).to include(phase_with_start_gate_and_start_date)
+    end
+
+    it "includes phases with a finish gate and finish date" do
+      expect(subject).to include(phase_with_finish_gate_and_finish_date)
+    end
+
+    it "excludes phases without any dates" do
+      expect(subject).not_to include(phase_without_dates)
+    end
+
+    it "excludes phases with only a start date" do
+      expect(subject).not_to include(phase_with_only_start_date)
+    end
   end
 
   describe ".visible" do
@@ -60,89 +113,146 @@ RSpec.describe Project::Phase do
     end
   end
 
-  describe "#not_set?" do
-    it "returns true if start_date or finish_date is blank" do
-      expect(subject.not_set?).to be(true)
-    end
+  describe "validations" do
+    subject { create(:project_phase) }
 
-    it "returns false if both start_date and finish_date are present" do
-      subject.start_date = Time.zone.today
-      subject.finish_date = Date.tomorrow
-      expect(subject.not_set?).to be(false)
-    end
-  end
-
-  describe "#date_range=" do
-    it "splits a valid date range string into start_date and finish_date" do
-      subject.date_range = "2024-11-26 - 2024-11-27"
-      expect(subject.start_date).to eq(Date.parse("2024-11-26"))
-      expect(subject.finish_date).to eq(Date.parse("2024-11-27"))
-    end
-
-    it "sets finish_date to start_date if a single date is provided" do
-      subject.date_range = "2024-11-26"
-      expect(subject.start_date).to eq(Date.parse("2024-11-26"))
-      expect(subject.finish_date).to eq(Date.parse("2024-11-26"))
-    end
-  end
-
-  describe "#validate_date_range" do
     it "is valid when both dates are blank" do
-      stage = build(:project_phase, start_date: nil, finish_date: nil)
-      expect(stage).to be_valid
+      subject.assign_attributes(start_date: nil, finish_date: nil)
+      expect(subject).to be_valid
     end
 
-    it "adds error if start_date is after finish_date" do
-      subject.start_date = Date.tomorrow
-      subject.finish_date = Time.zone.today
+    it "adds error if start_date is after finish_date (start date is changed)" do
+      subject.start_date = subject.finish_date + 1.day
       expect(subject).not_to be_valid
-      expect(subject.errors.symbols_for(:date_range)).to include(:start_date_must_be_before_finish_date)
+      expect(subject.errors.symbols_for(:start_date)).to include(:must_be_before_finish_date)
+    end
+
+    it "adds error if finish_date is before start_date (finish date is changed)" do
+      subject.finish_date = subject.start_date - 1.day
+      expect(subject).not_to be_valid
+      expect(subject.errors.symbols_for(:finish_date)).to include(:must_be_after_start_date)
     end
 
     it "does not add errors if start_date is before or equal to finish_date" do
-      subject.start_date = Time.zone.today
-      subject.finish_date = Time.zone.today
-      expect(subject).not_to be_valid
-      expect(subject.errors[:date_range]).to be_empty
+      subject.start_date = subject.finish_date
+      expect(subject).to be_valid
     end
   end
 
-  describe "#working_days_count" do
-    it "returns nil if not_set? is true" do
-      allow(Day).to receive(:working)
+  describe "duration calculation" do
+    shared_let(:week_days) { week_with_saturday_and_sunday_as_weekend }
 
+    let(:date) { Time.zone.today }
+
+    it "returns number of working days in complete date range" do
+      subject.start_date = date
+      subject.finish_date = date + 27
+
+      expect(subject.calculate_duration).to eq(20)
+    end
+
+    it "returns nil if date range is incomplete" do
       subject.start_date = nil
-      subject.finish_date = nil
 
-      expect(subject.working_days_count).to be_nil
-      expect(Day).not_to have_received(:working)
+      expect(subject.calculate_duration).to be_nil
+    end
+  end
+
+  shared_context "with project phases" do
+    let(:project) { create(:project) }
+
+    let!(:definition1) { create(:project_phase_definition, position: 1) }
+    let!(:definition2) { create(:project_phase_definition, position: 2) }
+    let!(:phase1) do
+      create(:project_phase,
+             project:,
+             definition: definition1,
+             start_date: Time.zone.today,
+             finish_date: Time.zone.today + 5)
+    end
+    let!(:phase2) { create(:project_phase, project:, definition: definition2) }
+  end
+
+  describe "#follows_previous_phase?" do
+    include_context "with project phases"
+
+    context "when the previous phase has a date range set" do
+      it "returns truthy" do
+        expect(phase2).to be_follows_previous_phase
+      end
     end
 
-    it "returns the correct number of days if start_date and finish_date are the same" do
-      subject.start_date = Time.zone.today
-      subject.finish_date = Time.zone.today
-      expect(subject.working_days_count).to eq(1)
+    context "when the previous phase does not have a date range set" do
+      before do
+        phase1.update(start_date: nil, finish_date: nil)
+      end
+
+      it "returns falsy" do
+        expect(phase2).not_to be_follows_previous_phase
+      end
     end
 
-    it "returns the correct number of days for a valid date range" do
-      subject.start_date = Date.parse("2024-11-25")
-      subject.finish_date = Date.parse("2024-11-27")
-      expect(subject.working_days_count).to eq(3)
+    context "when there is no previous phase" do
+      it "returns falsy" do
+        expect(phase1).not_to be_follows_previous_phase
+      end
     end
 
-    it "calls the Day.working.from_range method with the right arguments" do
-      subject.start_date = Date.parse("2024-11-25")
-      subject.finish_date = Date.parse("2024-11-27")
+    context "when only the start date is set on the previous phase" do
+      before do
+        phase1.update(start_date: Time.zone.today, finish_date: nil)
+      end
 
-      allow(Day).to receive(:working).and_return(Day)
-      allow(Day).to receive(:from_range)
-                      .with(from: subject.start_date, to: subject.finish_date)
-                      .and_return([])
+      it "returns falsy" do
+        expect(phase2).not_to be_follows_previous_phase
+      end
+    end
 
-      expect(subject.working_days_count).to eq(0)
+    context "when only the finish date is set on the previous phase" do
+      before do
+        phase1.update(start_date: nil, finish_date: Time.zone.today + 5)
+      end
 
-      expect(Day).to have_received(:working).with(no_args)
-      expect(Day).to have_received(:from_range).with(from: subject.start_date, to: subject.finish_date)
+      it "returns falsy" do
+        expect(phase2).not_to be_follows_previous_phase
+      end
+    end
+
+    context "when the previous phase is inactive" do
+      before do
+        phase1.update(active: false)
+      end
+
+      it "does not consider the previous phase when it is inactive" do
+        expect(phase2).not_to be_follows_previous_phase
+      end
+    end
+  end
+
+  describe "#default_start_date" do
+    include_context "with project phases"
+
+    context "when the previous phase has a complete date range" do
+      it "returns the next working day after the previous phase finish date" do
+        expected = Day.next_working(from: phase1.finish_date).date
+        expect(phase2.default_start_date).to eq(expected)
+      end
+    end
+
+    context "when the previous phase has an incomplete date range" do
+      before do
+        phase1.update(start_date: nil)
+      end
+
+      it "returns nil" do
+        expect(phase2.default_start_date).to be_nil
+      end
+    end
+
+    context "when there is no previous phase" do
+      it "returns nil" do
+        expect(phase1.default_start_date).to be_nil
+      end
     end
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -184,8 +186,9 @@ RSpec.describe "Todolists in CKEditor", :js, :selenium do
       expect(page).to have_css(".op-uc-list--task-checkbox", count: 3)
       expect(page).to have_css(".op-uc-list--task-checkbox[checked]", count: 1)
 
-      expect(page).to have_css('.op-uc-list--item a[href="https://community.openproject.com/"]')
-      nested_link = page.find('.op-uc-list--item .op-uc-list--item a[href="https://community.openproject.com/nested"]')
+      expect(page).to have_css(".op-uc-list--item a[href='https://community.openproject.com/']")
+
+      nested_link = page.find(".op-uc-list--item .op-uc-list--item a[href='https://community.openproject.com/nested']")
       expect(nested_link.text).to eq "This is a link"
 
       description = WorkPackage.last.description

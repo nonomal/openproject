@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,10 +34,6 @@ module WorkPackages
 
     included do
       helper_method :split_view_base_route
-    end
-
-    def split_view_work_package_id
-      params[:work_package_id].to_i
     end
   end
 end

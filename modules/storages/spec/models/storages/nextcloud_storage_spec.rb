@@ -235,4 +235,35 @@ RSpec.describe Storages::NextcloudStorage do
       expect(storage.provider_fields_defaults).to eq({ automatic_management_enabled: true, username: "OpenProject" })
     end
   end
+
+  describe "#non_confidential_configuration" do
+    subject { storage.non_confidential_configuration }
+
+    let(:storage) { create(:nextcloud_storage, :with_oauth_configured) }
+
+    it "returns the expected hash" do
+      expect(subject).to eq(
+        authentication_method: "two_way_oauth2",
+        health_notifications_enabled: true,
+        host: storage.host,
+        oauth_application_client_id: storage.oauth_application.uid,
+        oauth_client_id: storage.oauth_client.client_id
+      )
+    end
+
+    context "when the storage is set-up for SSO" do
+      let(:storage) { create(:nextcloud_storage, :oidc_sso_enabled) }
+
+      it "returns the expected hash" do
+        expect(subject).to eq(
+          authentication_method: "oauth2_sso",
+          health_notifications_enabled: true,
+          host: storage.host,
+          storage_audience: "nextcloud",
+          oauth_application_client_id: nil,
+          oauth_client_id: nil
+        )
+      end
+    end
+  end
 end

@@ -54,7 +54,7 @@ class Queries::WorkPackages::Selects::CustomFieldSelect < Queries::WorkPackages:
   end
 
   def value(work_package)
-    work_package.formatted_custom_value_for(@cf.id)
+    work_package.formatted_custom_value_for(@cf)
   end
 
   def self.instances(context = nil)
@@ -63,7 +63,7 @@ class Queries::WorkPackages::Selects::CustomFieldSelect < Queries::WorkPackages:
     else
       WorkPackageCustomField.all
     end
-      .visible_by_user(User.current)
+      .on_visible_type_and_project(User.current)
       .reject { |cf| cf.field_format == "text" }
       .map { |cf| new(cf) }
   end

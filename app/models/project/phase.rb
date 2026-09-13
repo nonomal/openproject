@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,11 +29,14 @@
 #++
 
 class Project::Phase < ApplicationRecord
+  include ::Scopes::Scoped
+
   belongs_to :project, optional: false, inverse_of: :available_phases
   belongs_to :definition,
              optional: false,
              class_name: "Project::PhaseDefinition"
-  has_many :work_packages, inverse_of: :project_phase, dependent: :nullify
+  has_many :work_packages,
+           through: :definition
 
   validate :validate_date_range
 
@@ -46,6 +51,15 @@ class Project::Phase < ApplicationRecord
   attr_readonly :definition_id
 
   scope :active, -> { where(active: true) }
+  scope :with_timeline_content, -> {
+    joins(:definition).where(
+      "(project_phases.start_date IS NOT NULL AND project_phases.finish_date IS NOT NULL) OR " \
+      "(project_phase_definitions.start_gate = TRUE AND project_phases.start_date IS NOT NULL) OR " \
+      "(project_phase_definitions.finish_gate = TRUE AND project_phases.finish_date IS NOT NULL)"
+    )
+  }
+  scopes :order_by_position,
+         :covering_dates_or_days_of_week
 
   class << self
     def visible(user = User.current)
@@ -54,30 +68,56 @@ class Project::Phase < ApplicationRecord
     end
   end
 
-  def working_days_count
-    return nil if not_set?
+  def any_date_set?
+    start_date? || finish_date?
+  end
+
+  def date_range_set?
+    start_date? && finish_date?
+  end
+
+  def date_range_not_set?
+    !date_range_set?
+  end
+
+  def validate_date_range
+    if date_range_set? && (start_date > finish_date)
+      if finish_date_changed?
+        errors.add(:finish_date, :must_be_after_start_date)
+      else
+        errors.add(:start_date, :must_be_before_finish_date)
+      end
+    end
+  end
+
+  def calculate_duration
+    return nil unless date_range_set?
 
     Day.working.from_range(from: start_date, to: finish_date).count
   end
 
-  def date_range=(param)
-    self.start_date, self.finish_date = param.split(" - ")
-    self.finish_date ||= start_date # Allow single dates as range
+  def default_start_date
+    return @default_start_date if defined?(@default_start_date)
+
+    previous_finish_date = previous_phase.finish_date if follows_previous_phase?
+    @default_start_date = previous_finish_date && Day.next_working(from: previous_finish_date).date
   end
 
-  def range_set?
-    start_date? && finish_date?
+  def previous_phases
+    @previous_phases ||= project.available_phases.select { it.position < position }
   end
 
-  def not_set?
-    !range_set?
+  def previous_phase
+    previous_phases.last
   end
 
-  def range_incomplete?
-    start_date? ^ finish_date?
+  def follows_previous_phase?
+    !!previous_phase&.date_range_set?
   end
 
-  def validate_date_range
-    errors.add(:date_range, :start_date_must_be_before_finish_date) if range_set? && (start_date > finish_date)
+  def following_phases
+    @following_phases ||= project.available_phases.select { it.position > position }
   end
+
+  def to_s; name end
 end

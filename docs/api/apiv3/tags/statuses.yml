@@ -1,5 +1,8 @@
 name: Statuses
 description: |-
+  The statuses endpoints return collections or single entities of type `Status`. The following tables list the different properties
+  of `Status` entities.
+
   ## Linked Properties
 
   | Link | Description | Type   | Constraints | Supported operations |

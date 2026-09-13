@@ -28,7 +28,7 @@
 
 require_relative "../../spec_helper"
 
-RSpec.describe "updating a budget", :js, :selenium do
+RSpec.describe "updating a budget", :js, with_settings: { costs_currency: "EUR" } do
   let(:project) do
     create(:project_with_types,
            enabled_module_names: %i[budgets costs work_package_tracking],
@@ -132,6 +132,10 @@ RSpec.describe "updating a budget", :js, :selenium do
     end
 
     context "with german locale" do
+      around do |example|
+        I18n.with_locale(:de, &example)
+      end
+
       let(:user) { create(:admin, language: :de) }
       let(:cost_type2) do
         create(:cost_type, name: "ABC", unit: "abc", unit_plural: "abcs")
@@ -148,7 +152,7 @@ RSpec.describe "updating a budget", :js, :selenium do
       it "retains the overridden budget when opening, but not editing (Regression #32822)" do
         material_budget_item2
         budget_page.visit!
-        click_on I18n.t(:button_update, locale: :de)
+        click_on I18n.t(:button_update)
 
         budget_page.expect_planned_costs! type: :material, row: 1, expected: "150,00 EUR"
         budget_page.expect_planned_costs! type: :material, row: 2, expected: "1.000,00 EUR"
@@ -159,7 +163,7 @@ RSpec.describe "updating a budget", :js, :selenium do
         expect(page).to have_field("budget_existing_material_budget_item_attributes_#{material_budget_item.id}_amount")
 
         click_on "OK"
-        expect(budget_page).to have_content(I18n.t(:notice_successful_update, locale: :de))
+        expect(budget_page).to have_content(I18n.t(:notice_successful_update))
 
         expect(page).to have_css("tbody td.currency", text: "150,00 EUR")
         expect(page).to have_css("tbody td.currency", text: "1.000,00 EUR")
@@ -198,10 +202,11 @@ RSpec.describe "updating a budget", :js, :selenium do
 
         # Expect budget == costs
         expect(material_budget_item.amount).to eq(123.0)
-        expect(material_budget_item.overridden_costs?).to be_truthy
+        expect(material_budget_item).to be_overridden_costs
         expect(material_budget_item.costs).to eq(123.0)
+
         expect(material_budget_item_2.amount).to eq(543.0)
-        expect(material_budget_item_2.overridden_costs?).to be_truthy
+        expect(material_budget_item_2).to be_overridden_costs
         expect(material_budget_item_2.costs).to eq(543.0)
       end
 
@@ -229,10 +234,11 @@ RSpec.describe "updating a budget", :js, :selenium do
 
           # Expect budget == costs
           expect(material_budget_item.amount).to eq(123.0)
-          expect(material_budget_item.overridden_costs?).to be_truthy
+          expect(material_budget_item).to be_overridden_costs
           expect(material_budget_item.costs).to eq(123.0)
+
           expect(material_budget_item_2.amount).to eq(543.0)
-          expect(material_budget_item_2.overridden_costs?).to be_truthy
+          expect(material_budget_item_2).to be_overridden_costs
           expect(material_budget_item_2.costs).to eq(543.0)
         end
       end
@@ -269,10 +275,11 @@ RSpec.describe "updating a budget", :js, :selenium do
 
         # Expect budget == costs
         expect(labor_budget_item.amount).to eq(456.0)
-        expect(labor_budget_item.overridden_costs?).to be_truthy
+        expect(labor_budget_item).to be_overridden_costs
         expect(labor_budget_item.costs).to eq(456.0)
+
         expect(labor_budget_item_2.amount).to eq(987.0)
-        expect(labor_budget_item_2.overridden_costs?).to be_truthy
+        expect(labor_budget_item_2).to be_overridden_costs
         expect(labor_budget_item_2.costs).to eq(987.0)
       end
 
@@ -300,10 +307,11 @@ RSpec.describe "updating a budget", :js, :selenium do
 
           # Expect budget == costs
           expect(labor_budget_item.amount).to eq(456.0)
-          expect(labor_budget_item.overridden_costs?).to be_truthy
+          expect(labor_budget_item).to be_overridden_costs
           expect(labor_budget_item.costs).to eq(456.0)
+
           expect(labor_budget_item_2.amount).to eq(987.0)
-          expect(labor_budget_item_2.overridden_costs?).to be_truthy
+          expect(labor_budget_item_2).to be_overridden_costs
           expect(labor_budget_item_2.costs).to eq(987.0)
         end
       end
@@ -314,10 +322,34 @@ RSpec.describe "updating a budget", :js, :selenium do
 
       click_on "Update"
 
-      page.find("#budget_existing_labor_budget_item_attributes_#{labor_budget_item.id} a.delete-budget-item").click
+      page.find("#budget_existing_labor_budget_item_attributes_#{labor_budget_item.id}")
+        .click_on accessible_name: "Delete"
+
       click_on "Submit"
 
       expect(budget_page.labor_costs_at(1)).to have_no_content "125.00 EUR"
+    end
+  end
+
+  describe "with a group as planned labor cost" do
+    let!(:group) { create(:group, member_with_permissions: { project => %i[work_package_assigned] }) }
+    let!(:hourly_rate) { create(:default_hourly_rate, user:, rate: 25.0, valid_from: 1.day.ago) }
+    let(:budget_page) { Pages::EditBudget.new budget.id }
+
+    it "saves the budget without error and displays the group on the show page" do
+      budget_page.visit!
+
+      click_on "Update"
+
+      # This line here is only there to ensure that the JS is initialized when the data is inserted.
+      # This requires having expected_costs which only users can have. Groups don't have a rate.
+      budget_page.add_labor_costs! 5, user_name: user.name, comment: "individual work", expected_costs: "125.00 EUR"
+      budget_page.add_labor_costs! 10, user_name: group.name, comment: "team work"
+
+      click_on "Submit"
+      expect(budget_page).to have_content("Successful update")
+
+      expect(page).to have_css(".labor_budget_items tbody td", text: group.name)
     end
   end
 end

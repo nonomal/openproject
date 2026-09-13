@@ -1,29 +1,15 @@
 <%= render(Primer::OpenProject::PageHeader.new) do |header|
       header.with_title { I18n.t(:label_my_time_tracking) }
-      header.with_breadcrumbs(
-        [
-          { href: home_path, text: helpers.organization_name },
-          { text: I18n.t(:label_my_time_tracking), href: my_time_tracking_path }
-        ]
-      )
-
-      header.with_action_menu(
-        menu_arguments: { anchor_align: :end },
-        button_arguments: { button_block: view_mode_block }
-      ) do |menu|
-        menu.with_item(
-          label: t(:label_calendar),
-          tag: :a,
-          href: my_time_tracking_path(date: date, mode: mode, view_mode: "calendar")
-        ) do |item|
-          item.with_leading_visual_icon(icon: :calendar)
+      header.with_breadcrumbs(nil)
+      header.with_tab_nav(label: I18n.t(:label_view_mode_switcher)) do |nav|
+        nav.with_tab(selected: view_mode == :calendar, href: view_mode_switch_link(:calendar)) do |tab|
+          tab.with_text { I18n.t(:label_calendar) }
+          tab.with_icon(icon: :calendar)
         end
-        menu.with_item(
-          label: t(:label_list),
-          tag: :a,
-          href: my_time_tracking_path(date: date, mode: mode, view_mode: "list")
-        ) do |item|
-          item.with_leading_visual_icon(icon: "list-unordered")
+
+        nav.with_tab(selected: view_mode == :list, href: view_mode_switch_link(:list)) do |tab|
+          tab.with_text { I18n.t(:label_list) }
+          tab.with_icon(icon: "op-view-list")
         end
       end
 

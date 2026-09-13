@@ -21,12 +21,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
 
-import { Component, Inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { I18nService } from 'core-app/core/i18n/i18n.service';
 import {
   WorkPackageInlineCreateService,
@@ -54,8 +54,23 @@ import { FilterOperator } from 'core-app/shared/helpers/api-v3/api-v3-filter-bui
 
 @Component({
   templateUrl: './wp-relation-inline-add-existing.component.html',
+  standalone: false,
+  // TODO: This component has been partially migrated to be zoneless-compatible.
+  // After testing, this should be updated to ChangeDetectionStrategy.OnPush.
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 export class WpRelationInlineAddExistingComponent {
+  protected readonly parent = inject(WorkPackageInlineCreateComponent);
+  protected readonly wpInlineCreate = inject(WorkPackageInlineCreateService) as WpRelationInlineCreateServiceInterface;
+  protected apiV3Service = inject(ApiV3Service);
+  protected wpRelations = inject(WorkPackageRelationsService);
+  protected notificationService = inject(WorkPackageNotificationService);
+  protected halEvents = inject(HalEventsService);
+  protected urlParamsHelper = inject(UrlParamsHelperService);
+  protected querySpace = inject(IsolatedQuerySpace);
+  protected readonly I18n = inject(I18nService);
+
   public selectedWpId:string;
 
   public isDisabled = false;
@@ -66,20 +81,8 @@ export class WpRelationInlineAddExistingComponent {
     abort: this.I18n.t('js.relation_buttons.abort'),
   };
 
-  constructor(
-    protected readonly parent:WorkPackageInlineCreateComponent,
-    @Inject(WorkPackageInlineCreateService) protected readonly wpInlineCreate:WpRelationInlineCreateServiceInterface,
-    protected apiV3Service:ApiV3Service,
-    protected wpRelations:WorkPackageRelationsService,
-    protected notificationService:WorkPackageNotificationService,
-    protected halEvents:HalEventsService,
-    protected urlParamsHelper:UrlParamsHelperService,
-    protected querySpace:IsolatedQuerySpace,
-    protected readonly I18n:I18nService,
-  ) {}
-
   public addExisting() {
-    if (_.isNil(this.selectedWpId)) {
+    if (this.selectedWpId == null) {
       return;
     }
 
@@ -113,7 +116,6 @@ export class WpRelationInlineAddExistingComponent {
 
   public onSelected(workPackage?:WorkPackageResource) {
     if (workPackage) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.selectedWpId = workPackage.id!;
       this.addExisting();
     }
@@ -141,7 +143,7 @@ export class WpRelationInlineAddExistingComponent {
     const relationTypes = RelationResource.RELATION_TYPES(true);
     const filters = query.filters.filter((filter) => {
       const id = this.urlParamsHelper.buildV3GetFilterIdFromFilter(filter);
-      return relationTypes.indexOf(id) === -1;
+      return !relationTypes.includes(id);
     });
 
     const iApiFilters:IAPIFilter[] = [];
@@ -150,7 +152,7 @@ export class WpRelationInlineAddExistingComponent {
       iApiFilters.push({
         name: filter.id,
         operator: filter.operator.id as FilterOperator,
-        values: filter.values.map((f) => (typeof f === 'string' ? f : f.id as string)),
+        values: filter.values.map((f) => (typeof f === 'string' ? f : f.id!)),
       });
     });
 

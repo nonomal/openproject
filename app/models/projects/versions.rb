@@ -68,10 +68,10 @@ module Projects::Versions
     def assignable_versions(only_open: true)
       if only_open
         @assignable_versions ||=
-          shared_versions.references(:project).with_status_open.order_by_semver_name.to_a
+          shared_versions.references(:project).with_status_open.order(:name).to_a
       else
         @assignable_versions_including_non_open ||= # rubocop:disable Naming/MemoizedInstanceVariableName
-          shared_versions.references(:project).order_by_semver_name.to_a
+          shared_versions.references(:project).order(:name).to_a
       end
     end
   end

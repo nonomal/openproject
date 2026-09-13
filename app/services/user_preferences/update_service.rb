@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,7 +34,7 @@ module UserPreferences
 
     attr_accessor :notifications
 
-    def validate_params(params)
+    def validate_params
       contract = ParamsContract.new(model, user, params:)
 
       ServiceResult.new success: contract.valid?,
@@ -40,7 +42,7 @@ module UserPreferences
                         result: model
     end
 
-    def before_perform(params, _service_result)
+    def before_perform(_service_result)
       self.notifications = params&.delete(:notification_settings)
 
       super

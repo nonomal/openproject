@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,7 +31,7 @@
 require "spec_helper"
 
 RSpec.describe "Editing a new wiki page", :js do
-  let(:project) { create(:project, enabled_module_names: %w[wiki]) }
+  let(:project) { create(:project, :with_internal_wiki) }
   let(:user) { create(:admin) }
 
   before do
@@ -39,7 +41,7 @@ RSpec.describe "Editing a new wiki page", :js do
   it "allows creating a wiki page from link" do
     visit project_wiki_path(project, id: :foobar)
     expect(page).to have_field "page_title", with: "Foobar"
-    click_on "Save"
+    click_on "Create"
 
     expect_flash(message: "Successful creation.", wait: 10)
   end

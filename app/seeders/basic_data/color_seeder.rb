@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,7 +31,7 @@ module BasicData
   class ColorSeeder < ModelSeeder
     self.model_class = Color
     self.seed_data_model_key = "colors"
-    self.attribute_names_for_lookups = %i[name]
+    self.attribute_names_for_lookups = %i[hexcode]
 
     def model_attributes(color_data)
       {

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -56,7 +58,7 @@ RSpec.describe "Work package with relation query group", :js, :selenium do
     end
   end
 
-  let(:work_packages_page) { Pages::SplitWorkPackage.new(work_package) }
+  let(:work_packages_page) { Pages::PrimerizedSplitWorkPackage.new(work_package) }
   let(:full_wp) { Pages::FullWorkPackage.new(work_package) }
   let(:relations) { Components::WorkPackages::Relations.new(work_package) }
   let(:tabs) { Components::WorkPackages::Tabs.new(work_package) }
@@ -82,9 +84,9 @@ RSpec.describe "Work package with relation query group", :js, :selenium do
 
   context "children table" do
     it "creates and removes across all tables" do
-      embedded_table.expect_work_package_count 1
       relations_tab.click
       relations.expect_child(related_work_package)
+      embedded_table.expect_work_package_count 1
 
       # Create new work package within embedded table
       embedded_table.table_container.find("button", text: I18n.t("js.relation_buttons.add_new_child")).click
@@ -126,11 +128,12 @@ RSpec.describe "Work package with relation query group", :js, :selenium do
     let(:query_text) { "Embedded Table for follows".upcase }
 
     before do
-      query = type.attribute_groups.last.query
+      variant = type.default_variant
+      query = variant.attribute_groups.last.query
       query.add_filter("project_id", "=", [project2.id, project3.id])
       # User has no permission to save, avoid creating another user to allow it
       query.save!(validate: false)
-      type.save!
+      variant.save!
     end
 
     context "with a user who has permission in one project" do
@@ -191,9 +194,9 @@ RSpec.describe "Work package with relation query group", :js, :selenium do
     end
 
     before do
-      embedded_table.expect_work_package_listed related_work_package
       relations_tab.click
       relations.expect_relation(related_work_package)
+      embedded_table.expect_work_package_listed related_work_package
     end
 
     it "creates and removes across all tables" do
@@ -240,6 +243,11 @@ RSpec.describe "Work package with relation query group", :js, :selenium do
       # Check that deletion of relations still work after a page reload
       full_wp.visit!
       relations_tab = find(".op-tab-row--link", text: "RELATIONS")
+      relations_tab.click
+
+      wait_for_network_idle
+      full_wp.ensure_page_loaded
+
       relations = Components::WorkPackages::Relations.new(work_package)
       embedded_table = Pages::EmbeddedWorkPackagesTable.new(first("wp-single-view .work-packages-embedded-view--container"))
 
@@ -248,7 +256,6 @@ RSpec.describe "Work package with relation query group", :js, :selenium do
       within(embedded_table.table_container) do
         embedded_table.ensure_work_package_not_listed!(independent_work_package)
       end
-      relations_tab.click
       within(relations.relations_group) do
         relations.expect_no_relation(independent_work_package)
       end

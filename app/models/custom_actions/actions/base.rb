@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -40,21 +42,21 @@ class CustomActions::Actions::Base
   end
 
   def allowed_values
-    raise NotImplementedError
+    raise SubclassResponsibilityError
   end
 
   def value_objects
-    values.map do |value|
+    values.filter_map do |value|
       allowed_values.find { |v| v[:value] == value }
     end
   end
 
   def type
-    raise NotImplementedError
+    raise SubclassResponsibilityError
   end
 
   def apply(_work_package)
-    raise NotImplementedError
+    raise SubclassResponsibilityError
   end
 
   def human_name
@@ -62,7 +64,7 @@ class CustomActions::Actions::Base
   end
 
   def self.key
-    raise NotImplementedError
+    raise SubclassResponsibilityError
   end
 
   def self.all
@@ -75,9 +77,7 @@ class CustomActions::Actions::Base
     end
   end
 
-  def key
-    self.class.key
-  end
+  delegate :key, to: :class
 
   def required?
     false
@@ -97,6 +97,10 @@ class CustomActions::Actions::Base
   end
 
   private
+
+  def deconstruct_keys(*)
+    { type:, custom_field_based: respond_to?(:custom_field) }
+  end
 
   def validate_value_required(errors)
     if required? && values.empty?

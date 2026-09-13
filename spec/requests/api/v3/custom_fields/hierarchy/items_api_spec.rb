@@ -30,17 +30,20 @@
 
 require "spec_helper"
 
-RSpec.describe "API v3 custom field hierarchy items", :webmock, content_type: :json do
+RSpec.describe "API v3 custom field hierarchy items", :webmock, content_type: :json, with_ee: [:custom_field_hierarchies] do
   include API::V3::Utilities::PathHelper
 
   describe "GET /api/v3/custom_fields/:id/items" do
-    let(:custom_field) { create(:custom_field, field_format: "hierarchy", hierarchy_root: nil) }
+    shared_let(:project) { create(:project) }
+
+    let(:custom_field) { create(:wp_custom_field, field_format: "hierarchy", hierarchy_root: nil) }
     let!(:root) { service.generate_root(custom_field).value! }
-    let!(:luke) { service.insert_item(parent: root, label: "Luke", short: "LS").value! }
-    let!(:r2d2) { service.insert_item(parent: luke, label: "R2-D2", short: "R2").value! }
-    let!(:mouse) { service.insert_item(parent: r2d2, label: "Mouse Droid", short: "MD").value! }
-    let!(:c3po) { service.insert_item(parent: luke, label: "C-3PO", short: "3PO").value! }
-    let!(:mara) { service.insert_item(parent: root, label: "Mara", short: "MJ").value! }
+    let(:contract_class) { CustomFields::Hierarchy::InsertListItemContract }
+    let!(:luke) { service.insert_item(contract_class:, parent: root, label: "Luke", short: "LS").value! }
+    let!(:r2d2) { service.insert_item(contract_class:, parent: luke, label: "R2-D2", short: "R2").value! }
+    let!(:mouse) { service.insert_item(contract_class:, parent: r2d2, label: "Mouse Droid", short: "MD").value! }
+    let!(:c3po) { service.insert_item(contract_class:, parent: luke, label: "C-3PO", short: "3PO").value! }
+    let!(:mara) { service.insert_item(contract_class:, parent: root, label: "Mara", short: "MJ").value! }
     let(:service) { CustomFields::Hierarchy::HierarchicalItemService.new }
 
     let(:path) { api_v3_paths.custom_field_items(custom_field.id) }
@@ -51,15 +54,21 @@ RSpec.describe "API v3 custom field hierarchy items", :webmock, content_type: :j
       it_behaves_like "unauthenticated access"
     end
 
-    context "if user is logged in" do
-      before { login_as create(:user) }
+    context "if the user is not allowed to view the custom field" do
+      current_user { create(:user, member_with_permissions: { project => [] }) }
+
+      it_behaves_like "not found"
+    end
+
+    context "if user is logged in with the necessary permissions" do
+      current_user { create(:user, member_with_permissions: { project => [:select_custom_fields] }) }
 
       it_behaves_like "API V3 collection response", 6, 6, "HierarchyItem", "Collection" do
         let(:elements) { [root, luke, r2d2, mouse, c3po, mara] }
       end
 
       context "if custom field does not exist" do
-        let(:path) { api_v3_paths.custom_field_items(1337) }
+        let(:path) { api_v3_paths.custom_field_items(not_existing_id(CustomField)) }
 
         it_behaves_like "not found"
       end
@@ -83,13 +92,13 @@ RSpec.describe "API v3 custom field hierarchy items", :webmock, content_type: :j
       context "if parent is set to an undefined value" do
         let(:path) { api_v3_paths.custom_field_items(custom_field.id, "wrong item") }
 
-        it_behaves_like "error response", 400, "InvalidQuery", "Parent #{I18n.t('dry_validation.errors.int?')}"
+        it_behaves_like "error response", 400, "InvalidQuery", "Parent must be an integer."
       end
 
       context "if depth is negative" do
         let(:path) { api_v3_paths.custom_field_items(custom_field.id, nil, -1) }
 
-        it_behaves_like "error response", 400, "InvalidQuery", "Depth #{I18n.t('dry_validation.errors.greater_or_equal_zero')}"
+        it_behaves_like "error response", 400, "InvalidQuery", "Depth must be greater or equal to 0."
       end
     end
   end

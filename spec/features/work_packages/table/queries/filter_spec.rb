@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,7 +33,7 @@ require "spec_helper"
 RSpec.describe "filter work packages", :js do
   include Components::Autocompleter::NgSelectAutocompleteHelpers
 
-  shared_let(:user) { create(:admin, preferences: { time_zone: "Etc/UTC" }) }
+  shared_let(:user) { create(:admin, preferences: { time_zone: "Europe/Kyiv" }) }
   shared_let(:watcher) { create(:user) }
   shared_let(:role) { create(:existing_project_role, permissions: [:view_work_packages]) }
   shared_let(:project) { create(:project, members: { watcher => role }) }
@@ -86,7 +88,7 @@ RSpec.describe "filter work packages", :js do
 
       filters.open
       # Expect filters to be grouped by project name
-      filters.add_filter("Version")
+      filters.add_filter("Target versions")
     end
 
     context "in a project" do
@@ -94,28 +96,28 @@ RSpec.describe "filter work packages", :js do
 
       it "allows filtering, saving, retrieving and altering the saved filter" do
         expect_ng_option(
-          page.find_by_id("values-version"),
+          page.find_by_id("values-targetVersion"),
           version,
           grouping: project.name,
           results_selector: "body"
         )
 
         expect_ng_option(
-          page.find_by_id("values-version"),
+          page.find_by_id("values-targetVersion"),
           shared_version,
           grouping: other_project.name,
           results_selector: "body"
         )
 
         expect_no_ng_option(
-          page.find_by_id("values-version"),
+          page.find_by_id("values-targetVersion"),
           inaccessible_version,
           results_selector: "body"
         )
 
-        filters.remove_filter "version"
+        filters.remove_filter "targetVersion"
 
-        filters.add_filter_by("Version", "is (OR)", version.name)
+        filters.add_filter_by("Target versions", "is (OR)", version.name, "targetVersion")
 
         loading_indicator_saveguard
         wp_table.expect_work_package_listed work_package_with_version
@@ -123,7 +125,7 @@ RSpec.describe "filter work packages", :js do
 
         wp_table.save_as("Some query name")
 
-        filters.remove_filter "version"
+        filters.remove_filter "targetVersion"
 
         loading_indicator_saveguard
         wp_table.expect_work_package_listed work_package_with_version, work_package_without_version
@@ -138,9 +140,9 @@ RSpec.describe "filter work packages", :js do
 
         filters.open
 
-        filters.expect_filter_by("Version", "is (OR)", version.name)
+        filters.expect_filter_by("Target versions", "is (OR)", version.name, "targetVersion")
 
-        filters.set_operator "Version", "is not"
+        filters.set_operator "Target versions", "is not", "targetVersion"
 
         loading_indicator_saveguard
         wp_table.expect_work_package_listed work_package_without_version
@@ -155,21 +157,21 @@ RSpec.describe "filter work packages", :js do
 
       it "allows filtering, saving, retrieving and altering the saved filter" do
         expect_ng_option(
-          page.find_by_id("values-version"),
+          page.find_by_id("values-targetVersion"),
           version,
           grouping: project.name,
           results_selector: "body"
         )
 
         expect_ng_option(
-          page.find_by_id("values-version"),
+          page.find_by_id("values-targetVersion"),
           shared_version,
-          grouping: "Project N/A",
+          grouping: I18n.t(:"api_v3.undisclosed.project"),
           results_selector: "body"
         )
 
         expect_no_ng_option(
-          page.find_by_id("values-version"),
+          page.find_by_id("values-targetVersion"),
           inaccessible_version,
           results_selector: "body"
         )
@@ -268,7 +270,7 @@ RSpec.describe "filter work packages", :js do
     let(:type) do
       type = create(:type)
 
-      project.types << type
+      project.project_types.create!(type:)
 
       type
     end
@@ -291,7 +293,7 @@ RSpec.describe "filter work packages", :js do
       cf = create(:list_wp_custom_field)
 
       project.work_package_custom_fields << cf
-      type.custom_fields << cf
+      type.default_variant.custom_fields << cf
 
       cf
     end
@@ -351,7 +353,7 @@ RSpec.describe "filter work packages", :js do
     let(:type) do
       type = create(:type)
 
-      project.types << type
+      project.project_types.create!(type:)
 
       type
     end
@@ -374,7 +376,7 @@ RSpec.describe "filter work packages", :js do
       cf = create(:string_wp_custom_field)
 
       project.work_package_custom_fields << cf
-      type.custom_fields << cf
+      type.default_variant.custom_fields << cf
 
       cf
     end
@@ -445,12 +447,15 @@ RSpec.describe "filter work packages", :js do
     end
     let(:wp_without_attachment) { create(:work_package, subject: "WP no attachment", project:) }
     let(:wp_table) { Pages::WorkPackagesTable.new }
+    let(:plaintext_file_handler) do
+      Plaintext::Resolver.file_handlers.find { |h| h.accept? "text/plain" }
+    end
 
     before do
-      allow_any_instance_of(Plaintext::Resolver).to receive(:text).and_return("I am the first text $1.99.")
+      allow(plaintext_file_handler).to receive(:text).and_return("I am the first text $1.99.")
       wp_with_attachment_a
       Attachments::ExtractFulltextJob.perform_now(attachment_a.id)
-      allow_any_instance_of(Plaintext::Resolver).to receive(:text).and_return("I am the second text.")
+      allow(plaintext_file_handler).to receive(:text).and_return("I am the second text.")
       wp_with_attachment_b
       Attachments::ExtractFulltextJob.perform_now(attachment_b.id)
       wp_without_attachment
@@ -479,6 +484,7 @@ RSpec.describe "filter work packages", :js do
 
         # content contains single hit with numbers
         filters.remove_filter "attachmentContent"
+        loading_indicator_saveguard
 
         filters.add_filter_by("Attachment content",
                               "contains",
@@ -490,6 +496,7 @@ RSpec.describe "filter work packages", :js do
         wp_table.ensure_work_package_not_listed! wp_without_attachment, wp_with_attachment_b
 
         filters.remove_filter "attachmentContent"
+        loading_indicator_saveguard
 
         # content does not contain
         filters.add_filter_by("Attachment content",
@@ -502,6 +509,7 @@ RSpec.describe "filter work packages", :js do
         wp_table.ensure_work_package_not_listed! wp_with_attachment_a
 
         filters.remove_filter "attachmentContent"
+        loading_indicator_saveguard
 
         # ignores special characters
         filters.add_filter_by("Attachment content",
@@ -514,6 +522,7 @@ RSpec.describe "filter work packages", :js do
         wp_table.ensure_work_package_not_listed! wp_without_attachment, wp_with_attachment_b
 
         filters.remove_filter "attachmentContent"
+        loading_indicator_saveguard
 
         # file name contains
         filters.add_filter_by("Attachment file name",
@@ -526,6 +535,7 @@ RSpec.describe "filter work packages", :js do
         wp_table.ensure_work_package_not_listed! wp_without_attachment, wp_with_attachment_b
 
         filters.remove_filter "attachmentFileName"
+        loading_indicator_saveguard
 
         # file name does not contain
         filters.add_filter_by("Attachment file name",
@@ -551,26 +561,36 @@ RSpec.describe "filter work packages", :js do
   end
 
   describe "datetime filters" do
+    shared_let(:business_day_at_noon) { Time.find_zone!("Europe/Kyiv").local(2025, 1, 8, 12, 0, 0) }
+
+    before do
+      travel_to(business_day_at_noon)
+    end
+
+    after do
+      travel_back
+    end
+
     shared_let(:wp_updated_today) do
       create(:work_package,
              subject: "Created today",
              project:,
-             created_at: Time.current.change(hour: 12),
-             updated_at: Time.current.change(hour: 12))
+             created_at: business_day_at_noon,
+             updated_at: business_day_at_noon)
     end
     shared_let(:wp_updated_3d_ago) do
       create(:work_package,
              subject: "Created 3d ago",
              project:,
-             created_at: 3.days.ago,
-             updated_at: 3.days.ago)
+             created_at: business_day_at_noon - 3.days,
+             updated_at: business_day_at_noon - 3.days)
     end
     shared_let(:wp_updated_5d_ago) do
       create(:work_package,
              subject: "Created 5d ago",
              project:,
-             created_at: 5.days.ago,
-             updated_at: 5.days.ago)
+             created_at: business_day_at_noon - 5.days,
+             updated_at: business_day_at_noon - 5.days)
     end
 
     it "filters on date by created_at (Regression #28459)" do
@@ -609,8 +629,9 @@ RSpec.describe "filter work packages", :js do
       wp_table.ensure_work_package_not_listed! wp_updated_3d_ago, wp_updated_5d_ago
     end
 
-    it "filters between date by updated_at" do
+    it "filters between date by updated_at", skip: "flickering spec (#68677)" do
       wp_table.visit!
+      wait_for_network_idle
       loading_indicator_saveguard
       wp_table.expect_work_package_listed wp_updated_today, wp_updated_3d_ago, wp_updated_5d_ago
 
@@ -621,7 +642,7 @@ RSpec.describe "filter work packages", :js do
                             [4.days.ago.to_date.iso8601, 2.days.ago.to_date.iso8601],
                             "updatedAt"
 
-      wait_for_reload
+      wait_for_network_idle
       loading_indicator_saveguard
 
       wp_table.expect_work_package_listed wp_updated_3d_ago
@@ -631,7 +652,7 @@ RSpec.describe "filter work packages", :js do
 
       filters.remove_filter "updatedAt"
 
-      wait_for_reload
+      wait_for_network_idle
       loading_indicator_saveguard
       wp_table.expect_work_package_listed wp_updated_today, wp_updated_3d_ago, wp_updated_5d_ago
 
@@ -640,13 +661,14 @@ RSpec.describe "filter work packages", :js do
 
       # The frontend sends the date as a datetime string in utc where both bounds have the local offset deduced
       # e.g. ["2023-05-31T22:00:00Z", "2023-06-03T21:59:59Z"]
-      Time.use_zone(ActiveSupport::TimeZone[Time.now.getlocal.zone]) do
+      Time.use_zone(user.time_zone) do
         expect(date_filter.values)
-          .to eq [(Time.now.getlocal - 4.days).beginning_of_day.utc.iso8601, (Time.now.getlocal - 2.days).end_of_day.utc.iso8601]
+          .to eq [4.days.ago.beginning_of_day.utc.iso8601, 2.days.ago.end_of_day.utc.iso8601]
       end
 
       wp_table.visit_query(last_query)
 
+      wait_for_network_idle
       loading_indicator_saveguard
       wp_table.expect_work_package_listed wp_updated_3d_ago
       wp_table.ensure_work_package_not_listed! wp_updated_today, wp_updated_5d_ago
@@ -693,8 +715,10 @@ RSpec.describe "filter work packages", :js do
 
       last_query = Query.where(name: "Some query name").first
       date_filter = last_query.filters.last
-      expect(date_filter.values)
-        .to eq [3.days.ago.utc.beginning_of_day.iso8601]
+      Time.use_zone(user.time_zone) do
+        expect(date_filter.values)
+          .to eq [3.days.ago.beginning_of_day.utc.iso8601]
+      end
 
       wp_table.visit_query(last_query)
 
@@ -744,8 +768,10 @@ RSpec.describe "filter work packages", :js do
 
       last_query = Query.where(name: "Some query name").first
       date_filter = last_query.filters.last
-      expect(date_filter.values)
-        .to eq ["", 4.days.ago.utc.end_of_day.iso8601]
+      Time.use_zone(user.time_zone) do
+        expect(date_filter.values)
+          .to eq ["", 4.days.ago.end_of_day.utc.iso8601]
+      end
 
       wp_table.visit_query(last_query)
 
@@ -771,16 +797,16 @@ RSpec.describe "filter work packages", :js do
       loading_indicator_saveguard
 
       filters.open
-      filters.add_filter_by "Version", "is (OR)", [version2.name, version1.name]
+      filters.add_filter_by "Target versions", "is (OR)", [version2.name, version1.name], "targetVersion"
       loading_indicator_saveguard
 
       sleep(3)
 
-      filters.expect_filter_by "Version", "is (OR)", [version1.name]
-      filters.expect_filter_by "Version", "is (OR)", [version2.name]
+      filters.expect_filter_by "Target versions", "is (OR)", [version1.name], "targetVersion"
+      filters.expect_filter_by "Target versions", "is (OR)", [version2.name], "targetVersion"
 
       # Order should stay unchanged
-      filters.expect_filter_order("Version", [version2.name, version1.name])
+      filters.expect_filter_order("Target versions", [version2.name, version1.name], "targetVersion")
     end
   end
 

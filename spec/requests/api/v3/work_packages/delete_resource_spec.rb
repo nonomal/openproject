@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -73,7 +75,7 @@ RSpec.describe "API v3 Work package resource",
       end
 
       context "for a non-existent work package" do
-        let(:path) { api_v3_paths.work_package 1337 }
+        let(:path) { api_v3_paths.work_package(not_existing_id(WorkPackage)) }
 
         it_behaves_like "not found",
                         I18n.t("api_v3.errors.not_found.work_package")

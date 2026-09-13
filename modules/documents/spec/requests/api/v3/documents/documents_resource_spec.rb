@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -105,7 +107,96 @@ RSpec.describe "API v3 documents resource" do
         .at_path("id")
     end
 
+    context "when the document has content_binary" do
+      before do
+        document.update!(content_binary: "base64string")
+
+        get path
+      end
+
+      it "includes content_binary field" do
+        expect(subject.body)
+          .to be_json_eql(document.content_binary.to_json)
+          .at_path("contentBinary")
+      end
+    end
+
     context "when lacking permissions" do
+      let(:permissions) { [] }
+
+      it "returns 404 NOT FOUND" do
+        expect(subject.status)
+          .to be(404)
+      end
+    end
+  end
+
+  describe "PATCH /api/v3/documents/:id" do
+    let(:path) { api_v3_paths.document(document.id) }
+    let(:permissions) { %i(view_documents manage_documents) }
+    let(:request_body) do
+      {
+        title: "Updated Document Title",
+        content_binary: "dGVzdCBkYXRh" # base64 encoded "test data"
+      }
+    end
+
+    before do
+      patch path, request_body.to_json, "CONTENT_TYPE" => "application/json"
+    end
+
+    it "returns 200 OK" do
+      expect(subject.status).to be(200)
+    end
+
+    it "updates the document and returns updated document" do
+      expect(subject.body)
+        .to be_json_eql("Document".to_json)
+        .at_path("_type")
+
+      expect(subject.body)
+        .to be_json_eql("Updated Document Title".to_json)
+        .at_path("title")
+
+      expect(subject.body)
+        .to be_json_eql("dGVzdCBkYXRh".to_json)
+        .at_path("contentBinary")
+    end
+
+    context "when lacking edit permissions" do
+      let(:permissions) { %i(view_documents) }
+
+      it "returns 403 FORBIDDEN" do
+        expect(subject.status)
+          .to be(403)
+      end
+
+      context "when trying to move document to another project where user can manage documents" do
+        let(:target_project) { create(:project) }
+        let(:target_role) { create(:project_role, permissions: %i(view_documents manage_documents)) }
+        let(:request_body) do
+          {
+            project_id: target_project.id,
+            title: "Moved Document Title"
+          }
+        end
+
+        before do
+          create(:member, principal: current_user, project: target_project, roles: [target_role])
+          document # ensure the source document exists before patching
+        end
+
+        it "returns 403 FORBIDDEN" do
+          expect(subject.status).to be(403)
+        end
+
+        it "does not move the document to another project" do
+          expect(document.reload.project_id).to eq(project.id)
+        end
+      end
+    end
+
+    context "when lacking view permissions" do
       let(:permissions) { [] }
 
       it "returns 404 NOT FOUND" do

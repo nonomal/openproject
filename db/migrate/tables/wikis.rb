@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,9 +33,10 @@ require_relative "base"
 class Tables::Wikis < Tables::Base
   def self.table(migration)
     create_table migration do |t|
-      t.integer :project_id, null: false
+      t.bigint :project_id, null: false
       t.string :start_page, null: false
       t.integer :status, default: 1, null: false
+      t.timestamps precision: nil
 
       t.index :project_id, name: "wikis_project_id"
     end

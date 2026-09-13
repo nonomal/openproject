@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -38,7 +40,7 @@ module Projects
 
     private
 
-    def before_perform(params, _service_result)
+    def before_perform(_service_result)
       model.enabled_module_names = params[:enabled_modules]
       super
     end

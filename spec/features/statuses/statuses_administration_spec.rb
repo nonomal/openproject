@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -53,7 +55,8 @@ RSpec.describe "Statuses administration" do
     context "without any statuses" do
       it 'displays the "no results" text' do
         visit statuses_path
-        expect(page).to have_content(I18n.t("no_results_title_text"))
+        expect(page).to have_text("There are currently no work package statuses.")
+        expect(page).to have_text("Add a new status")
       end
     end
 

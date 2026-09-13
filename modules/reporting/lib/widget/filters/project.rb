@@ -39,8 +39,9 @@ class Widget::Filters::Project < Widget::Filters::Base
                                   inputs: {
                                     filters: [],
                                     InputName: "values[#{filter_class.underscore_name}]",
+                                    hiddenFieldAction: "change->reporting--page#selectValueChanged",
                                     multiple: true,
-                                    model: selected_values.filter { |item| !item.nil? }
+                                    model: selected_values.compact
                                   },
                                   id: "#{filter_class.underscore_name}_select_1",
                                   class: "filter-value"
@@ -56,30 +57,13 @@ class Widget::Filters::Project < Widget::Filters::Base
   def html_label
     label_tag "#{filter_class.underscore_name}_arg_1_val",
               "#{h(filter_class.label)} #{I18n.t(:label_filter_value)}",
-              class: "hidden-for-sighted"
+              class: "sr-only"
   end
 
   def map_filter_values
-    # In case the filter values are all written in a single string (e.g. ["12, 33"])
-    if filter.values.length === 1 && filter.values[0].instance_of?(String)
-      filter.values = filter.values[0].split(",")
-    end
+    expand_comma_separated_values!
 
-    filter.values.each.map do |id|
-      # When live testing, these IDs came out as integers.
-      # However, when running the specs, they came out as strings.
-
-      int_id = Integer(id)
-      available_value = filter_class.available_values.detect { |val| Integer(val[1]) === int_id }
-
-      if available_value.nil?
-        nil
-      else
-        {
-          id: int_id,
-          name: available_value[0]
-        }
-      end
-    end
+    projects = Project.visible.where(id: filter.values)
+    projects.map { |project| { id: project.id, name: project.name } }
   end
 end

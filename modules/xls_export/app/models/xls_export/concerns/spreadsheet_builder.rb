@@ -2,11 +2,11 @@ module XlsExport
   module Concerns
     module SpreadsheetBuilder
       def records
-        raise NotImplementedError
+        raise SubclassResponsibilityError
       end
 
       def spreadsheet_title
-        raise NotImplementedError
+        raise SubclassResponsibilityError
       end
 
       def export!
@@ -79,7 +79,7 @@ module XlsExport
       def xls_export_filename
         sane_filename(
           "#{Setting.app_title} #{spreadsheet_title} \
-          #{format_time_as_date(Time.zone.now, format: '%Y-%m-%d')}.xls"
+          #{format_date(Time.zone.now, format: '%Y-%m-%d')}.xls"
         )
       end
     end

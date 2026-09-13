@@ -38,27 +38,45 @@
     justify-content: space-between
     margin-bottom: 10px
 
+#content .op-account-registration
+  max-width: 480px
+  margin: var(--base-size-32) auto 0
+
+  &--logo
+    display: block
+    width: 40px
+    height: 40px
+    margin: 0 auto var(--base-size-16)
+
+  &--subtitle
+    margin-bottom: var(--base-size-16)
+    text-align: center
+    font-weight: var(--base-text-weight-semibold)
+
+  &--signin
+    margin-top: var(--base-size-24)
+    text-align: center
+
+  .login-auth-providers h3 span
+    background: var(--body-background)
+
 #content .login-auth-providers.wide
   width: auto
   text-align: center
 
-  a.auth-provider
+  .auth-provider
     float: none
     display: inline-block
-
-#nav-login-content
-  padding: 1rem
-
-  .form--text-field
-    min-width: 170px
 
 #login-pulldown
   margin-right: 0
 
 // use id selectors to be specific enough to override general content and top-menu definitions
+#content .login-auth-providers
+  width: 471px
+
 #content .login-auth-providers,
 #nav-login-content .login-auth-providers
-  width: 471px
   margin-top: 25px
 
   h3
@@ -96,13 +114,17 @@
     @include prevent-float-collapse
     margin-top: 1em
 
-  a.auth-provider:hover
+    form.button_to
+      display: inline-block
+      margin: 0
+
+  .auth-provider:hover
     text-decoration: none
 
 #nav-login-content .login-auth-providers
   h3
     span
-      background: var(--body-background)
+      background: var(--overlay-bgColor)
   .login-auth-provider-list
     margin-top: 1em
     margin-bottom: 10px
@@ -119,3 +141,12 @@
 
   &--agreement
     font-size: inherit
+
+.op-consent-instructions
+  .op-uc-link
+    text-decoration: underline
+
+    &::after
+      @include icon-font-common
+      @include icon-mixin-external-link
+      margin-left: 0.25rem

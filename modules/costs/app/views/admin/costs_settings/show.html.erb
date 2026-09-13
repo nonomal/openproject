@@ -30,63 +30,33 @@ See COPYRIGHT and LICENSE files for more details.
 <% html_title t(:label_administration), t("plugin_costs.name") %>
 
 <%=
-  render(Primer::OpenProject::PageHeader.new) do |header|
-    header.with_title { t(:label_defaults) }
-    header.with_breadcrumbs(
-      [
-        { href: admin_index_path, text: t("label_administration") },
-        { href: admin_costs_settings_path, text: t(:project_module_costs) },
-        t(:label_defaults)
-      ]
-    )
-  end
+  render(CostSettings::ShowPageHeaderComponent.new)
 %>
 
 <%=
-render(Primer::Alpha::TabPanels.new(label: I18n.t(:project_module_costs))) do |component|
-  component.with_tab(selected: true, id: "tab-time") do |tab|
-    tab.with_text { I18n.t(:label_time) }
-    tab.with_panel do
-      admin_settings_primer_form_with(scope: :settings, action: :update, method: :patch) do |time_form|
-        render_inline_settings_form(time_form) do |form|
-          form.html_content do
-            render(Primer::Beta::Subhead.new(hide_border: true)) do |subhead|
-              subhead.with_heading(size: :medium) { I18n.t(:label_mandatory_fields) }
-              subhead.with_description { I18n.t(:description_time_settings) }
-            end
-          end
-
-          form.check_box(name: :allow_tracking_start_and_end_times)
-
-          form.html_content do
-            render(::EnterpriseEdition::BannerComponent.new(:time_entry_time_restrictions, dismissable: false))
-          end
-          form.check_box(name: :enforce_tracking_start_and_end_times, disabled: !EnterpriseToken.allows_to?(:time_entry_time_restrictions))
-
-          form.submit
+  settings_primer_form_with(scope: :settings, action: :update, method: :patch) do |time_form|
+    render_inline_settings_form(time_form) do |form|
+      form.html_content do
+        render(Primer::Beta::Subhead.new(hide_border: true)) do |subhead|
+          subhead.with_heading(tag: :h3, size: :medium) { I18n.t(:label_costs) }
+          subhead.with_description { I18n.t(:description_costs_settings) }
         end
       end
+      form.text_field(
+        name: :costs_currency,
+        input_width: :xsmall,
+        caption: I18n.t(:setting_costs_currency_caption)
+      )
+      form.select_list(
+        name: :costs_currency_format,
+        values: [
+          [I18n.t(:setting_costs_currency_format_prefix), "%u %n"],
+          [I18n.t(:setting_costs_currency_format_suffix), "%n %u"]
+        ],
+        input_width: :small
+      )
+
+      form.submit
     end
   end
-
-  component.with_tab(id: "tab-costs") do |tab|
-    tab.with_text { I18n.t(:label_costs) }
-    tab.with_panel do
-      admin_settings_primer_form_with(scope: :settings, action: :update, method: :patch) do |time_form|
-        render_inline_settings_form(time_form) do |form|
-          form.html_content do
-            render(Primer::Beta::Subhead.new(hide_border: true)) do |subhead|
-              subhead.with_heading(size: :medium) { I18n.t(:label_costs) }
-              subhead.with_description { I18n.t(:description_costs_settings) }
-            end
-          end
-          form.text_field(name: :costs_currency, input_width: :small)
-          form.text_field(name: :costs_currency_format, input_width: :small)
-
-          form.submit
-        end
-      end
-    end
-  end
-end
 %>

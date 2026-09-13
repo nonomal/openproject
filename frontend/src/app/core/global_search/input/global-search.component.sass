@@ -3,12 +3,16 @@
 .global-search
   flex-grow: 1
 
-  @media screen and (max-width: $breakpoint-sm)
+  @media screen and (max-width: $breakpoint-md)
     display: none
 
   &--input[type="text"]
     // Uppercase letters with accents like Ü and Â would get cut off
     line-height: 20px
+    padding-left: 25px !important
+
+    @media screen and (max-width: $breakpoint-md)
+      padding-left: 0 !important
 
   &--option,
   &--option:hover
@@ -33,7 +37,7 @@
     flex-grow: 0
     flex-shrink: 1
     border: 1px solid var(--button-default-borderColor-rest)
-    font-size: 13px
+    font-size: var(--text-body-size-small)
     background: var(--button--background-color)
     border-radius: 2px
     padding: 0 4px
@@ -45,33 +49,40 @@
     margin-left: -5px
 
   &--wp-content
-    display: grid
-    grid-template-columns: 50% 1fr auto
-    grid-template-areas: "project idlink status"
+    display: flex
+    flex-direction: column
     font-size: 0.8rem
-    padding: 5px 0 5px 0px
+    padding: 5px 0
+
+  &--wp-line
+    display: flex
+    flex-wrap: nowrap
+    gap: var(--base-size-8)
+    font-size: var(--text-body-size-small)
+    white-space: nowrap
+    overflow: hidden
+    margin-bottom: var(--base-size-4)
 
   &--wp-project
-    grid-area: project
+    flex-shrink: 1
+    min-width: 0
+    max-width: 100%
     @include text-shortener
 
   &--wp-id
-    grid-area: idlink
     place-self: right
     font-style: italic
     color: var(--fgColor-muted)
-    font-size: 13px
+    font-size: var(--text-body-size-small)
     white-space: nowrap
 
   &--wp-status
-    grid-area: status
     overflow: hidden
     font-style: italic
 
   &--wp-subject
     font-weight: var(--base-text-weight-bold)
     display: inline-block
-    overflow: hidden
-    white-space: nowrap
-    text-overflow: ellipsis
+    white-space: normal
+    overflow-wrap: break-word
     line-height: 1.5

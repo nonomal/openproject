@@ -76,7 +76,7 @@ module Bim
       private
 
       def upload_error_redirect
-        redirect_to action: :upload, status: :unprocessable_entity
+        redirect_to action: :upload
       end
 
       def import_file
@@ -215,7 +215,7 @@ module Bim
       def create_attachment
         filename = params[:bcf_file].original_filename
         call = Attachments::CreateService
-          .bypass_whitelist(user: current_user, whitelist: %w[application/zip])
+          .bypass_allowlist(user: current_user, allowlist: %w[application/zip])
           .call(file: params[:bcf_file],
                 filename:,
                 description: filename)

@@ -10,15 +10,19 @@ class SchemaValidator
 
   def validate
     root = File.expand_path("../../", __dir__)
-    export_folder = File.join(root, "app", "models", "work_package", "pdf_export", "export")
-    %w[report wp timesheet].each do |type|
-      puts "Validating #{type} styles"
-      schema = JSON::load_file(File.join(export_folder, type, "schema.json"))
-      styles_file = File.join(export_folder, type, "standard.yml")
-      styles = YAML.load_file(styles_file)
-      validate_schema!(styles, schema)
-      puts "Valid: #{styles_file}"
+    config = YAML.load_file(File.join(__dir__, "styles.yml"))
+    config["styles"].each do |entry|
+      validate_styles(entry, root)
     end
+  end
+
+  def validate_styles(entry, root)
+    puts "Validating #{entry['name']} styles"
+    schema = JSON::load_file(File.join(root, entry["path"], "schema.json"))
+    styles_file = File.join(root, entry["path"], "standard.yml")
+    styles = YAML.load_file(styles_file)
+    validate_schema!(styles, schema)
+    puts "Valid: #{styles_file}"
   end
 end
 

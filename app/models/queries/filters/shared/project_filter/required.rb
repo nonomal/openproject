@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -48,6 +50,14 @@ module Queries::Filters::Shared::ProjectFilter::Required
       # will then simply create an empty result but will not cause any
       # harm.
       @type_strategy ||= ::Queries::Filters::Strategies::IntegerList.new(self)
+    end
+
+    def autocomplete_options
+      {
+        component: "opce-project-autocompleter",
+        resource: "projects",
+        filters: [{ name: "active", operator: "=", values: ["t"] }]
+      }
     end
   end
 

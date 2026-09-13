@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -40,8 +42,8 @@ class WorkPackageRelationsTabController < ApplicationController
         render(component, layout: false)
       end
       format.turbo_stream do
-        replace_via_turbo_stream(component:)
-        render turbo_stream: turbo_streams
+        replace_via_turbo_stream(component:, method: "morph")
+        render turbo_stream: resolve_turbo_streams
       end
     end
   end
@@ -49,7 +51,7 @@ class WorkPackageRelationsTabController < ApplicationController
   private
 
   def set_work_package
-    @work_package = WorkPackage.find(params[:work_package_id])
+    @work_package = WorkPackage.visible.find(params[:work_package_id])
     @project = @work_package.project # required for authorization via before_action
   end
 end

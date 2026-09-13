@@ -1,3 +1,31 @@
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
 import { WorkPackageResource } from 'core-app/features/hal/resources/work-package-resource';
 import { TableDragActionService } from 'core-app/features/work-packages/components/wp-table/drag-and-drop/actions/table-drag-action.service';
 import { WorkPackageViewHierarchiesService } from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-view-hierarchy.service';
@@ -7,15 +35,15 @@ import {
   hierarchyRootClass,
 } from 'core-app/features/work-packages/components/wp-fast-table/helpers/wp-table-hierarchy-helpers';
 import { relationRowClass, isInsideCollapsedGroup } from 'core-app/features/work-packages/components/wp-fast-table/helpers/wp-table-row-helpers';
-import { InjectField } from 'core-app/shared/helpers/angular/inject-field.decorator';
+import { LazyInject } from 'core-app/shared/helpers/angular/lazy-inject.decorator';
 import { ApiV3Service } from 'core-app/core/apiv3/api-v3.service';
 
 export class HierarchyDragActionService extends TableDragActionService {
-  @InjectField() private wpTableHierarchies:WorkPackageViewHierarchiesService;
+  @LazyInject() private wpTableHierarchies:WorkPackageViewHierarchiesService;
 
-  @InjectField() private relationHierarchyService:WorkPackageRelationsHierarchyService;
+  @LazyInject() private relationHierarchyService:WorkPackageRelationsHierarchyService;
 
-  @InjectField() private apiV3Service:ApiV3Service;
+  @LazyInject() private apiV3Service:ApiV3Service;
 
   public get applies() {
     return this.wpTableHierarchies.isEnabled;
@@ -44,7 +72,7 @@ export class HierarchyDragActionService extends TableDragActionService {
     if (previous !== null && this.droppedIntoGroup(el, previous, next)) {
       // If the previous element is a relation row,
       // skip it until we find the real previous sibling
-      const isRelationRow = previous.className.indexOf(relationRowClass()) >= 0;
+      const isRelationRow = previous.className.includes(relationRowClass());
 
       if (isRelationRow) {
         const relationRoot = this.findRelationRowRoot(previous);
@@ -77,7 +105,7 @@ export class HierarchyDragActionService extends TableDragActionService {
   private findRelationRowRoot(el:Element):Element|null {
     let previous = el.previousElementSibling;
     while (previous !== null) {
-      if (previous.className.indexOf(relationRowClass()) < 0) {
+      if (!previous.className.includes(relationRowClass())) {
         return previous;
       }
       previous = previous.previousElementSibling;
@@ -87,8 +115,8 @@ export class HierarchyDragActionService extends TableDragActionService {
   }
 
   private droppedIntoGroup(element:Element, previous:Element, next:Element | null):boolean {
-    const inGroup = previous.className.indexOf(hierarchyGroupClass('')) >= 0;
-    const isRoot = previous.className.indexOf(hierarchyRootClass('')) >= 0;
+    const inGroup = previous.className.includes(hierarchyGroupClass(''));
+    const isRoot = previous.className.includes(hierarchyRootClass(''));
     let skipDroppedIntoGroup;
 
     if (inGroup || isRoot) {

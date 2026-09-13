@@ -40,7 +40,7 @@ class CustomFields::Inputs::MultiVersionSelectList < CustomFields::Inputs::Base:
       **input_attributes,
       scope_name_to_model: false,
       name: "#{@object.model_name.element}[custom_field_values][#{input_attributes[:name]}][]",
-      value:
+      value: nil
     )
 
     custom_value_form.autocompleter(**version_input_attributes) do |list|
@@ -62,7 +62,7 @@ class CustomFields::Inputs::MultiVersionSelectList < CustomFields::Inputs::Base:
   end
 
   def selected?(version)
-    @custom_values.pluck(:value).map { |value| value&.to_i }.include?(version.id)
+    custom_values.pluck(:value).map { |value| value&.to_i }.include?(version.id)
   end
 
   def group_key(project)

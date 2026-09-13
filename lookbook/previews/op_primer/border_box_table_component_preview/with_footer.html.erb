@@ -50,7 +50,7 @@
     def footer
       render(Primer::BaseComponent.new(tag: :span)) do
         concat render(Primer::Beta::Text.new) { "This can be a custom footer component " }
-        concat render(Primer::Beta::Link.new(href: "#")) { "with all sorts of things" }
+        concat render(Primer::Beta::Link.new(href: "#", underline: true)) { "with all sorts of things" }
       end
     end
 

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,26 +33,29 @@ require_relative "base"
 class Tables::WorkPackageJournals < Tables::Base
   # rubocop:disable Metrics/AbcSize
   def self.table(migration)
-    create_table migration do |t|
-      t.integer :journal_id, null: false
-      t.integer :type_id, default: 0, null: false
-      t.integer :project_id, default: 0, null: false
-      t.string :subject, default: "", null: false
+    create_table migration do |t| # rubocop:disable Rails/CreateTableWithTimestamps
+      t.bigint :type_id, null: false, index: true
+      t.bigint :project_id, null: false, index: true
+      t.string :subject, default: nil, null: false
       t.text :description
-      t.date :due_date
-      t.integer :category_id
-      t.integer :status_id, default: 0, null: false
-      t.integer :assigned_to_id
-      t.integer :priority_id, default: 0, null: false
-      t.integer :fixed_version_id
-      t.integer :author_id, default: 0, null: false
-      t.integer :done_ratio, default: 0, null: false
+      t.date :due_date, index: true
+      t.bigint :category_id, index: true
+      t.bigint :status_id, null: false, index: true
+      t.bigint :assigned_to_id, index: true
+      t.bigint :priority_id, null: false
+      t.bigint :version_id, index: true
+      t.bigint :author_id, null: false, index: true
+      t.integer :done_ratio, default: nil, null: true
       t.float :estimated_hours
-      t.date :start_date
-      t.integer :parent_id
-      t.integer :responsible_id
-
-      t.index [:journal_id]
+      t.date :start_date, index: true
+      t.bigint :parent_id, index: true
+      t.bigint :responsible_id, index: true
+      t.float :derived_estimated_hours
+      t.boolean :schedule_manually, default: nil, index: true # rubocop:disable Rails/ThreeStateBooleanColumn
+      t.integer :duration
+      t.boolean :ignore_non_working_days, null: false # rubocop:disable Rails/ThreeStateBooleanColumn
+      t.float :derived_remaining_hours
+      t.integer :derived_done_ratio, default: nil, null: true
     end
     # rubocop:enable Metrics/AbcSize
   end

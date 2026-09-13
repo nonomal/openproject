@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -33,7 +35,7 @@
 class PermissionMock
   attr_reader :user, :permitted_entities, :allow_all_permissions
 
-  NIL_ERROR = "You tried to mock a permission on nil, this will not work! If you want to satisfy the `allow_in_any_project?` call, build an unused project and mock the permission on that.".freeze
+  NIL_ERROR = "You tried to mock a permission on nil, this will not work! If you want to satisfy the `allow_in_any_project?` call, build an unused project and mock the permission on that."
 
   def initialize(user)
     @user = user
@@ -48,6 +50,10 @@ class PermissionMock
   def forbid_everything
     @allow_all_permissions = false
     reset_permitted_entities
+  end
+
+  def admin_allowed_to?(permissions)
+    user.admin? && permissions.any?(&:grant_to_admin?)
   end
 
   def allow_in_project(*permissions, project:)
@@ -111,8 +117,12 @@ module MockedPermissionHelper
     allow(permissible_service).to receive(:allowed_globally?) do |permission_or_action|
       next true if permission_mock.allow_all_permissions
 
-      permissions = Authorization.permissions_for(permission_or_action).map(&:name)
-      permission_mock.permitted_entities[:global].intersect?(permissions)
+      permissions = Authorization.permissions_for(permission_or_action)
+
+      next true if permission_mock.admin_allowed_to?(permissions)
+
+      permission_names = permissions.map(&:name)
+      permission_mock.permitted_entities[:global].intersect?(permission_names)
     end
 
     # Permission allowed on one (or more) projects, when it has been given to all of them
@@ -120,10 +130,13 @@ module MockedPermissionHelper
       next true if permission_mock.allow_all_permissions
 
       projects = Array(project_or_projects)
-      permissions = Authorization.permissions_for(permission_or_action).map(&:name)
+      permissions = Authorization.permissions_for(permission_or_action)
 
-      projects.all? do |project|
-        permission_mock.permitted_entities[project].intersect?(permissions)
+      next true if permission_mock.admin_allowed_to?(permissions)
+
+      permission_names = permissions.map(&:name)
+      projects.any? && projects.all? do |project|
+        permission_mock.permitted_entities[project].intersect?(permission_names)
       end
     end
 
@@ -131,13 +144,16 @@ module MockedPermissionHelper
     allow(permissible_service).to receive(:allowed_in_any_project?) do |permission_or_action|
       next true if permission_mock.allow_all_permissions
 
-      permissions = Authorization.permissions_for(permission_or_action).map(&:name)
+      permissions = Authorization.permissions_for(permission_or_action)
 
+      next true if permission_mock.admin_allowed_to?(permissions)
+
+      permission_names = permissions.map(&:name)
       permission_mock.permitted_entities
         .select { |k, _| k.is_a?(Project) }
         .values
         .flatten
-        .intersect?(permissions)
+        .intersect?(permission_names)
     end
 
     # Permission is allowed on any entity, if
@@ -150,9 +166,12 @@ module MockedPermissionHelper
     allow(permissible_service).to receive(:allowed_in_any_entity?) do |permission_or_action, entity_class, in_project:|
       next true if permission_mock.allow_all_permissions
 
-      permissions = Authorization.permissions_for(permission_or_action).map(&:name)
+      permissions = Authorization.permissions_for(permission_or_action)
 
-      next true if in_project && permission_mock.permitted_entities[in_project].intersect?(permissions)
+      next true if permission_mock.admin_allowed_to?(permissions)
+
+      permission_names = permissions.map(&:name)
+      next true if in_project && permission_mock.permitted_entities[in_project].intersect?(permission_names)
 
       filtered_entities = if in_project
                             permission_mock.permitted_entities.select do |k, _|
@@ -165,7 +184,7 @@ module MockedPermissionHelper
       filtered_entities
         .values
         .flatten
-        .intersect?(permissions)
+        .intersect?(permission_names)
     end
 
     # Permission is allowed on a specific entity, if
@@ -174,10 +193,13 @@ module MockedPermissionHelper
     allow(permissible_service).to receive(:allowed_in_entity?) do |permission_or_action, entity|
       next true if permission_mock.allow_all_permissions
 
-      permissions = Authorization.permissions_for(permission_or_action).map(&:name)
+      permissions = Authorization.permissions_for(permission_or_action)
 
-      (entity.respond_to?(:project) && permission_mock.permitted_entities[entity.project].intersect?(permissions)) ||
-      permission_mock.permitted_entities[entity].intersect?(permissions)
+      next true if permission_mock.admin_allowed_to?(permissions)
+
+      permission_names = permissions.map(&:name)
+      (entity.respond_to?(:project) && permission_mock.permitted_entities[entity.project].intersect?(permission_names)) ||
+      permission_mock.permitted_entities[entity].intersect?(permission_names)
     end
   end
 end

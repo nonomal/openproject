@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 //
 // See COPYRIGHT and LICENSE files for more details.
 //++
@@ -36,16 +36,16 @@ export interface FormResourceLinks<T = HalResource> {
 
 export interface FormResourceEmbedded {
   schema:SchemaResource;
-  validationErrors:{ [attribute:string]:ErrorResource };
+  validationErrors:Record<string, ErrorResource>;
 }
 
 export class FormResource<T = HalResource> extends HalResource {
   public schema:SchemaResource;
 
-  public validationErrors:{ [attribute:string]:ErrorResource };
+  public validationErrors:Record<string, ErrorResource>;
 
   public getErrors():ErrorResource|null {
-    const errors = _.values(this.validationErrors);
+    const errors = Object.values(this.validationErrors ?? {});
     const count = errors.length;
 
     if (count === 0) {

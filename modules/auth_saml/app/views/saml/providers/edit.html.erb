@@ -15,9 +15,9 @@
     <%= link_translate(
           "saml.instructions.documentation_link",
           links: {
-            docs_url: ::OpenProject::Static::Links[:sysadmin_docs][:saml][:href]
+            docs_url: %i[sysadmin_docs saml]
           },
-          target: "_blank"
+          external: true
         ) %>
   <% end %>
 <% end %>
@@ -26,7 +26,7 @@
       Saml::Providers::ViewComponent.new(
         @provider,
         view_mode: :edit,
-        edit_mode: @edit_mode,
+        new_mode: @new_mode,
         edit_state: @edit_state
       )
     ) %>

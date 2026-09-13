@@ -39,7 +39,7 @@ RSpec.describe "Work Package table time entries", :js do
   let!(:time_entry1) do
     create(:time_entry,
            user:,
-           work_package: parent,
+           entity: parent,
            project:,
            hours: 10)
   end
@@ -47,7 +47,7 @@ RSpec.describe "Work Package table time entries", :js do
   let!(:time_entry2) do
     create(:time_entry,
            user:,
-           work_package:,
+           entity: work_package,
            project:,
            hours: 2.50)
   end

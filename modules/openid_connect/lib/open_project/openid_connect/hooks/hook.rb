@@ -54,6 +54,9 @@ module OpenProject::OpenIDConnect
             clear_previous: true
           )
         end
+
+        groups_claim = session["omniauth.oidc_groups"]
+        OpenIDConnect::Groups::SyncService.new(user:).call(groups_claim:) unless groups_claim.nil?
       end
 
       ##
@@ -61,11 +64,16 @@ module OpenProject::OpenIDConnect
       def omniauth_user_authorized(context)
         controller = context.fetch(:controller)
         session = controller.session
+        provider = OpenIDConnect::Provider.find_by(slug: context.dig(:auth_hash, :provider))
 
-        if OpenIDConnect::Provider.exists?(slug: context.dig(:auth_hash, :provider))
+        if provider
           session["omniauth.oidc_access_token"] = context.dig(:auth_hash, :credentials, :token)
           session["omniauth.oidc_refresh_token"] = context.dig(:auth_hash, :credentials, :refresh_token)
           session["omniauth.oidc_expires_in"] = parse_expires_in(context.dig(:auth_hash, :credentials, :expires_in))
+
+          if provider.sync_groups
+            session["omniauth.oidc_groups"] = context.dig(:auth_hash, :extra, :raw_info, provider.groups_claim)
+          end
         end
 
         nil

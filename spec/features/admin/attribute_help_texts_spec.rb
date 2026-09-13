@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,7 +34,6 @@ RSpec.describe "Attribute help texts", :js do
   shared_let(:user_with_permission) { create(:user, global_permissions: [:edit_attribute_help_texts]) }
 
   let(:instance) { AttributeHelpText.last }
-  let(:modal) { Components::AttributeHelpTextModal.new(instance) }
   let(:editor) { Components::WysiwygEditor.new }
   let(:image_fixture) { UploadedFile.load_from("spec/fixtures/files/image.png") }
   let(:enterprise_token) { true }
@@ -95,16 +96,21 @@ RSpec.describe "Attribute help texts", :js do
         expect(instance.help_text).to match /\/api\/v3\/attachments\/\d+\/content/
 
         # Open help text modal
-        modal.open!
-        expect(modal.modal_container).to have_text "My attribute help text"
-        expect(modal.modal_container).to have_css("img")
-        modal.expect_edit(editable: true)
+        click_on "Preview text"
 
-        # Expect files section to be present
-        expect(modal.modal_container).to have_css(".form--fieldset-legend", text: "ATTACHMENTS")
-        expect(modal.modal_container).to have_test_selector("op-files-tab--file-list-item-title")
+        expect(page).to have_modal "Status"
+        within_modal "Status" do
+          expect(page).to have_text "My attribute help text"
+          expect(page).to have_css "img"
 
-        modal.close!
+          expect(page).to have_link "Edit"
+
+          # Expect files section to be present
+          expect(page).to have_heading "Attachments"
+          expect(page).to have_test_selector("op-files-tab--file-list-item-title")
+
+          click_on "Close"
+        end
 
         # -> edit
         SeleniumHubWaiter.wait
@@ -126,16 +132,25 @@ RSpec.describe "Attribute help texts", :js do
         expect(instance.help_text).to eq "New**help**text"
 
         # Open help text modal
-        modal.open!
-        expect(modal.modal_container).to have_css("strong", text: "help")
-        modal.expect_edit(editable: true)
+        click_on "Preview text"
 
-        modal.close!
+        within_modal "Status" do
+          expect(page).to have_css "strong", text: "help"
+
+          expect(page).to have_link "Edit"
+
+          click_on "Close"
+        end
+
         expect(page).to have_css(".attribute-help-text--entry td", text: "Status")
 
         # Open again and edit this time
-        modal.open!
-        modal.edit_button.click
+        click_on "Preview text"
+
+        within_modal "Status" do
+          click_on "Edit"
+        end
+
         expect(page).to have_css("#attribute_help_text_attribute_name[disabled]")
         visit attribute_help_texts_path
 

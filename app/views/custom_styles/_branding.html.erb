@@ -27,93 +27,54 @@ See COPYRIGHT and LICENSE files for more details.
 
 ++#%>
 
-<%= form_for @custom_style, url: custom_style_path, html: { multipart: true, class: "form -vertical" } do |f| %>
-  <section class="form--section">
-    <fieldset class="form--fieldset">
-      <legend class="form--fieldset-legend"><%= I18n.t(:label_custom_logo) %></legend>
-      <% if @custom_style.id && @custom_style.logo.present? %>
-        <div>
-          <%# Don't use image_tag here due to asset host %>
-          <%= tag("img", src: custom_style_logo_path(digest: @custom_style.digest, filename: @custom_style.logo_identifier), class: "custom-logo-preview") %>
-          <%= link_to t(:button_delete),
-                      custom_style_logo_delete_path,
-                      method: :delete,
-                      class: "icon icon-delete confirm-form-submit" %>
-        </div>
-      <% end %>
-      <div class="grid-block">
-        <div class="form--field -required">
-          <div class="attachment_field form--field-container -vertical -shrink">
-            <div class="form--file-container">
-              <%= f.file_field :logo, required: true, class: "attachment_choose_file", size: "15" %>
-            </div>
-          </div>
-          <div class="form--field-instructions">
-            <%= t("text_custom_logo_instructions") %>
-          </div>
-        </div>
-      </div>
-      <%= styled_button_tag I18n.t(@custom_style.logo.present? ? :button_replace : :button_upload),
-                            class: "button #{@custom_style.logo.blank? ? '-with-icon icon-add' : ''}" %>
-    </fieldset>
-  </section>
-<% end %>
-<%= form_for @custom_style, url: custom_style_path, html: { multipart: true, class: "form -vertical" } do |f| %>
-  <section class="form--section">
-    <fieldset class="form--fieldset">
-      <legend class="form--fieldset-legend"><%= I18n.t(:label_custom_favicon) %></legend>
+<%= render partial: "custom_styles/uploads/image",  locals: { image:{
+  field: :logo,
+  label: I18n.t(:label_custom_logo),
+  present: @custom_style.id && @custom_style.logo.present?,
+  source: @custom_style.id && @custom_style.logo.present? ?
+            custom_style_logo_path(digest: @custom_style.digest, filename: @custom_style.logo_identifier) :
+            nil,
+  img_class: "custom-logo-preview",
+  accept: "image/*",
+  delete_path: custom_style_logo_delete_path,
+  instructions: I18n.t("text_custom_logo_instructions")
+} } %>
 
-      <% if @custom_style.id && @custom_style.favicon.present? %>
-        <div>
-          <%= tag("img", src: custom_style_favicon_path(digest: @custom_style.digest, filename: @custom_style.favicon_identifier), class: "custom-favicon-preview") %>
-          <%= link_to t(:button_delete),
-                      custom_style_favicon_delete_path,
-                      method: :delete,
-                      class: "icon icon-delete confirm-form-submit" %>
-        </div>
-      <% end %>
-      <div class="grid-block">
-        <div class="form--field -required">
-          <div class="attachment_field form--field-container -vertical -shrink">
-            <div class="form--file-container">
-              <%= f.file_field :favicon, required: true, class: "attachment_choose_file", size: "15" %>
-            </div>
-          </div>
-          <div class="form--field-instructions">
-            <%= t("text_custom_favicon_instructions") %>
-          </div>
-        </div>
-      </div>
-      <%= styled_button_tag t(@custom_style.favicon.present? ? :button_replace : :button_upload), class: "button #{@custom_style.favicon.blank? ? '-with-icon icon-add' : ''}" %>
-    </fieldset>
-  </section>
-<% end %>
-<%= form_for @custom_style, url: custom_style_path, html: { multipart: true, class: "form -vertical" } do |f| %>
-  <section class="form--section">
-    <fieldset class="form--fieldset">
-      <legend class="form--fieldset-legend"><%= I18n.t(:label_custom_touch_icon) %></legend>
-      <% if @custom_style.id && @custom_style.touch_icon.present? %>
-        <div>
-          <%= tag("img", src: custom_style_touch_icon_path(digest: @custom_style.digest, filename: @custom_style.touch_icon_identifier), class: "custom-touch-icon-preview") %>
-          <%= link_to t(:button_delete),
-                      custom_style_touch_icon_delete_path,
-                      method: :delete,
-                      class: "icon icon-delete confirm-form-submit" %>
-        </div>
-      <% end %>
-      <div class="grid-block">
-        <div class="form--field -required">
-          <div class="attachment_field form--field-container -vertical -shrink">
-            <div class="form--file-container">
-              <%= f.file_field :touch_icon, required: true, class: "attachment_choose_file", size: "15" %>
-            </div>
-          </div>
-          <div class="form--field-instructions">
-            <%= t("text_custom_touch_icon_instructions") %>
-          </div>
-        </div>
-      </div>
-      <%= styled_button_tag t(@custom_style.touch_icon.present? ? :button_replace : :button_upload), class: "button #{@custom_style.touch_icon.blank? ? '-with-icon icon-add' : ''}" %>
-    </fieldset>
-  </section>
-<% end %>
+<%= render partial: "custom_styles/uploads/image", locals: { image: {
+  field: :logo_mobile,
+  label: I18n.t(:label_custom_logo_mobile),
+  present: @custom_style.id && @custom_style.logo_mobile.present?,
+  source: @custom_style.id && @custom_style.logo_mobile.present? ?
+            custom_style_logo_mobile_path(digest: @custom_style.digest, filename: @custom_style.logo_mobile_identifier) :
+            nil,
+  img_class: "custom-logo-mobile-preview",
+  accept: "image/*",
+  delete_path: custom_style_logo_mobile_delete_path,
+  instructions: I18n.t("text_custom_logo_mobile_instructions")
+} } %>
+
+<%= render partial: "custom_styles/uploads/image",  locals: { image:{
+  field: :favicon,
+  label: I18n.t(:label_custom_favicon),
+  present: @custom_style.id && @custom_style.favicon.present?,
+  source: @custom_style.id && @custom_style.favicon.present? ?
+            custom_style_favicon_path(digest: @custom_style.digest, filename: @custom_style.favicon_identifier) :
+            nil,
+  img_class: "custom-favicon-preview",
+  accept: "image/*",
+  delete_path: custom_style_favicon_delete_path,
+  instructions: I18n.t("text_custom_favicon_instructions")
+} } %>
+
+<%= render partial: "custom_styles/uploads/image",  locals: { image:{
+  field: :favicon,
+  label: I18n.t(:label_custom_touch_icon),
+  present: @custom_style.id && @custom_style.touch_icon.present?,
+  source: @custom_style.id && @custom_style.touch_icon.present? ?
+            custom_style_touch_icon_path(digest: @custom_style.digest, filename: @custom_style.touch_icon_identifier) :
+            nil,
+  img_class: "custom-touch-icon-preview",
+  accept: "image/*",
+  delete_path: custom_style_touch_icon_delete_path,
+  instructions: I18n.t("text_custom_touch_icon_instructions")
+} } %>

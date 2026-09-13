@@ -367,7 +367,7 @@ default:
   # omniauth provider if additional ones are configured.
   # omniauth_direct_login_provider: developer
   #
-  # disable_password_login: true
+  # password_login: none
 
   # If enabled a user's password cannot be set to an arbitrary value.
   # The respective form elements will be removed from the user edit view.
@@ -384,7 +384,7 @@ default:
   #     password: admin
 
   # By default, the APIv3 allows authentication through basic auth.
-  # Uncomment the following line to restrict APIv3 access to session.
+  # Uncomment the following line to prevent APIv3 access using Basic auth.
   # apiv3_enable_basic_auth: false
 
   # You can configure where users should be sent after the login

@@ -29,15 +29,14 @@ See COPYRIGHT and LICENSE files for more details.
 
 <%= render Messages::ShowPageHeaderComponent.new(topic: @topic, message: @message, forum: @forum, project:@project) %>
 
-<% content_controller 'forum-messages',
-                      dynamic: true %>
+<% content_controller 'forum-messages' %>
 
 <% title avatar(@topic.author) + h(@topic.subject) %>
 
 <div class="forum-message">
   <p class="author additional-information"><%= authoring @topic.created_at, @topic.author %></p>
   <div class="wiki op-uc-container">
-    <%= format_text(@topic.content, object: @topic, attachments: @topic.attachments) %>
+    <%= format_text(@topic, :content, attachments: @topic.attachments) %>
   </div>
 
   <% resource = message_attachment_representer(@topic) %>
@@ -67,15 +66,14 @@ See COPYRIGHT and LICENSE files for more details.
                       alt: t(:button_edit)) if message.editable_by?(User.current) %>
           <%= link_to(icon_wrapper('icon-context icon-delete', t(:button_delete)),
                       { action: 'destroy', id: message },
-                      method: :delete,
-                      data: { confirm: t(:text_are_you_sure) },
+                      data: { turbo_method: :delete, turbo_confirm: t(:text_are_you_sure) },
                       title: t(:button_delete),
                       class: 'no-decoration-on-hover',
                       alt: t(:button_delete)) if message.destroyable_by?(User.current) %>
         </div>
         <h4 class="author additional-information">
           <%= avatar(message.author) %>
-          <%= link_to h(message.subject), topic_path(@topic,
+          <%= link_to h(message.subject), project_forum_topic_path(@project, @forum, @topic,
                                                      r: message,
                                                      page: @offset,
                                                      anchor: "message-#{message.id}") %>
@@ -101,7 +99,7 @@ See COPYRIGHT and LICENSE files for more details.
 
       <%= labelled_tabular_form_for @reply,
                                     as: :reply,
-                                    url: reply_to_topic_path(@topic),
+                                    url: reply_to_project_forum_topic_path(@project, @forum, @topic),
                                     html: {
                                       multipart: true,
                                       id: 'message-form',

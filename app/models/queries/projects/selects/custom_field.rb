@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # -- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -27,6 +29,10 @@
 # ++
 
 class Queries::Projects::Selects::CustomField < Queries::Selects::Base
+  include Queries::Selects::Shared::CustomFieldSelect
+
+  self.custom_field_context = Queries::Projects::CustomFieldContext
+
   validates :custom_field, presence: { message: I18n.t(:"activerecord.errors.messages.does_not_exist") }
 
   KEY = /\Acf_(\d+)\z/
@@ -38,8 +44,8 @@ class Queries::Projects::Selects::CustomField < Queries::Selects::Base
   def self.all_available
     return [] unless available?
 
-    ProjectCustomField
-      .visible
+    custom_field_context
+      .custom_fields
       .pluck(:id)
       .map { |id| new(:"cf_#{id}") }
   end
@@ -51,9 +57,7 @@ class Queries::Projects::Selects::CustomField < Queries::Selects::Base
   def custom_field
     return @custom_field if defined?(@custom_field)
 
-    @custom_field = ProjectCustomField
-                      .visible
-                      .find_by(id: attribute[KEY, 1])
+    @custom_field = custom_field_context.find_custom_field(attribute[KEY, 1])
   end
 
   def available?

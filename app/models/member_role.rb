@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,6 +32,8 @@ class MemberRole < ApplicationRecord
   belongs_to :member, touch: true
   belongs_to :role
 
+  after_destroy_commit :cleanup_associated_custom_values
+
   # `inherited` is reserved ActiveRecord method
   scope :only_inherited, -> { where.not(inherited_from: nil) }
   scope :only_non_inherited, -> { where(inherited_from: nil) }
@@ -43,5 +47,18 @@ class MemberRole < ApplicationRecord
 
   def inherited?
     !inherited_from.nil?
+  end
+
+  private
+
+  def cleanup_associated_custom_values
+    custom_fields_associated_with_roles = CustomFieldsRole.where(role_id: role_id).pluck(:custom_field_id)
+
+    CustomValue
+      .where(
+        customized: member.project,
+        custom_field_id: custom_fields_associated_with_roles,
+        value: member.user_id.to_s
+      ).destroy_all
   end
 end

@@ -57,30 +57,25 @@ if [ "$edition" = "bim" ]; then
 
 	cd $tmpdir
 
-	if [ "$(${CLI} run gltf2xkt --version 2>&1)" != "1.3.1" ] ; then
-		echo "Fetching and installing xeokit-gltf-to-xkt..."
-		${CLI} run npm install @xeokit/xeokit-gltf-to-xkt@1.3.1
-	fi
-
 	if ! ${CLI} run which COLLADA2GLTF &>/dev/null ; then
-		echo "Fetching and installing COLLADA2GLTF..."
-		wget --quiet https://github.com/KhronosGroup/COLLADA2GLTF/releases/download/v2.1.5/COLLADA2GLTF-v2.1.5-linux.zip
+		echo "Installing COLLADA2GLTF..."
+		cp "$APP_HOME/vendor/bim/COLLADA2GLTF-v2.1.5-linux.zip" .
 		unzip -qq COLLADA2GLTF-v2.1.5-linux.zip
 		mv COLLADA2GLTF-bin "$APP_HOME/bin/COLLADA2GLTF"
 	fi
 
 	if ! ${CLI} run which IfcConvert &>/dev/null ||
 	   ! echo "2d48d5df36371fc5920a71f0d74b29449b0b166a  $(${CLI} run which IfcConvert)" | sha1sum -c - ; then
-		echo "Fetching and installing IfcConvert..."
-		wget --quiet https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.11-fea8e3a-linux64.zip
+		echo "Installing IfcConvert..."
+		cp "$APP_HOME/vendor/bim/IfcConvert-v0.7.11-fea8e3a-linux64.zip" .
 		unzip -qq IfcConvert-v0.7.11-fea8e3a-linux64.zip
 		mv IfcConvert "$APP_HOME/bin/IfcConvert"
 	fi
 
 	if ! ${CLI} run which xeokit-metadata &>/dev/null ||
 	   ! echo "f960fb98106280223a664d176daaeb7ca7904e6f  $(${CLI} run which xeokit-metadata)" | sha1sum -c - ; then
-		echo "Fetching and installing xeokit-metadata..."
-		wget --quiet https://github.com/bimspot/xeokit-metadata/releases/download/1.0.1/xeokit-metadata-linux-x64.tar.gz
+		echo "Installing xeokit-metadata..."
+		cp "$APP_HOME/vendor/bim/xeokit-metadata-linux-x64.tar.gz" .
 		tar -zxf xeokit-metadata-linux-x64.tar.gz
 		chmod +x xeokit-metadata-linux-x64/xeokit-metadata
 		cp -r xeokit-metadata-linux-x64/ "$APP_HOME/vendor/xeokit-metadata"

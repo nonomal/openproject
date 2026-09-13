@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -54,6 +56,19 @@ RSpec.describe ProjectQuery, "#allowed to" do # rubocop:disable RSpec/SpecFilePa
              create(:project_query_member, user:, roles: [edit_role])
            ])
   end
+  shared_let(:group) { create(:group, members: [user]) }
+
+  shared_let(:private_other_query_with_group_view) do
+    create(:project_query, user: other_user, members: [
+             create(:project_query_member, principal: group, roles: [view_role])
+           ])
+  end
+
+  shared_let(:private_other_query_with_group_edit) do
+    create(:project_query, user: other_user, members: [
+             create(:project_query_member, principal: group, roles: [edit_role])
+           ])
+  end
 
   context "when the user is locked" do
     let(:checked_user) { create(:locked_user) }
@@ -85,7 +100,10 @@ RSpec.describe ProjectQuery, "#allowed to" do # rubocop:disable RSpec/SpecFilePa
         owned_query,
         # view membership queries
         private_other_query_with_view,
-        private_other_query_with_edit
+        private_other_query_with_edit,
+        # group view membership query
+        private_other_query_with_group_view,
+        private_other_query_with_group_edit
       )
     end
   end
@@ -107,8 +125,10 @@ RSpec.describe ProjectQuery, "#allowed to" do # rubocop:disable RSpec/SpecFilePa
           owned_public_query,
           # user owned queries
           owned_query,
-          # view membership queries
-          private_other_query_with_edit
+          # edit membership queries
+          private_other_query_with_edit,
+          # group edit membership queries
+          private_other_query_with_group_edit
         )
       end
     end
@@ -119,7 +139,9 @@ RSpec.describe ProjectQuery, "#allowed to" do # rubocop:disable RSpec/SpecFilePa
           # user owned queries
           owned_query,
           # edit membership queries
-          private_other_query_with_edit
+          private_other_query_with_edit,
+          # group edit membership queries
+          private_other_query_with_group_edit
         )
       end
     end

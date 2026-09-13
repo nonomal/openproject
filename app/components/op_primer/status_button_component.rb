@@ -36,6 +36,11 @@ module OpPrimer
     def initialize(current_status:, items:, readonly: false, disabled: false, button_arguments: {}, menu_arguments: {})
       super
 
+      menu_arguments[:classes] = class_names(
+        menu_arguments[:classes],
+        "op-status-button"
+      )
+
       @current_status = current_status
       @items = items
       @readonly = readonly
@@ -45,7 +50,7 @@ module OpPrimer
     end
 
     def default_button_title
-      raise NotImplementedError
+      raise SubclassResponsibilityError
     end
 
     def disabled?
@@ -78,8 +83,10 @@ module OpPrimer
 
     def highlight_class_name(status, style)
       case style
-      when :inline
-        helpers.hl_inline_class(status.color_namespace, status.color_ref)
+      when :dot
+        helpers.hl_dot_class(status.color_namespace, status.color_ref)
+      when :foreground
+        helpers.hl_foreground_class(status.color_namespace, status.color_ref)
       when :background
         helpers.hl_background_class(status.color_namespace, status.color_ref)
       end

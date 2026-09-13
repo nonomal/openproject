@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -38,18 +40,13 @@ RSpec.describe "OpenProject child pages macro" do
   end
 
   shared_let(:project) do
-    create(:valid_project,
-           enabled_module_names: %w[wiki])
+    create(:valid_project, :with_internal_wiki)
   end
   shared_let(:member_project) do
-    create(:valid_project,
-           identifier: "member-project",
-           enabled_module_names: %w[wiki])
+    create(:valid_project, :with_internal_wiki, identifier: "member-project")
   end
   shared_let(:invisible_project) do
-    create(:valid_project,
-           identifier: "other-project",
-           enabled_module_names: %w[wiki])
+    create(:valid_project, :with_internal_wiki, identifier: "other-project")
   end
   shared_let(:user) do
     create(:user, member_with_permissions: { project => [:view_wiki_pages],
@@ -135,7 +132,7 @@ RSpec.describe "OpenProject child pages macro" do
     it { is_expected.to match(middle_page.title) }
     it { is_expected.to match(leaf_page.title) }
     # Check accessibility
-    it { is_expected.to include("hidden-for-sighted", "tabindex", "Expanded. Click to collapse") }
+    it { is_expected.to include("sr-only", "tabindex", "Expanded. Click to collapse") }
   end
 
   context "when only include_parent passed" do

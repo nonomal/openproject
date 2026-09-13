@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,7 +34,7 @@ module OpenProject::TextFormatting::Filters::Macros
       include OpenProject::StaticRouting::UrlHelpers
     end
 
-    HTML_CLASS = "create_work_package_link".freeze
+    HTML_CLASS = "create_work_package_link"
 
     module_function
 
@@ -44,7 +46,7 @@ module OpenProject::TextFormatting::Filters::Macros
       macro.replace work_package_link(macro, context)
     end
 
-    def work_package_link(macro, context)
+    def work_package_link(macro, context) # rubocop:disable Metrics/AbcSize
       project = context[:project]
       raise I18n.t("macros.create_work_package_link.errors.no_project_context") if project.nil?
 
@@ -52,7 +54,7 @@ module OpenProject::TextFormatting::Filters::Macros
       class_name = macro["data-classes"] == "button" ? "button" : nil
 
       if type_name.present?
-        type = project.types.find_by(name: type_name)
+        type = project.enabled_types.find_by(name: type_name)
         if type.nil?
           raise I18n.t(
             "macros.create_work_package_link.errors.invalid_type",
@@ -62,7 +64,7 @@ module OpenProject::TextFormatting::Filters::Macros
         end
 
         ApplicationController.helpers.link_to(
-          I18n.t("macros.create_work_package_link.link_name_type", type_name:),
+          "+ #{type_name}",
           new_project_work_packages_path(project_id: project.identifier, type: type.id),
           class: class_name
         )

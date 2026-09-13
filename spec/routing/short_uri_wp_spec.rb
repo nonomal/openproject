@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -53,6 +55,11 @@ RSpec.describe "routes for old issue uris", type: :request do
     it do
       expect(last_response).to be_redirect
       expect(last_response.location).to end_with "/work_packages/1234"
+    end
+
+    it "has a path helper" do
+      expect(work_package_short_path("123")).to eq("/wp/123")
+      expect(work_package_short_path(%w[123 a_tab foo])).to eq("/wp/123/a_tab/foo")
     end
   end
 end

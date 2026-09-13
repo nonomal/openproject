@@ -1,50 +1,48 @@
-/*
- * -- copyright
- * OpenProject is an open source project management software.
- * Copyright (C) 2023 the OpenProject GmbH
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License version 3.
- *
- * OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
- * Copyright (C) 2006-2013 Jean-Philippe Lang
- * Copyright (C) 2010-2013 the ChiliProject Team
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *
- * See COPYRIGHT and LICENSE files for more details.
- * ++
- */
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
 
 import { Controller } from '@hotwired/stimulus';
 
-import type IndexController from './index.controller';
+import type EditorController from './editor.controller';
 import type InternalCommentController from './internal-comment.controller';
 
-type QuoteParams = {
+interface QuoteParams {
   userId:string;
   userName:string;
   textWrote:string;
   content:string;
   isInternal:boolean;
-};
+}
 
 export default class QuoteCommentController extends Controller {
-  static outlets = ['work-packages--activities-tab--index', 'work-packages--activities-tab--internal-comment'];
+  static outlets = ['work-packages--activities-tab--editor', 'work-packages--activities-tab--internal-comment'];
 
-  declare readonly workPackagesActivitiesTabIndexOutlet:IndexController;
+  declare readonly workPackagesActivitiesTabEditorOutlet:EditorController;
   declare readonly workPackagesActivitiesTabInternalCommentOutlet:InternalCommentController;
 
   quote({ params: { userId, userName, textWrote, content, isInternal } }:{ params:QuoteParams }) {
@@ -83,19 +81,19 @@ export default class QuoteCommentController extends Controller {
   private setCommentRestriction(isInternal:boolean) {
     if (isInternal && !this.workPackagesActivitiesTabInternalCommentOutlet.internalCheckboxTarget.checked) {
       this.workPackagesActivitiesTabInternalCommentOutlet.internalCheckboxTarget.checked = isInternal;
-      this.workPackagesActivitiesTabInternalCommentOutlet.toggleInternal();
+      this.workPackagesActivitiesTabInternalCommentOutlet.updateInternalState();
     }
   }
 
   private openEditorWithInitialData(quotedText:string) {
-    this.workPackagesActivitiesTabIndexOutlet.openEditorWithInitialData(quotedText);
+    this.workPackagesActivitiesTabEditorOutlet.openEditorWithInitialData(quotedText);
   }
 
   private get ckEditorInstance() {
-    return this.workPackagesActivitiesTabIndexOutlet.getCkEditorInstance();
+    return this.workPackagesActivitiesTabEditorOutlet.ckEditorInstance;
   }
 
   private get isFormVisible():boolean {
-    return !this.workPackagesActivitiesTabIndexOutlet.formRowTarget.classList.contains('d-none');
+    return !this.workPackagesActivitiesTabEditorOutlet.formRowTarget.classList.contains('d-none');
   }
 }

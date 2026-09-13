@@ -50,15 +50,6 @@ class CostQuery::Filter::UserId < Report::Filter::Base
   end
 
   def self.available_values(*)
-    # All users which are members in projects the user can see.
-    # Excludes the anonymous user
-    users = User.in_visible_project
-                .human
-                .ordered_by_name
-                .select(User::USER_FORMATS_STRUCTURE[Setting.user_format].map(&:to_s) << :id)
-
-    values = users.map { |u| [u.name, u.id] }
-    values.unshift [::I18n.t(:label_me), me_value] if User.current.logged?
-    values
+    []
   end
 end

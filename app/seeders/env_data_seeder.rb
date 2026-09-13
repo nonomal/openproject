@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,6 +31,7 @@ class EnvDataSeeder < CompositeSeeder
     [
       EnvData::CustomDesignSeeder,
       EnvData::LdapSeeder,
+      EnvData::ScimClientSeeder,
       EnvData::TokenSeeder
     ]
   end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,7 +34,7 @@ module Admin::Settings
 
     def settings_params
       super.tap do |settings|
-        settings["apiv3_cors_origins"] = settings["apiv3_cors_origins"].split(/\r?\n/)
+        settings["apiv3_cors_origins"] = settings["apiv3_cors_origins"]&.split(/\r?\n/) || []
       end
     end
 

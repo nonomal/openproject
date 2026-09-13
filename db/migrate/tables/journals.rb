@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,22 +31,36 @@
 require_relative "base"
 
 class Tables::Journals < Tables::Base
-  def self.table(migration)
+  def self.table(migration) # rubocop:disable Metrics/AbcSize
     create_table migration do |t|
-      t.references :journable, polymorphic: true, index: false, type: :int
-      t.integer :user_id, default: 0, null: false
-      t.text :notes
-      t.datetime :created_at, null: false
+      t.references :journable, polymorphic: true, index: false
+      t.bigint :user_id, null: false, index: true
+      t.text :notes, null: true
+      t.datetime :created_at, precision: nil, null: false, index: true
       t.integer :version, default: 0, null: false
-      t.string :activity_type
+      t.datetime :updated_at, precision: nil, default: -> { "CURRENT_TIMESTAMP" }
+      t.references :data, polymorphic: true, index: false, null: false
+      t.jsonb :cause, default: {}
+      t.tstzrange :validity_period
+      t.boolean :restricted, default: false, null: false
 
       t.index :journable_id
-      t.index :created_at
       t.index :journable_type
-      t.index :user_id
-      t.index :activity_type
       t.index %i[journable_type journable_id version],
               unique: true
+      t.index %i[data_id data_type],
+              unique: true
+      t.index :notes,
+              using: "gin",
+              opclass: :gin_trgm_ops
+
+      t.check_constraint "NOT isempty(validity_period) AND validity_period IS NOT NULL",
+                         name: "journals_validity_period_not_empty"
+
+      t.exclusion_constraint "journable_id WITH =, journable_type WITH =, validity_period WITH &&",
+                             name: "non_overlapping_journals_validity_periods",
+                             using: :gist,
+                             deferrable: :immediate
     end
   end
 end

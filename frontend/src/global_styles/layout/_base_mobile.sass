@@ -39,19 +39,58 @@
     #main
       margin-top: 0
     #main,
-    #content-wrapper
+    #content-wrapper,
+    #main-menu #menu-sidebar
       height: 100dvh
+
+    #main .content-overlay
+      top: 0 !important
 
   #content-body,
   #content-header
+    padding-top: var(--main-menu-toggler-top-spacing)
     padding-left: 15px
     padding-right: 15px
+
+  #content-body
+    position: static
 
   .hidden-for-mobile
     display: none !important
 
   h2
     font-size: 1.4rem
+
+  /*
+   * This is a very ugly hack to make the PageHeader sticky on mobile.
+   * The CSS sticky property relies on the direct parent element, see https://developer.mozilla.org/en-US/docs/Web/CSS/position#sticky
+   * Unfortunately, the html structure differs from page to page. So we don't know which element to make sticky.
+   * Therefore, we make all divs sticky between the content-header, (and for the older pages, the content-body) and the PageHeader itself.
+   */
+  #content-header div:has(page-header),
+  #content-body div:has(page-header),
+  page-header,
+  .work-packages--show-view .toolbar-container
+    position: sticky
+    top: calc(var(--main-menu-toggler-top-spacing) * -1)
+    z-index: var(--main-menu-toggler-z-index)
+    background-color: var(--body-background)
+    padding-top: var(--main-menu-toggler-top-spacing)
+    margin-top: calc(var(--main-menu-toggler-top-spacing) * -1)
+
+  // Hide the header, when the content-bodyRight is shown, because it has it's own header.
+  // Otherwise, the sticky header would lay on top of the split screen
+  @include split-pane-active
+    page-header,
+    sub-header
+      display: none
+
+  .work-packages--show-view .toolbar-container
+    margin-bottom: 0
+    .wp-show--header-container
+      margin-bottom: 1rem
+      // Add a border bottom on mobile so that the sticky header has a clear cut to the content
+      border-bottom: var(--borderWidth-thin) solid var(--borderColor-muted)
 
 @media screen and (min-width: $breakpoint-sm)
   .hidden-for-desktop
@@ -68,7 +107,7 @@
   #main
     grid-template-columns: auto
 
-  #content:has(#content-bodyRight > *)
+  @include split-pane-active
     grid-template-columns: 1fr auto
 
   // As soon as the split screen has content (so basically when its opened), it takes the available whole space

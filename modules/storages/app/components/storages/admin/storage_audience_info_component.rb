@@ -33,7 +33,7 @@ module Storages
     class StorageAudienceInfoComponent < StorageInfoComponent
       def self.wrapper_key = :storage_audience_section
 
-      def audience_summary
+      def token_exchange_summary
         case storage.storage_audience
         when "", nil
           I18n.t("storages.file_storage_view.storage_audience_blank")

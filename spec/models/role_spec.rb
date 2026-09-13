@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -32,6 +34,10 @@ RSpec.describe Role do
   let(:permissions) { %i[permission1 permission2] }
   let(:build_role) { build(:project_role, permissions:) }
   let(:created_role) { create(:project_role, permissions:) }
+
+  it { is_expected.to validate_presence_of :name }
+  it { is_expected.to validate_uniqueness_of(:name).case_insensitive }
+  it { is_expected.to validate_length_of(:name).is_at_most(256) }
 
   describe ".create" do
     it "is prevented for type Role" do

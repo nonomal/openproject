@@ -14,7 +14,7 @@ allOf:
         properties:
           self:
             allOf:
-              - $ref:  './link.yml'
+              - $ref: './link.yml'
               - description: |-
                   This group collection
 
@@ -61,5 +61,5 @@ example:
               title: ST-097E
             - href: '/api/v3/users/60'
               title: ST-C-334
-      - _hint: Group resource shortened for brevity
+      - _abbreviated: Group resource shortened for brevity
         id: 1338

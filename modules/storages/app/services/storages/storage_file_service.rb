@@ -35,16 +35,16 @@ module Storages
     end
 
     def call(user:, storage:, file_id:)
-      auth_strategy = strategy(storage, user)
+      auth_strategy = Adapters::Registry.resolve("#{storage}.authentication.user_bound").call(user, storage)
 
       info "Requesting file #{file_id} information on #{storage.name}"
-      Peripherals::Registry.resolve("#{storage}.queries.file_info").call(storage:, auth_strategy:, file_id:)
-    end
+      input_data = Adapters::Input::FileInfo.build(file_id:).value_or { return add_validation_error(it) }
 
-    private
+      file_info = Adapters::Registry.resolve("#{storage}.queries.file_info").call(storage:, auth_strategy:, input_data:)
+                                    .value_or { return add_error(:base, it, options: { file_id: }) }
 
-    def strategy(storage, user)
-      Peripherals::Registry.resolve("#{storage}.authentication.user_bound").call(user:, storage:)
+      @result.result = file_info
+      @result
     end
   end
 end

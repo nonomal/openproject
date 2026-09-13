@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -33,8 +35,8 @@ module BaseServices
       super(user:, contract_class:, contract_options:)
     end
 
-    def persist(service_result)
-      service_result = super(service_result) # rubocop:disable Style/SuperArguments
+    def persist(_service_result)
+      service_result = super
 
       unless destroy(service_result.result)
         service_result.errors = service_result.result.errors

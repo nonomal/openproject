@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -40,8 +42,6 @@ module CustomActions::Actions::Strategies::Float
   def to_float_or_nil(value)
     return nil if value.nil?
 
-    Float(value)
-  rescue TypeError, ArgumentError
-    nil
+    Float(value, exception: false)
   end
 end
